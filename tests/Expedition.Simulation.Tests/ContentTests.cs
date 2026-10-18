@@ -11,6 +11,7 @@ public class ContentTests
         {
           "baselineNeedsPerHour": { "hunger": 0.5, "thirst": 1, "fatigue": 1 },
           "workRateBySkillLevel": [0.5, 0.75, 1, 1.25, 1.5, 1.75],
+          "workRateByAttributeLevel": [0.6, 0.8, 1, 1.1, 1.2, 1.3],
           "maxFatigueToStartWork": 90, "exhaustionFatigue": 100,
           "tiredFatigue": 75, "tiredWorkRateMultiplier": 0.75, "incapacitatedAtHealth": 25,
           "eatAtHunger": 35, "drinkAtThirst": 35,

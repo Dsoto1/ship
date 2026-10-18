@@ -61,7 +61,9 @@ public partial class Main : Node3D
         _hud.TaskOrdered += OrderTask;
         _hud.StopOrdered += () => { if (_selected is { } id) _hud.ShowResult(_runner.CancelTask(id)); };
 
-        StartCampaign(TestDeckScenario.Create(_content), "New voyage started. Left-click to select, right-click to walk.");
+        // Each new voyage gets its own seed; the seed is saved, so a reported problem can be replayed.
+        var seed = (ulong)System.Random.Shared.NextInt64();
+        StartCampaign(TestDeckScenario.Create(_content, seed), "New voyage started. Left-click to select, right-click to walk.");
     }
 
     public override void _Process(double delta)
@@ -96,7 +98,7 @@ public partial class Main : Node3D
                 var activity = _runner.Campaign.ActiveTasks.TryGetValue(id, out var task)
                     ? _content.Tasks[task.DefinitionId].Name
                     : "";
-                figure.Refresh(character, placement, drawTick, id == _selected, activity);
+                figure.Refresh(character, placement, drawTick, id == _selected, activity, id == _runner.Campaign.CaptainId);
             }
         }
 
@@ -163,7 +165,7 @@ public partial class Main : Node3D
             _figures[id] = figure;
         }
 
-        _selected = runner.Campaign.Characters.Keys.Order().FirstOrDefault();
+        _selected = runner.Campaign.CaptainId ?? runner.Campaign.Characters.Keys.Order().FirstOrDefault();
         _hud.Bind(runner);
         _hud.ShowStatus(message);
     }

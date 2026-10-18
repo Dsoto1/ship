@@ -19,6 +19,11 @@ internal static class ContentValidator
             errors.Add("Rules: every workRateBySkillLevel entry must be positive.");
         }
 
+        if (rules.WorkRateByAttributeLevel.Count != Attributes.MaxLevel + 1 || rules.WorkRateByAttributeLevel.Any(rate => rate <= 0))
+        {
+            errors.Add($"Rules: workRateByAttributeLevel needs {Attributes.MaxLevel + 1} positive entries (levels 0..{Attributes.MaxLevel}).");
+        }
+
         if (rules.TiredWorkRateMultiplier is <= 0 or > 1)
         {
             errors.Add("Rules: tiredWorkRateMultiplier must be in (0, 1].");

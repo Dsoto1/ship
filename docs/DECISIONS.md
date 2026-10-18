@@ -154,3 +154,30 @@ scene and remain open until the Art Bible's Test A.
 1× is for direct control and crises, and 60× is for routine sailing. A frame never simulates more
 than 600 ticks, so a slow frame cannot snowball. Automatic slowdown on critical events
 (TECHNICAL_SPEC.md §8) comes with the event system.
+
+---
+
+## D-008 — Named random streams; physical attributes separate from skills
+
+**Date:** 2026-10-18
+**Status:** Accepted (Ticket 3c; resolves SPEC_AUDIT.md conflict C1)
+
+**Random streams.** `Core/RandomStreams` holds one PCG32 stream per domain: `tasks`, `characters`,
+`weather` and `events` (TECHNICAL_SPEC.md §24). Each is derived from the campaign seed and a
+fixed per-name stream number, so adding rolls in one domain never changes another's results; a
+test checks that weather rolls leave injury outcomes untouched. This supersedes the single
+generator in D-002, which was otherwise unchanged. Saves store the seed and every stream. New games
+in Godot use a fresh random seed.
+
+**Attributes.** Strength, endurance, coordination and perception are `Characters/Attributes`, not
+skills (TECHNICAL_SPEC.md §5.4 over the skill list in §5.3 and Handoff §4.3). Same 0–5 scale, but an
+unrecorded attribute is 2 (ordinary), not 0. A task can name an attribute, which multiplies work
+speed alongside skill, so a strong novice and a weak expert differ. Pumping uses strength;
+repairing rigging uses coordination.
+
+**Campaign identity and captain.** Campaigns have a `CampaignId` and keep their `Seed`.
+`CaptainId` names the character the player leads as. Appointment is recorded and requires a living,
+able character. Succession rules remain approval-required (TECHNICAL_SPEC.md §18).
+
+Save format 4. The upgrade from format 3 moves physical "skills" into attributes and continues the
+old generator as the `tasks` stream, so injury rolls carry on exactly.

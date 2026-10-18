@@ -14,7 +14,8 @@ This file tracks status and breaks the next work into tickets.
 | 3 | Inventory, supplies, and save/load | Done (2026-10-18) |
 | 3a | CI: build and test on every push | Done (2026-10-18) |
 | 3b | Structured chronicle, need diagnostics, long-run tests | Done (2026-10-18) |
-| 3c–3e | Attributes and random streams; relationships, traits and conditions; task queue | Proposed — see SPEC_AUDIT.md §6 |
+| 3c | Attributes, random streams, campaign ID and captain | Done (2026-10-18) |
+| 3d–3e | Relationships, traits and conditions; task queue | Proposed — see SPEC_AUDIT.md §6 |
 | 4a | Positions, work spots and movement in the simulation | Done (2026-10-18) |
 | 4b | Godot graybox interaction scene | Done (2026-10-18) — owner ran the manual test on macOS, all 8 steps passed |
 | 4c | Appearance record | Proposed |
@@ -225,3 +226,17 @@ against the `Godot.NET.Sdk` package, so CI needs no Godot install.
     entry.
 
 165 tests pass.
+
+## Ticket 3c — Attributes, random streams, campaign identity, captain
+
+See D-008.
+- `data/attributes.json` defines the four physical attributes, and `skills.json` no longer lists
+  them.
+- `task.pump_bilge` uses strength and `task.repair_rigging` uses coordination.
+- The test deck crew have varied physiques. Captain Álvaro is appointed captain, and Godot marks
+  him "(captain)" and selects him first.
+- The character record shows a "Physique" line.
+- Save format 4, with a tested upgrade from format 3.
+- Loading now also rejects unknown skill and attribute IDs.
+
+186 tests pass.

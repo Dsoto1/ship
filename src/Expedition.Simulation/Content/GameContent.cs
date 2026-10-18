@@ -17,7 +17,8 @@ public sealed class GameContent
         IEnumerable<SkillDefinition> skills,
         IEnumerable<ItemDefinition> items,
         IEnumerable<TaskDefinition> tasks,
-        IEnumerable<LocationDefinition>? locations = null)
+        IEnumerable<LocationDefinition>? locations = null,
+        IEnumerable<AttributeDefinition>? attributes = null)
     {
         var errors = new List<string>();
         Rules = rules;
@@ -25,6 +26,7 @@ public sealed class GameContent
         Items = IndexById(items, i => i.Id, "item", errors);
         Tasks = IndexById(tasks, t => t.Id, "task", errors);
         Locations = IndexById(locations ?? [], l => l.Id, "location", errors);
+        Attributes = IndexById(attributes ?? [], a => a.Id, "attribute", errors);
 
         ContentValidator.ValidateRules(rules, errors);
         foreach (var item in Items.Values)
@@ -35,6 +37,10 @@ public sealed class GameContent
         foreach (var task in Tasks.Values)
         {
             ContentValidator.ValidateTask(task, Skills, Items, errors);
+            if (task.Attribute is not null && !Attributes.ContainsKey(task.Attribute))
+            {
+                errors.Add($"Task '{task.Id}': unknown attribute '{task.Attribute}'.");
+            }
         }
 
         foreach (var location in Locations.Values)
@@ -56,6 +62,9 @@ public sealed class GameContent
 
     /// <summary>Skill definitions by ID.</summary>
     public IReadOnlyDictionary<string, SkillDefinition> Skills { get; }
+
+    /// <summary>Attribute definitions by ID.</summary>
+    public IReadOnlyDictionary<string, AttributeDefinition> Attributes { get; }
 
     /// <summary>Item definitions by ID.</summary>
     public IReadOnlyDictionary<string, ItemDefinition> Items { get; }

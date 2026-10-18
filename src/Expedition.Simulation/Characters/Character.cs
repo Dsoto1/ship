@@ -57,8 +57,11 @@ public sealed class Character
     /// <summary>The character's personal inventory: what they carry with them through every phase.</summary>
     public InventoryId InventoryId => InventoryId.ForCharacter(Id);
 
-    /// <summary>Actual skill levels.</summary>
+    /// <summary>Actual skill levels: what the character has learned.</summary>
     public Skills Skills { get; } = new();
+
+    /// <summary>Physical capabilities: what the character's body can do.</summary>
+    public Attributes Attributes { get; } = new();
 
     /// <summary>Current needs.</summary>
     public Needs Needs { get; } = new();

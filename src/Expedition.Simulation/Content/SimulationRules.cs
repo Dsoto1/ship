@@ -12,6 +12,9 @@ public sealed record SimulationRules
     /// <summary>Work speed multiplier by skill level, index 0..5. Level 2 (routine competence) should be 1.0.</summary>
     public required IReadOnlyList<double> WorkRateBySkillLevel { get; init; }
 
+    /// <summary>Work speed multiplier by attribute level, index 0..5. Level 2 (ordinary) should be 1.0.</summary>
+    public required IReadOnlyList<double> WorkRateByAttributeLevel { get; init; }
+
     /// <summary>A character at or above this fatigue cannot start work (rest is still allowed).</summary>
     public required double MaxFatigueToStartWork { get; init; }
 

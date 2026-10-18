@@ -7,7 +7,7 @@ namespace Expedition.Simulation.Content;
 
 /// <summary>
 /// Reads content definitions from JSON. Expected layout under the data directory:
-/// <c>simulation_rules.json</c>, <c>skills.json</c>, <c>items.json</c>, and any number of <c>tasks/*.json</c>
+/// <c>simulation_rules.json</c>, <c>skills.json</c>, <c>attributes.json</c>, <c>items.json</c>, and any number of <c>tasks/*.json</c>
 /// and <c>locations/*.json</c> files,
 /// each holding a JSON array of definitions.
 /// </summary>
@@ -28,6 +28,7 @@ public static class ContentLoader
         var rules = Read<SimulationRules>(Path.Combine(dataDirectory, "simulation_rules.json"));
         var skills = Read<List<SkillDefinition>>(Path.Combine(dataDirectory, "skills.json"));
         var items = Read<List<ItemDefinition>>(Path.Combine(dataDirectory, "items.json"));
+        var attributes = Read<List<AttributeDefinition>>(Path.Combine(dataDirectory, "attributes.json"));
         var tasks = Directory.EnumerateFiles(Path.Combine(dataDirectory, "tasks"), "*.json")
             .Order(StringComparer.Ordinal)
             .SelectMany(Read<List<TaskDefinition>>)
@@ -36,7 +37,7 @@ public static class ContentLoader
         var locations = Directory.Exists(locationsDirectory)
             ? Directory.EnumerateFiles(locationsDirectory, "*.json").Order(StringComparer.Ordinal).SelectMany(Read<List<LocationDefinition>>).ToList()
             : [];
-        return new GameContent(rules, skills, items, tasks, locations);
+        return new GameContent(rules, skills, items, tasks, locations, attributes);
     }
 
     /// <summary>Parses content from JSON strings. Intended for tests and tools.</summary>

@@ -18,6 +18,7 @@
   {
     "id": "task.pump_bilge",
     "needsWorkSpot": true,
+    "attribute": "attribute.strength",
     "name": "Pump the bilge",
     "durationMinutes": 60,
     "needsPerHour": { "fatigue": 6.0, "thirst": 1.0 }
@@ -28,6 +29,7 @@
     "name": "Repair rigging",
     "durationMinutes": 120,
     "skill": "skill.rigging",
+    "attribute": "attribute.coordination",
     "minSkill": 1,
     "requiredTools": ["item.marlinspike"],
     "consumes": { "item.rope": 1 },

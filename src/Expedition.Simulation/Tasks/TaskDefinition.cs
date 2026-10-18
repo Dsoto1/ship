@@ -29,6 +29,12 @@ public sealed record TaskDefinition
     /// <summary>Skill that governs work speed, or null if none applies.</summary>
     public string? Skill { get; init; }
 
+    /// <summary>
+    /// Physical attribute that also governs work speed (for example <c>attribute.strength</c> for
+    /// pumping), or null. Combines with <see cref="Skill"/>: a strong novice and a weak expert differ.
+    /// </summary>
+    public string? Attribute { get; init; }
+
     /// <summary>Minimum level of <see cref="Skill"/> needed to attempt the task.</summary>
     public int MinSkill { get; init; }
 

@@ -19,8 +19,17 @@ public sealed record SaveData
     /// <summary>Highest character ID ever issued, so IDs are never reused.</summary>
     public required int LastCharacterId { get; init; }
 
-    /// <summary>Random generator state.</summary>
-    public required RandomData Random { get; init; }
+    /// <summary>Stable campaign identifier. Added in format 4.</summary>
+    public required string CampaignId { get; init; }
+
+    /// <summary>The campaign's starting seed, as a decimal string. Added in format 4.</summary>
+    public required string Seed { get; init; }
+
+    /// <summary>The captain's character ID number, or null. Added in format 4.</summary>
+    public int? CaptainId { get; init; }
+
+    /// <summary>State of every random stream, by stream name. Replaced the single generator in format 4.</summary>
+    public required IReadOnlyDictionary<string, RandomData> RandomStreams { get; init; }
 
     /// <summary>Inventory that serves as the crew's shared store.</summary>
     public required string SharedStoreId { get; init; }
@@ -77,6 +86,9 @@ public sealed record CharacterData
 
     /// <summary>Skill levels above zero, by skill ID.</summary>
     public required IReadOnlyDictionary<string, int> Skills { get; init; }
+
+    /// <summary>Attribute levels that differ from ordinary, by attribute ID. Added in format 4.</summary>
+    public required IReadOnlyDictionary<string, int> Attributes { get; init; }
 
     /// <summary>Trait IDs.</summary>
     public required IReadOnlyList<string> Traits { get; init; }

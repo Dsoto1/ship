@@ -1,6 +1,6 @@
 # Technical Design
 
-Status: P0 implemented in graybox (Tickets 1–4b, 3a–3b). Save format 3. Update this file when architecture or behavior changes.
+Status: P0 implemented in graybox (Tickets 1–4b, 3a–3c). Save format 4. Update this file when architecture or behavior changes.
 See `DECISIONS.md` for why each choice was made, and `GAME_VISION.md` for the product vision.
 
 ## 1. Solution layout (proposed)
@@ -18,7 +18,7 @@ src/
     History/                    Chronicle (append-only event history)
     Content/                    loaders for data/ definitions
     Persistence/                SaveData (file shape), SaveSerializer (versioned JSON + validation), SaveStore (slot files)
-    Core/                       IDs, ID allocation, command results, SimulationRandom (PCG32)
+    Core/                       IDs, ID allocation, command results, SimulationRandom (PCG32), RandomStreams
 tests/
   Expedition.Simulation.Tests/  xUnit — unit and headless simulation scenarios
 data/                           JSON definitions: skills, traits, items, tasks, ships, buildings
@@ -74,6 +74,11 @@ is added only when a ticket needs it.
   - Ordering a move interrupts the current task. Incapacitation stops a walk where it is.
   - The presentation draws positions between cells with `Movement.PositionAt(fractionalTick)`;
     it never decides where anyone is.
+- **Randomness.** `CampaignState.Randomness` has one stream per domain: tasks, characters, weather and
+  events (D-008). Code must use the stream for its own domain, never another domain's.
+- **Skills vs attributes.** Skills are training (unset = 0), and attributes are the body (unset = 2,
+  ordinary). Work speed is skill rate × attribute rate (if the task names an attribute), slowed
+  when tired.
 - **Survival state through the campaign.** `Character.SurvivalState` can only be changed by
   `CampaignState.ChangeSurvivalState`, which enforces "dead is final" and records the cause.
 - **Chronicle.** Important outcomes append an entry: tick, kind, the character IDs involved, and

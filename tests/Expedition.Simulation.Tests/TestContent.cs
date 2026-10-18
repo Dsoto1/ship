@@ -13,6 +13,7 @@ internal static class TestContent
     {
         BaselineNeedsPerHour = new NeedRates { Hunger = 0.5, Thirst = 1.0, Fatigue = 1.0 },
         WorkRateBySkillLevel = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75],
+        WorkRateByAttributeLevel = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75],
         MaxFatigueToStartWork = 90,
         ExhaustionFatigue = 100,
         TiredFatigue = 75,
@@ -50,7 +51,7 @@ internal static class TestContent
     /// <summary>Long, tiring work for exhaustion tests: 10 fatigue per hour including baseline.</summary>
     public static TaskDefinition Haul { get; } = new()
     {
-        Id = "task.haul", Name = "Haul cargo", DurationMinutes = 600,
+        Id = "task.haul", Name = "Haul cargo", DurationMinutes = 600, Attribute = "attribute.strength",
         NeedsPerHour = new NeedRates { Fatigue = 9 },
     };
 
@@ -104,5 +105,6 @@ internal static class TestContent
         [new SkillDefinition { Id = "skill.rigging", Name = "Rigging", Group = "maritime" }],
         Items,
         [Rest, Pump, Haul, RepairRigging, StormWork, SpotPump],
-        [Deck]);
+        [Deck],
+        [new AttributeDefinition { Id = "attribute.strength", Name = "Strength" }]);
 }

@@ -18,14 +18,20 @@ public static class TestDeckScenario
     /// <summary>ID of the scenario's ship's hold.</summary>
     public static readonly InventoryId HoldId = new("inv.hold");
 
-    private static readonly (string Name, int Age, string Origin, int X, int Y, (string Skill, int Level)[] Skills)[] Crew =
+    private static readonly (string Name, int Age, string Origin, int X, int Y, (string Id, int Level)[] Skills, (string Id, int Level)[] Attributes)[] Crew =
     [
-        ("Captain Álvaro", 41, "Seville", 4, 18, [("skill.navigation", 3), ("skill.leadership", 3), ("skill.sailing", 2)]),
-        ("Diego", 29, "Palos", 3, 5, [("skill.rigging", 3), ("skill.sailing", 3)]),
-        ("Juan the cooper", 52, "Moguer", 5, 15, [("skill.cooking", 2), ("skill.carpentry", 3)]),
-        ("Pedro", 19, "Huelva", 2, 8, [("skill.sailing", 1)]),
-        ("Gonçalo", 34, "Lisbon", 6, 12, [("skill.ship_repair", 3), ("skill.carpentry", 2)]),
-        ("Martín", 45, "Triana", 2, 17, [("skill.first_aid", 2), ("skill.seamanship", 3)]),
+        ("Captain Álvaro", 41, "Seville", 4, 18,
+            [("skill.navigation", 3), ("skill.leadership", 3), ("skill.sailing", 2)], [("attribute.perception", 3)]),
+        ("Diego", 29, "Palos", 3, 5,
+            [("skill.rigging", 3), ("skill.sailing", 3)], [("attribute.coordination", 4)]),
+        ("Juan the cooper", 52, "Moguer", 5, 15,
+            [("skill.cooking", 2), ("skill.carpentry", 3)], [("attribute.endurance", 1)]),
+        ("Pedro", 19, "Huelva", 2, 8,
+            [("skill.sailing", 1)], [("attribute.strength", 4), ("attribute.endurance", 3)]),
+        ("Gonçalo", 34, "Lisbon", 6, 12,
+            [("skill.ship_repair", 3), ("skill.carpentry", 2)], [("attribute.strength", 3)]),
+        ("Martín", 45, "Triana", 2, 17,
+            [("skill.first_aid", 2), ("skill.seamanship", 3)], []),
     ];
 
     /// <summary>Creates the scenario. Requires the shipped content (<c>data/</c>).</summary>
@@ -54,7 +60,7 @@ public static class TestDeckScenario
             Require(runner.AddItems(HoldId, item, quantity));
         }
 
-        foreach (var (name, age, origin, x, y, skills) in Crew)
+        foreach (var (name, age, origin, x, y, skills, attributes) in Crew)
         {
             var character = campaign.CreateCharacter(name, age, origin, content.Rules.PersonalCarryCapacity);
             foreach (var (skill, level) in skills)
@@ -62,9 +68,15 @@ public static class TestDeckScenario
                 character.Skills.Set(skill, level);
             }
 
+            foreach (var (attribute, level) in attributes)
+            {
+                character.Attributes.Set(attribute, level);
+            }
+
             Require(runner.PlaceCharacter(character.Id, LocationId, new GridPosition(x, y)));
         }
 
+        Require(campaign.AppointCaptain(campaign.Characters.Keys.Min(), "named in the sponsor's charter"));
         return runner;
     }
 

@@ -43,6 +43,7 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
             ChronicleEntryKind.SupplyShortage => entry.Get(ChronicleParameters.Need) == "water"
                 ? $"{who} went thirsty: there is nothing left to drink."
                 : $"{who} went hungry: there is no food left.",
+            ChronicleEntryKind.CaptainAppointed => $"{who} took command of the expedition ({cause}).",
             _ => $"{entry.Kind}: {string.Join(", ", entry.Parameters.Select(p => $"{p.Key}={p.Value}"))}",
         };
     }

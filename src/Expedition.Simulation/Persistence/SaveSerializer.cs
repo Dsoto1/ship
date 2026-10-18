@@ -20,7 +20,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 3;
+    public const int CurrentSchemaVersion = 4;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -51,6 +51,10 @@ public static class SaveSerializer
 
                 return root;
             },
+
+            // Format 4 split the single random generator into named streams, added the seed, campaign ID
+            // and captain, and moved physical attributes out of skills.
+            [3] = MigrateFromFormat3,
         };
 
     private static readonly JsonSerializerOptions Options = new()
@@ -129,6 +133,69 @@ public static class SaveSerializer
         }
     }
 
+    // Before format 4 only task hazards used randomness, so the old single generator continues exactly
+    // as the tasks stream. The other streams are new; they are derived from the old state so the
+    // upgrade is deterministic. Physical "skills" become attributes, keeping their levels.
+    private static readonly IReadOnlyDictionary<string, string> PhysicalSkillsToAttributes = new Dictionary<string, string>
+    {
+        ["skill.strength"] = "attribute.strength",
+        ["skill.endurance"] = "attribute.endurance",
+        ["skill.coordination"] = "attribute.coordination",
+        ["skill.perception"] = "attribute.perception",
+    };
+
+    private static JsonObject MigrateFromFormat3(JsonObject root)
+    {
+        var old = root["random"] as JsonObject ?? throw new SaveLoadException("The format-3 save has no random generator state.");
+        root.Remove("random");
+        var derivedSeed = ulong.Parse(old["state"]!.GetValue<string>(), CultureInfo.InvariantCulture);
+        var streams = new JsonObject();
+        foreach (var name in RandomStreams.Names)
+        {
+            if (name == RandomStreams.TasksName)
+            {
+                streams[name] = old.DeepClone();
+                continue;
+            }
+
+            var (state, increment) = new SimulationRandom(derivedSeed, RandomStreams.StreamNumber(name)).SaveState();
+            streams[name] = new JsonObject
+            {
+                ["state"] = state.ToString(CultureInfo.InvariantCulture),
+                ["increment"] = increment.ToString(CultureInfo.InvariantCulture),
+            };
+        }
+
+        root["randomStreams"] = streams;
+        root["seed"] = derivedSeed.ToString(CultureInfo.InvariantCulture);
+        root["campaignId"] = $"campaign-upgraded-{derivedSeed:x16}";
+
+        foreach (var character in root["characters"]?.AsArray() ?? [])
+        {
+            if (character is not JsonObject fields)
+            {
+                continue;
+            }
+
+            var attributes = new JsonObject();
+            if (fields["skills"] is JsonObject skills)
+            {
+                foreach (var (skillId, attributeId) in PhysicalSkillsToAttributes)
+                {
+                    if (skills[skillId] is { } level)
+                    {
+                        attributes[attributeId] = level.DeepClone();
+                        skills.Remove(skillId);
+                    }
+                }
+            }
+
+            fields["attributes"] = attributes;
+        }
+
+        return root;
+    }
+
     private static int ReadVersion(JsonObject root)
     {
         if (root["schemaVersion"] is not JsonValue value || !value.TryGetValue<int>(out var version))
@@ -146,18 +213,24 @@ public static class SaveSerializer
 
     private static SaveData ToData(CampaignState campaign)
     {
-        var (state, increment) = campaign.Random.SaveState();
         return new SaveData
         {
             SchemaVersion = CurrentSchemaVersion,
+            CampaignId = campaign.CampaignId,
+            Seed = campaign.Seed.ToString(CultureInfo.InvariantCulture),
+            CaptainId = campaign.CaptainId?.Value,
             Phase = campaign.Phase.ToString(),
             Tick = campaign.Clock.Tick,
             LastCharacterId = campaign.Ids.LastCharacterId,
-            Random = new RandomData
-            {
-                State = state.ToString(CultureInfo.InvariantCulture),
-                Increment = increment.ToString(CultureInfo.InvariantCulture),
-            },
+            RandomStreams = new SortedDictionary<string, RandomData>(
+                campaign.Randomness.SaveState().ToDictionary(
+                    pair => pair.Key,
+                    pair => new RandomData
+                    {
+                        State = pair.Value.State.ToString(CultureInfo.InvariantCulture),
+                        Increment = pair.Value.Increment.ToString(CultureInfo.InvariantCulture),
+                    }),
+                StringComparer.Ordinal),
             SharedStoreId = campaign.SharedStoreId.Value,
             FoodShortageRecorded = campaign.FoodShortageRecorded,
             WaterShortageRecorded = campaign.WaterShortageRecorded,
@@ -169,6 +242,7 @@ public static class SaveSerializer
                 Origin = c.Origin,
                 SurvivalState = c.SurvivalState.ToString(),
                 Skills = new SortedDictionary<string, int>(c.Skills.Levels.ToDictionary(), StringComparer.Ordinal),
+                Attributes = new SortedDictionary<string, int>(c.Attributes.Levels.ToDictionary(), StringComparer.Ordinal),
                 Traits = c.Traits.Order(StringComparer.Ordinal).ToList(),
                 Needs = new NeedsData { Hunger = c.Needs.Hunger, Thirst = c.Needs.Thirst, Fatigue = c.Needs.Fatigue, Stress = c.Needs.Stress },
                 Health = c.Health.Value,
@@ -223,10 +297,15 @@ public static class SaveSerializer
             throw new SaveLoadException($"The save has a negative tick ({data.Tick}).");
         }
 
-        var random = SimulationRandom.FromState(
-            ulong.Parse(data.Random.State, CultureInfo.InvariantCulture),
-            ulong.Parse(data.Random.Increment, CultureInfo.InvariantCulture));
-        var campaign = CampaignState.CreateForRestore(ParseEnum<CampaignPhase>(data.Phase, "phase"), random, data.Tick);
+        var randomness = RandomStreams.FromState(data.RandomStreams.ToDictionary(
+            pair => pair.Key,
+            pair => (ulong.Parse(pair.Value.State, CultureInfo.InvariantCulture), ulong.Parse(pair.Value.Increment, CultureInfo.InvariantCulture))));
+        var campaign = CampaignState.CreateForRestore(
+            ParseEnum<CampaignPhase>(data.Phase, "phase"),
+            ulong.Parse(data.Seed, CultureInfo.InvariantCulture),
+            data.CampaignId,
+            randomness,
+            data.Tick);
 
         foreach (var saved in data.Inventories)
         {
@@ -251,7 +330,7 @@ public static class SaveSerializer
 
         foreach (var saved in data.Characters)
         {
-            var character = RestoreCharacter(saved);
+            var character = RestoreCharacter(saved, content);
             if (!campaign.Inventories.ContainsKey(character.InventoryId))
             {
                 throw new SaveLoadException($"{character.Name} ({character.Id}) has no saved personal inventory.");
@@ -277,6 +356,16 @@ public static class SaveSerializer
         }
 
         campaign.RestoreSharedStore(sharedStore);
+        if (data.CaptainId is { } captainNumber)
+        {
+            var captain = new CharacterId(captainNumber);
+            if (!campaign.Characters.ContainsKey(captain))
+            {
+                throw new SaveLoadException($"The captain ({captain}) is not among the saved characters.");
+            }
+
+            campaign.RestoreCaptain(captain);
+        }
         campaign.FoodShortageRecorded = data.FoodShortageRecorded;
         campaign.WaterShortageRecorded = data.WaterShortageRecorded;
 
@@ -387,7 +476,7 @@ public static class SaveSerializer
         campaign.SetPlacement(id, placement);
     }
 
-    private static Character RestoreCharacter(CharacterData saved)
+    private static Character RestoreCharacter(CharacterData saved, GameContent content)
     {
         if (saved.Id <= 0)
         {
@@ -399,7 +488,22 @@ public static class SaveSerializer
 
         foreach (var (skillId, level) in saved.Skills)
         {
+            if (!content.Skills.ContainsKey(skillId))
+            {
+                throw new SaveLoadException($"{saved.Name} has unknown skill '{skillId}'. The game content may have changed since this save was made.");
+            }
+
             character.Skills.Set(skillId, level);
+        }
+
+        foreach (var (attributeId, level) in saved.Attributes)
+        {
+            if (!content.Attributes.ContainsKey(attributeId))
+            {
+                throw new SaveLoadException($"{saved.Name} has unknown attribute '{attributeId}'. The game content may have changed since this save was made.");
+            }
+
+            character.Attributes.Set(attributeId, level);
         }
 
         foreach (var trait in saved.Traits)

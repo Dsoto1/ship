@@ -73,7 +73,8 @@ public partial class CrewFigure : Node3D
     /// <param name="drawTick">Current tick plus the fraction of the next one, for smooth walking.</param>
     /// <param name="selected">Whether the player has this character selected.</param>
     /// <param name="activity">Short description of what they are doing, shown above them.</param>
-    public void Refresh(Character character, CharacterPlacement placement, double drawTick, bool selected, string activity)
+    /// <param name="isCaptain">Whether this is the captain the player leads as.</param>
+    public void Refresh(Character character, CharacterPlacement placement, double drawTick, bool selected, string activity, bool isCaptain)
     {
         var (x, y) = placement.Movement?.PositionAt(drawTick) ?? (placement.Cell.X, placement.Cell.Y);
         Position = new Vector3((float)x, 0, (float)y);
@@ -86,7 +87,8 @@ public partial class CrewFigure : Node3D
         _material.AlbedoColor = character.SurvivalState == SurvivalState.Dead ? DeadColour : _colour;
 
         _ring.Visible = selected;
-        _label.Text = string.IsNullOrEmpty(activity) ? character.Name : $"{character.Name}\n{activity}";
+        var name = isCaptain ? $"{character.Name} (captain)" : character.Name;
+        _label.Text = string.IsNullOrEmpty(activity) ? name : $"{name}\n{activity}";
         _label.Modulate = selected ? new Color(1f, 0.95f, 0.75f) : new Color(0.92f, 0.92f, 0.92f);
     }
 }

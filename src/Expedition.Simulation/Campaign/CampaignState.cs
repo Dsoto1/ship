@@ -27,21 +27,40 @@ public sealed class CampaignState
     private readonly Dictionary<CharacterId, CharacterPlacement> _placements = [];
 
     /// <summary>
-    /// Creates a campaign in the given starting phase with a seeded random generator and one
-    /// unlimited shared store (<see cref="DefaultStoreId"/>).
+    /// Creates a campaign in the given starting phase with seeded random streams and one unlimited
+    /// shared store (<see cref="DefaultStoreId"/>).
     /// </summary>
-    public CampaignState(CampaignPhase startingPhase = CampaignPhase.SponsorCommission, ulong seed = DefaultSeed)
-        : this(startingPhase, new SimulationRandom(seed))
+    /// <param name="startingPhase">Phase to start in.</param>
+    /// <param name="seed">Seed for every random stream. New games should pass a fresh random seed.</param>
+    /// <param name="campaignId">Stable campaign identifier; derived from the seed if not given.</param>
+    public CampaignState(CampaignPhase startingPhase = CampaignPhase.SponsorCommission, ulong seed = DefaultSeed, string? campaignId = null)
+        : this(startingPhase, seed, campaignId ?? $"campaign-{seed:x16}", new RandomStreams(seed))
     {
         CreateInventory(DefaultStoreId, "Stores", InventoryCapacity.Unlimited);
         SharedStoreId = DefaultStoreId;
     }
 
-    private CampaignState(CampaignPhase phase, SimulationRandom random)
+    private CampaignState(CampaignPhase phase, ulong seed, string campaignId, RandomStreams randomness)
     {
+        if (string.IsNullOrWhiteSpace(campaignId))
+        {
+            throw new ArgumentException("Campaign ID must not be empty.", nameof(campaignId));
+        }
+
         Phase = phase;
-        Random = random;
+        Seed = seed;
+        CampaignId = campaignId;
+        Randomness = randomness;
     }
+
+    /// <summary>Stable identifier for this campaign, kept in every save of it.</summary>
+    public string CampaignId { get; }
+
+    /// <summary>The seed the campaign started with. Kept for reproducing and reporting problems.</summary>
+    public ulong Seed { get; }
+
+    /// <summary>The character the player leads as, or null before one is appointed (TECHNICAL_SPEC.md §18).</summary>
+    public CharacterId? CaptainId { get; private set; }
 
     /// <summary>Current campaign phase.</summary>
     public CampaignPhase Phase { get; private set; }
@@ -52,8 +71,8 @@ public sealed class CampaignState
     /// <summary>Campaign time.</summary>
     public SimulationClock Clock { get; } = new();
 
-    /// <summary>The only source of gameplay randomness. Its state is saved with the campaign.</summary>
-    public SimulationRandom Random { get; }
+    /// <summary>The only sources of gameplay randomness, one stream per domain. Saved with the campaign.</summary>
+    public RandomStreams Randomness { get; }
 
     /// <summary>History of important events.</summary>
     public Chronicle Chronicle { get; } = new();
@@ -126,6 +145,32 @@ public sealed class CampaignState
         _characters.TryGetValue(id, out var character)
             ? character
             : throw new KeyNotFoundException($"No character with ID {id} in the campaign.");
+
+    /// <summary>
+    /// Makes <paramref name="id"/> the captain. The captain must be alive and able to act. Recorded in
+    /// the chronicle. Succession after a captain's death is a later, approval-required design.
+    /// </summary>
+    public CommandResult AppointCaptain(CharacterId id, string cause)
+    {
+        if (!_characters.TryGetValue(id, out var character))
+        {
+            return CommandResult.Rejected($"No character with ID {id} in the campaign.");
+        }
+
+        if (!character.CanWork)
+        {
+            return CommandResult.Rejected($"{character.Name} is {character.SurvivalState} and cannot lead.");
+        }
+
+        if (CaptainId == id)
+        {
+            return CommandResult.Rejected($"{character.Name} is already the captain.");
+        }
+
+        CaptainId = id;
+        Record(ChronicleEntryKind.CaptainAppointed, [new(ChronicleParameters.Cause, cause)], id);
+        return CommandResult.Ok();
+    }
 
     /// <summary>Creates an empty inventory, for example a ship's hold.</summary>
     /// <exception cref="InvalidOperationException">An inventory with that ID already exists.</exception>
@@ -266,12 +311,15 @@ public sealed class CampaignState
     /// Creates an empty campaign shell for the save loader to fill. It has no inventories and no
     /// shared store until the loader restores them.
     /// </summary>
-    internal static CampaignState CreateForRestore(CampaignPhase phase, SimulationRandom random, long tick)
+    internal static CampaignState CreateForRestore(CampaignPhase phase, ulong seed, string campaignId, RandomStreams randomness, long tick)
     {
-        var campaign = new CampaignState(phase, random);
+        var campaign = new CampaignState(phase, seed, campaignId, randomness);
         campaign.Clock.Restore(tick);
         return campaign;
     }
+
+    /// <summary>Restores the captain while loading. The loader checks the character exists.</summary>
+    internal void RestoreCaptain(CharacterId? id) => CaptainId = id;
 
     /// <summary>Restores the shared store pointer while loading.</summary>
     internal void RestoreSharedStore(InventoryId id) => SharedStoreId = id;

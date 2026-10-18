@@ -20,4 +20,7 @@ public enum ChronicleEntryKind
 
     /// <summary>Someone needed food or water and none was available.</summary>
     SupplyShortage,
+
+    /// <summary>A character became the captain the player leads as.</summary>
+    CaptainAppointed,
 }

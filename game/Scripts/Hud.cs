@@ -114,7 +114,8 @@ public partial class Hud : CanvasLayer
         foreach (var (button, id) in _crewButtons)
         {
             var character = campaign.Characters[id];
-            button.Text = $"{character.Name} — {Activity(runner, character)}";
+            var captain = id == campaign.CaptainId ? " (captain)" : "";
+            button.Text = $"{character.Name}{captain} — {Activity(runner, character)}";
             button.Modulate = id == selected ? new Color(1f, 0.93f, 0.7f) : Colors.White;
         }
 
@@ -168,11 +169,14 @@ public partial class Hud : CanvasLayer
         var progress = runner.Campaign.ActiveTasks.TryGetValue(id, out var task)
             ? $" ({task.Progress / runner.Content.Tasks[task.DefinitionId].DurationMinutes:P0})"
             : "";
+        var attributes = runner.Content.Attributes.Values
+            .Select(a => $"{a.Name} {character.Attributes.Get(a.Id)}");
         _details.Text =
             $"{character.Age}, from {character.Origin}\n" +
             $"{character.SurvivalState} · health {character.Health.Value:0}\n" +
             $"Doing: {Activity(runner, character)}{progress}\n" +
             $"Skills: {skills}\n" +
+            $"Physique: {string.Join(", ", attributes)}\n" +
             (character.Health.Conditions.Count > 0 ? $"Conditions: {string.Join(", ", character.Health.Conditions)}\n" : "");
 
         _needBars["Hunger"].Value = character.Needs.Hunger;

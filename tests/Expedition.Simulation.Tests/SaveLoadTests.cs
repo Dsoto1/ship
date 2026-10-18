@@ -84,7 +84,9 @@ public class SaveLoadTests
         Assert.Equal(original.Clock.Tick, loaded.Clock.Tick);
         Assert.Equal(original.SharedStoreId, loaded.SharedStoreId);
         Assert.Equal(400, loaded.SharedStore.Capacity.MaxWeightKg);
-        Assert.Equal(original.Random.SaveState(), loaded.Random.SaveState());
+        Assert.Equal(original.Randomness.SaveState(), loaded.Randomness.SaveState());
+        Assert.Equal(original.CampaignId, loaded.CampaignId);
+        Assert.Equal(original.Seed, loaded.Seed);
     }
 
     [Fact]
@@ -183,7 +185,7 @@ public class SaveLoadTests
     [Fact]
     public void OlderVersionIsUpgradedThroughMigrations()
     {
-        // Pretend this build reads format 4, and format 3 called the phase field "stage".
+        // Pretend this build reads format 5, and format 4 called the phase field "stage".
         var current = SaveSerializer.Serialize(StormDamagedVoyage().Campaign);
         var formatOne = Edit(current, root =>
         {
@@ -192,7 +194,7 @@ public class SaveLoadTests
         });
         var migrations = new Dictionary<int, Func<JsonObject, JsonObject>>
         {
-            [3] = root =>
+            [4] = root =>
             {
                 root["phase"] = root["stage"]!.DeepClone();
                 root.Remove("stage");
@@ -200,7 +202,7 @@ public class SaveLoadTests
             },
         };
 
-        var loaded = SaveSerializer.Deserialize(formatOne, TestContent.Create(), migrations, currentVersion: 4);
+        var loaded = SaveSerializer.Deserialize(formatOne, TestContent.Create(), migrations, currentVersion: 5);
 
         Assert.Equal(CampaignPhase.Voyage, loaded.Phase);
         Assert.Equal(current, SaveSerializer.Serialize(loaded));
@@ -212,9 +214,9 @@ public class SaveLoadTests
         var json = SaveSerializer.Serialize(StormDamagedVoyage().Campaign);
 
         var ex = Assert.Throws<SaveLoadException>(() =>
-            SaveSerializer.Deserialize(json, TestContent.Create(), new Dictionary<int, Func<JsonObject, JsonObject>>(), currentVersion: 4));
+            SaveSerializer.Deserialize(json, TestContent.Create(), new Dictionary<int, Func<JsonObject, JsonObject>>(), currentVersion: 5));
 
-        Assert.Contains("no upgrade from format 3", ex.Message);
+        Assert.Contains("no upgrade from format 4", ex.Message);
     }
 
     [Fact]
@@ -223,6 +225,7 @@ public class SaveLoadTests
         // A real format-1 file: no placements, no spot IDs, prose chronicle descriptions.
         var formatOne = Edit(SaveSerializer.Serialize(StormDamagedVoyage().Campaign), root =>
         {
+            ToFormat3(root);
             root["schemaVersion"] = 1;
             root.Remove("placements");
             foreach (var task in root["activeTasks"]!.AsArray())
@@ -245,6 +248,7 @@ public class SaveLoadTests
     {
         var formatTwo = Edit(SaveSerializer.Serialize(StormDamagedVoyage().Campaign), root =>
         {
+            ToFormat3(root);
             root["schemaVersion"] = 2;
             ToProseChronicle(root);
         });
@@ -253,6 +257,25 @@ public class SaveLoadTests
         var formatter = new ChronicleFormatter(loaded, TestContent.Create());
 
         Assert.Equal("Old entry 1", formatter.Format(loaded.Chronicle.Entries[0]));
+    }
+
+    /// <summary>
+    /// Rewrites a current save the way format 3 stored it: one random generator (the tasks stream),
+    /// no seed, campaign ID, captain or attributes.
+    /// </summary>
+    internal static void ToFormat3(JsonObject root)
+    {
+        root["schemaVersion"] = 3;
+        root["random"] = root["randomStreams"]!["tasks"]!.DeepClone();
+        foreach (var field in new[] { "randomStreams", "seed", "campaignId", "captainId" })
+        {
+            root.Remove(field);
+        }
+
+        foreach (var character in root["characters"]!.AsArray())
+        {
+            character!.AsObject().Remove("attributes");
+        }
     }
 
     /// <summary>Rewrites chronicle entries the way formats 1 and 2 stored them: a description, no parameters.</summary>
@@ -322,7 +345,7 @@ public class SaveLoadTests
                 case "duplicate character": characters.Add(characters[0]!.DeepClone()); break;
                 case "skill out of range": characters[0]!["skills"]!["skill.rigging"] = 9; break;
                 case "bad survival state": characters[0]!["survivalState"] = "Undead"; break;
-                case "even rng increment": root["random"]!["increment"] = "2"; break;
+                case "even rng increment": root["randomStreams"]!["tasks"]!["increment"] = "2"; break;
                 case "chronicle out of order": root["chronicle"]!.AsArray()[0]!["sequence"] = 5; break;
                 case "missing shared store": root["sharedStoreId"] = "inv.char-0001"; break;
                 case "null characters": root["characters"] = null; break;

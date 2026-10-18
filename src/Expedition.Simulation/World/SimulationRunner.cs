@@ -282,7 +282,7 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
 
         task.Progress += WorkRate(character, definition) * SimulationClock.MinutesPerTick;
 
-        if (definition.Hazard is { } hazard && Campaign.Random.Chance(hazard.ChancePerHour * HoursPerTick))
+        if (definition.Hazard is { } hazard && Campaign.Randomness.Tasks.Chance(hazard.ChancePerHour * HoursPerTick))
         {
             Injure(character, definition, hazard, outcomes);
             if (!Campaign.ActiveTasks.ContainsKey(character.Id))
@@ -374,7 +374,7 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
     private void Ledger(CharacterId id, TrackedNeed need, string source, double amount) =>
         NeedLedger.Add(Campaign.Clock.Tick, id, need, source, amount);
 
-    /// <summary>Work-minutes produced per in-game minute: skill multiplier, slowed when tired.</summary>
+    /// <summary>Work-minutes produced per in-game minute: skill and attribute multipliers, slowed when tired.</summary>
     private double WorkRate(Character character, TaskDefinition task)
     {
         if (task.IsRest)
@@ -385,6 +385,11 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
         var rules = Content.Rules;
         var level = task.Skill is null ? Skills.RoutineLevel : character.Skills.Get(task.Skill);
         var rate = rules.WorkRateBySkillLevel[level];
+        if (task.Attribute is not null)
+        {
+            rate *= rules.WorkRateByAttributeLevel[character.Attributes.Get(task.Attribute)];
+        }
+
         return character.Needs.Fatigue >= rules.TiredFatigue ? rate * rules.TiredWorkRateMultiplier : rate;
     }
 

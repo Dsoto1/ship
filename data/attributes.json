@@ -1,0 +1,8 @@
+// Physical capabilities, separate from trained skills (TECHNICAL_SPEC.md 5.4).
+// Same 0-5 scale as skills, but anyone not described otherwise is 2 (ordinary).
+[
+  { "id": "attribute.strength", "name": "Strength" },
+  { "id": "attribute.endurance", "name": "Endurance" },
+  { "id": "attribute.coordination", "name": "Coordination" },
+  { "id": "attribute.perception", "name": "Perception" }
+]
