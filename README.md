@@ -49,6 +49,7 @@ Saves go to `~/Library/Application Support/The Expedition/saves/` on macOS.
 - [`docs/TECHNICAL_DESIGN.md`](docs/TECHNICAL_DESIGN.md) — proposed architecture and invariants
 - [`docs/MILESTONES.md`](docs/MILESTONES.md) — ticket plan and status
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — decision log
+- [`docs/P1_OPTIONS_BRIEF.md`](docs/P1_OPTIONS_BRIEF.md) — setting options for the first playable (awaiting owner decision)
 
 ## Tech
 
