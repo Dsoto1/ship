@@ -1,6 +1,6 @@
 # Technical Design
 
-Status: proposed architecture for P0. Update this file when architecture or behavior changes.
+Status: P0 in progress. Ticket 1 (core model) is implemented; the rest is proposed. Update this file when architecture or behavior changes.
 See `DECISIONS.md` for why each choice was made, and `GAME_VISION.md` for the product vision.
 
 ## 1. Solution layout (proposed)
@@ -15,10 +15,10 @@ src/
     Inventory/                  ItemDefinition, ItemStack, Inventory, cargo capacity
     Ship/                       Ship, hull/rigging/bilge condition
     World/                      SimulationClock, weather (later)
-    History/                    Chronicle (event history)
+    History/                    Chronicle (append-only event history)
     Content/                    loaders for data/ definitions
     Persistence/                save/load, schema version, migrations
-    Core/                       IDs, RNG, validation results
+    Core/                       IDs, ID allocation, command results (RNG in Ticket 2)
 tests/
   Expedition.Simulation.Tests/  xUnit — unit and headless simulation scenarios
 data/                           JSON definitions: skills, traits, items, tasks, ships, buildings
@@ -43,6 +43,8 @@ is added only when a ticket needs it.
 - **Deterministic time.** The simulation advances in fixed ticks (for example, 1 tick = 1 in-game
   minute; to be confirmed in Ticket 2). Real-time speed is a presentation concern that maps
   real seconds to N ticks.
+- **Survival state through the campaign.** `Character.SurvivalState` can only be changed by
+  `CampaignState.ChangeSurvivalState`, which enforces "dead is final" and records the cause.
 - **Chronicle.** Important outcomes append an entry to the chronicle: tick, type, the IDs
   involved, and a causal note. This is the source for the journal and for debugging.
 

@@ -8,8 +8,8 @@ This file tracks status and breaks the next work into tickets.
 | Ticket | Title | Status |
 |---|---|---|
 | 0 | Repository and feasibility audit | Done (2026-10-18) |
-| 1 | Solution scaffold, core data model and invariants | Proposed (next) |
-| 2 | Simulation clock and task execution | Proposed |
+| 1 | Solution scaffold, core data model and invariants | Done (2026-10-18) |
+| 2 | Simulation clock and task execution | Proposed (next) |
 | 3 | Inventory, supplies, and save/load | Proposed |
 | 4 | Small playable Godot test scene | Not started |
 | 5 | Recruitment prototype | Not started |
@@ -47,6 +47,11 @@ warnings as errors) and `tests/Expedition.Simulation.Tests` (xUnit). Add minimal
 - `dotnet build` and `dotnet test` pass.
 
 **Risks.** Over-modelling fields that P1 does not need. Mitigation: only the fields listed above.
+
+**Result.** Implemented as specified, except the character's inventory reference, which moves to
+Ticket 3 together with inventories. Survival state changes go through
+`CampaignState.ChangeSurvivalState`, so they are validated and recorded in the chronicle.
+42 xUnit tests pass.
 
 ## Ticket 2 — Simulation clock and task execution
 

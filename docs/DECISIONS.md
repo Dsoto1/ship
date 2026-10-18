@@ -33,6 +33,10 @@ isometric 2D/3D well.
 - The Godot editor/runtime cannot be downloaded in the current cloud dev environment (GitHub
   releases are blocked by the network policy). Simulation work and tests are unaffected.
   Scene work (Ticket 4+) must be run locally by the developer.
+- **No browser build for now.** Godot 4 cannot export C# projects to the web. As of late 2026
+  this is still unsupported, or at best experimental. Distribution targets desktop
+  (macOS, Windows, Linux) through itch.io and later Steam. If a browser demo becomes important,
+  revisit this decision rather than working around it.
 
 ---
 

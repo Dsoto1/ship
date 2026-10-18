@@ -5,7 +5,17 @@ A single-player isometric historical survival, expedition and settlement game se
 and survives what follows: a storm, a shipwreck, landfall and settlement. The same crew is
 carried through every phase.
 
-**Status:** pre-production. No code yet.
+**Status:** P0 (simulation foundation). The core character and campaign model exist; nothing is
+playable yet.
+
+## Build and test
+
+Requires the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0).
+
+```bash
+dotnet build
+dotnet test
+```
 
 ## Docs
 
