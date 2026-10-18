@@ -49,6 +49,7 @@ Saves go to `~/Library/Application Support/The Expedition/saves/` on macOS.
 - [`docs/TECHNICAL_DESIGN.md`](docs/TECHNICAL_DESIGN.md) — proposed architecture and invariants
 - [`docs/MILESTONES.md`](docs/MILESTONES.md) — ticket plan and status
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — decision log
+- [`docs/SETTING.md`](docs/SETTING.md) — the fictional setting outline (draft, awaiting owner approval)
 - [`docs/P1_OPTIONS_BRIEF.md`](docs/P1_OPTIONS_BRIEF.md) — historical situations to draw inspiration from (setting is fictional: D-012)
 
 ## Tech
