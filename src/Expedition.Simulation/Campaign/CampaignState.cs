@@ -1,21 +1,30 @@
 using Expedition.Simulation.Characters;
 using Expedition.Simulation.Core;
 using Expedition.Simulation.History;
+using Expedition.Simulation.Inventory;
+using Expedition.Simulation.Tasks;
+using Expedition.Simulation.World;
 
 namespace Expedition.Simulation.Campaign;
 
 /// <summary>
-/// Root of all persistent campaign state. Owns the single roster of characters and the chronicle.
-/// State changes that matter to the story go through methods here so they are validated and recorded.
+/// Root of all persistent campaign state. Owns the single roster of characters, the clock, the random
+/// generator, active tasks, supplies and the chronicle. State changes that matter to the story go
+/// through methods here or through <see cref="SimulationRunner"/> so they are validated and recorded.
 /// </summary>
 public sealed class CampaignState
 {
-    private readonly Dictionary<CharacterId, Character> _characters = [];
+    /// <summary>Seed used when none is given. Tests and scenarios should pass their own.</summary>
+    public const ulong DefaultSeed = 0x5EA_F00D;
 
-    /// <summary>Creates a campaign in the given starting phase.</summary>
-    public CampaignState(CampaignPhase startingPhase = CampaignPhase.SponsorCommission)
+    private readonly Dictionary<CharacterId, Character> _characters = [];
+    private readonly Dictionary<CharacterId, TaskInstance> _activeTasks = [];
+
+    /// <summary>Creates a campaign in the given starting phase with a seeded random generator.</summary>
+    public CampaignState(CampaignPhase startingPhase = CampaignPhase.SponsorCommission, ulong seed = DefaultSeed)
     {
         Phase = startingPhase;
+        Random = new SimulationRandom(seed);
     }
 
     /// <summary>Current campaign phase.</summary>
@@ -24,11 +33,23 @@ public sealed class CampaignState
     /// <summary>ID source for this campaign.</summary>
     public IdAllocator Ids { get; } = new();
 
+    /// <summary>Campaign time.</summary>
+    public SimulationClock Clock { get; } = new();
+
+    /// <summary>The only source of gameplay randomness. Its state is saved with the campaign.</summary>
+    public SimulationRandom Random { get; }
+
+    /// <summary>Shared supplies that tasks draw tools and materials from. Replaced by real inventories in Ticket 3.</summary>
+    public Stockpile Supplies { get; } = new();
+
     /// <summary>History of important events.</summary>
     public Chronicle Chronicle { get; } = new();
 
     /// <summary>Every character in the campaign, living or dead, keyed by ID.</summary>
     public IReadOnlyDictionary<CharacterId, Character> Characters => _characters;
+
+    /// <summary>The task each busy character is doing. Characters without an entry are idle.</summary>
+    public IReadOnlyDictionary<CharacterId, TaskInstance> ActiveTasks => _activeTasks;
 
     /// <summary>Creates a new character with a freshly issued ID and adds it to the campaign.</summary>
     public Character CreateCharacter(string name, int age, string origin)
@@ -72,19 +93,20 @@ public sealed class CampaignState
         if (!PhaseTransitions.IsAllowed(Phase, target))
         {
             var reason = $"Cannot move from {Phase} to {target}.";
-            Chronicle.Record(ChronicleEntryKind.TransitionRejected, $"{reason} Requested because: {cause}");
+            Record(ChronicleEntryKind.TransitionRejected, $"{reason} Requested because: {cause}");
             return CommandResult.Rejected(reason);
         }
 
         var previous = Phase;
         Phase = target;
-        Chronicle.Record(ChronicleEntryKind.PhaseChanged, $"{previous} -> {target}: {cause}");
+        Record(ChronicleEntryKind.PhaseChanged, $"{previous} -> {target}: {cause}");
         return CommandResult.Ok();
     }
 
     /// <summary>
     /// Changes a character's survival state and records it. Rejected if the character is dead
-    /// (death is final) or already in that state.
+    /// (death is final) or already in that state. A character who can no longer work stops their
+    /// current task, and the interruption is recorded.
     /// </summary>
     /// <param name="id">Character to change.</param>
     /// <param name="newState">State to move to.</param>
@@ -98,14 +120,42 @@ public sealed class CampaignState
 
         var previous = character.SurvivalState;
         var result = character.TrySetSurvivalState(newState);
-        if (result.Succeeded)
+        if (!result.Succeeded)
         {
-            Chronicle.Record(
-                ChronicleEntryKind.SurvivalStateChanged,
-                $"{character.Name}: {previous} -> {newState}. Cause: {cause}",
-                id);
+            return result;
+        }
+
+        Record(ChronicleEntryKind.SurvivalStateChanged, $"{character.Name}: {previous} -> {newState}. Cause: {cause}", id);
+        if (!character.CanWork)
+        {
+            InterruptTask(id, $"{character.Name} is {newState}: {cause}");
         }
 
         return result;
+    }
+
+    /// <summary>Appends a chronicle entry stamped with the current tick.</summary>
+    internal void Record(ChronicleEntryKind kind, string description, params CharacterId[] characters) =>
+        Chronicle.Record(Clock.Tick, kind, description, characters);
+
+    /// <summary>Starts a task. Eligibility must already have been checked by <see cref="SimulationRunner"/>.</summary>
+    internal void StartTask(TaskInstance task) => _activeTasks.Add(task.CharacterId, task);
+
+    /// <summary>Removes a finished task without recording anything.</summary>
+    internal void EndTask(CharacterId id) => _activeTasks.Remove(id);
+
+    /// <summary>
+    /// Stops the character's current task, if any, and records why. Materials already used are not refunded.
+    /// Returns the outcome, or null if the character was idle.
+    /// </summary>
+    internal TaskOutcome? InterruptTask(CharacterId id, string reason)
+    {
+        if (!_activeTasks.Remove(id, out var task))
+        {
+            return null;
+        }
+
+        Record(ChronicleEntryKind.TaskInterrupted, $"{_characters[id].Name} stopped {task.DefinitionId}: {reason}", id);
+        return new TaskOutcome(Clock.Tick, id, task.DefinitionId, TaskEnd.Interrupted, reason);
     }
 }

@@ -9,8 +9,8 @@ This file tracks status and breaks the next work into tickets.
 |---|---|---|
 | 0 | Repository and feasibility audit | Done (2026-10-18) |
 | 1 | Solution scaffold, core data model and invariants | Done (2026-10-18) |
-| 2 | Simulation clock and task execution | Proposed (next) |
-| 3 | Inventory, supplies, and save/load | Proposed |
+| 2 | Simulation clock and task execution | Done (2026-10-18) |
+| 3 | Inventory, supplies, and save/load | Proposed (next) |
 | 4 | Small playable Godot test scene | Not started |
 | 5 | Recruitment prototype | Not started |
 | 6 | Voyage-to-crisis vertical slice | Not started |
@@ -65,12 +65,29 @@ resting; a task interrupted when a character becomes incapacitated; a task that 
 because a skill or tool is missing; identical results for an identical seed.
 **Risks.** Tick granularity affects balance. Keep need rates in data so they can be tuned.
 
+**Result.** Implemented: one-minute ticks (D-004), the PCG32 generator (D-002), and task
+definitions, need rates and rules loaded from `data/`, where unknown or misspelled fields are
+rejected. Tasks check skill, tools, materials and fatigue before they start; work speed scales
+with skill and drops when tired. Exhaustion, incapacitation and injury interrupt work. Hazardous
+tasks can injure, incapacitate or kill, and every such outcome is recorded in the chronicle.
+82 xUnit tests pass.
+
+Deliberately left for later:
+- `CampaignState.Supplies` is a plain stockpile with no weight or volume yet (Ticket 3).
+- Item IDs in task data are not validated until item definitions exist (Ticket 3).
+- Hunger and thirst do not yet harm health at 100; that comes with eating and drinking (Ticket 3).
+- Incapacitated characters do not recover yet; that needs treatment tasks (Ticket 6).
+- Materials are used up when a task starts and are not refunded if it is interrupted.
+
 ## Ticket 3 — Inventory, supplies, and save/load
 
 **Depends on:** Tickets 1–2.
 **Scope.** `ItemDefinition` (weight, volume, consumable flag) and stacks. Inventories with
 capacity limits, including ship cargo. Food and water consumption over time. Versioned JSON
 save/load (D-003) covering the clock, RNG state, roster, tasks, inventories and chronicle.
+Also: replace the Ticket 2 `Stockpile` with real inventories; validate item IDs in task data;
+eating and drinking reduce hunger and thirst, and health suffers when either stays at 100.
+A save made with task definitions that no longer exist must fail with a clear error.
 **Acceptance.** A 30-day provisions test consumes the expected amounts. A save followed by a
 load produces an equivalent state (structural comparison). A corrupt or newer-version save
 fails with a clear error. A dead character stays dead after loading.

@@ -1,0 +1,28 @@
+// Initial skill list from GAME_VISION.md section 4.3. Physical attributes are listed here for now.
+[
+  { "id": "skill.sailing", "name": "Sailing", "group": "maritime" },
+  { "id": "skill.rigging", "name": "Rigging", "group": "maritime" },
+  { "id": "skill.navigation", "name": "Navigation", "group": "maritime" },
+  { "id": "skill.seamanship", "name": "Seamanship", "group": "maritime" },
+  { "id": "skill.ship_repair", "name": "Ship repair", "group": "maritime" },
+  { "id": "skill.fishing", "name": "Fishing", "group": "survival" },
+  { "id": "skill.foraging", "name": "Foraging", "group": "survival" },
+  { "id": "skill.hunting", "name": "Hunting", "group": "survival" },
+  { "id": "skill.tracking", "name": "Tracking", "group": "survival" },
+  { "id": "skill.first_aid", "name": "First aid", "group": "medical" },
+  { "id": "skill.treatment", "name": "Treatment", "group": "medical" },
+  { "id": "skill.sanitation", "name": "Sanitation", "group": "medical" },
+  { "id": "skill.surgery", "name": "Surgery", "group": "medical" },
+  { "id": "skill.carpentry", "name": "Carpentry", "group": "practical" },
+  { "id": "skill.cooking", "name": "Cooking", "group": "practical" },
+  { "id": "skill.animal_handling", "name": "Animal handling", "group": "practical" },
+  { "id": "skill.crafting", "name": "Crafting", "group": "practical" },
+  { "id": "skill.leadership", "name": "Leadership", "group": "social" },
+  { "id": "skill.negotiation", "name": "Negotiation", "group": "social" },
+  { "id": "skill.persuasion", "name": "Persuasion", "group": "social" },
+  { "id": "skill.languages", "name": "Languages", "group": "social" },
+  { "id": "skill.strength", "name": "Strength", "group": "physical" },
+  { "id": "skill.endurance", "name": "Endurance", "group": "physical" },
+  { "id": "skill.coordination", "name": "Coordination", "group": "physical" },
+  { "id": "skill.perception", "name": "Perception", "group": "physical" }
+]

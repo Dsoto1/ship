@@ -10,6 +10,9 @@ public sealed class Skills
     /// <summary>Lowest valid skill level: no meaningful training.</summary>
     public const int MinLevel = 0;
 
+    /// <summary>Routine competence: the level at which work proceeds at normal speed.</summary>
+    public const int RoutineLevel = 2;
+
     /// <summary>Highest valid skill level: exceptional specialist.</summary>
     public const int MaxLevel = 5;
 

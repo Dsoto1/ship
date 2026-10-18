@@ -13,16 +13,16 @@ public sealed class Chronicle
     /// <summary>All entries in the order they were recorded.</summary>
     public IReadOnlyList<ChronicleEntry> Entries => _entries;
 
-    /// <summary>Appends an entry and returns it.</summary>
+    /// <summary>Appends an entry stamped with <paramref name="tick"/> and returns it.</summary>
     /// <exception cref="ArgumentException">The description is empty.</exception>
-    public ChronicleEntry Record(ChronicleEntryKind kind, string description, params CharacterId[] characters)
+    public ChronicleEntry Record(long tick, ChronicleEntryKind kind, string description, params CharacterId[] characters)
     {
         if (string.IsNullOrWhiteSpace(description))
         {
             throw new ArgumentException("Chronicle entries need a description.", nameof(description));
         }
 
-        var entry = new ChronicleEntry(_entries.Count + 1, kind, description, characters.ToArray());
+        var entry = new ChronicleEntry(_entries.Count + 1, tick, kind, description, characters.ToArray());
         _entries.Add(entry);
         return entry;
     }

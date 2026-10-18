@@ -11,4 +11,10 @@ public enum ChronicleEntryKind
 
     /// <summary>A character's survival state changed (injury, death, found, ...).</summary>
     SurvivalStateChanged,
+
+    /// <summary>A character was hurt (for example, by a hazardous task).</summary>
+    Injury,
+
+    /// <summary>A character's task stopped before it was finished.</summary>
+    TaskInterrupted,
 }

@@ -40,13 +40,16 @@ isometric 2D/3D well.
 
 ---
 
-## D-002 — Deterministic, serializable RNG (proposed)
+## D-002 — Deterministic, serializable RNG
 
-**Status:** Proposed, to be confirmed in Ticket 2
+**Status:** Accepted (Ticket 2)
 
 `System.Random`'s internal state cannot be serialized, so a save could not resume the same
-random sequence. Proposal: a small seeded PRNG (e.g. PCG32 or xoshiro128**) that the simulation
-owns, with its state stored in saves. Important random rolls are logged with their inputs.
+random sequence. Instead, `Core/SimulationRandom` is a PCG32 generator owned by
+`CampaignState`, with `SaveState()`/`FromState()` for persistence. All gameplay randomness
+must come from it. Characters are processed in ascending ID order each tick, so a given seed
+and starting state always produce the same results. Outcomes of random rolls (such as injuries)
+are recorded in the chronicle.
 
 ---
 
@@ -58,3 +61,22 @@ Saves are JSON files written with `System.Text.Json`. Each file has a top-level
 `schemaVersion` and a migration step for each version. Loading fails with an explicit error
 and never falls back to a fresh campaign. JSON is readable during development. A binary format
 can be considered later if size or speed requires it.
+
+---
+
+## D-004 — One tick is one in-game minute; needs are fractional
+
+**Date:** 2026-10-18
+**Status:** Accepted (Ticket 2)
+
+**Decision.** The simulation advances in fixed ticks of one in-game minute. Content defines need
+rates per hour, and the runner applies 1/60 of the rate each tick. Needs are therefore stored as
+`double` (still in the 0–100 range) rather than `int`.
+
+**Alternatives considered.** Ten-minute or hourly ticks are cheaper to simulate, but too coarse
+for crises (a storm, a fall from the rigging) where minutes matter. Integer needs at one-minute
+ticks would round small rates such as 1 fatigue per hour down to zero.
+
+**Why.** With a 30-person crew, one-minute ticks are cheap: a 40-day voyage is about 58,000 ticks.
+Accelerated time is a presentation concern, for example 1 real second = 1 in-game hour =
+60 ticks. Real-time speeds are not decided yet; Ticket 4 will settle them.

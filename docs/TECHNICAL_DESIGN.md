@@ -1,6 +1,6 @@
 # Technical Design
 
-Status: P0 in progress. Ticket 1 (core model) is implemented; the rest is proposed. Update this file when architecture or behavior changes.
+Status: P0 in progress. Tickets 1–2 (core model, clock and tasks) are implemented; the rest is proposed. Update this file when architecture or behavior changes.
 See `DECISIONS.md` for why each choice was made, and `GAME_VISION.md` for the product vision.
 
 ## 1. Solution layout (proposed)
@@ -14,11 +14,11 @@ src/
     Tasks/                      TaskDefinition, TaskInstance, eligibility, execution
     Inventory/                  ItemDefinition, ItemStack, Inventory, cargo capacity
     Ship/                       Ship, hull/rigging/bilge condition
-    World/                      SimulationClock, weather (later)
+    World/                      SimulationClock, SimulationRunner (time + task execution), weather (later)
     History/                    Chronicle (append-only event history)
     Content/                    loaders for data/ definitions
     Persistence/                save/load, schema version, migrations
-    Core/                       IDs, ID allocation, command results (RNG in Ticket 2)
+    Core/                       IDs, ID allocation, command results, SimulationRandom (PCG32)
 tests/
   Expedition.Simulation.Tests/  xUnit — unit and headless simulation scenarios
 data/                           JSON definitions: skills, traits, items, tasks, ships, buildings
@@ -40,9 +40,19 @@ is added only when a ticket needs it.
   rejects it with a reason. UI code never sets fields on simulation objects directly.
 - **Explicit phase transitions.** A single transition table lists the allowed
   `CampaignPhase → CampaignPhase` moves. An invalid transition is rejected and logged.
-- **Deterministic time.** The simulation advances in fixed ticks (for example, 1 tick = 1 in-game
-  minute; to be confirmed in Ticket 2). Real-time speed is a presentation concern that maps
-  real seconds to N ticks.
+- **Deterministic time.** The simulation advances in fixed ticks of one in-game minute (D-004).
+  Real-time speed is a presentation concern that maps real seconds to N ticks.
+  `SimulationRunner.Advance(ticks)` is the only way time moves. Each tick it processes
+  characters in ascending ID order:
+  1. Needs change: the baseline rate plus the current task's rate.
+  2. Work stops if the character is exhausted.
+  3. Otherwise work progresses, at a speed set by skill and slowed when tired.
+  4. Any hazard is rolled.
+  5. The task completes once its work is done.
+- **Tasks.** `TaskDefinition` (data) describes the work. `TaskInstance` (state, in
+  `CampaignState.ActiveTasks`) tracks progress. `SimulationRunner.AssignTask` checks eligibility
+  (alive, idle, not exhausted, skill, tools, materials) and consumes materials when the task
+  starts. `Advance` returns the tasks that completed or were interrupted.
 - **Survival state through the campaign.** `Character.SurvivalState` can only be changed by
   `CampaignState.ChangeSurvivalState`, which enforces "dead is final" and records the cause.
 - **Chronicle.** Important outcomes append an entry to the chronicle: tick, type, the IDs

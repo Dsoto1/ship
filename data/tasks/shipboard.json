@@ -1,0 +1,51 @@
+// Shipboard tasks for the first voyage. needsPerHour is added on top of the baseline.
+// Item IDs are not yet validated; item definitions arrive in Ticket 3.
+[
+  {
+    "id": "task.rest",
+    "name": "Rest",
+    "durationMinutes": 240,
+    "isRest": true,
+    "needsPerHour": { "fatigue": -9.0 }
+  },
+  {
+    "id": "task.stand_watch",
+    "name": "Stand watch",
+    "durationMinutes": 240,
+    "needsPerHour": { "fatigue": 1.0, "stress": 0.25 }
+  },
+  {
+    "id": "task.pump_bilge",
+    "name": "Pump the bilge",
+    "durationMinutes": 60,
+    "needsPerHour": { "fatigue": 6.0, "thirst": 1.0 }
+  },
+  {
+    "id": "task.repair_rigging",
+    "name": "Repair rigging",
+    "durationMinutes": 120,
+    "skill": "skill.rigging",
+    "minSkill": 1,
+    "requiredTools": ["item.marlinspike"],
+    "consumes": { "item.rope": 1 },
+    "needsPerHour": { "fatigue": 4.0 },
+    "hazard": { "chancePerHour": 0.02, "healthDamage": 20, "condition": "condition.rope_burn" }
+  },
+  {
+    "id": "task.patch_hull",
+    "name": "Patch the hull",
+    "durationMinutes": 180,
+    "skill": "skill.ship_repair",
+    "minSkill": 1,
+    "requiredTools": ["item.caulking_mallet"],
+    "consumes": { "item.oakum": 2, "item.plank": 1 },
+    "needsPerHour": { "fatigue": 5.0, "stress": 0.5 }
+  },
+  {
+    "id": "task.cook",
+    "name": "Cook for the crew",
+    "durationMinutes": 90,
+    "skill": "skill.cooking",
+    "needsPerHour": { "fatigue": 2.0 }
+  }
+]

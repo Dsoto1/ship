@@ -20,6 +20,11 @@
     </PackageReference>
   </ItemGroup>
 
+  <!-- The real content files, so tests can check they load and validate. -->
+  <ItemGroup>
+    <None Include="..\..\data\**\*.json" LinkBase="data" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\Expedition.Simulation\Expedition.Simulation.csproj" />
   </ItemGroup>

@@ -1,0 +1,11 @@
+{
+  // Every living character, whatever they are doing. Per in-game hour. Placeholder values to tune.
+  "baselineNeedsPerHour": { "hunger": 0.6, "thirst": 1.0, "fatigue": 1.0, "stress": 0.0 },
+  // Work speed by skill level 0..5. Level 2 (routine competence) is normal speed.
+  "workRateBySkillLevel": [0.5, 0.75, 1.0, 1.25, 1.5, 1.75],
+  "maxFatigueToStartWork": 90,
+  "exhaustionFatigue": 100,
+  "tiredFatigue": 75,
+  "tiredWorkRateMultiplier": 0.75,
+  "incapacitatedAtHealth": 25
+}
