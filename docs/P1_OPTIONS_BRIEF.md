@@ -3,7 +3,10 @@
 **Date:** 2026-10-18
 **For:** the project owner. These decisions are [APPROVAL REQUIRED] (TECHNICAL_SPEC.md §41,
 ART_BIBLE.md §24) and must be made before recruitment (Ticket 5).
-**Status:** options and a recommendation. Nothing here is decided until the owner chooses.
+**Status:** superseded as a decision document by D-012. The owner chose a fictional setting
+inspired by history. The packages below are now **inspiration**: real situations and structures to
+borrow from, such as the small garrison holding a trading post, the failed Darién colonies, and
+French rivals on the coast.
 
 ## How to read this
 

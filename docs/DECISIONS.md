@@ -274,3 +274,44 @@ proper identity model for recruitment (sex, languages, origin detail) belongs to
 the owner's input.
 
 Save format 7. Older saves load with no appearance, and the game draws a plain fallback figure.
+
+---
+
+## D-012 — A fictional setting, inspired by history rather than reconstructing it
+
+**Date:** 2026-10-18
+**Status:** Accepted (owner's direction). Supersedes the "pick one real package" framing in
+P1_OPTIONS_BRIEF.md, which becomes a source of inspiration.
+
+**Decision.** The world is a fictional amalgam of early-1500s Atlantic history, not one real
+voyage, place and year:
+- **Places, powers and people are invented.** The port city, crown, sponsor and destination coast
+  draw freely on Seville, Lisbon, Palos, the Caribbean, Tierra Firme, Brazil and the North Atlantic.
+  Names should sound right for their culture, but the game never claims to depict a specific
+  real place or date.
+- **Indigenous peoples are fictional, but specific.** Each people has its own coherent language
+  sound, politics, economy, settlements, material culture and goals. They are inspired by real
+  coastal societies in broad strokes (environment, subsistence, trade, how authority works), but
+  never copy sacred or identifying elements of a real people, and never form a generic kit or a
+  collage of unrelated real cultures. Each is an actor with its own interests: it can trade, refuse,
+  ally, bargain and leave.
+
+**What still applies from the Art Bible and Technical Spec.**
+- **Plausibility, not certainty.** Tools, ships, clothing, food and technology should fit roughly
+  1490–1530. Avoid obvious anachronisms such as later-period pirates or 18th-century rigging. The
+  [RESEARCH] tags become "check that it's plausible and coherent" rather than "verify against one
+  source".
+- **No empty land.** The coast is lived-in. Indigenous communities are never the hostile default,
+  and violence and exploitation are not airbrushed.
+- **Coherence across the setting.** Each culture, real-inspired or invented, stays consistent within
+  itself, and the decisions are recorded in a setting document.
+
+**Why.** It gives design freedom: compressed timelines, a sponsor and charter shaped for gameplay,
+and a destination built for the survival and settlement loop. It also removes research blockers,
+and it avoids misrepresenting a specific real people.
+
+**Consequences.**
+- The next document is a short **setting outline** (`docs/SETTING.md`): names and one-paragraph
+  sketches of the port, crown, sponsor, ship, destination coast and its peoples, for the owner's
+  approval.
+- Content IDs and data stay neutral, so names can change later without breaking saves.

@@ -285,11 +285,12 @@ Remaining audit items, which belong to P1:
 - item instances (G13, spoilage and damage);
 - health severity (G14, medical crisis).
 
-**Before Ticket 5 (recruitment) starts, the owner needs to decide, from a researched options brief:**
-- the departure port and region;
-- the sponsor and charter;
-- the hero ship type;
-- the destination region and the Indigenous communities to represent;
-- the identity fields candidates need (for example sex and languages).
+**Setting direction decided (D-012):** fictional, but clearly inspired by history, with fictional
+but specific Indigenous peoples. Before Ticket 5, the owner approves a short setting outline
+(`docs/SETTING.md`):
+- port, crown and sponsor;
+- the charter goal;
+- the ship;
+- the destination coast and its peoples;
+- the identity fields candidates need (sex, languages with levels, status).
 
-All of these are [APPROVAL REQUIRED] in TECHNICAL_SPEC.md §41 and ART_BIBLE.md §24.
