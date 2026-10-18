@@ -10,18 +10,21 @@
   },
   {
     "id": "task.stand_watch",
+    "needsWorkSpot": true,
     "name": "Stand watch",
     "durationMinutes": 240,
     "needsPerHour": { "fatigue": 1.0, "stress": 0.25 }
   },
   {
     "id": "task.pump_bilge",
+    "needsWorkSpot": true,
     "name": "Pump the bilge",
     "durationMinutes": 60,
     "needsPerHour": { "fatigue": 6.0, "thirst": 1.0 }
   },
   {
     "id": "task.repair_rigging",
+    "needsWorkSpot": true,
     "name": "Repair rigging",
     "durationMinutes": 120,
     "skill": "skill.rigging",
@@ -33,6 +36,7 @@
   },
   {
     "id": "task.patch_hull",
+    "needsWorkSpot": true,
     "name": "Patch the hull",
     "durationMinutes": 180,
     "skill": "skill.ship_repair",
@@ -43,6 +47,7 @@
   },
   {
     "id": "task.cook",
+    "needsWorkSpot": true,
     "name": "Cook for the crew",
     "durationMinutes": 90,
     "skill": "skill.cooking",

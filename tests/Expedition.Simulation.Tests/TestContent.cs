@@ -2,6 +2,7 @@ using Expedition.Simulation.Characters;
 using Expedition.Simulation.Content;
 using Expedition.Simulation.Items;
 using Expedition.Simulation.Tasks;
+using Expedition.Simulation.World;
 
 namespace Expedition.Simulation.Tests;
 
@@ -21,6 +22,7 @@ internal static class TestContent
         DrinkAtThirst = 30,
         StarvationHealthLossPerHour = 1.0,
         DehydrationHealthLossPerHour = 4.0,
+        WalkCellsPerMinute = 4,
         PersonalCarryCapacity = new InventoryCapacity { MaxWeightKg = 20, MaxVolumeLitres = 30 },
     };
 
@@ -68,9 +70,39 @@ internal static class TestContent
         Hazard = new TaskHazard { ChancePerHour = 1.0, HealthDamage = 20, Condition = "condition.bruised" },
     };
 
+    /// <summary>Work at a spot: 60 minutes at the pump, with walking first.</summary>
+    public static TaskDefinition SpotPump { get; } = new()
+    {
+        Id = "task.spot_pump", Name = "Pump at the pump", DurationMinutes = 60, NeedsWorkSpot = true,
+    };
+
+    /// <summary>
+    /// 7 x 5 deck. Row 2 is a wall with one gap at column 5, so walking from the top to the bottom half
+    /// must detour. Two pump spots at the bottom.
+    /// </summary>
+    public static LocationDefinition Deck { get; } = new()
+    {
+        Id = "location.deck",
+        Name = "Deck",
+        Rows =
+        [
+            ".......",
+            ".......",
+            "#####.#",
+            ".......",
+            ".......",
+        ],
+        Spots =
+        [
+            new WorkSpotDefinition { Id = "spot.pump_a", X = 0, Y = 4, Tasks = ["task.spot_pump"] },
+            new WorkSpotDefinition { Id = "spot.pump_b", X = 6, Y = 4, Tasks = ["task.spot_pump"] },
+        ],
+    };
+
     public static GameContent Create() => new(
         Rules,
         [new SkillDefinition { Id = "skill.rigging", Name = "Rigging", Group = "maritime" }],
         Items,
-        [Rest, Pump, Haul, RepairRigging, StormWork]);
+        [Rest, Pump, Haul, RepairRigging, StormWork, SpotPump],
+        [Deck]);
 }

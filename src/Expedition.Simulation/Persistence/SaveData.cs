@@ -37,6 +37,9 @@ public sealed record SaveData
     /// <summary>Every inventory, in ID order.</summary>
     public required IReadOnlyList<InventoryData> Inventories { get; init; }
 
+    /// <summary>Where characters are, in character ID order. Added in format 2.</summary>
+    public required IReadOnlyList<PlacementData> Placements { get; init; }
+
     /// <summary>Active tasks, in character ID order.</summary>
     public required IReadOnlyList<TaskData> ActiveTasks { get; init; }
 
@@ -137,6 +140,41 @@ public sealed record TaskData
 
     /// <summary>Work-minutes done.</summary>
     public required double Progress { get; init; }
+
+    /// <summary>Reserved work spot, or null. Added in format 2.</summary>
+    public string? SpotId { get; init; }
+}
+
+/// <summary>A saved character position.</summary>
+public sealed record PlacementData
+{
+    /// <summary>Character ID number.</summary>
+    public required int CharacterId { get; init; }
+
+    /// <summary>Location definition ID.</summary>
+    public required string LocationId { get; init; }
+
+    /// <summary>Column of the current (or walk-start) cell.</summary>
+    public required int X { get; init; }
+
+    /// <summary>Row of the current (or walk-start) cell.</summary>
+    public required int Y { get; init; }
+
+    /// <summary>The walk in progress, or null.</summary>
+    public MovementData? Movement { get; init; }
+}
+
+/// <summary>A saved walk in progress.</summary>
+public sealed record MovementData
+{
+    /// <summary>Path cells as [x, y] pairs, start and destination included.</summary>
+    public required IReadOnlyList<int[]> Path { get; init; }
+
+    /// <summary>Tick the walk began.</summary>
+    public required long StartTick { get; init; }
+
+    /// <summary>Tick of arrival.</summary>
+    public required long ArriveTick { get; init; }
 }
 
 /// <summary>A saved chronicle entry.</summary>

@@ -1,6 +1,7 @@
 using Expedition.Simulation.Characters;
 using Expedition.Simulation.Items;
 using Expedition.Simulation.Tasks;
+using Expedition.Simulation.World;
 
 namespace Expedition.Simulation.Content;
 
@@ -36,6 +37,11 @@ internal static class ContentValidator
         if (rules.EatAtHunger is <= Needs.Min or > Needs.Max || rules.DrinkAtThirst is <= Needs.Min or > Needs.Max)
         {
             errors.Add("Rules: eatAtHunger and drinkAtThirst must be in (0, 100].");
+        }
+
+        if (rules.WalkCellsPerMinute <= 0)
+        {
+            errors.Add("Rules: walkCellsPerMinute must be positive.");
         }
 
         if (rules.StarvationHealthLossPerHour < 0 || rules.DehydrationHealthLossPerHour < 0)
@@ -104,6 +110,51 @@ internal static class ContentValidator
             if (hazard.HealthDamage <= 0)
             {
                 errors.Add($"{where}: hazard healthDamage must be positive.");
+            }
+        }
+    }
+
+    public static void ValidateLocation(
+        LocationDefinition location, IReadOnlyDictionary<string, TaskDefinition> tasks, List<string> errors)
+    {
+        var where = $"Location '{location.Id}'";
+        if (location.Rows.Count == 0 || location.Rows.Any(row => row.Length != location.Width) || location.Width == 0)
+        {
+            errors.Add($"{where}: rows must be non-empty and all the same length.");
+            return;
+        }
+
+        var badCharacters = location.Rows.SelectMany(row => row)
+            .Where(c => c is not LocationDefinition.Walkable and not LocationDefinition.Blocked)
+            .Distinct()
+            .ToList();
+        if (badCharacters.Count > 0)
+        {
+            errors.Add($"{where}: unknown layout characters '{string.Join("", badCharacters)}' (use '.' and '#').");
+        }
+
+        foreach (var duplicate in location.Spots.GroupBy(s => s.Id).Where(g => g.Count() > 1))
+        {
+            errors.Add($"{where}: duplicate spot ID '{duplicate.Key}'.");
+        }
+
+        foreach (var spot in location.Spots)
+        {
+            if (!location.IsWalkable(spot.Cell))
+            {
+                errors.Add($"{where}: spot '{spot.Id}' at {spot.Cell} is not on a walkable cell.");
+            }
+
+            foreach (var taskId in spot.Tasks)
+            {
+                if (!tasks.TryGetValue(taskId, out var task))
+                {
+                    errors.Add($"{where}: spot '{spot.Id}' lists unknown task '{taskId}'.");
+                }
+                else if (!task.NeedsWorkSpot)
+                {
+                    errors.Add($"{where}: spot '{spot.Id}' lists '{taskId}', which does not use work spots.");
+                }
             }
         }
     }

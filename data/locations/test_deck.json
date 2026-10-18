@@ -1,0 +1,41 @@
+// Graybox deck for the first interaction scene. Deliberately not a specific ship type: the hero ship
+// is an approval-required decision (ART_BIBLE.md 6.1). 1 cell is about 1 m; row 0 is the bow.
+[
+  {
+    "id": "location.test_deck",
+    "name": "Test deck",
+    "rows": [
+      "####.####",
+      "###...###",
+      "##.....##",
+      "#.......#",
+      "#.......#",
+      "#.......#",
+      "#...#...#",
+      "#.......#",
+      "#.......#",
+      "#.......#",
+      "#.##....#",
+      "#.##....#",
+      "#.......#",
+      "#...#...#",
+      "#.......#",
+      "#.......#",
+      "#.....#.#",
+      "#.......#",
+      "#.......#",
+      "#.......#",
+      "##.....##",
+      "#########"
+    ],
+    "spots": [
+      { "id": "spot.watch_bow", "x": 4, "y": 1, "tasks": ["task.stand_watch"] },
+      { "id": "spot.rigging_fore", "x": 4, "y": 7, "tasks": ["task.repair_rigging"] },
+      { "id": "spot.pump", "x": 5, "y": 10, "tasks": ["task.pump_bilge"] },
+      { "id": "spot.hull_patch", "x": 1, "y": 11, "tasks": ["task.patch_hull"] },
+      { "id": "spot.rigging_main", "x": 4, "y": 14, "tasks": ["task.repair_rigging"] },
+      { "id": "spot.galley", "x": 5, "y": 16, "tasks": ["task.cook"] },
+      { "id": "spot.watch_stern", "x": 4, "y": 19, "tasks": ["task.stand_watch"] }
+    ]
+  }
+]

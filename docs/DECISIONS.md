@@ -116,3 +116,23 @@ moved over the old save, so a crash while saving keeps the previous save.
 
 **Alternative considered.** A folder the player chooses: more flexible, but an extra setup step,
 and Steam Cloud and itch.io expect the standard location.
+
+---
+
+## D-006 — 3D world with an orthographic isometric camera, Forward+ renderer
+
+**Date:** 2026-10-18
+**Status:** Accepted (chosen by project owner; ART_BIBLE.md §24 items 5–6)
+
+**Decision.** The world is a 3D scene viewed through an orthographic camera at an isometric-style
+angle, rendered with Godot's Forward+ renderer (Metal on Apple Silicon). The painterly
+"illustrated historical realism" look comes from hand-painted textures and light stylised
+shading, not from photoreal materials or cartoon outlines. Early scenes use graybox shapes.
+
+**Alternative considered.** 2D isometric sprites. Simpler at first, but the Art Bible's weather
+lighting, wear and damage states, modular characters, ship motion and two zoom levels would each
+multiply the hand-drawn frames needed.
+
+**Consequences.** One grid cell maps to one world metre. Simulation grid X maps to world X, and
+grid Y to world Z (row 0 is the bow). Exact camera angle and zoom range are tuned in the graybox
+scene and remain open until the Art Bible's Test A.

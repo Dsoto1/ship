@@ -63,6 +63,17 @@ is added only when a ticket needs it.
 - **Saving.** `SaveSerializer.Serialize` and `Deserialize(json, content)` convert the entire
   `CampaignState`, including the random generator, to and from JSON. The presentation layer
   chooses the folder and passes it to `SaveStore`.
+- **Positions and movement (Ticket 4a).** Locations (`World/LocationDefinition`, from
+  `data/locations`) are walkable grids of about one metre per cell, with work spots for specific
+  tasks. `CampaignState.Placements` holds each character's location, cell and any walk in
+  progress, and is saved.
+  - Pathfinding is a deterministic breadth-first search.
+  - A walk takes `ceil(steps / walkCellsPerMinute)` ticks, at least one.
+  - Tasks with `needsWorkSpot` reserve the nearest free reachable spot. The worker walks there
+    and only starts working on arrival.
+  - Ordering a move interrupts the current task. Incapacitation stops a walk where it is.
+  - The presentation draws positions between cells with `Movement.PositionAt(fractionalTick)`;
+    it never decides where anyone is.
 - **Survival state through the campaign.** `Character.SurvivalState` can only be changed by
   `CampaignState.ChangeSurvivalState`, which enforces "dead is final" and records the cause.
 - **Chronicle.** Important outcomes append an entry to the chronicle: tick, type, the IDs

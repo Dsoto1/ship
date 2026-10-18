@@ -1,5 +1,6 @@
 using Expedition.Simulation.Items;
 using Expedition.Simulation.Tasks;
+using Expedition.Simulation.World;
 
 namespace Expedition.Simulation.Content;
 
@@ -15,13 +16,15 @@ public sealed class GameContent
         SimulationRules rules,
         IEnumerable<SkillDefinition> skills,
         IEnumerable<ItemDefinition> items,
-        IEnumerable<TaskDefinition> tasks)
+        IEnumerable<TaskDefinition> tasks,
+        IEnumerable<LocationDefinition>? locations = null)
     {
         var errors = new List<string>();
         Rules = rules;
         Skills = IndexById(skills, s => s.Id, "skill", errors);
         Items = IndexById(items, i => i.Id, "item", errors);
         Tasks = IndexById(tasks, t => t.Id, "task", errors);
+        Locations = IndexById(locations ?? [], l => l.Id, "location", errors);
 
         ContentValidator.ValidateRules(rules, errors);
         foreach (var item in Items.Values)
@@ -32,6 +35,11 @@ public sealed class GameContent
         foreach (var task in Tasks.Values)
         {
             ContentValidator.ValidateTask(task, Skills, Items, errors);
+        }
+
+        foreach (var location in Locations.Values)
+        {
+            ContentValidator.ValidateLocation(location, Tasks, errors);
         }
 
         if (errors.Count > 0)
@@ -54,6 +62,9 @@ public sealed class GameContent
 
     /// <summary>Task definitions by ID.</summary>
     public IReadOnlyDictionary<string, TaskDefinition> Tasks { get; }
+
+    /// <summary>Location definitions by ID.</summary>
+    public IReadOnlyDictionary<string, LocationDefinition> Locations { get; }
 
     /// <summary>Items that relieve hunger, in ID order. Characters eat the first one available.</summary>
     public IReadOnlyList<ItemDefinition> Foods { get; }

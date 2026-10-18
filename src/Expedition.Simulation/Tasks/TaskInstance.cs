@@ -22,6 +22,9 @@ public sealed class TaskInstance
     /// <summary>Tick at which the task started.</summary>
     public long StartedAtTick { get; }
 
+    /// <summary>The work spot reserved for this task, or null for tasks done anywhere.</summary>
+    public string? SpotId { get; init; }
+
     /// <summary>Work-minutes completed so far. The task finishes when this reaches the definition's duration.</summary>
     public double Progress { get; internal set; }
 }

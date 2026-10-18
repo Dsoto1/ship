@@ -1,12 +1,14 @@
 using System.Text.Json;
 using Expedition.Simulation.Items;
 using Expedition.Simulation.Tasks;
+using Expedition.Simulation.World;
 
 namespace Expedition.Simulation.Content;
 
 /// <summary>
 /// Reads content definitions from JSON. Expected layout under the data directory:
-/// <c>simulation_rules.json</c>, <c>skills.json</c>, <c>items.json</c> and any number of <c>tasks/*.json</c> files,
+/// <c>simulation_rules.json</c>, <c>skills.json</c>, <c>items.json</c>, and any number of <c>tasks/*.json</c>
+/// and <c>locations/*.json</c> files,
 /// each holding a JSON array of definitions.
 /// </summary>
 public static class ContentLoader
@@ -30,7 +32,11 @@ public static class ContentLoader
             .Order(StringComparer.Ordinal)
             .SelectMany(Read<List<TaskDefinition>>)
             .ToList();
-        return new GameContent(rules, skills, items, tasks);
+        var locationsDirectory = Path.Combine(dataDirectory, "locations");
+        var locations = Directory.Exists(locationsDirectory)
+            ? Directory.EnumerateFiles(locationsDirectory, "*.json").Order(StringComparer.Ordinal).SelectMany(Read<List<LocationDefinition>>).ToList()
+            : [];
+        return new GameContent(rules, skills, items, tasks, locations);
     }
 
     /// <summary>Parses content from JSON strings. Intended for tests and tools.</summary>

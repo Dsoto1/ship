@@ -15,7 +15,7 @@ public class ContentTests
           "tiredFatigue": 75, "tiredWorkRateMultiplier": 0.75, "incapacitatedAtHealth": 25,
           "eatAtHunger": 35, "drinkAtThirst": 35,
           "starvationHealthLossPerHour": 0.5, "dehydrationHealthLossPerHour": 2,
-          "personalCarryCapacity": { "maxWeightKg": 25 }
+          "walkCellsPerMinute": 60, "personalCarryCapacity": { "maxWeightKg": 25 }
         }
         """;
 
@@ -38,6 +38,29 @@ public class ContentTests
         Assert.Contains(content.Foods, f => f.Id == "item.biscuit");
         Assert.Contains(content.Drinks, d => d.Id == "item.water");
         Assert.Equal(25, content.Rules.PersonalCarryCapacity.MaxWeightKg);
+        Assert.Equal(7, content.Locations["location.test_deck"].Spots.Count);
+    }
+
+    [Fact]
+    public void BadLocationsAreRejected()
+    {
+        var spotOnWall = TestContent.Deck with
+        {
+            Id = "location.bad",
+            Spots = [new() { Id = "spot.x", X = 0, Y = 2, Tasks = ["task.spot_pump", "task.rest", "task.nope"] }],
+        };
+        var ragged = TestContent.Deck with { Id = "location.ragged", Rows = ["...", ".."] };
+        var oddCharacters = TestContent.Deck with { Id = "location.odd", Rows = ["..~", "..."], Spots = [] };
+
+        var ex = Assert.Throws<ContentValidationException>(() => new GameContent(
+            TestContent.Rules, [], TestContent.Items,
+            [TestContent.Rest, TestContent.SpotPump], [spotOnWall, ragged, oddCharacters]));
+
+        Assert.Contains(ex.Errors, e => e.Contains("not on a walkable cell"));
+        Assert.Contains(ex.Errors, e => e.Contains("does not use work spots"));
+        Assert.Contains(ex.Errors, e => e.Contains("unknown task 'task.nope'"));
+        Assert.Contains(ex.Errors, e => e.Contains("same length"));
+        Assert.Contains(ex.Errors, e => e.Contains("unknown layout characters '~'"));
     }
 
     [Fact]

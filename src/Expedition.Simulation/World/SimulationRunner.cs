@@ -82,6 +82,15 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
             return CommandResult.Rejected($"{task.Name} needs materials that are not on hand: {string.Join(", ", missing)}.");
         }
 
+        if (task.NeedsWorkSpot)
+        {
+            var (_, _, reason) = FindWorkSpot(character, task);
+            if (reason is not null)
+            {
+                return CommandResult.Rejected(reason);
+            }
+        }
+
         return CommandResult.Ok();
     }
 
@@ -95,12 +104,76 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
         }
 
         var character = Campaign.Characters[characterId];
-        foreach (var (itemId, quantity) in Content.Tasks[taskId].Consumes)
+        var task = Content.Tasks[taskId];
+        foreach (var (itemId, quantity) in task.Consumes)
         {
             Take(character, itemId, quantity);
         }
 
-        Campaign.StartTask(new TaskInstance(characterId, taskId, Campaign.Clock.Tick));
+        string? spotId = null;
+        if (task.NeedsWorkSpot)
+        {
+            var (spot, path, _) = FindWorkSpot(character, task);
+            spotId = spot!.Id;
+            StartWalk(characterId, path!);
+        }
+
+        Campaign.StartTask(new TaskInstance(characterId, taskId, Campaign.Clock.Tick) { SpotId = spotId });
+        return CommandResult.Ok();
+    }
+
+    /// <summary>Puts a character on a location's grid, for example when a scenario starts. Ends any walk.</summary>
+    public CommandResult PlaceCharacter(CharacterId characterId, string locationId, GridPosition cell)
+    {
+        if (!Campaign.Characters.ContainsKey(characterId))
+        {
+            return CommandResult.Rejected($"No character with ID {characterId} in the campaign.");
+        }
+
+        if (!Content.Locations.TryGetValue(locationId, out var location))
+        {
+            return CommandResult.Rejected($"Unknown location '{locationId}'.");
+        }
+
+        if (!location.IsWalkable(cell))
+        {
+            return CommandResult.Rejected($"{cell} is not a walkable cell in {location.Name}.");
+        }
+
+        Campaign.SetPlacement(characterId, new CharacterPlacement(locationId, cell));
+        return CommandResult.Ok();
+    }
+
+    /// <summary>
+    /// Orders a character to walk to <paramref name="destination"/> in their current location, as in
+    /// direct control. Any current task stops: the player has given a new order.
+    /// </summary>
+    public CommandResult MoveCharacter(CharacterId characterId, GridPosition destination)
+    {
+        if (!Campaign.Characters.TryGetValue(characterId, out var character))
+        {
+            return CommandResult.Rejected($"No character with ID {characterId} in the campaign.");
+        }
+
+        if (!character.CanWork)
+        {
+            return CommandResult.Rejected($"{character.Name} is {character.SurvivalState} and cannot walk.");
+        }
+
+        if (!Campaign.Placements.TryGetValue(characterId, out var placement))
+        {
+            return CommandResult.Rejected($"{character.Name} is not at any location.");
+        }
+
+        var location = Content.Locations[placement.LocationId];
+        var path = Pathfinder.FindPath(location, placement.CellAt(Campaign.Clock.Tick), destination);
+        if (path is null)
+        {
+            return CommandResult.Rejected($"{character.Name} cannot reach {destination}.");
+        }
+
+        Campaign.InterruptTask(characterId, "ordered elsewhere");
+        StartWalk(characterId, path);
         return CommandResult.Ok();
     }
 
@@ -166,6 +239,7 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
             return;
         }
 
+        ResolveArrival(character.Id);
         Campaign.ActiveTasks.TryGetValue(character.Id, out var task);
         var definition = task is null ? null : Content.Tasks[task.DefinitionId];
         character.Needs.Apply(Content.Rules.BaselineNeedsPerHour + (definition?.NeedsPerHour ?? NeedRates.None), HoursPerTick);
@@ -181,6 +255,12 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
         if (!definition.IsRest && character.Needs.Fatigue >= Content.Rules.ExhaustionFatigue)
         {
             AddIfPresent(outcomes, Campaign.InterruptTask(character.Id, $"{character.Name} is exhausted"));
+            return;
+        }
+
+        // Walking to the work spot: no work is done until the character arrives.
+        if (Campaign.Placements.TryGetValue(character.Id, out var placement) && placement.IsMoving)
+        {
             return;
         }
 
@@ -295,6 +375,69 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
 
         AddIfPresent(outcomes, Campaign.InterruptTask(character.Id, $"{character.Name} was struck down by {cause}"));
         Campaign.ChangeSurvivalState(character.Id, newState.Value, cause);
+    }
+
+    /// <summary>
+    /// The nearest free work spot for <paramref name="task"/> in the character's location, with the path
+    /// to it; or a reason why there is none. Ties go to the spot listed first.
+    /// </summary>
+    private (WorkSpotDefinition? Spot, IReadOnlyList<GridPosition>? Path, string? Reason) FindWorkSpot(Character character, TaskDefinition task)
+    {
+        if (!Campaign.Placements.TryGetValue(character.Id, out var placement))
+        {
+            return (null, null, $"{character.Name} is not at any location, and {task.Name} must be done at a work spot.");
+        }
+
+        var location = Content.Locations[placement.LocationId];
+        var spots = location.Spots.Where(s => s.Tasks.Contains(task.Id)).ToList();
+        if (spots.Count == 0)
+        {
+            return (null, null, $"There is nowhere to {task.Name.ToLowerInvariant()} in {location.Name}.");
+        }
+
+        var taken = Campaign.ActiveTasks.Values.Select(t => t.SpotId).Where(id => id is not null).ToHashSet();
+        var free = spots.Where(s => !taken.Contains(s.Id)).ToList();
+        if (free.Count == 0)
+        {
+            return (null, null, $"Every place to {task.Name.ToLowerInvariant()} is already in use.");
+        }
+
+        var start = placement.CellAt(Campaign.Clock.Tick);
+        var best = free
+            .Select(spot => (Spot: spot, Path: Pathfinder.FindPath(location, start, spot.Cell)))
+            .Where(candidate => candidate.Path is not null)
+            .OrderBy(candidate => candidate.Path!.Count)
+            .FirstOrDefault();
+        return best.Spot is null
+            ? (null, null, $"{character.Name} cannot reach anywhere to {task.Name.ToLowerInvariant()}.")
+            : (best.Spot, best.Path, null);
+    }
+
+    /// <summary>Starts walking along <paramref name="path"/>; a one-cell path means already there.</summary>
+    private void StartWalk(CharacterId characterId, IReadOnlyList<GridPosition> path)
+    {
+        var placement = Campaign.Placements[characterId];
+        var now = Campaign.Clock.Tick;
+        placement.Cell = placement.CellAt(now);
+        if (path.Count < 2)
+        {
+            placement.Movement = null;
+            return;
+        }
+
+        var minutes = Math.Max(1, (long)Math.Ceiling((path.Count - 1) / Content.Rules.WalkCellsPerMinute));
+        placement.Movement = new Movement(path, now, now + minutes / SimulationClock.MinutesPerTick);
+    }
+
+    private void ResolveArrival(CharacterId characterId)
+    {
+        if (Campaign.Placements.TryGetValue(characterId, out var placement)
+            && placement.Movement is { } movement
+            && Campaign.Clock.Tick >= movement.ArriveTick)
+        {
+            placement.Cell = movement.Destination;
+            placement.Movement = null;
+        }
     }
 
     /// <summary>Quantity of an item the character can reach: their own plus the shared store.</summary>

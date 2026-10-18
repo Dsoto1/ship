@@ -8,6 +8,7 @@ using Expedition.Simulation.Core;
 using Expedition.Simulation.History;
 using Expedition.Simulation.Items;
 using Expedition.Simulation.Tasks;
+using Expedition.Simulation.World;
 
 namespace Expedition.Simulation.Persistence;
 
@@ -19,14 +20,22 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 1;
+    public const int CurrentSchemaVersion = 2;
 
     /// <summary>
-    /// Upgrades from version N (the key) to N + 1. Empty until the format first changes. Each step edits the
-    /// raw JSON so old files never need old C# types.
+    /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
+    /// old C# types.
     /// </summary>
     private static readonly IReadOnlyDictionary<int, Func<JsonObject, JsonObject>> Migrations =
-        new Dictionary<int, Func<JsonObject, JsonObject>>();
+        new Dictionary<int, Func<JsonObject, JsonObject>>
+        {
+            // Format 2 added character positions. Format 1 campaigns had no maps, so nobody was placed.
+            [1] = root =>
+            {
+                root["placements"] = new JsonArray();
+                return root;
+            },
+        };
 
     private static readonly JsonSerializerOptions Options = new()
     {
@@ -157,12 +166,28 @@ public static class SaveSerializer
                 MaxVolumeLitres = i.Capacity.MaxVolumeLitres,
                 Items = new SortedDictionary<string, int>(i.Quantities.ToDictionary(), StringComparer.Ordinal),
             }).ToList(),
+            Placements = campaign.Placements.OrderBy(pair => pair.Key.Value).Select(pair => new PlacementData
+            {
+                CharacterId = pair.Key.Value,
+                LocationId = pair.Value.LocationId,
+                X = pair.Value.Cell.X,
+                Y = pair.Value.Cell.Y,
+                Movement = pair.Value.Movement is { } movement
+                    ? new MovementData
+                    {
+                        Path = movement.Path.Select(cell => new[] { cell.X, cell.Y }).ToList(),
+                        StartTick = movement.StartTick,
+                        ArriveTick = movement.ArriveTick,
+                    }
+                    : null,
+            }).ToList(),
             ActiveTasks = campaign.ActiveTasks.Values.OrderBy(t => t.CharacterId.Value).Select(t => new TaskData
             {
                 CharacterId = t.CharacterId.Value,
                 DefinitionId = t.DefinitionId,
                 StartedAtTick = t.StartedAtTick,
                 Progress = t.Progress,
+                SpotId = t.SpotId,
             }).ToList(),
             Chronicle = campaign.Chronicle.Entries.Select(e => new ChronicleEntryData
             {
@@ -239,6 +264,12 @@ public static class SaveSerializer
         campaign.FoodShortageRecorded = data.FoodShortageRecorded;
         campaign.WaterShortageRecorded = data.WaterShortageRecorded;
 
+        foreach (var saved in data.Placements)
+        {
+            RestorePlacement(campaign, saved, content);
+        }
+
+        var reservedSpots = new HashSet<string>(StringComparer.Ordinal);
         foreach (var saved in data.ActiveTasks)
         {
             var id = new CharacterId(saved.CharacterId);
@@ -267,7 +298,18 @@ public static class SaveSerializer
                 throw new SaveLoadException($"{worker.Name}'s task '{saved.DefinitionId}' has invalid progress or start time.");
             }
 
-            campaign.StartTask(new TaskInstance(id, saved.DefinitionId, saved.StartedAtTick) { Progress = saved.Progress });
+            if (saved.SpotId is not null)
+            {
+                var spot = campaign.Placements.TryGetValue(id, out var where)
+                    ? content.Locations[where.LocationId].FindSpot(saved.SpotId)
+                    : null;
+                if (spot is null || !spot.Tasks.Contains(saved.DefinitionId) || !reservedSpots.Add(saved.SpotId))
+                {
+                    throw new SaveLoadException($"{worker.Name}'s task uses work spot '{saved.SpotId}', which is missing, wrong for the task, or used twice.");
+                }
+            }
+
+            campaign.StartTask(new TaskInstance(id, saved.DefinitionId, saved.StartedAtTick) { Progress = saved.Progress, SpotId = saved.SpotId });
         }
 
         foreach (var saved in data.Chronicle)
@@ -283,6 +325,49 @@ public static class SaveSerializer
         }
 
         return campaign;
+    }
+
+    private static void RestorePlacement(CampaignState campaign, PlacementData saved, GameContent content)
+    {
+        var id = new CharacterId(saved.CharacterId);
+        if (!campaign.Characters.TryGetValue(id, out var character))
+        {
+            throw new SaveLoadException($"A position is saved for {id}, who is not in the save.");
+        }
+
+        if (campaign.Placements.ContainsKey(id))
+        {
+            throw new SaveLoadException($"{character.Name} ({id}) has more than one saved position.");
+        }
+
+        if (!content.Locations.TryGetValue(saved.LocationId, out var location))
+        {
+            throw new SaveLoadException($"{character.Name} is in '{saved.LocationId}', which no longer exists in the game content.");
+        }
+
+        var cell = new GridPosition(saved.X, saved.Y);
+        if (!location.IsWalkable(cell))
+        {
+            throw new SaveLoadException($"{character.Name} stands on {cell}, which is not walkable in {location.Name}.");
+        }
+
+        var placement = new CharacterPlacement(saved.LocationId, cell);
+        if (saved.Movement is { } walk)
+        {
+            var path = walk.Path.Select(pair => pair.Length == 2
+                ? new GridPosition(pair[0], pair[1])
+                : throw new SaveLoadException($"{character.Name}'s walk has a malformed path cell.")).ToList();
+            var contiguous = path.Zip(path.Skip(1)).All(step => step.First.ManhattanDistance(step.Second) == 1);
+            if (!character.CanWork || path.Count < 2 || path[0] != cell || !contiguous
+                || !path.All(location.IsWalkable) || walk.ArriveTick <= walk.StartTick)
+            {
+                throw new SaveLoadException($"{character.Name}'s walk in progress is invalid.");
+            }
+
+            placement.Movement = new Movement(path, walk.StartTick, walk.ArriveTick);
+        }
+
+        campaign.SetPlacement(id, placement);
     }
 
     private static Character RestoreCharacter(CharacterData saved)

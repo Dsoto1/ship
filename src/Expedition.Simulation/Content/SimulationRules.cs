@@ -39,6 +39,9 @@ public sealed record SimulationRules
     /// <summary>Health lost per hour while thirst is at 100.</summary>
     public required double DehydrationHealthLossPerHour { get; init; }
 
+    /// <summary>Grid cells a character walks per in-game minute. Cells are about one metre.</summary>
+    public required double WalkCellsPerMinute { get; init; }
+
     /// <summary>How much one person can carry. Applied to personal inventories created by scenarios.</summary>
     public required InventoryCapacity PersonalCarryCapacity { get; init; }
 }

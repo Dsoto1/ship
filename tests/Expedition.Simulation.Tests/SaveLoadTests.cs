@@ -182,7 +182,7 @@ public class SaveLoadTests
     [Fact]
     public void OlderVersionIsUpgradedThroughMigrations()
     {
-        // Pretend this build reads format 2, and format 1 called the phase field "stage".
+        // Pretend this build reads format 3, and format 2 called the phase field "stage".
         var current = SaveSerializer.Serialize(StormDamagedVoyage().Campaign);
         var formatOne = Edit(current, root =>
         {
@@ -191,7 +191,7 @@ public class SaveLoadTests
         });
         var migrations = new Dictionary<int, Func<JsonObject, JsonObject>>
         {
-            [1] = root =>
+            [2] = root =>
             {
                 root["phase"] = root["stage"]!.DeepClone();
                 root.Remove("stage");
@@ -199,7 +199,7 @@ public class SaveLoadTests
             },
         };
 
-        var loaded = SaveSerializer.Deserialize(formatOne, TestContent.Create(), migrations, currentVersion: 2);
+        var loaded = SaveSerializer.Deserialize(formatOne, TestContent.Create(), migrations, currentVersion: 3);
 
         Assert.Equal(CampaignPhase.Voyage, loaded.Phase);
         Assert.Equal(current, SaveSerializer.Serialize(loaded));
@@ -211,9 +211,29 @@ public class SaveLoadTests
         var json = SaveSerializer.Serialize(StormDamagedVoyage().Campaign);
 
         var ex = Assert.Throws<SaveLoadException>(() =>
-            SaveSerializer.Deserialize(json, TestContent.Create(), new Dictionary<int, Func<JsonObject, JsonObject>>(), currentVersion: 2));
+            SaveSerializer.Deserialize(json, TestContent.Create(), new Dictionary<int, Func<JsonObject, JsonObject>>(), currentVersion: 3));
 
-        Assert.Contains("no upgrade from format 1", ex.Message);
+        Assert.Contains("no upgrade from format 2", ex.Message);
+    }
+
+    [Fact]
+    public void FormatOneSaveIsUpgradedToFormatTwo()
+    {
+        // A real format-1 file: no placements, no spot IDs.
+        var formatOne = Edit(SaveSerializer.Serialize(StormDamagedVoyage().Campaign), root =>
+        {
+            root["schemaVersion"] = 1;
+            root.Remove("placements");
+            foreach (var task in root["activeTasks"]!.AsArray())
+            {
+                task!.AsObject().Remove("spotId");
+            }
+        });
+
+        var loaded = SaveSerializer.Deserialize(formatOne, TestContent.Create());
+
+        Assert.Empty(loaded.Placements);
+        Assert.Contains("\"schemaVersion\": 2", SaveSerializer.Serialize(loaded));
     }
 
     [Fact]

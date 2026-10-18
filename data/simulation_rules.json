@@ -14,5 +14,7 @@
   // Health lost per hour while hunger or thirst is at 100.
   "starvationHealthLossPerHour": 0.5,
   "dehydrationHealthLossPerHour": 2.0,
+  // About 1 m/s: a walk across a ship's deck takes well under a minute.
+  "walkCellsPerMinute": 60,
   "personalCarryCapacity": { "maxWeightKg": 25, "maxVolumeLitres": 40 }
 }

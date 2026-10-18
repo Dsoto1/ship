@@ -20,6 +20,12 @@ public sealed record TaskDefinition
     /// <summary>True for rest. Rest can be started however tired the character is and is not interrupted by fatigue.</summary>
     public bool IsRest { get; init; }
 
+    /// <summary>
+    /// True if the task must be done at a work spot that lists it (the pump, the galley). The worker
+    /// walks there first. False means the task is done wherever the character stands.
+    /// </summary>
+    public bool NeedsWorkSpot { get; init; }
+
     /// <summary>Skill that governs work speed, or null if none applies.</summary>
     public string? Skill { get; init; }
 

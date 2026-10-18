@@ -24,6 +24,7 @@ public sealed class CampaignState
     private readonly Dictionary<CharacterId, Character> _characters = [];
     private readonly Dictionary<CharacterId, TaskInstance> _activeTasks = [];
     private readonly Dictionary<InventoryId, Inventory> _inventories = [];
+    private readonly Dictionary<CharacterId, CharacterPlacement> _placements = [];
 
     /// <summary>
     /// Creates a campaign in the given starting phase with a seeded random generator and one
@@ -62,6 +63,9 @@ public sealed class CampaignState
 
     /// <summary>The task each busy character is doing. Characters without an entry are idle.</summary>
     public IReadOnlyDictionary<CharacterId, TaskInstance> ActiveTasks => _activeTasks;
+
+    /// <summary>Where each placed character is. Characters without an entry are not on any map.</summary>
+    public IReadOnlyDictionary<CharacterId, CharacterPlacement> Placements => _placements;
 
     /// <summary>Every inventory: personal ones (one per character) and shared stores.</summary>
     public IReadOnlyDictionary<InventoryId, Inventory> Inventories => _inventories;
@@ -201,6 +205,7 @@ public sealed class CampaignState
         if (!character.CanWork)
         {
             InterruptTask(id, $"{character.Name} is {newState}: {cause}");
+            StopMovement(id);
         }
 
         return result;
@@ -229,6 +234,19 @@ public sealed class CampaignState
 
         Record(ChronicleEntryKind.TaskInterrupted, $"{_characters[id].Name} stopped {task.DefinitionId}: {reason}", id);
         return new TaskOutcome(Clock.Tick, id, task.DefinitionId, TaskEnd.Interrupted, reason);
+    }
+
+    /// <summary>Puts a character at a cell, replacing any earlier placement. Callers validate the cell.</summary>
+    internal void SetPlacement(CharacterId id, CharacterPlacement placement) => _placements[id] = placement;
+
+    /// <summary>Ends any walk in progress, leaving the character on the cell reached so far.</summary>
+    internal void StopMovement(CharacterId id)
+    {
+        if (_placements.TryGetValue(id, out var placement) && placement.Movement is not null)
+        {
+            placement.Cell = placement.CellAt(Clock.Tick);
+            placement.Movement = null;
+        }
     }
 
     /// <summary>
