@@ -1,6 +1,10 @@
 ; Engine configuration file.
-; Hand-written for Godot 4.7. Godot rewrites this file when settings change in the editor;
-; that is expected and those edits should be committed.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
 
 config_version=5
 
@@ -24,5 +28,4 @@ project/assembly_name="TheExpedition"
 
 [rendering]
 
-renderer/rendering_method="forward_plus"
 anti_aliasing/quality/msaa_3d=2
