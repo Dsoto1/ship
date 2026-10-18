@@ -20,7 +20,10 @@ This file tracks status and breaks the next work into tickets.
 | 4a | Positions, work spots and movement in the simulation | Done (2026-10-18) |
 | 4b | Godot graybox interaction scene | Done (2026-10-18) — owner ran the manual test on macOS, all 8 steps passed |
 | 4c | Appearance record | Done (2026-10-18) |
-| 5 | Recruitment prototype | Not started |
+| 5a | Identity: sex, languages, social status | In progress |
+| 5b | Captain's knowledge: truth vs what is known | Proposed |
+| 5c | Recruitment rules: candidates, investigation, offers, deadline | Proposed |
+| 5d | Godot waterfront recruitment scene | Proposed |
 | 6 | Voyage-to-crisis vertical slice | Not started |
 | 7 | Shipwreck or landfall continuation | Not started |
 

@@ -1,6 +1,6 @@
 # Setting Outline — "The Last Berth"
 
-**Status:** DRAFT for the owner's approval (D-012). Every name here is a first draft. Change any of
+**Status:** APPROVED by the owner on 2026-10-18 (D-013). Every name here is a first draft. Change any of
 them freely: content IDs in `data/` stay neutral, so renaming costs nothing.
 **Approach:** a fictional world, clearly inspired by the early-1500s Atlantic, with the technology,
 ships, clothing and daily life of roughly 1490–1530. Inspirations are noted in *italics* so later

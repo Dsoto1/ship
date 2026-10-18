@@ -315,3 +315,22 @@ and it avoids misrepresenting a specific real people.
   sketches of the port, crown, sponsor, ship, destination coast and its peoples, for the owner's
   approval.
 - Content IDs and data stay neutral, so names can change later without breaking saves.
+
+---
+
+## D-013 — Setting outline approved
+
+**Date:** 2026-10-18
+**Status:** Accepted (owner approved `docs/SETTING.md` as drafted)
+
+The setting outline is approved:
+- **The Old World:** Castrena, Almara and its outport La Bocana, the Chamber of the Ocean Sea,
+  Lusara and the Brennish.
+- **The sponsor and hook:** the Ledra–Varzi Company's embrawood lease, and the silent trading post
+  at Punta Ceniza.
+- **The ship:** the caravel *Garza*.
+- **The far coast:** the Ember Coast, with the Ahuneri and the Tesiwa.
+- **The recruits:** the identity fields and the candidate list.
+
+It is now the content source for Ticket 5 onward. Names remain changeable, since content IDs are
+neutral.
