@@ -49,6 +49,9 @@ public sealed record SaveData
     /// <summary>Where characters are, in character ID order. Added in format 2.</summary>
     public required IReadOnlyList<PlacementData> Placements { get; init; }
 
+    /// <summary>Directed relationships, ordered by (from, to). Added in format 5.</summary>
+    public required IReadOnlyList<RelationshipData> Relationships { get; init; }
+
     /// <summary>Active tasks, in character ID order.</summary>
     public required IReadOnlyList<TaskData> ActiveTasks { get; init; }
 
@@ -206,4 +209,42 @@ public sealed record ChronicleEntryData
 
     /// <summary>Named values (IDs, enum names, numbers). Replaced the prose description in format 3.</summary>
     public required IReadOnlyDictionary<string, string> Parameters { get; init; }
+}
+
+/// <summary>A saved directed relationship.</summary>
+public sealed record RelationshipData
+{
+    /// <summary>Character ID number of the holder.</summary>
+    public required int From { get; init; }
+
+    /// <summary>Character ID number of the subject.</summary>
+    public required int To { get; init; }
+
+    /// <summary>Trust.</summary>
+    public required int Trust { get; init; }
+
+    /// <summary>Respect.</summary>
+    public required int Respect { get; init; }
+
+    /// <summary>Affection.</summary>
+    public required int Affection { get; init; }
+
+    /// <summary>Every recorded change, oldest first.</summary>
+    public required IReadOnlyList<RelationshipChangeData> History { get; init; }
+}
+
+/// <summary>A saved relationship change.</summary>
+public sealed record RelationshipChangeData
+{
+    /// <summary>Tick.</summary>
+    public required long Tick { get; init; }
+
+    /// <summary>Dimension name.</summary>
+    public required string Dimension { get; init; }
+
+    /// <summary>Signed change.</summary>
+    public required int Delta { get; init; }
+
+    /// <summary>Why.</summary>
+    public required string Cause { get; init; }
 }

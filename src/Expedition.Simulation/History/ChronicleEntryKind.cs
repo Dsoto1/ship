@@ -23,4 +23,7 @@ public enum ChronicleEntryKind
 
     /// <summary>A character became the captain the player leads as.</summary>
     CaptainAppointed,
+
+    /// <summary>How one character regards another changed (characters: holder first, then subject).</summary>
+    RelationshipChanged,
 }

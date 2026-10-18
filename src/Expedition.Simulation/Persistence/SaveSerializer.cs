@@ -20,7 +20,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 4;
+    public const int CurrentSchemaVersion = 5;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -55,6 +55,13 @@ public static class SaveSerializer
             // Format 4 split the single random generator into named streams, added the seed, campaign ID
             // and captain, and moved physical attributes out of skills.
             [3] = MigrateFromFormat3,
+
+            // Format 5 added relationships. Earlier campaigns had none.
+            [4] = root =>
+            {
+                root["relationships"] = new JsonArray();
+                return root;
+            },
         };
 
     private static readonly JsonSerializerOptions Options = new()
@@ -256,6 +263,20 @@ public static class SaveSerializer
                 MaxVolumeLitres = i.Capacity.MaxVolumeLitres,
                 Items = new SortedDictionary<string, int>(i.Quantities.ToDictionary(), StringComparer.Ordinal),
             }).ToList(),
+            Relationships = campaign.Relationships.Values
+                .OrderBy(r => r.From.Value).ThenBy(r => r.To.Value)
+                .Select(r => new RelationshipData
+                {
+                    From = r.From.Value,
+                    To = r.To.Value,
+                    Trust = r.Trust,
+                    Respect = r.Respect,
+                    Affection = r.Affection,
+                    History = r.History.Select(h => new RelationshipChangeData
+                    {
+                        Tick = h.Tick, Dimension = h.Dimension.ToString(), Delta = h.Delta, Cause = h.Cause,
+                    }).ToList(),
+                }).ToList(),
             Placements = campaign.Placements.OrderBy(pair => pair.Key.Value).Select(pair => new PlacementData
             {
                 CharacterId = pair.Key.Value,
@@ -372,6 +393,26 @@ public static class SaveSerializer
         foreach (var saved in data.Placements)
         {
             RestorePlacement(campaign, saved, content);
+        }
+
+        foreach (var saved in data.Relationships)
+        {
+            var from = new CharacterId(saved.From);
+            var to = new CharacterId(saved.To);
+            if (!campaign.Characters.ContainsKey(from) || !campaign.Characters.ContainsKey(to) || from == to)
+            {
+                throw new SaveLoadException($"A relationship between {from} and {to} refers to a missing character or to one person twice.");
+            }
+
+            if (campaign.GetRelationship(from, to) is not null)
+            {
+                throw new SaveLoadException($"The relationship from {from} to {to} is saved twice.");
+            }
+
+            var relationship = new Relationship(from, to);
+            relationship.Restore(saved.Trust, saved.Respect, saved.Affection, saved.History.Select(h =>
+                new RelationshipChange(h.Tick, ParseEnum<RelationshipDimension>(h.Dimension, "relationship dimension"), h.Delta, h.Cause)));
+            campaign.RestoreRelationship(relationship);
         }
 
         var reservedSpots = new HashSet<string>(StringComparer.Ordinal);
@@ -508,6 +549,11 @@ public static class SaveSerializer
 
         foreach (var trait in saved.Traits)
         {
+            if (!content.Traits.ContainsKey(trait))
+            {
+                throw new SaveLoadException($"{saved.Name} has unknown trait '{trait}'. The game content may have changed since this save was made.");
+            }
+
             character.AddTrait(trait);
         }
 
@@ -518,6 +564,11 @@ public static class SaveSerializer
         character.Health.Value = saved.Health;
         foreach (var condition in saved.Conditions)
         {
+            if (!content.Conditions.ContainsKey(condition))
+            {
+                throw new SaveLoadException($"{saved.Name} has unknown condition '{condition}'. The game content may have changed since this save was made.");
+            }
+
             character.Health.AddCondition(condition);
         }
 

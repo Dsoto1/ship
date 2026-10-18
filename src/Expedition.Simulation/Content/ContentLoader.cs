@@ -7,7 +7,8 @@ namespace Expedition.Simulation.Content;
 
 /// <summary>
 /// Reads content definitions from JSON. Expected layout under the data directory:
-/// <c>simulation_rules.json</c>, <c>skills.json</c>, <c>attributes.json</c>, <c>items.json</c>, and any number of <c>tasks/*.json</c>
+/// <c>simulation_rules.json</c>, <c>skills.json</c>, <c>attributes.json</c>, <c>traits.json</c>,
+/// <c>conditions.json</c>, <c>items.json</c>, and any number of <c>tasks/*.json</c>
 /// and <c>locations/*.json</c> files,
 /// each holding a JSON array of definitions.
 /// </summary>
@@ -29,6 +30,8 @@ public static class ContentLoader
         var skills = Read<List<SkillDefinition>>(Path.Combine(dataDirectory, "skills.json"));
         var items = Read<List<ItemDefinition>>(Path.Combine(dataDirectory, "items.json"));
         var attributes = Read<List<AttributeDefinition>>(Path.Combine(dataDirectory, "attributes.json"));
+        var traits = Read<List<TraitDefinition>>(Path.Combine(dataDirectory, "traits.json"));
+        var conditions = Read<List<ConditionDefinition>>(Path.Combine(dataDirectory, "conditions.json"));
         var tasks = Directory.EnumerateFiles(Path.Combine(dataDirectory, "tasks"), "*.json")
             .Order(StringComparer.Ordinal)
             .SelectMany(Read<List<TaskDefinition>>)
@@ -37,16 +40,18 @@ public static class ContentLoader
         var locations = Directory.Exists(locationsDirectory)
             ? Directory.EnumerateFiles(locationsDirectory, "*.json").Order(StringComparer.Ordinal).SelectMany(Read<List<LocationDefinition>>).ToList()
             : [];
-        return new GameContent(rules, skills, items, tasks, locations, attributes);
+        return new GameContent(rules, skills, items, tasks, locations, attributes, traits, conditions);
     }
 
     /// <summary>Parses content from JSON strings. Intended for tests and tools.</summary>
     /// <exception cref="ContentValidationException">The JSON is malformed or the content is invalid.</exception>
-    public static GameContent LoadFromJson(string rulesJson, string skillsJson, string itemsJson, string tasksJson) =>
+    public static GameContent LoadFromJson(
+        string rulesJson, string skillsJson, string itemsJson, string tasksJson, string conditionsJson = "[]") =>
         new(Parse<SimulationRules>(rulesJson, "rules"),
             Parse<List<SkillDefinition>>(skillsJson, "skills"),
             Parse<List<ItemDefinition>>(itemsJson, "items"),
-            Parse<List<TaskDefinition>>(tasksJson, "tasks"));
+            Parse<List<TaskDefinition>>(tasksJson, "tasks"),
+            conditions: Parse<List<ConditionDefinition>>(conditionsJson, "conditions"));
 
     private static T Read<T>(string path)
     {

@@ -15,7 +15,8 @@ This file tracks status and breaks the next work into tickets.
 | 3a | CI: build and test on every push | Done (2026-10-18) |
 | 3b | Structured chronicle, need diagnostics, long-run tests | Done (2026-10-18) |
 | 3c | Attributes, random streams, campaign ID and captain | Done (2026-10-18) |
-| 3d–3e | Relationships, traits and conditions; task queue | Proposed — see SPEC_AUDIT.md §6 |
+| 3d | Directed relationships; traits and conditions as content | Done (2026-10-18) |
+| 3e | Task queue, priority and resume | Proposed — see SPEC_AUDIT.md §6 |
 | 4a | Positions, work spots and movement in the simulation | Done (2026-10-18) |
 | 4b | Godot graybox interaction scene | Done (2026-10-18) — owner ran the manual test on macOS, all 8 steps passed |
 | 4c | Appearance record | Proposed |
@@ -240,3 +241,15 @@ See D-008.
 - Loading now also rejects unknown skill and attribute IDs.
 
 186 tests pass.
+
+## Ticket 3d — Relationships, traits and conditions
+
+See D-009.
+- **Test deck crew:** every crew member has traits, and the crew start with five relationships, for
+  example Diego trusts the captain (+30, "sailed under him before").
+- **Godot record panel:** shows traits, injury names and "Views of others" with the latest reason.
+- **Chronicle wording:** uses condition names ("suffered bruising"), and relationship entries read
+  like "Diego's trust in Álvaro rose by 30 (sailed under him before)".
+- **Save format 5.**
+
+207 tests pass.

@@ -53,6 +53,12 @@ public static class ChronicleParameters
     /// <summary>Why a task stopped. See <see cref="InterruptReasons"/>.</summary>
     public const string Reason = "reason";
 
+    /// <summary>Relationship dimension: <c>Trust</c>, <c>Respect</c> or <c>Affection</c>.</summary>
+    public const string Dimension = "dimension";
+
+    /// <summary>Signed change, as a number.</summary>
+    public const string Delta = "delta";
+
     /// <summary>Which need ran short: <c>food</c> or <c>water</c>.</summary>
     public const string Need = "need";
 

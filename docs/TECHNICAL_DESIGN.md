@@ -1,6 +1,6 @@
 # Technical Design
 
-Status: P0 implemented in graybox (Tickets 1–4b, 3a–3c). Save format 4. Update this file when architecture or behavior changes.
+Status: P0 implemented in graybox (Tickets 1–4b, 3a–3d). Save format 5. Update this file when architecture or behavior changes.
 See `DECISIONS.md` for why each choice was made, and `GAME_VISION.md` for the product vision.
 
 ## 1. Solution layout (proposed)
@@ -79,6 +79,9 @@ is added only when a ticket needs it.
 - **Skills vs attributes.** Skills are training (unset = 0), and attributes are the body (unset = 2,
   ordinary). Work speed is skill rate × attribute rate (if the task names an attribute), slowed
   when tired.
+- **Relationships.** Directed (from → to) trust, respect and affection, -100..100, changed only
+  through `CampaignState.ChangeRelationship` with a cause that is kept in the relationship's history
+  and recorded in the chronicle (D-009).
 - **Survival state through the campaign.** `Character.SurvivalState` can only be changed by
   `CampaignState.ChangeSurvivalState`, which enforces "dead is final" and records the cause.
 - **Chronicle.** Important outcomes append an entry: tick, kind, the character IDs involved, and

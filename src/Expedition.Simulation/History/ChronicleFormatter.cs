@@ -36,13 +36,14 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
                 var state => $"{who} is now {Words(state)} ({cause}).",
             },
             ChronicleEntryKind.Injury =>
-                $"{who} suffered {Prettify(entry.Get(ChronicleParameters.Condition))} while doing {Task(entry.Get(ChronicleParameters.Task))} " +
+                $"{who} suffered {Condition(entry.Get(ChronicleParameters.Condition))} while doing {Task(entry.Get(ChronicleParameters.Task))} " +
                 $"(-{entry.Get(ChronicleParameters.Damage)} health, now {entry.Get(ChronicleParameters.Health)}).",
             ChronicleEntryKind.TaskInterrupted =>
                 $"{who} stopped {Task(entry.Get(ChronicleParameters.Task))}: {InterruptReason(entry, cause)}.",
             ChronicleEntryKind.SupplyShortage => entry.Get(ChronicleParameters.Need) == "water"
                 ? $"{who} went thirsty: there is nothing left to drink."
                 : $"{who} went hungry: there is no food left.",
+            ChronicleEntryKind.RelationshipChanged => Relationship(entry, who, cause),
             ChronicleEntryKind.CaptainAppointed => $"{who} took command of the expedition ({cause}).",
             _ => $"{entry.Kind}: {string.Join(", ", entry.Parameters.Select(p => $"{p.Key}={p.Value}"))}",
         };
@@ -56,8 +57,19 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
         ChronicleCauses.Dehydration => "dehydration",
         _ when content.Tasks.TryGetValue(source, out var task) => task.Name.ToLowerInvariant(),
         _ when content.Items.TryGetValue(source, out var item) => item.Name,
+        _ when content.Conditions.TryGetValue(source, out var condition) => condition.Name.ToLowerInvariant(),
         _ => Prettify(source),
     };
+
+    private string Relationship(ChronicleEntry entry, string who, string cause)
+    {
+        var whom = entry.Characters.Count > 1 ? Name(entry.Characters[1]) : "someone";
+        var delta = int.TryParse(entry.Get(ChronicleParameters.Delta), NumberStyles.Integer, CultureInfo.InvariantCulture, out var d) ? d : 0;
+        var change = delta >= 0 ? $"rose by {delta}" : $"fell by {-delta}";
+        var dimension = Words(entry.Get(ChronicleParameters.Dimension));
+        var preposition = dimension == "trust" ? "in" : "for";
+        return $"{who}'s {dimension} {preposition} {whom} {change} ({cause}).";
+    }
 
     private string InterruptReason(ChronicleEntry entry, string cause) => entry.Get(ChronicleParameters.Reason) switch
     {
@@ -77,11 +89,17 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
     {
         null => "no reason recorded",
         _ when cause.StartsWith("task.", StringComparison.Ordinal) => Task(cause),
+        _ when content.Conditions.ContainsKey(cause) => Condition(cause),
         _ when cause.Contains('.') && !cause.Contains(' ') => Prettify(cause),
         _ => cause,
     };
 
-    /// <summary><c>condition.rope_burn</c> becomes <c>rope burn</c>, until conditions get display names (Ticket 3d).</summary>
+    private string Condition(string? conditionId) =>
+        conditionId is not null && content.Conditions.TryGetValue(conditionId, out var condition)
+            ? condition.Name.ToLowerInvariant()
+            : Prettify(conditionId);
+
+    /// <summary>Fallback for IDs without a definition: <c>condition.rope_burn</c> becomes <c>rope burn</c>.</summary>
     private static string Prettify(string? id) =>
         id is null ? "something" : id[(id.IndexOf('.') + 1)..].Replace('_', ' ');
 

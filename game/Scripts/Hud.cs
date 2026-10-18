@@ -177,7 +177,11 @@ public partial class Hud : CanvasLayer
             $"Doing: {Activity(runner, character)}{progress}\n" +
             $"Skills: {skills}\n" +
             $"Physique: {string.Join(", ", attributes)}\n" +
-            (character.Health.Conditions.Count > 0 ? $"Conditions: {string.Join(", ", character.Health.Conditions)}\n" : "");
+            $"Traits: {(character.Traits.Count == 0 ? "none" : string.Join(", ", character.Traits.Select(t => runner.Content.Traits.TryGetValue(t, out var trait) ? trait.Name : t)))}\n" +
+            (character.Health.Conditions.Count > 0
+                ? $"Conditions: {string.Join(", ", character.Health.Conditions.Select(c => runner.Content.Conditions.TryGetValue(c, out var condition) ? condition.Name : c))}\n"
+                : "") +
+            Views(runner, id);
 
         _needBars["Hunger"].Value = character.Needs.Hunger;
         _needBars["Thirst"].Value = character.Needs.Thirst;
@@ -199,6 +203,23 @@ public partial class Hud : CanvasLayer
             button.Modulate = eligibility.Succeeded ? Colors.White : new Color(1, 1, 1, 0.45f);
             button.TooltipText = eligibility.Succeeded ? "" : eligibility.Reason;
         }
+    }
+
+    /// <summary>How the character regards others, each with the most recent reason.</summary>
+    private static string Views(SimulationRunner runner, CharacterId id)
+    {
+        var views = runner.Campaign.Relationships.Values
+            .Where(r => r.From == id)
+            .OrderBy(r => r.To)
+            .Select(r =>
+            {
+                var values = new[] { ("trust", r.Trust), ("respect", r.Respect), ("affection", r.Affection) }
+                    .Where(v => v.Item2 != 0)
+                    .Select(v => $"{v.Item1} {v.Item2:+0;-0}");
+                return $"  {runner.Campaign.Characters[r.To].Name}: {string.Join(", ", values)} — {r.History[^1].Cause}";
+            })
+            .ToList();
+        return views.Count == 0 ? "" : "Views of others:\n" + string.Join("\n", views) + "\n";
     }
 
     private void BuildTopBar(Control root)

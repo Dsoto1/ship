@@ -181,3 +181,30 @@ able character. Succession rules remain approval-required (TECHNICAL_SPEC.md §1
 
 Save format 4. The upgrade from format 3 moves physical "skills" into attributes and continues the
 old generator as the `tasks` stream, so injury rolls carry on exactly.
+
+---
+
+## D-009 — Directed relationships with reasons; traits and conditions as content
+
+**Date:** 2026-10-18
+**Status:** Accepted (Ticket 3d)
+
+**Relationships** (TECHNICAL_SPEC.md §6) are directed: `CampaignState.Relationships` keys them by
+(from, to), and A→B is independent of B→A.
+- **Dimensions:** three, trust, respect and affection, each -100..100 with 0 neutral. Unrecorded
+  pairs are neutral.
+- **Changing them:** every change goes through `ChangeRelationship` with a cause. The cause is kept
+  in the relationship's history, so the UI can explain why, and recorded in the chronicle.
+- **Who can change:** the dead form no new views, but others' views of the dead can still change.
+  Relationships with the dead remain valid history.
+- **Scoring:** exact amounts are tunable content, not hardcoded rules. Nothing changes relationships
+  automatically yet; events, promises and conflicts will (P1).
+
+**Traits and conditions** are content: `data/traits.json` (the five prototype traits) and
+`data/conditions.json` (injuries and illnesses with display names).
+- **Checks:** hazards must name a defined condition, and loading rejects unknown traits or conditions
+  on characters.
+- **Behaviour:** traits don't change behaviour yet. Each trait's behaviour arrives with the system it
+  affects (orders, recruitment, events), as TECHNICAL_SPEC.md §5.5 requires.
+
+Save format 5. The upgrade from format 4 adds an empty relationship list.

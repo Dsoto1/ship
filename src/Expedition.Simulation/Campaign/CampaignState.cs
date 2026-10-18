@@ -25,6 +25,7 @@ public sealed class CampaignState
     private readonly Dictionary<CharacterId, TaskInstance> _activeTasks = [];
     private readonly Dictionary<InventoryId, Inventory> _inventories = [];
     private readonly Dictionary<CharacterId, CharacterPlacement> _placements = [];
+    private readonly Dictionary<(CharacterId From, CharacterId To), Relationship> _relationships = [];
 
     /// <summary>
     /// Creates a campaign in the given starting phase with seeded random streams and one unlimited
@@ -82,6 +83,9 @@ public sealed class CampaignState
 
     /// <summary>The task each busy character is doing. Characters without an entry are idle.</summary>
     public IReadOnlyDictionary<CharacterId, TaskInstance> ActiveTasks => _activeTasks;
+
+    /// <summary>Every directed relationship that has ever changed from neutral, keyed by (from, to).</summary>
+    public IReadOnlyDictionary<(CharacterId From, CharacterId To), Relationship> Relationships => _relationships;
 
     /// <summary>Where each placed character is. Characters without an entry are not on any map.</summary>
     public IReadOnlyDictionary<CharacterId, CharacterPlacement> Placements => _placements;
@@ -169,6 +173,62 @@ public sealed class CampaignState
 
         CaptainId = id;
         Record(ChronicleEntryKind.CaptainAppointed, [new(ChronicleParameters.Cause, cause)], id);
+        return CommandResult.Ok();
+    }
+
+    /// <summary>How <paramref name="from"/> regards <paramref name="to"/>, or null if still neutral and unrecorded.</summary>
+    public Relationship? GetRelationship(CharacterId from, CharacterId to) =>
+        _relationships.GetValueOrDefault((from, to));
+
+    /// <summary>
+    /// Changes how <paramref name="from"/> regards <paramref name="to"/> in one dimension, keeping the reason
+    /// and recording it in the chronicle. Only living characters form new views; views about the dead may
+    /// still change (grief, respect).
+    /// </summary>
+    /// <param name="from">Who holds the view.</param>
+    /// <param name="to">Who it is about.</param>
+    /// <param name="dimension">Trust, respect or affection.</param>
+    /// <param name="delta">Change, -200..200 and not zero. The value stays within -100..100.</param>
+    /// <param name="cause">Why it changed, for explanations and the chronicle.</param>
+    public CommandResult ChangeRelationship(CharacterId from, CharacterId to, RelationshipDimension dimension, int delta, string cause)
+    {
+        if (!_characters.TryGetValue(from, out var holder) || !_characters.ContainsKey(to))
+        {
+            return CommandResult.Rejected("Both characters must be in the campaign.");
+        }
+
+        if (from == to)
+        {
+            return CommandResult.Rejected($"{holder.Name} cannot have a relationship with themselves.");
+        }
+
+        if (holder.SurvivalState == SurvivalState.Dead)
+        {
+            return CommandResult.Rejected($"{holder.Name} is dead and forms no new opinions.");
+        }
+
+        if (delta == 0 || Math.Abs(delta) > 2 * Relationship.Max)
+        {
+            return CommandResult.Rejected($"A relationship change must be between -{2 * Relationship.Max} and {2 * Relationship.Max}, and not zero.");
+        }
+
+        if (string.IsNullOrWhiteSpace(cause))
+        {
+            return CommandResult.Rejected("A relationship change needs a cause.");
+        }
+
+        if (!_relationships.TryGetValue((from, to), out var relationship))
+        {
+            relationship = new Relationship(from, to);
+            _relationships[(from, to)] = relationship;
+        }
+
+        relationship.Apply(new RelationshipChange(Clock.Tick, dimension, delta, cause));
+        Record(ChronicleEntryKind.RelationshipChanged, [
+            new(ChronicleParameters.Dimension, dimension.ToString()),
+            new(ChronicleParameters.Delta, delta.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+            new(ChronicleParameters.Cause, cause),
+        ], from, to);
         return CommandResult.Ok();
     }
 
@@ -317,6 +377,10 @@ public sealed class CampaignState
         campaign.Clock.Restore(tick);
         return campaign;
     }
+
+    /// <summary>Adds a relationship read from a save. The loader validates it first.</summary>
+    internal void RestoreRelationship(Relationship relationship) =>
+        _relationships.Add((relationship.From, relationship.To), relationship);
 
     /// <summary>Restores the captain while loading. The loader checks the character exists.</summary>
     internal void RestoreCaptain(CharacterId? id) => CaptainId = id;

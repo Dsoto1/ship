@@ -18,7 +18,9 @@ public sealed class GameContent
         IEnumerable<ItemDefinition> items,
         IEnumerable<TaskDefinition> tasks,
         IEnumerable<LocationDefinition>? locations = null,
-        IEnumerable<AttributeDefinition>? attributes = null)
+        IEnumerable<AttributeDefinition>? attributes = null,
+        IEnumerable<TraitDefinition>? traits = null,
+        IEnumerable<ConditionDefinition>? conditions = null)
     {
         var errors = new List<string>();
         Rules = rules;
@@ -27,6 +29,8 @@ public sealed class GameContent
         Tasks = IndexById(tasks, t => t.Id, "task", errors);
         Locations = IndexById(locations ?? [], l => l.Id, "location", errors);
         Attributes = IndexById(attributes ?? [], a => a.Id, "attribute", errors);
+        Traits = IndexById(traits ?? [], t => t.Id, "trait", errors);
+        Conditions = IndexById(conditions ?? [], c => c.Id, "condition", errors);
 
         ContentValidator.ValidateRules(rules, errors);
         foreach (var item in Items.Values)
@@ -40,6 +44,11 @@ public sealed class GameContent
             if (task.Attribute is not null && !Attributes.ContainsKey(task.Attribute))
             {
                 errors.Add($"Task '{task.Id}': unknown attribute '{task.Attribute}'.");
+            }
+
+            if (task.Hazard is { } hazard && !Conditions.ContainsKey(hazard.Condition))
+            {
+                errors.Add($"Task '{task.Id}': hazard causes unknown condition '{hazard.Condition}'.");
             }
         }
 
@@ -65,6 +74,12 @@ public sealed class GameContent
 
     /// <summary>Attribute definitions by ID.</summary>
     public IReadOnlyDictionary<string, AttributeDefinition> Attributes { get; }
+
+    /// <summary>Trait definitions by ID.</summary>
+    public IReadOnlyDictionary<string, TraitDefinition> Traits { get; }
+
+    /// <summary>Condition (injury and illness) definitions by ID.</summary>
+    public IReadOnlyDictionary<string, ConditionDefinition> Conditions { get; }
 
     /// <summary>Item definitions by ID.</summary>
     public IReadOnlyDictionary<string, ItemDefinition> Items { get; }

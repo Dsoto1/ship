@@ -1,0 +1,7 @@
+// Injuries and illnesses. Severity, work restrictions and recovery come with medical care (Ticket 6).
+[
+  { "id": "condition.rope_burn", "name": "Rope burn", "kind": "injury" },
+  { "id": "condition.bruised", "name": "Bruising", "kind": "injury" },
+  { "id": "condition.sprain", "name": "Sprain", "kind": "injury" },
+  { "id": "condition.fever", "name": "Fever", "kind": "illness" }
+]

@@ -1,0 +1,8 @@
+// Prototype trait set (GAME_VISION.md 4.4). Behaviour is added by the systems that use each trait.
+[
+  { "id": "trait.cautious", "name": "Cautious", "description": "Avoids unnecessary risk and may refuse dangerous orders." },
+  { "id": "trait.resourceful", "name": "Resourceful", "description": "Looks for alternatives when supplies or tools run short." },
+  { "id": "trait.proud", "name": "Proud", "description": "Reacts badly to being humiliated in front of others." },
+  { "id": "trait.loyal", "name": "Loyal", "description": "More willing to help a leader or friend they trust." },
+  { "id": "trait.impulsive", "name": "Impulsive", "description": "May act before waiting for an order." }
+]

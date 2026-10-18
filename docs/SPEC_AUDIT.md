@@ -42,7 +42,7 @@
 
 ## 3. Gaps against the spec
 
-**Update (Tickets 3a–3c, 4a):** G1, G2, G3, G4, G7, G9, G10 and G11 are closed; conflict C1 is resolved (D-008).
+**Update (Tickets 3a–3d, 4a):** G1, G2, G3, G4, G6, G7, G8, G9, G10 and G11 are closed; conflict C1 is resolved (D-008).
 
 Ordered by how soon they block work. Each **[REQUIRED]** item in the spec is marked R.
 

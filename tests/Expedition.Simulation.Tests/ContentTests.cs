@@ -94,7 +94,7 @@ public class ContentTests
               "needsPerHour": { "fatigue": 4 },
               "hazard": { "chancePerHour": 0.1, "healthDamage": 5, "condition": "condition.cut" }
             }]
-            """);
+            """, """[{ "id": "condition.cut", "name": "Cut", "kind": "injury" }]""");
 
         var task = content.Tasks["task.repair"];
         Assert.Equal(2, task.MinSkill);

@@ -185,7 +185,7 @@ public class SaveLoadTests
     [Fact]
     public void OlderVersionIsUpgradedThroughMigrations()
     {
-        // Pretend this build reads format 5, and format 4 called the phase field "stage".
+        // Pretend this build reads format 6, and format 5 called the phase field "stage".
         var current = SaveSerializer.Serialize(StormDamagedVoyage().Campaign);
         var formatOne = Edit(current, root =>
         {
@@ -194,7 +194,7 @@ public class SaveLoadTests
         });
         var migrations = new Dictionary<int, Func<JsonObject, JsonObject>>
         {
-            [4] = root =>
+            [5] = root =>
             {
                 root["phase"] = root["stage"]!.DeepClone();
                 root.Remove("stage");
@@ -202,7 +202,7 @@ public class SaveLoadTests
             },
         };
 
-        var loaded = SaveSerializer.Deserialize(formatOne, TestContent.Create(), migrations, currentVersion: 5);
+        var loaded = SaveSerializer.Deserialize(formatOne, TestContent.Create(), migrations, currentVersion: 6);
 
         Assert.Equal(CampaignPhase.Voyage, loaded.Phase);
         Assert.Equal(current, SaveSerializer.Serialize(loaded));
@@ -214,9 +214,9 @@ public class SaveLoadTests
         var json = SaveSerializer.Serialize(StormDamagedVoyage().Campaign);
 
         var ex = Assert.Throws<SaveLoadException>(() =>
-            SaveSerializer.Deserialize(json, TestContent.Create(), new Dictionary<int, Func<JsonObject, JsonObject>>(), currentVersion: 5));
+            SaveSerializer.Deserialize(json, TestContent.Create(), new Dictionary<int, Func<JsonObject, JsonObject>>(), currentVersion: 6));
 
-        Assert.Contains("no upgrade from format 4", ex.Message);
+        Assert.Contains("no upgrade from format 5", ex.Message);
     }
 
     [Fact]
@@ -261,13 +261,13 @@ public class SaveLoadTests
 
     /// <summary>
     /// Rewrites a current save the way format 3 stored it: one random generator (the tasks stream),
-    /// no seed, campaign ID, captain or attributes.
+    /// no seed, campaign ID, captain, attributes or relationships.
     /// </summary>
     internal static void ToFormat3(JsonObject root)
     {
         root["schemaVersion"] = 3;
         root["random"] = root["randomStreams"]!["tasks"]!.DeepClone();
-        foreach (var field in new[] { "randomStreams", "seed", "campaignId", "captainId" })
+        foreach (var field in new[] { "randomStreams", "seed", "campaignId", "captainId", "relationships" })
         {
             root.Remove(field);
         }

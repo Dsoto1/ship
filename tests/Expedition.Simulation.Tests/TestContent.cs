@@ -106,5 +106,10 @@ internal static class TestContent
         Items,
         [Rest, Pump, Haul, RepairRigging, StormWork, SpotPump],
         [Deck],
-        [new AttributeDefinition { Id = "attribute.strength", Name = "Strength" }]);
+        [new AttributeDefinition { Id = "attribute.strength", Name = "Strength" }],
+        [new TraitDefinition { Id = "trait.cautious", Name = "Cautious", Description = "Avoids risk." }],
+        [
+            new ConditionDefinition { Id = "condition.bruised", Name = "Bruising", Kind = "injury" },
+            new ConditionDefinition { Id = "condition.fever", Name = "Fever", Kind = "illness" },
+        ]);
 }
