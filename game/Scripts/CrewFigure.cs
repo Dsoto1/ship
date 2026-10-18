@@ -1,49 +1,71 @@
 using Expedition.Simulation.Characters;
+using Expedition.Simulation.Content;
 using Expedition.Simulation.World;
 using Godot;
 
 namespace Expedition.Game;
 
 /// <summary>
-/// Graybox figure for one character. It reads the character's state every frame and never stores any
-/// of it. Height, build and clothing colour vary per person so individuals can be told apart. These
-/// are placeholders derived from the ID until Ticket 4c adds saved appearance data.
+/// Graybox figure for one character, built from their saved <see cref="Appearance"/>: height and build
+/// set the body, and skin, hair, beard and clothing colours come from the appearance options. It reads
+/// the character's state every frame and stores none of it. Characters without an appearance (from older
+/// saves) get a plain figure.
 /// </summary>
 public partial class CrewFigure : Node3D
 {
-    // Muted, period-plausible dye colours; deliberately not tied to roles (ART_BIBLE.md 4.6, 11).
-    private static readonly Color[] Clothing =
-    [
-        new(0.55f, 0.24f, 0.2f), new(0.27f, 0.35f, 0.5f), new(0.72f, 0.66f, 0.54f),
-        new(0.45f, 0.3f, 0.2f), new(0.62f, 0.5f, 0.25f), new(0.25f, 0.36f, 0.27f),
-    ];
+    private const float HeadRadius = 0.11f;
+    private static readonly Color FallbackClothing = new(0.45f, 0.3f, 0.2f);
+    private static readonly Color FallbackSkin = new(0.8f, 0.62f, 0.48f);
 
-    private static readonly Color DeadColour = new(0.22f, 0.22f, 0.24f);
-
-    private MeshInstance3D _body = null!;
-    private StandardMaterial3D _material = null!;
+    private Node3D _model = null!;
+    private readonly List<(StandardMaterial3D Material, Color Colour)> _tintable = [];
     private MeshInstance3D _ring = null!;
     private Label3D _label = null!;
     private float _height;
-    private Color _colour;
 
-    /// <summary>Creates the figure for the character with ID number <paramref name="idValue"/>.</summary>
-    public static CrewFigure Create(int idValue)
+    /// <summary>Builds the figure for a character.</summary>
+    public static CrewFigure Create(Appearance? looks, AppearanceOptions options)
     {
         var figure = new CrewFigure();
-        var variation = (uint)(idValue * 2654435761u);
-        figure._height = 1.6f + (variation % 23) / 100f;
-        var width = 0.22f + (variation / 23 % 9) / 100f;
-        figure._colour = Clothing[(idValue - 1) % Clothing.Length];
-
-        figure._material = new StandardMaterial3D { AlbedoColor = figure._colour, Roughness = 0.85f };
-        figure._body = new MeshInstance3D
+        figure._height = (looks?.HeightCm ?? 170) / 100f;
+        var width = looks?.Build switch
         {
-            Mesh = new CapsuleMesh { Radius = width, Height = figure._height },
-            MaterialOverride = figure._material,
-            Position = new Vector3(0, figure._height / 2f, 0),
+            Build.Slight => 0.19f,
+            Build.Stocky => 0.27f,
+            Build.Heavy => 0.31f,
+            _ => 0.23f,
         };
-        figure.AddChild(figure._body);
+
+        Color ColourOf(string? id, Color fallback) =>
+            id is not null && options.Find(id)?.Colour is { } hex ? Color.FromHtml(hex) : fallback;
+
+        figure._model = new Node3D();
+        figure.AddChild(figure._model);
+
+        var bodyHeight = figure._height - 2 * HeadRadius;
+        figure.AddPart(new CapsuleMesh { Radius = width, Height = bodyHeight },
+            new Vector3(0, bodyHeight / 2f, 0), ColourOf(looks?.ClothingDye, FallbackClothing));
+        figure.AddPart(new CylinderMesh { TopRadius = width + 0.012f, BottomRadius = width + 0.012f, Height = 0.06f },
+            new Vector3(0, bodyHeight * 0.5f, 0), ColourOf(looks?.AccentDye, FallbackClothing.Darkened(0.3f)));
+
+        var headCentre = figure._height - HeadRadius;
+        figure.AddPart(new SphereMesh { Radius = HeadRadius, Height = HeadRadius * 2 },
+            new Vector3(0, headCentre, 0), ColourOf(looks?.SkinTone, FallbackSkin));
+
+        if (looks is not null && looks.HairStyle != "style.bald")
+        {
+            // A cap of hair over the top and back of the head; receding hair sits further back.
+            var back = looks.HairStyle == "style.receding" ? -0.04f : -0.015f;
+            figure.AddPart(new SphereMesh { Radius = HeadRadius * 1.06f, Height = HeadRadius * 1.3f },
+                new Vector3(0, headCentre + 0.035f, back), ColourOf(looks.HairColour, Colors.Black));
+        }
+
+        if (looks is not null && looks.FacialHair is "beard.short" or "beard.full")
+        {
+            var size = looks.FacialHair == "beard.full" ? 0.11f : 0.07f;
+            figure.AddPart(new BoxMesh { Size = new Vector3(0.14f, size, 0.06f) },
+                new Vector3(0, headCentre - HeadRadius * 0.55f, HeadRadius * 0.7f), ColourOf(looks.HairColour, Colors.Black));
+        }
 
         figure._ring = new MeshInstance3D
         {
@@ -81,14 +103,26 @@ public partial class CrewFigure : Node3D
 
         // Posture shows condition: lying down when incapacitated or dead, lower when resting.
         var lying = character.SurvivalState is SurvivalState.Incapacitated or SurvivalState.Dead;
-        _body.RotationDegrees = lying ? new Vector3(90, 0, 0) : Vector3.Zero;
-        _body.Position = lying ? new Vector3(0, 0.25f, 0) : new Vector3(0, _height / 2f, 0);
-        _body.Scale = activity == "Rest" && !lying ? new Vector3(1, 0.75f, 1) : Vector3.One;
-        _material.AlbedoColor = character.SurvivalState == SurvivalState.Dead ? DeadColour : _colour;
+        _model.RotationDegrees = lying ? new Vector3(90, 0, 0) : Vector3.Zero;
+        _model.Position = lying ? new Vector3(0, 0.25f, -_height / 2f) : Vector3.Zero;
+        _model.Scale = activity == "Rest" && !lying ? new Vector3(1, 0.75f, 1) : Vector3.One;
+
+        var dead = character.SurvivalState == SurvivalState.Dead;
+        foreach (var (material, colour) in _tintable)
+        {
+            material.AlbedoColor = dead ? colour.Darkened(0.6f).Lerp(new Color(0.3f, 0.3f, 0.32f), 0.5f) : colour;
+        }
 
         _ring.Visible = selected;
         var name = isCaptain ? $"{character.Name} (captain)" : character.Name;
         _label.Text = string.IsNullOrEmpty(activity) ? name : $"{name}\n{activity}";
         _label.Modulate = selected ? new Color(1f, 0.95f, 0.75f) : new Color(0.92f, 0.92f, 0.92f);
+    }
+
+    private void AddPart(Mesh mesh, Vector3 position, Color colour)
+    {
+        var material = new StandardMaterial3D { AlbedoColor = colour, Roughness = 0.85f };
+        _tintable.Add((material, colour));
+        _model.AddChild(new MeshInstance3D { Mesh = mesh, MaterialOverride = material, Position = position });
     }
 }

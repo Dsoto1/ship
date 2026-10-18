@@ -185,7 +185,7 @@ public class SaveLoadTests
     [Fact]
     public void OlderVersionIsUpgradedThroughMigrations()
     {
-        // Pretend this build reads format 7, and format 6 called the phase field "stage".
+        // Pretend this build reads format 8, and format 7 called the phase field "stage".
         var current = SaveSerializer.Serialize(StormDamagedVoyage().Campaign);
         var formatOne = Edit(current, root =>
         {
@@ -194,7 +194,7 @@ public class SaveLoadTests
         });
         var migrations = new Dictionary<int, Func<JsonObject, JsonObject>>
         {
-            [6] = root =>
+            [7] = root =>
             {
                 root["phase"] = root["stage"]!.DeepClone();
                 root.Remove("stage");
@@ -202,7 +202,7 @@ public class SaveLoadTests
             },
         };
 
-        var loaded = SaveSerializer.Deserialize(formatOne, TestContent.Create(), migrations, currentVersion: 7);
+        var loaded = SaveSerializer.Deserialize(formatOne, TestContent.Create(), migrations, currentVersion: 8);
 
         Assert.Equal(CampaignPhase.Voyage, loaded.Phase);
         Assert.Equal(current, SaveSerializer.Serialize(loaded));
@@ -214,9 +214,9 @@ public class SaveLoadTests
         var json = SaveSerializer.Serialize(StormDamagedVoyage().Campaign);
 
         var ex = Assert.Throws<SaveLoadException>(() =>
-            SaveSerializer.Deserialize(json, TestContent.Create(), new Dictionary<int, Func<JsonObject, JsonObject>>(), currentVersion: 7));
+            SaveSerializer.Deserialize(json, TestContent.Create(), new Dictionary<int, Func<JsonObject, JsonObject>>(), currentVersion: 8));
 
-        Assert.Contains("no upgrade from format 6", ex.Message);
+        Assert.Contains("no upgrade from format 7", ex.Message);
     }
 
     [Fact]
@@ -275,6 +275,7 @@ public class SaveLoadTests
         foreach (var character in root["characters"]!.AsArray())
         {
             character!.AsObject().Remove("attributes");
+            character.AsObject().Remove("appearance");
         }
 
         foreach (var task in root["activeTasks"]!.AsArray())

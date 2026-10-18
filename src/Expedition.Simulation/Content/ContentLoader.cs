@@ -8,7 +8,7 @@ namespace Expedition.Simulation.Content;
 /// <summary>
 /// Reads content definitions from JSON. Expected layout under the data directory:
 /// <c>simulation_rules.json</c>, <c>skills.json</c>, <c>attributes.json</c>, <c>traits.json</c>,
-/// <c>conditions.json</c>, <c>items.json</c>, and any number of <c>tasks/*.json</c>
+/// <c>conditions.json</c>, <c>appearance.json</c>, <c>items.json</c>, and any number of <c>tasks/*.json</c>
 /// and <c>locations/*.json</c> files,
 /// each holding a JSON array of definitions.
 /// </summary>
@@ -32,6 +32,11 @@ public static class ContentLoader
         var attributes = Read<List<AttributeDefinition>>(Path.Combine(dataDirectory, "attributes.json"));
         var traits = Read<List<TraitDefinition>>(Path.Combine(dataDirectory, "traits.json"));
         var conditions = Read<List<ConditionDefinition>>(Path.Combine(dataDirectory, "conditions.json"));
+        var appearance = Read<AppearanceOptions>(Path.Combine(dataDirectory, "appearance.json"));
+        if (!appearance.CanGenerate)
+        {
+            throw new ContentValidationException(["appearance.json: every option list needs at least one entry."]);
+        }
         var tasks = Directory.EnumerateFiles(Path.Combine(dataDirectory, "tasks"), "*.json")
             .Order(StringComparer.Ordinal)
             .SelectMany(Read<List<TaskDefinition>>)
@@ -40,7 +45,7 @@ public static class ContentLoader
         var locations = Directory.Exists(locationsDirectory)
             ? Directory.EnumerateFiles(locationsDirectory, "*.json").Order(StringComparer.Ordinal).SelectMany(Read<List<LocationDefinition>>).ToList()
             : [];
-        return new GameContent(rules, skills, items, tasks, locations, attributes, traits, conditions);
+        return new GameContent(rules, skills, items, tasks, locations, attributes, traits, conditions, appearance);
     }
 
     /// <summary>Parses content from JSON strings. Intended for tests and tools.</summary>

@@ -183,6 +183,7 @@ public partial class Hud : CanvasLayer
             $"{character.Age}, from {character.Origin}\n" +
             $"{character.SurvivalState} · health {character.Health.Value:0}\n" +
             $"Doing: {Activity(runner, character)}{progress}\n" +
+            (character.Appearance is { } looks ? $"Looks: {AppearanceText.Describe(looks, runner.Content.Appearance)}\n" : "") +
             $"Skills: {skills}\n" +
             $"Physique: {string.Join(", ", attributes)}\n" +
             $"Traits: {(character.Traits.Count == 0 ? "none" : string.Join(", ", character.Traits.Select(t => runner.Content.Traits.TryGetValue(t, out var trait) ? trait.Name : t)))}\n" +

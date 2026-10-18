@@ -19,7 +19,7 @@ This file tracks status and breaks the next work into tickets.
 | 3e | Task queue, priority and resume | Done (2026-10-18) |
 | 4a | Positions, work spots and movement in the simulation | Done (2026-10-18) |
 | 4b | Godot graybox interaction scene | Done (2026-10-18) — owner ran the manual test on macOS, all 8 steps passed |
-| 4c | Appearance record | Proposed |
+| 4c | Appearance record | Done (2026-10-18) |
 | 5 | Recruitment prototype | Not started |
 | 6 | Voyage-to-crisis vertical slice | Not started |
 | 7 | Shipwreck or landfall continuation | Not started |
@@ -265,3 +265,31 @@ See D-010.
 - **Save format 6.**
 
 229 tests pass. All of the spec-alignment tickets (3a–3e) are now done.
+
+## Ticket 4c — Appearance record
+
+See D-011.
+- **Appearances:** generated for the test-deck crew and saved.
+- **Godot figures:** built from appearance. Height and build set the body. Skin tone, hair (or none
+  if bald), a beard if any, and clothing in the main dye with a belt in the accent dye.
+- **Record panel:** shows a "Looks:" description.
+- **Save format 7.**
+
+244 tests pass.
+
+## P0 complete — next is P1 (vertical slice)
+
+All P0 and spec-alignment tickets are done (TECHNICAL_SPEC.md §35; SPEC_AUDIT.md gaps G1–G11).
+Remaining audit items, which belong to P1:
+- truth vs knowledge (G12, recruitment);
+- item instances (G13, spoilage and damage);
+- health severity (G14, medical crisis).
+
+**Before Ticket 5 (recruitment) starts, the owner needs to decide, from a researched options brief:**
+- the departure port and region;
+- the sponsor and charter;
+- the hero ship type;
+- the destination region and the Indigenous communities to represent;
+- the identity fields candidates need (for example sex and languages).
+
+All of these are [APPROVAL REQUIRED] in TECHNICAL_SPEC.md §41 and ART_BIBLE.md §24.

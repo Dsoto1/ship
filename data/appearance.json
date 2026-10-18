@@ -1,0 +1,53 @@
+// Appearance options for generated characters. PLACEHOLDER palette for the graybox: names and colours
+// are plausible but not yet researched. ART_BIBLE.md 4.6 marks period clothing and dyes as [RESEARCH];
+// replace this file once the departure region is chosen and sources are recorded.
+// Colours are for drawing only; the simulation stores option IDs. minAge gates age-related options
+// (older people are likelier to have them); weight is relative likelihood (default 1).
+{
+  "skinTones": [
+    { "id": "skin.fair", "name": "fair", "colour": "#E8C4A8" },
+    { "id": "skin.light", "name": "light olive", "colour": "#D4A985" },
+    { "id": "skin.olive", "name": "olive", "colour": "#B98B64" },
+    { "id": "skin.weathered", "name": "deeply weathered", "colour": "#9C6B48" },
+    { "id": "skin.dark", "name": "dark brown", "colour": "#6E4A33" }
+  ],
+  "hairColours": [
+    { "id": "hair.black", "name": "black", "colour": "#1E1A18" },
+    { "id": "hair.dark_brown", "name": "dark brown", "colour": "#3B2A20" },
+    { "id": "hair.brown", "name": "brown", "colour": "#5E4430" },
+    { "id": "hair.auburn", "name": "auburn", "colour": "#7A3E22" },
+    { "id": "hair.fair", "name": "fair", "colour": "#B89A6A" },
+    { "id": "hair.greying", "name": "greying", "colour": "#7D7770", "minAge": 35 },
+    { "id": "hair.white", "name": "white", "colour": "#D8D4CC", "minAge": 50 }
+  ],
+  "hairStyles": [
+    { "id": "style.cropped", "name": "cropped" },
+    { "id": "style.shoulder", "name": "shoulder-length" },
+    { "id": "style.tied", "name": "tied back" },
+    { "id": "style.receding", "name": "receding", "minAge": 28 },
+    { "id": "style.bald", "name": "bald", "minAge": 35, "weight": 0.5 }
+  ],
+  "facialHair": [
+    { "id": "beard.none", "name": "clean-shaven" },
+    { "id": "beard.stubble", "name": "stubble" },
+    { "id": "beard.short", "name": "short beard" },
+    { "id": "beard.full", "name": "full beard" },
+    { "id": "beard.moustache", "name": "moustache" }
+  ],
+  "dyes": [
+    { "id": "dye.undyed", "name": "undyed wool", "colour": "#B8AD96" },
+    { "id": "dye.madder", "name": "madder red", "colour": "#8C3B30" },
+    { "id": "dye.woad", "name": "woad blue", "colour": "#43567A" },
+    { "id": "dye.russet", "name": "russet", "colour": "#73503A" },
+    { "id": "dye.ochre", "name": "ochre", "colour": "#9E7F3E" },
+    { "id": "dye.green", "name": "dull green", "colour": "#495C45" },
+    { "id": "dye.black", "name": "black", "colour": "#2A2826" }
+  ],
+  "marks": [
+    { "id": "mark.none", "name": "none", "weight": 6 },
+    { "id": "mark.scar_cheek", "name": "a scar across one cheek" },
+    { "id": "mark.broken_nose", "name": "a crooked, once-broken nose" },
+    { "id": "mark.missing_teeth", "name": "missing front teeth" },
+    { "id": "mark.pockmarks", "name": "pockmarked skin" }
+  ]
+}

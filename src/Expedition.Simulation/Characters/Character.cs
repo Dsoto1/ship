@@ -63,6 +63,12 @@ public sealed class Character
     /// <summary>Physical capabilities: what the character's body can do.</summary>
     public Attributes Attributes { get; } = new();
 
+    /// <summary>
+    /// How the character looks, or null for characters created without appearance data (for example in
+    /// campaigns upgraded from saves older than format 7).
+    /// </summary>
+    public Appearance? Appearance { get; set; }
+
     /// <summary>Current needs.</summary>
     public Needs Needs { get; } = new();
 

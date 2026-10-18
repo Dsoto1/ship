@@ -162,7 +162,7 @@ public partial class Main : Node3D
 
         foreach (var id in runner.Campaign.Placements.Keys.Order())
         {
-            var figure = CrewFigure.Create(id.Value);
+            var figure = CrewFigure.Create(runner.Campaign.Characters[id].Appearance, _content.Appearance);
             _shipContents.AddChild(figure);
             _figures[id] = figure;
         }

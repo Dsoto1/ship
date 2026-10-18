@@ -20,7 +20,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 6;
+    public const int CurrentSchemaVersion = 7;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -82,6 +82,9 @@ public static class SaveSerializer
                 root["queuedTasks"] = new JsonArray();
                 return root;
             },
+
+            // Format 7 added optional appearance. Older characters have none; the game draws a fallback.
+            [6] = root => root,
         };
 
     private static readonly JsonSerializerOptions Options = new()
@@ -273,6 +276,14 @@ public static class SaveSerializer
                 Traits = c.Traits.Order(StringComparer.Ordinal).ToList(),
                 Needs = new NeedsData { Hunger = c.Needs.Hunger, Thirst = c.Needs.Thirst, Fatigue = c.Needs.Fatigue, Stress = c.Needs.Stress },
                 Health = c.Health.Value,
+                Appearance = c.Appearance is { } looks
+                    ? new AppearanceData
+                    {
+                        HeightCm = looks.HeightCm, Build = looks.Build.ToString(), SkinTone = looks.SkinTone,
+                        HairColour = looks.HairColour, HairStyle = looks.HairStyle, FacialHair = looks.FacialHair,
+                        ClothingDye = looks.ClothingDye, AccentDye = looks.AccentDye, Mark = looks.Mark,
+                    }
+                    : null,
                 Conditions = c.Health.Conditions.Order(StringComparer.Ordinal).ToList(),
             }).ToList(),
             Inventories = campaign.Inventories.Values.OrderBy(i => i.Id.Value, StringComparer.Ordinal).Select(i => new InventoryData
@@ -655,6 +666,27 @@ public static class SaveSerializer
             }
 
             character.Health.AddCondition(condition);
+        }
+
+        if (saved.Appearance is { } looks)
+        {
+            var appearance = new Appearance
+            {
+                HeightCm = looks.HeightCm, Build = ParseEnum<Build>(looks.Build, "build"), SkinTone = looks.SkinTone,
+                HairColour = looks.HairColour, HairStyle = looks.HairStyle, FacialHair = looks.FacialHair,
+                ClothingDye = looks.ClothingDye, AccentDye = looks.AccentDye, Mark = looks.Mark,
+            };
+            if (appearance.HeightCm is < Appearance.MinHeightCm or > Appearance.MaxHeightCm)
+            {
+                throw new SaveLoadException($"{saved.Name} has an impossible height ({appearance.HeightCm} cm).");
+            }
+
+            foreach (var optionId in appearance.OptionIds.Where(id => content.Appearance.Find(id) is null))
+            {
+                throw new SaveLoadException($"{saved.Name}'s appearance uses unknown option '{optionId}'. The game content may have changed since this save was made.");
+            }
+
+            character.Appearance = appearance;
         }
 
         character.RestoreSurvivalState(ParseEnum<SurvivalState>(saved.SurvivalState, "survival state"));

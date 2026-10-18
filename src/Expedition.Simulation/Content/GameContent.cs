@@ -20,7 +20,8 @@ public sealed class GameContent
         IEnumerable<LocationDefinition>? locations = null,
         IEnumerable<AttributeDefinition>? attributes = null,
         IEnumerable<TraitDefinition>? traits = null,
-        IEnumerable<ConditionDefinition>? conditions = null)
+        IEnumerable<ConditionDefinition>? conditions = null,
+        AppearanceOptions? appearance = null)
     {
         var errors = new List<string>();
         Rules = rules;
@@ -31,6 +32,28 @@ public sealed class GameContent
         Attributes = IndexById(attributes ?? [], a => a.Id, "attribute", errors);
         Traits = IndexById(traits ?? [], t => t.Id, "trait", errors);
         Conditions = IndexById(conditions ?? [], c => c.Id, "condition", errors);
+        Appearance = appearance ?? AppearanceOptions.Empty;
+        var appearanceIds = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var (listName, options) in Appearance.AllLists)
+        {
+            foreach (var option in options)
+            {
+                if (!appearanceIds.Add(option.Id))
+                {
+                    errors.Add($"Appearance: duplicate option ID '{option.Id}'.");
+                }
+
+                if (!option.HasValidColour)
+                {
+                    errors.Add($"Appearance: '{option.Id}' in {listName} has colour '{option.Colour}'; use #RRGGBB.");
+                }
+
+                if (option.Weight <= 0 || option.MinAge < 0)
+                {
+                    errors.Add($"Appearance: '{option.Id}' needs a positive weight and a non-negative minAge.");
+                }
+            }
+        }
 
         ContentValidator.ValidateRules(rules, errors);
         foreach (var item in Items.Values)
@@ -80,6 +103,9 @@ public sealed class GameContent
 
     /// <summary>Condition (injury and illness) definitions by ID.</summary>
     public IReadOnlyDictionary<string, ConditionDefinition> Conditions { get; }
+
+    /// <summary>Options characters' appearance is generated from.</summary>
+    public AppearanceOptions Appearance { get; }
 
     /// <summary>Item definitions by ID.</summary>
     public IReadOnlyDictionary<string, ItemDefinition> Items { get; }

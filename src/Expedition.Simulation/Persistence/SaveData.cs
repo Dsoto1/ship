@@ -102,6 +102,9 @@ public sealed record CharacterData
     /// <summary>Trait IDs.</summary>
     public required IReadOnlyList<string> Traits { get; init; }
 
+    /// <summary>Appearance, or null if the character has none recorded. Added in format 7.</summary>
+    public AppearanceData? Appearance { get; init; }
+
     /// <summary>Need values.</summary>
     public required NeedsData Needs { get; init; }
 
@@ -262,4 +265,35 @@ public sealed record RelationshipChangeData
 
     /// <summary>Why.</summary>
     public required string Cause { get; init; }
+}
+
+/// <summary>A saved appearance: option IDs from <c>data/appearance.json</c>.</summary>
+public sealed record AppearanceData
+{
+    /// <summary>Height in centimetres.</summary>
+    public required int HeightCm { get; init; }
+
+    /// <summary>Build name.</summary>
+    public required string Build { get; init; }
+
+    /// <summary>Skin tone option ID.</summary>
+    public required string SkinTone { get; init; }
+
+    /// <summary>Hair colour option ID.</summary>
+    public required string HairColour { get; init; }
+
+    /// <summary>Hair style option ID.</summary>
+    public required string HairStyle { get; init; }
+
+    /// <summary>Facial hair option ID.</summary>
+    public required string FacialHair { get; init; }
+
+    /// <summary>Main clothing dye option ID.</summary>
+    public required string ClothingDye { get; init; }
+
+    /// <summary>Accent dye option ID.</summary>
+    public required string AccentDye { get; init; }
+
+    /// <summary>Distinguishing mark option ID.</summary>
+    public required string Mark { get; init; }
 }

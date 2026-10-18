@@ -245,3 +245,32 @@ Save format 6. The upgrade from format 5 gives existing active tasks IDs.
 
 **Not yet:** standing orders and watch rotations (automatic routines). They will build on the queue
 once ship systems exist (Ticket 6) and need the owner's input on how delegation should feel.
+
+---
+
+## D-011 — Appearance is saved simulation state, generated from data
+
+**Date:** 2026-10-18
+**Status:** Accepted (Ticket 4c). The palette is a placeholder pending research.
+
+Each character has an `Appearance`: height, build, skin tone, hair colour and style, facial hair, two
+clothing dyes and a distinguishing mark. It is stored as option IDs and saved, so a person looks the
+same in every phase and after loading (ART_BIBLE.md §4, §15). Presentation decides how the IDs are
+drawn and described.
+
+**Generation.** `AppearanceGenerator` uses only the `characters` random stream and keeps combinations
+plausible (ART_BIBLE.md §16):
+- age-gated options (greying from 35, white hair from 50, receding from 28, bald from 35) grow likelier
+  with age;
+- stronger people tend to be broader;
+- heights fall in a bell-shaped spread of 147–195 cm.
+
+**Data.** Options live in `data/appearance.json` with weights and minimum ages. The current names and
+colours are **placeholders**. Period clothing, dyes and regional appearance are [RESEARCH] items
+(ART_BIBLE.md §4.6, §5) to replace once the departure region is approved.
+
+**No sex or gender field yet.** Facial hair is generated for everyone in the all-male test crew. A
+proper identity model for recruitment (sex, languages, origin detail) belongs to Ticket 5 and needs
+the owner's input.
+
+Save format 7. Older saves load with no appearance, and the game draws a plain fallback figure.

@@ -5,9 +5,10 @@ A single-player isometric historical survival, expedition and settlement game se
 and survives what follows: a storm, a shipwreck, landfall and settlement. The same crew is
 carried through every phase.
 
-**Status:** P0 (simulation foundation). Characters, tasks, time, needs, provisions, inventories,
-positions and save/load are implemented and tested headless. A graybox Godot scene (`game/`)
-shows the simulation on a placeholder deck.
+**Status:** P0 (simulation foundation) complete. Characters with skills, attributes, traits,
+relationships and appearance; tasks with queues and priorities; time, needs, provisions, inventories,
+positions, a structured chronicle and versioned save/load. All of it is tested headless and shown in
+a graybox Godot scene (`game/`). Next: P1, the first playable vertical slice.
 
 ## Build and test
 

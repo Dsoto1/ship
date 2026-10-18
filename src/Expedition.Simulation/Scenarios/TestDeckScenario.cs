@@ -93,6 +93,7 @@ public static class TestDeckScenario
                 character.AddTrait(trait);
             }
 
+            character.Appearance = Characters.AppearanceGenerator.Generate(character, content.Appearance, campaign.Randomness.Characters);
             Require(runner.PlaceCharacter(character.Id, LocationId, new GridPosition(x, y)));
         }
 
