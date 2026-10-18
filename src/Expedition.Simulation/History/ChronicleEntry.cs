@@ -41,6 +41,9 @@ public static class ChronicleParameters
     /// <summary>Task definition ID.</summary>
     public const string Task = "task";
 
+    /// <summary>Task definition ID of the urgent order that paused another task.</summary>
+    public const string PausedBy = "pausedBy";
+
     /// <summary>Condition definition ID.</summary>
     public const string Condition = "condition";
 

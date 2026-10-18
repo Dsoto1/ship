@@ -208,3 +208,40 @@ old generator as the `tasks` stream, so injury rolls carry on exactly.
   affects (orders, recruitment, events), as TECHNICAL_SPEC.md §5.5 requires.
 
 Save format 5. The upgrade from format 4 adds an empty relationship list.
+
+---
+
+## D-010 — Task queues with two priorities; paused work resumes
+
+**Date:** 2026-10-18
+**Status:** Accepted (Ticket 3e)
+
+Each character has one active task and an ordered queue of waiting orders (TECHNICAL_SPEC.md §7.3).
+
+**Priorities.** There are two:
+- **Normal** orders wait in the order given.
+- **Urgent** orders pause normal work and start at once, or wait behind other urgent work.
+
+**Pausing.** A paused task goes back to the front of the normal orders. It keeps its progress and
+the materials it already used (they are never used twice), and releases its work spot. When it
+resumes it finds a spot again.
+
+**Starting queued work.**
+- The next order starts automatically when the character is idle and able.
+- A character who is too tired keeps waiting rather than dropping work.
+- An order that cannot start for any other reason (no tool, no free spot) is dropped and recorded,
+  so it never silently disappears.
+- A walk the player ordered finishes before queued work starts.
+
+**Refusals.** `QueueTask` refuses at once only what can never work: the dead or missing, an unknown
+task, or a missing skill. Other conditions are checked when the order starts. `CheckOrder` reports
+the same answer without changing anything, for the interface.
+
+**Survival states.** The dead and the missing lose their queue. Incapacitated characters keep it.
+
+**IDs.** Every order has a stable `TaskId` (`work-0001`), never reused.
+
+Save format 6. The upgrade from format 5 gives existing active tasks IDs.
+
+**Not yet:** standing orders and watch rotations (automatic routines). They will build on the queue
+once ship systems exist (Ticket 6) and need the owner's input on how delegation should feel.

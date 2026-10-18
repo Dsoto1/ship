@@ -18,6 +18,12 @@ public enum ChronicleEntryKind
     /// <summary>A character's task stopped before it was finished.</summary>
     TaskInterrupted,
 
+    /// <summary>A task was paused by an urgent order; it waits in the queue with its progress kept.</summary>
+    TaskPaused,
+
+    /// <summary>A waiting task could not be started and was removed from the queue.</summary>
+    TaskDropped,
+
     /// <summary>Someone needed food or water and none was available.</summary>
     SupplyShortage,
 

@@ -23,6 +23,7 @@ public sealed class CampaignState
 
     private readonly Dictionary<CharacterId, Character> _characters = [];
     private readonly Dictionary<CharacterId, TaskInstance> _activeTasks = [];
+    private readonly Dictionary<CharacterId, List<TaskInstance>> _queues = [];
     private readonly Dictionary<InventoryId, Inventory> _inventories = [];
     private readonly Dictionary<CharacterId, CharacterPlacement> _placements = [];
     private readonly Dictionary<(CharacterId From, CharacterId To), Relationship> _relationships = [];
@@ -83,6 +84,15 @@ public sealed class CampaignState
 
     /// <summary>The task each busy character is doing. Characters without an entry are idle.</summary>
     public IReadOnlyDictionary<CharacterId, TaskInstance> ActiveTasks => _activeTasks;
+
+    /// <summary>
+    /// Orders waiting for <paramref name="id"/>, next first: urgent orders before normal ones, and within
+    /// a priority in the order given, except that a paused task goes back to the front of its priority.
+    /// </summary>
+    public IReadOnlyList<TaskInstance> QueueOf(CharacterId id) => _queues.TryGetValue(id, out var queue) ? queue : [];
+
+    /// <summary>Characters who have at least one waiting order.</summary>
+    public IEnumerable<CharacterId> CharactersWithQueues => _queues.Where(pair => pair.Value.Count > 0).Select(pair => pair.Key);
 
     /// <summary>Every directed relationship that has ever changed from neutral, keyed by (from, to).</summary>
     public IReadOnlyDictionary<(CharacterId From, CharacterId To), Relationship> Relationships => _relationships;
@@ -321,6 +331,12 @@ public sealed class CampaignState
             StopMovement(id);
         }
 
+        // The dead and the missing hold no orders. Incapacitated characters keep theirs for when they recover.
+        if (newState is SurvivalState.Dead or SurvivalState.Missing)
+        {
+            _queues.Remove(id);
+        }
+
         return result;
     }
 
@@ -329,7 +345,65 @@ public sealed class CampaignState
         Chronicle.Record(Clock.Tick, kind, parameters, characters);
 
     /// <summary>Starts a task. Eligibility must already have been checked by <see cref="SimulationRunner"/>.</summary>
-    internal void StartTask(TaskInstance task) => _activeTasks.Add(task.CharacterId, task);
+    internal void StartTask(TaskInstance task)
+    {
+        task.StartedAtTick ??= Clock.Tick;
+        _activeTasks.Add(task.CharacterId, task);
+    }
+
+    /// <summary>
+    /// Adds a waiting order. With <paramref name="aheadOfSamePriority"/> it goes before others of its priority
+    /// (a paused task resuming first); otherwise after them. Urgent orders always come before normal ones.
+    /// </summary>
+    internal void Enqueue(TaskInstance task, bool aheadOfSamePriority)
+    {
+        if (!_queues.TryGetValue(task.CharacterId, out var queue))
+        {
+            queue = [];
+            _queues[task.CharacterId] = queue;
+        }
+
+        var index = aheadOfSamePriority
+            ? queue.FindIndex(waiting => waiting.Priority <= task.Priority)
+            : queue.FindIndex(waiting => waiting.Priority < task.Priority);
+        queue.Insert(index < 0 ? queue.Count : index, task);
+    }
+
+    /// <summary>Removes and returns the next waiting order, or null.</summary>
+    internal TaskInstance? Dequeue(CharacterId id)
+    {
+        if (!_queues.TryGetValue(id, out var queue) || queue.Count == 0)
+        {
+            return null;
+        }
+
+        var next = queue[0];
+        queue.RemoveAt(0);
+        return next;
+    }
+
+    /// <summary>Removes a waiting order by ID. Returns false if it is not queued for that character.</summary>
+    internal bool RemoveQueued(CharacterId id, TaskId taskId) =>
+        _queues.TryGetValue(id, out var queue) && queue.RemoveAll(task => task.Id == taskId) > 0;
+
+    /// <summary>
+    /// Pauses the active task: it goes back to the front of its priority in the queue with its progress
+    /// and used materials kept, and its work spot is released. Recorded in the chronicle.
+    /// </summary>
+    internal void PauseTask(CharacterId id, string pausedBy)
+    {
+        if (!_activeTasks.Remove(id, out var task))
+        {
+            return;
+        }
+
+        task.SpotId = null;
+        StopMovement(id);
+        Enqueue(task, aheadOfSamePriority: true);
+        Record(ChronicleEntryKind.TaskPaused, [
+            new(ChronicleParameters.Task, task.DefinitionId), new(ChronicleParameters.PausedBy, pausedBy),
+        ], id);
+    }
 
     /// <summary>Removes a finished task without recording anything.</summary>
     internal void EndTask(CharacterId id) => _activeTasks.Remove(id);

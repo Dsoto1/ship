@@ -40,6 +40,10 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
                 $"(-{entry.Get(ChronicleParameters.Damage)} health, now {entry.Get(ChronicleParameters.Health)}).",
             ChronicleEntryKind.TaskInterrupted =>
                 $"{who} stopped {Task(entry.Get(ChronicleParameters.Task))}: {InterruptReason(entry, cause)}.",
+            ChronicleEntryKind.TaskPaused =>
+                $"{who} paused {Task(entry.Get(ChronicleParameters.Task))} to {Task(entry.Get(ChronicleParameters.PausedBy))}.",
+            ChronicleEntryKind.TaskDropped =>
+                $"{who} could not start {Task(entry.Get(ChronicleParameters.Task))}: {cause}",
             ChronicleEntryKind.SupplyShortage => entry.Get(ChronicleParameters.Need) == "water"
                 ? $"{who} went thirsty: there is nothing left to drink."
                 : $"{who} went hungry: there is no food left.",

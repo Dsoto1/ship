@@ -58,14 +58,124 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
             return CommandResult.Rejected($"Unknown task '{taskId}'.");
         }
 
-        if (!character.CanWork)
-        {
-            return CommandResult.Rejected($"{character.Name} is {character.SurvivalState} and cannot work.");
-        }
-
         if (Campaign.ActiveTasks.TryGetValue(characterId, out var current))
         {
             return CommandResult.Rejected($"{character.Name} is already doing {current.DefinitionId}.");
+        }
+
+        return Check(character, task, materialsAlreadyUsed: false);
+    }
+
+    /// <summary>Starts a task now if the character is idle and eligible, using up its materials.</summary>
+    public CommandResult AssignTask(CharacterId characterId, string taskId)
+    {
+        var eligibility = CheckEligibility(characterId, taskId);
+        if (!eligibility.Succeeded)
+        {
+            return eligibility;
+        }
+
+        Start(Campaign.Characters[characterId], new TaskInstance(Campaign.Ids.NextTaskId(), characterId, taskId, TaskPriority.Normal));
+        return CommandResult.Ok();
+    }
+
+    /// <summary>
+    /// Gives an order. An idle character starts at once. Otherwise:
+    /// a <see cref="TaskPriority.Normal"/> order waits at the end of the queue;
+    /// a <see cref="TaskPriority.Urgent"/> order pauses normal work (which resumes later with its
+    /// progress kept) and starts now, or waits behind other urgent work.
+    /// Orders that could never be carried out (dead, unknown task, missing skill) are refused at once;
+    /// other conditions, such as tools or a free work spot, are checked when the order starts.
+    /// </summary>
+    public CommandResult QueueTask(CharacterId characterId, string taskId, TaskPriority priority = TaskPriority.Normal)
+    {
+        var (result, startsNow) = EvaluateOrder(characterId, taskId, priority);
+        if (!result.Succeeded)
+        {
+            return result;
+        }
+
+        var order = new TaskInstance(Campaign.Ids.NextTaskId(), characterId, taskId, priority);
+        if (!startsNow)
+        {
+            Campaign.Enqueue(order, aheadOfSamePriority: false);
+            return result;
+        }
+
+        if (Campaign.ActiveTasks.ContainsKey(characterId))
+        {
+            Campaign.PauseTask(characterId, taskId);
+        }
+
+        Start(Campaign.Characters[characterId], order);
+        return result;
+    }
+
+    /// <summary>
+    /// Whether <see cref="QueueTask"/> would accept this order, without changing anything. The interface
+    /// uses it to show which orders are available and why others are not.
+    /// </summary>
+    public CommandResult CheckOrder(CharacterId characterId, string taskId, TaskPriority priority = TaskPriority.Normal) =>
+        EvaluateOrder(characterId, taskId, priority).Result;
+
+    private (CommandResult Result, bool StartsNow) EvaluateOrder(CharacterId characterId, string taskId, TaskPriority priority)
+    {
+        if (!Campaign.Characters.TryGetValue(characterId, out var character))
+        {
+            return (CommandResult.Rejected($"No character with ID {characterId} in the campaign."), false);
+        }
+
+        if (!Content.Tasks.TryGetValue(taskId, out var task))
+        {
+            return (CommandResult.Rejected($"Unknown task '{taskId}'."), false);
+        }
+
+        if (character.SurvivalState is SurvivalState.Dead or SurvivalState.Missing)
+        {
+            return (CommandResult.Rejected($"{character.Name} is {character.SurvivalState} and cannot take orders."), false);
+        }
+
+        if (task.Skill is not null && character.Skills.Get(task.Skill) < task.MinSkill)
+        {
+            return (CommandResult.Rejected($"{character.Name} lacks the skill: {task.Name} needs {task.Skill} {task.MinSkill}."), false);
+        }
+
+        Campaign.ActiveTasks.TryGetValue(characterId, out var current);
+        var idle = current is null && Campaign.QueueOf(characterId).Count == 0;
+        var preempts = current is not null && priority > current.Priority;
+        if (!character.CanWork || !(idle || preempts))
+        {
+            return (CommandResult.Ok(), false);
+        }
+
+        // Starting now: every rule applies, as for AssignTask.
+        var eligibility = Check(character, task, materialsAlreadyUsed: false);
+        return (eligibility, eligibility.Succeeded);
+    }
+
+    /// <summary>Removes one waiting order. Used materials of a paused task are not refunded.</summary>
+    public CommandResult RemoveQueuedTask(CharacterId characterId, TaskId taskId) =>
+        Campaign.RemoveQueued(characterId, taskId)
+            ? CommandResult.Ok()
+            : CommandResult.Rejected($"{taskId} is not waiting in {characterId}'s queue.");
+
+    /// <summary>Removes every waiting order for a character. The current task carries on.</summary>
+    public CommandResult ClearQueue(CharacterId characterId)
+    {
+        foreach (var task in Campaign.QueueOf(characterId).ToList())
+        {
+            Campaign.RemoveQueued(characterId, task.Id);
+        }
+
+        return CommandResult.Ok();
+    }
+
+    /// <summary>The eligibility rules shared by every way of starting work.</summary>
+    private CommandResult Check(Character character, TaskDefinition task, bool materialsAlreadyUsed)
+    {
+        if (!character.CanWork)
+        {
+            return CommandResult.Rejected($"{character.Name} is {character.SurvivalState} and cannot work.");
         }
 
         if (!task.IsRest && character.Needs.Fatigue >= Content.Rules.MaxFatigueToStartWork)
@@ -85,12 +195,15 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
             return CommandResult.Rejected($"{task.Name} needs tools that are not on hand: {string.Join(", ", missingTools)}.");
         }
 
-        var missing = task.Consumes.Where(pair => Available(character, pair.Key) < pair.Value)
-            .Select(pair => $"{pair.Key} x{pair.Value}")
-            .ToList();
-        if (missing.Count > 0)
+        if (!materialsAlreadyUsed)
         {
-            return CommandResult.Rejected($"{task.Name} needs materials that are not on hand: {string.Join(", ", missing)}.");
+            var missing = task.Consumes.Where(pair => Available(character, pair.Key) < pair.Value)
+                .Select(pair => $"{pair.Key} x{pair.Value}")
+                .ToList();
+            if (missing.Count > 0)
+            {
+                return CommandResult.Rejected($"{task.Name} needs materials that are not on hand: {string.Join(", ", missing)}.");
+            }
         }
 
         if (task.NeedsWorkSpot)
@@ -105,32 +218,67 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
         return CommandResult.Ok();
     }
 
-    /// <summary>Starts a task if the character is eligible, using up its materials.</summary>
-    public CommandResult AssignTask(CharacterId characterId, string taskId)
+    /// <summary>Makes <paramref name="order"/> the active task. Eligibility has been checked.</summary>
+    private void Start(Character character, TaskInstance order)
     {
-        var eligibility = CheckEligibility(characterId, taskId);
-        if (!eligibility.Succeeded)
+        var task = Content.Tasks[order.DefinitionId];
+        if (!order.MaterialsConsumed)
         {
-            return eligibility;
+            foreach (var (itemId, quantity) in task.Consumes)
+            {
+                Take(character, itemId, quantity);
+            }
+
+            order.MaterialsConsumed = true;
         }
 
-        var character = Campaign.Characters[characterId];
-        var task = Content.Tasks[taskId];
-        foreach (var (itemId, quantity) in task.Consumes)
-        {
-            Take(character, itemId, quantity);
-        }
-
-        string? spotId = null;
         if (task.NeedsWorkSpot)
         {
             var (spot, path, _) = FindWorkSpot(character, task);
-            spotId = spot!.Id;
-            StartWalk(characterId, path!);
+            order.SpotId = spot!.Id;
+            StartWalk(character.Id, path!);
         }
 
-        Campaign.StartTask(new TaskInstance(characterId, taskId, Campaign.Clock.Tick) { SpotId = spotId });
-        return CommandResult.Ok();
+        Campaign.StartTask(order);
+    }
+
+    /// <summary>
+    /// Starts the next waiting order for an idle character. A character who is too tired waits rather than
+    /// dropping work; an order that cannot start for any other reason is dropped and recorded.
+    /// A character walking somewhere on the player's order finishes the walk first.
+    /// </summary>
+    private void StartNextQueued(Character character)
+    {
+        if (!character.CanWork || Campaign.ActiveTasks.ContainsKey(character.Id))
+        {
+            return;
+        }
+
+        if (Campaign.Placements.TryGetValue(character.Id, out var placement) && placement.IsMoving)
+        {
+            return;
+        }
+
+        while (Campaign.QueueOf(character.Id) is [var next, ..])
+        {
+            var task = Content.Tasks[next.DefinitionId];
+            if (!task.IsRest && character.Needs.Fatigue >= Content.Rules.MaxFatigueToStartWork)
+            {
+                return;
+            }
+
+            Campaign.Dequeue(character.Id);
+            var eligibility = Check(character, task, next.MaterialsConsumed);
+            if (eligibility.Succeeded)
+            {
+                Start(character, next);
+                return;
+            }
+
+            Campaign.Record(ChronicleEntryKind.TaskDropped, [
+                new(ChronicleParameters.Task, next.DefinitionId), new(ChronicleParameters.Cause, eligibility.Reason),
+            ], character.Id);
+        }
     }
 
     /// <summary>Puts a character on a location's grid, for example when a scenario starts. Ends any walk.</summary>
@@ -189,11 +337,16 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
     }
 
     /// <summary>Stops a character's task on the player's order. Materials already used are not refunded.</summary>
+    /// <remarks>The next waiting order, if any, starts straight away.</remarks>
     public CommandResult CancelTask(CharacterId characterId)
     {
-        return Campaign.InterruptTask(characterId, InterruptReasons.Cancelled) is null
-            ? CommandResult.Rejected($"{characterId} has no task to cancel.")
-            : CommandResult.Ok();
+        if (Campaign.InterruptTask(characterId, InterruptReasons.Cancelled) is null)
+        {
+            return CommandResult.Rejected($"{characterId} has no task to cancel.");
+        }
+
+        StartNextQueued(Campaign.Characters[characterId]);
+        return CommandResult.Ok();
     }
 
     /// <summary>Adds items to an inventory if they exist and fit, for example when buying provisions.</summary>
@@ -251,6 +404,7 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
         }
 
         ResolveArrival(character.Id);
+        StartNextQueued(character);
         Campaign.ActiveTasks.TryGetValue(character.Id, out var task);
         var definition = task is null ? null : Content.Tasks[task.DefinitionId];
         character.Needs.Apply(Content.Rules.BaselineNeedsPerHour + (definition?.NeedsPerHour ?? NeedRates.None), HoursPerTick);

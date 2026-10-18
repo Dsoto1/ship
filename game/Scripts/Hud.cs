@@ -1,6 +1,7 @@
 using Expedition.Simulation.Characters;
 using Expedition.Simulation.Core;
 using Expedition.Simulation.History;
+using Expedition.Simulation.Tasks;
 using Expedition.Simulation.World;
 using Godot;
 
@@ -29,6 +30,8 @@ public partial class Hud : CanvasLayer
     private Label _pack = null!;
     private VBoxContainer _taskList = null!;
     private Label _why = null!;
+    private Label _queue = null!;
+    private CheckBox _urgent = null!;
     private RichTextLabel _chronicle = null!;
     private ChronicleFormatter _formatter = null!;
     private int _chronicleCount = -1;
@@ -45,8 +48,11 @@ public partial class Hud : CanvasLayer
     /// <summary>The player selected a character from the list.</summary>
     public event Action<CharacterId>? CharacterChosen;
 
-    /// <summary>The player ordered the selected character to do a task.</summary>
-    public event Action<string>? TaskOrdered;
+    /// <summary>The player gave the selected character an order: task ID and priority.</summary>
+    public event Action<string, TaskPriority>? TaskOrdered;
+
+    /// <summary>The player cleared the selected character's waiting orders.</summary>
+    public event Action? QueueCleared;
 
     /// <summary>The player ordered the selected character to stop.</summary>
     public event Action? StopOrdered;
@@ -86,11 +92,13 @@ public partial class Hud : CanvasLayer
         {
             var taskId = task.Id;
             var button = new Button { Text = task.Name, Alignment = HorizontalAlignment.Left };
-            button.Pressed += () => TaskOrdered?.Invoke(taskId);
+            button.Pressed += () => TaskOrdered?.Invoke(taskId, CurrentPriority);
             _taskList.AddChild(button);
             _taskButtons.Add((button, taskId));
         }
     }
+
+    private TaskPriority CurrentPriority => _urgent.ButtonPressed ? TaskPriority.Urgent : TaskPriority.Normal;
 
     /// <summary>Shows a one-line message, such as why an order was refused.</summary>
     public void ShowStatus(string message) => _status.Text = message;
@@ -196,10 +204,21 @@ public partial class Hud : CanvasLayer
         var pack = runner.Campaign.Inventories[character.InventoryId].Quantities;
         _pack.Text = "Carrying: " + (pack.Count == 0 ? "nothing" : string.Join(", ", pack.Select(p => $"{runner.Content.Items[p.Key].Name} ×{p.Value}")));
 
-        // Tasks stay clickable so the player can see why one is refused; unavailable ones are dimmed.
+        var queue = runner.Campaign.QueueOf(id);
+        _queue.Text = queue.Count == 0
+            ? "Next: nothing queued"
+            : "Next:\n" + string.Join("\n", queue.Select((task, i) =>
+            {
+                var name = runner.Content.Tasks[task.DefinitionId].Name;
+                var urgent = task.Priority == TaskPriority.Urgent ? " (urgent)" : "";
+                var paused = task.Progress > 0 ? $" (paused at {task.Progress / runner.Content.Tasks[task.DefinitionId].DurationMinutes:P0})" : "";
+                return $"  {i + 1}. {name}{urgent}{paused}";
+            }));
+
+        // Orders stay clickable so the player can see why one is refused; unavailable ones are dimmed.
         foreach (var (button, taskId) in _taskButtons)
         {
-            var eligibility = runner.CheckEligibility(id, taskId);
+            var eligibility = runner.CheckOrder(id, taskId, CurrentPriority);
             button.Modulate = eligibility.Succeeded ? Colors.White : new Color(1, 1, 1, 0.45f);
             button.TooltipText = eligibility.Succeeded ? "" : eligibility.Reason;
         }
@@ -303,12 +322,20 @@ public partial class Hud : CanvasLayer
         _pack = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(320, 0) };
         column.AddChild(_pack);
         column.AddChild(new HSeparator());
-        column.AddChild(new Label { Text = "Orders (right-click deck to walk)" });
+        _queue = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(320, 0) };
+        column.AddChild(_queue);
+        column.AddChild(new HSeparator());
+        column.AddChild(new Label { Text = "Orders (queued after current work; right-click deck to walk)" });
+        _urgent = new CheckBox { Text = "Urgent: pause current work and do this first" };
+        column.AddChild(_urgent);
         _taskList = new VBoxContainer();
         column.AddChild(_taskList);
         var stop = new Button { Text = "Stop current task", Alignment = HorizontalAlignment.Left };
         stop.Pressed += () => StopOrdered?.Invoke();
         column.AddChild(stop);
+        var clear = new Button { Text = "Clear queued orders", Alignment = HorizontalAlignment.Left };
+        clear.Pressed += () => QueueCleared?.Invoke();
+        column.AddChild(clear);
     }
 
     private void BuildChronicle(Control root)

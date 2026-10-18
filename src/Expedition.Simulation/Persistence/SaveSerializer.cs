@@ -20,7 +20,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 5;
+    public const int CurrentSchemaVersion = 6;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -60,6 +60,26 @@ public static class SaveSerializer
             [4] = root =>
             {
                 root["relationships"] = new JsonArray();
+                return root;
+            },
+
+            // Format 6 added task IDs, priorities and queues. Existing active tasks get IDs in save order;
+            // they were normal-priority work whose materials had already been used.
+            [5] = root =>
+            {
+                var next = 0;
+                foreach (var task in root["activeTasks"]?.AsArray() ?? [])
+                {
+                    if (task is JsonObject fields)
+                    {
+                        fields["id"] = ++next;
+                        fields["priority"] = nameof(TaskPriority.Normal);
+                        fields["materialsConsumed"] = true;
+                    }
+                }
+
+                root["lastTaskId"] = next;
+                root["queuedTasks"] = new JsonArray();
                 return root;
             },
         };
@@ -292,14 +312,12 @@ public static class SaveSerializer
                     }
                     : null,
             }).ToList(),
-            ActiveTasks = campaign.ActiveTasks.Values.OrderBy(t => t.CharacterId.Value).Select(t => new TaskData
-            {
-                CharacterId = t.CharacterId.Value,
-                DefinitionId = t.DefinitionId,
-                StartedAtTick = t.StartedAtTick,
-                Progress = t.Progress,
-                SpotId = t.SpotId,
-            }).ToList(),
+            LastTaskId = campaign.Ids.LastTaskId,
+            ActiveTasks = campaign.ActiveTasks.Values.OrderBy(t => t.CharacterId.Value).Select(ToData).ToList(),
+            QueuedTasks = campaign.CharactersWithQueues.Order()
+                .SelectMany(id => campaign.QueueOf(id))
+                .Select(ToData)
+                .ToList(),
             Chronicle = campaign.Chronicle.Entries.Select(e => new ChronicleEntryData
             {
                 Sequence = e.Sequence,
@@ -308,6 +326,50 @@ public static class SaveSerializer
                 Characters = e.Characters.Select(id => id.Value).ToList(),
                 Parameters = new SortedDictionary<string, string>(e.Parameters.ToDictionary(), StringComparer.Ordinal),
             }).ToList(),
+        };
+    }
+
+    private static TaskData ToData(TaskInstance task) => new()
+    {
+        Id = task.Id.Value,
+        CharacterId = task.CharacterId.Value,
+        DefinitionId = task.DefinitionId,
+        Priority = task.Priority.ToString(),
+        StartedAtTick = task.StartedAtTick,
+        MaterialsConsumed = task.MaterialsConsumed,
+        Progress = task.Progress,
+        SpotId = task.SpotId,
+    };
+
+    /// <summary>Checks the parts of a saved task that do not depend on whether it is active or waiting.</summary>
+    private static TaskInstance RestoreTask(TaskData saved, CampaignState campaign, GameContent content, long now, HashSet<int> seenIds)
+    {
+        var id = new CharacterId(saved.CharacterId);
+        if (!campaign.Characters.TryGetValue(id, out var worker))
+        {
+            throw new SaveLoadException($"A task belongs to {id}, who is not in the save.");
+        }
+
+        if (!content.Tasks.ContainsKey(saved.DefinitionId))
+        {
+            throw new SaveLoadException($"{worker.Name} has '{saved.DefinitionId}' to do, which no longer exists in the game content.");
+        }
+
+        if (saved.Id <= 0 || saved.Id > campaign.Ids.LastTaskId || !seenIds.Add(saved.Id))
+        {
+            throw new SaveLoadException($"{worker.Name}'s task {saved.Id} has an invalid or duplicate ID.");
+        }
+
+        if (saved.Progress < 0 || saved.StartedAtTick < 0 || saved.StartedAtTick > now || (saved.StartedAtTick is null && saved.Progress > 0))
+        {
+            throw new SaveLoadException($"{worker.Name}'s task '{saved.DefinitionId}' has invalid progress or start time.");
+        }
+
+        return new TaskInstance(new TaskId(saved.Id), id, saved.DefinitionId, ParseEnum<TaskPriority>(saved.Priority, "task priority"))
+        {
+            StartedAtTick = saved.StartedAtTick,
+            MaterialsConsumed = saved.MaterialsConsumed,
+            Progress = saved.Progress,
         };
     }
 
@@ -415,47 +477,70 @@ public static class SaveSerializer
             campaign.RestoreRelationship(relationship);
         }
 
+        if (data.LastTaskId < 0)
+        {
+            throw new SaveLoadException($"lastTaskId {data.LastTaskId} is invalid.");
+        }
+
+        campaign.Ids.ReserveTaskId(data.LastTaskId);
+        var taskIds = new HashSet<int>();
         var reservedSpots = new HashSet<string>(StringComparer.Ordinal);
         foreach (var saved in data.ActiveTasks)
         {
-            var id = new CharacterId(saved.CharacterId);
-            if (!campaign.Characters.TryGetValue(id, out var worker))
-            {
-                throw new SaveLoadException($"An active task belongs to {id}, who is not in the save.");
-            }
-
+            var task = RestoreTask(saved, campaign, content, data.Tick, taskIds);
+            var worker = campaign.Characters[task.CharacterId];
             if (!worker.CanWork)
             {
-                throw new SaveLoadException($"{worker.Name} ({id}) is {worker.SurvivalState} but has an active task.");
+                throw new SaveLoadException($"{worker.Name} ({task.CharacterId}) is {worker.SurvivalState} but has an active task.");
             }
 
-            if (!content.Tasks.ContainsKey(saved.DefinitionId))
+            if (campaign.ActiveTasks.ContainsKey(task.CharacterId))
             {
-                throw new SaveLoadException($"{worker.Name} is doing '{saved.DefinitionId}', which no longer exists in the game content.");
+                throw new SaveLoadException($"{worker.Name} ({task.CharacterId}) has more than one active task.");
             }
 
-            if (campaign.ActiveTasks.ContainsKey(id))
+            if (task.StartedAtTick is null)
             {
-                throw new SaveLoadException($"{worker.Name} ({id}) has more than one active task.");
-            }
-
-            if (saved.Progress < 0 || saved.StartedAtTick < 0 || saved.StartedAtTick > data.Tick)
-            {
-                throw new SaveLoadException($"{worker.Name}'s task '{saved.DefinitionId}' has invalid progress or start time.");
+                throw new SaveLoadException($"{worker.Name}'s active task '{saved.DefinitionId}' has no start time.");
             }
 
             if (saved.SpotId is not null)
             {
-                var spot = campaign.Placements.TryGetValue(id, out var where)
+                var spot = campaign.Placements.TryGetValue(task.CharacterId, out var where)
                     ? content.Locations[where.LocationId].FindSpot(saved.SpotId)
                     : null;
                 if (spot is null || !spot.Tasks.Contains(saved.DefinitionId) || !reservedSpots.Add(saved.SpotId))
                 {
                     throw new SaveLoadException($"{worker.Name}'s task uses work spot '{saved.SpotId}', which is missing, wrong for the task, or used twice.");
                 }
+
+                task.SpotId = saved.SpotId;
             }
 
-            campaign.StartTask(new TaskInstance(id, saved.DefinitionId, saved.StartedAtTick) { Progress = saved.Progress, SpotId = saved.SpotId });
+            campaign.StartTask(task);
+        }
+
+        foreach (var saved in data.QueuedTasks)
+        {
+            var task = RestoreTask(saved, campaign, content, data.Tick, taskIds);
+            var worker = campaign.Characters[task.CharacterId];
+            if (worker.SurvivalState is SurvivalState.Dead or SurvivalState.Missing)
+            {
+                throw new SaveLoadException($"{worker.Name} is {worker.SurvivalState} but has orders waiting.");
+            }
+
+            if (saved.SpotId is not null)
+            {
+                throw new SaveLoadException($"{worker.Name}'s waiting task '{saved.DefinitionId}' holds a work spot.");
+            }
+
+            // Saved in queue order, so appending each one rebuilds the queue exactly.
+            campaign.Enqueue(task, aheadOfSamePriority: false);
+            var queue = campaign.QueueOf(task.CharacterId);
+            if (queue[^1] != task)
+            {
+                throw new SaveLoadException($"{worker.Name}'s waiting orders are out of priority order.");
+            }
         }
 
         foreach (var saved in data.Chronicle)

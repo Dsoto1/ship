@@ -16,7 +16,7 @@ This file tracks status and breaks the next work into tickets.
 | 3b | Structured chronicle, need diagnostics, long-run tests | Done (2026-10-18) |
 | 3c | Attributes, random streams, campaign ID and captain | Done (2026-10-18) |
 | 3d | Directed relationships; traits and conditions as content | Done (2026-10-18) |
-| 3e | Task queue, priority and resume | Proposed — see SPEC_AUDIT.md §6 |
+| 3e | Task queue, priority and resume | Done (2026-10-18) |
 | 4a | Positions, work spots and movement in the simulation | Done (2026-10-18) |
 | 4b | Godot graybox interaction scene | Done (2026-10-18) — owner ran the manual test on macOS, all 8 steps passed |
 | 4c | Appearance record | Proposed |
@@ -253,3 +253,15 @@ See D-009.
 - **Save format 5.**
 
 207 tests pass.
+
+## Ticket 3e — Task queue, priority and resume
+
+See D-010.
+- **Order buttons in Godot now queue:** an idle person starts at once, a busy one does it next.
+- **The "Urgent" checkbox** pauses current work for the new order. The paused work resumes
+  afterwards with its progress.
+- **The record panel** lists the queue, with each item's priority and how far paused work got, and
+  has a "Clear queued orders" button.
+- **Save format 6.**
+
+229 tests pass. All of the spec-alignment tickets (3a–3e) are now done.

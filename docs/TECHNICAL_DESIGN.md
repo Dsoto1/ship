@@ -1,6 +1,6 @@
 # Technical Design
 
-Status: P0 implemented in graybox (Tickets 1–4b, 3a–3d). Save format 5. Update this file when architecture or behavior changes.
+Status: P0 implemented in graybox (Tickets 1–4b, 3a–3e). Save format 6. Update this file when architecture or behavior changes.
 See `DECISIONS.md` for why each choice was made, and `GAME_VISION.md` for the product vision.
 
 ## 1. Solution layout (proposed)
@@ -53,6 +53,11 @@ is added only when a ticket needs it.
   `CampaignState.ActiveTasks`) tracks progress. `SimulationRunner.AssignTask` checks eligibility
   (alive, idle, not exhausted, skill, tools, materials) and consumes materials when the task
   starts. `Advance` returns the tasks that completed or were interrupted.
+- **Orders and queues.** `SimulationRunner.QueueTask` is the way players give orders (D-010). One
+  active task per character, plus a queue: urgent before normal, and paused work at the front of its
+  priority. The next order starts automatically when the character is idle and able. Pausing keeps
+  progress and used materials. Every order has a stable `TaskId`. `AssignTask` remains as
+  "start now if idle" for scenarios and tests.
 - **Supplies.** Every character has a personal inventory (`InventoryId.ForCharacter`), and the
   campaign names one shared store (`SharedStoreId`): the hold at sea, a camp store ashore.
   Characters take what they need from their own pack first, then from the shared store.

@@ -52,6 +52,12 @@ public sealed record SaveData
     /// <summary>Directed relationships, ordered by (from, to). Added in format 5.</summary>
     public required IReadOnlyList<RelationshipData> Relationships { get; init; }
 
+    /// <summary>Highest task ID ever issued. Added in format 6.</summary>
+    public required int LastTaskId { get; init; }
+
+    /// <summary>Waiting orders, by character ID and then in queue order. Added in format 6.</summary>
+    public required IReadOnlyList<TaskData> QueuedTasks { get; init; }
+
     /// <summary>Active tasks, in character ID order.</summary>
     public required IReadOnlyList<TaskData> ActiveTasks { get; init; }
 
@@ -144,14 +150,23 @@ public sealed record InventoryData
 /// <summary>A saved active task.</summary>
 public sealed record TaskData
 {
+    /// <summary>Task ID number. Added in format 6.</summary>
+    public required int Id { get; init; }
+
     /// <summary>Character doing the task.</summary>
     public required int CharacterId { get; init; }
 
     /// <summary>Task definition ID.</summary>
     public required string DefinitionId { get; init; }
 
-    /// <summary>Tick it started.</summary>
-    public required long StartedAtTick { get; init; }
+    /// <summary>Priority name. Added in format 6.</summary>
+    public required string Priority { get; init; }
+
+    /// <summary>Tick work first started, or null for an order that has not started.</summary>
+    public long? StartedAtTick { get; init; }
+
+    /// <summary>Whether the task's materials have been used. Added in format 6.</summary>
+    public required bool MaterialsConsumed { get; init; }
 
     /// <summary>Work-minutes done.</summary>
     public required double Progress { get; init; }

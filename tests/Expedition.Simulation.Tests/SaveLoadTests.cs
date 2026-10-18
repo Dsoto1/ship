@@ -185,7 +185,7 @@ public class SaveLoadTests
     [Fact]
     public void OlderVersionIsUpgradedThroughMigrations()
     {
-        // Pretend this build reads format 6, and format 5 called the phase field "stage".
+        // Pretend this build reads format 7, and format 6 called the phase field "stage".
         var current = SaveSerializer.Serialize(StormDamagedVoyage().Campaign);
         var formatOne = Edit(current, root =>
         {
@@ -194,7 +194,7 @@ public class SaveLoadTests
         });
         var migrations = new Dictionary<int, Func<JsonObject, JsonObject>>
         {
-            [5] = root =>
+            [6] = root =>
             {
                 root["phase"] = root["stage"]!.DeepClone();
                 root.Remove("stage");
@@ -202,7 +202,7 @@ public class SaveLoadTests
             },
         };
 
-        var loaded = SaveSerializer.Deserialize(formatOne, TestContent.Create(), migrations, currentVersion: 6);
+        var loaded = SaveSerializer.Deserialize(formatOne, TestContent.Create(), migrations, currentVersion: 7);
 
         Assert.Equal(CampaignPhase.Voyage, loaded.Phase);
         Assert.Equal(current, SaveSerializer.Serialize(loaded));
@@ -214,9 +214,9 @@ public class SaveLoadTests
         var json = SaveSerializer.Serialize(StormDamagedVoyage().Campaign);
 
         var ex = Assert.Throws<SaveLoadException>(() =>
-            SaveSerializer.Deserialize(json, TestContent.Create(), new Dictionary<int, Func<JsonObject, JsonObject>>(), currentVersion: 6));
+            SaveSerializer.Deserialize(json, TestContent.Create(), new Dictionary<int, Func<JsonObject, JsonObject>>(), currentVersion: 7));
 
-        Assert.Contains("no upgrade from format 5", ex.Message);
+        Assert.Contains("no upgrade from format 6", ex.Message);
     }
 
     [Fact]
@@ -267,7 +267,7 @@ public class SaveLoadTests
     {
         root["schemaVersion"] = 3;
         root["random"] = root["randomStreams"]!["tasks"]!.DeepClone();
-        foreach (var field in new[] { "randomStreams", "seed", "campaignId", "captainId", "relationships" })
+        foreach (var field in new[] { "randomStreams", "seed", "campaignId", "captainId", "relationships", "lastTaskId", "queuedTasks" })
         {
             root.Remove(field);
         }
@@ -275,6 +275,14 @@ public class SaveLoadTests
         foreach (var character in root["characters"]!.AsArray())
         {
             character!.AsObject().Remove("attributes");
+        }
+
+        foreach (var task in root["activeTasks"]!.AsArray())
+        {
+            foreach (var field in new[] { "id", "priority", "materialsConsumed" })
+            {
+                task!.AsObject().Remove(field);
+            }
         }
     }
 
@@ -316,10 +324,15 @@ public class SaveLoadTests
     public void DeadCharacterWithActiveTaskIsRejected()
     {
         var json = Edit(SaveSerializer.Serialize(StormDamagedVoyage().Campaign), root =>
+        {
+            var id = root["lastTaskId"]!.GetValue<int>() + 1;
+            root["lastTaskId"] = id;
             root["activeTasks"]!.AsArray().Add(new JsonObject
             {
-                ["characterId"] = 6, ["definitionId"] = "task.rest", ["startedAtTick"] = 0, ["progress"] = 0,
-            }));
+                ["id"] = id, ["characterId"] = 6, ["definitionId"] = "task.rest", ["priority"] = "Normal",
+                ["startedAtTick"] = 0, ["materialsConsumed"] = true, ["progress"] = 0,
+            });
+        });
 
         var ex = Assert.Throws<SaveLoadException>(() => SaveSerializer.Deserialize(json, TestContent.Create()));
 

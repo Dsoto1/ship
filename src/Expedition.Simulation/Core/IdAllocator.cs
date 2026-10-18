@@ -6,12 +6,31 @@ namespace Expedition.Simulation.Core;
 public sealed class IdAllocator
 {
     private int _lastCharacterId;
+    private int _lastTaskId;
 
     /// <summary>The highest character ID issued or reserved so far. Persisted with the campaign.</summary>
     public int LastCharacterId => _lastCharacterId;
 
     /// <summary>Issues a new character ID that has never been issued by this allocator.</summary>
     public CharacterId NextCharacterId() => new(++_lastCharacterId);
+
+    /// <summary>The highest task ID issued or reserved so far. Persisted with the campaign.</summary>
+    public int LastTaskId => _lastTaskId;
+
+    /// <summary>Issues a new task ID that has never been issued by this allocator.</summary>
+    public Tasks.TaskId NextTaskId() => new(++_lastTaskId);
+
+    /// <summary>Records that task ID number <paramref name="value"/> is in use, so it is never issued again.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
+    public void ReserveTaskId(int value)
+    {
+        if (value < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(value), value, "Task IDs cannot be negative.");
+        }
+
+        _lastTaskId = Math.Max(_lastTaskId, value);
+    }
 
     /// <summary>
     /// Records that <paramref name="id"/> is in use (for example, after loading a character),

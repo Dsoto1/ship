@@ -2,6 +2,7 @@ using Expedition.Simulation.Content;
 using Expedition.Simulation.Core;
 using Expedition.Simulation.Persistence;
 using Expedition.Simulation.Scenarios;
+using Expedition.Simulation.Tasks;
 using Expedition.Simulation.World;
 using Godot;
 
@@ -60,6 +61,7 @@ public partial class Main : Node3D
         _hud.CharacterChosen += id => _selected = id;
         _hud.TaskOrdered += OrderTask;
         _hud.StopOrdered += () => { if (_selected is { } id) _hud.ShowResult(_runner.CancelTask(id)); };
+        _hud.QueueCleared += () => { if (_selected is { } id) _hud.ShowResult(_runner.ClearQueue(id), "Queued orders cleared."); };
 
         // Each new voyage gets its own seed; the seed is saved, so a reported problem can be replayed.
         var seed = (ulong)System.Random.Shared.NextInt64();
@@ -170,7 +172,7 @@ public partial class Main : Node3D
         _hud.ShowStatus(message);
     }
 
-    private void OrderTask(string taskId)
+    private void OrderTask(string taskId, TaskPriority priority)
     {
         if (_selected is not { } id)
         {
@@ -178,7 +180,11 @@ public partial class Main : Node3D
             return;
         }
 
-        _hud.ShowResult(_runner.AssignTask(id, taskId), $"{_runner.Campaign.Characters[id].Name}: {_content.Tasks[taskId].Name}.");
+        var name = _runner.Campaign.Characters[id].Name;
+        var task = _content.Tasks[taskId].Name;
+        var startsNow = !_runner.Campaign.ActiveTasks.ContainsKey(id) && _runner.Campaign.QueueOf(id).Count == 0;
+        var message = priority == TaskPriority.Urgent ? $"{name}: {task}, urgently." : startsNow ? $"{name}: {task}." : $"{name} will {task.ToLowerInvariant()} next.";
+        _hud.ShowResult(_runner.QueueTask(id, taskId, priority), message);
     }
 
     private void SetSpeed(int index)
