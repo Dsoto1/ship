@@ -53,14 +53,27 @@ are recorded in the chronicle.
 
 ---
 
-## D-003 — Save format: versioned JSON (proposed)
+## D-003 — Save format: versioned JSON
 
-**Status:** Proposed, to be confirmed in Ticket 3
+**Status:** Accepted (Ticket 3)
 
-Saves are JSON files written with `System.Text.Json`. Each file has a top-level
-`schemaVersion` and a migration step for each version. Loading fails with an explicit error
-and never falls back to a fresh campaign. JSON is readable during development. A binary format
-can be considered later if size or speed requires it.
+Saves are JSON files written with `System.Text.Json` (`Persistence/SaveSerializer`). The file
+shape is spelled out in `Persistence/SaveData.cs`, separate from the runtime classes, so any
+format change shows up in review.
+- **Versioning.** Each file has a top-level `schemaVersion`. Older files are upgraded one version
+  at a time by migration functions that edit the raw JSON, so old C# types never need keeping.
+  Files from a newer build are refused with a message telling the player to update.
+- **Validation.** Loading checks the whole file against the current content: unknown tasks or
+  items, dead characters with tasks, duplicate IDs, out-of-range values, a broken chronicle
+  sequence, an invalid random-generator state, unknown fields. Any problem raises
+  `SaveLoadException` with a readable reason. The loader never returns a partial or fresh campaign.
+- **Capacity.** Inventory capacity is not re-checked on load, so retuning item weights cannot make
+  old saves unloadable.
+- **Random generator.** Its 64-bit state is stored as decimal strings, because some JSON tools
+  lose precision on large integers.
+
+JSON is readable during development. A binary or compressed format can come later if size or
+speed requires it.
 
 ---
 
@@ -80,3 +93,26 @@ ticks would round small rates such as 1 fatigue per hour down to zero.
 **Why.** With a 30-person crew, one-minute ticks are cheap: a 40-day voyage is about 58,000 ticks.
 Accelerated time is a presentation concern, for example 1 real second = 1 in-game hour =
 60 ticks. Real-time speeds are not decided yet; Ticket 4 will settle them.
+
+---
+
+## D-005 — Save location: the standard per-user folder
+
+**Date:** 2026-10-18
+**Status:** Accepted (chosen by project owner)
+
+**Decision.** Saves live in the operating system's standard per-user application data folder,
+under `saves/`. The game resolves the folder through Godot's `user://` path and passes it to
+`Persistence/SaveStore`. The simulation library never decides where files go.
+
+In Ticket 4 the Godot project will enable `application/config/use_custom_user_dir` with the
+name `The Expedition`, so the paths are:
+- macOS: `~/Library/Application Support/The Expedition/saves/`
+- Windows: `%APPDATA%\The Expedition\saves\`
+- Linux: `~/.local/share/The Expedition/saves/`
+
+Each slot is one `<slot>.expedition.json` file. Writes go to a temporary file first and are then
+moved over the old save, so a crash while saving keeps the previous save.
+
+**Alternative considered.** A folder the player chooses: more flexible, but an extra setup step,
+and Steam Cloud and itch.io expect the standard location.

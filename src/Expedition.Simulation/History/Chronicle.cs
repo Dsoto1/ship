@@ -26,4 +26,17 @@ public sealed class Chronicle
         _entries.Add(entry);
         return entry;
     }
+
+    /// <summary>Appends an entry read from a save, which must continue the sequence exactly.</summary>
+    /// <exception cref="InvalidOperationException">The sequence number is out of order.</exception>
+    internal void Restore(ChronicleEntry entry)
+    {
+        if (entry.Sequence != _entries.Count + 1)
+        {
+            throw new InvalidOperationException(
+                $"Chronicle entry {entry.Sequence} is out of order; expected {_entries.Count + 1}.");
+        }
+
+        _entries.Add(entry);
+    }
 }

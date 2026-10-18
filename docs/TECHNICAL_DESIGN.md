@@ -1,6 +1,6 @@
 # Technical Design
 
-Status: P0 in progress. Tickets 1–2 (core model, clock and tasks) are implemented; the rest is proposed. Update this file when architecture or behavior changes.
+Status: P0 simulation foundation implemented (Tickets 1–3: core model, clock and tasks, inventory and save/load). Presentation (Ticket 4+) is proposed. Update this file when architecture or behavior changes.
 See `DECISIONS.md` for why each choice was made, and `GAME_VISION.md` for the product vision.
 
 ## 1. Solution layout (proposed)
@@ -12,12 +12,12 @@ src/
     Campaign/                   CampaignState, CampaignPhase, transitions, objectives
     Characters/                 Character, Skills, Needs, Health, Traits, Relationships, Knowledge
     Tasks/                      TaskDefinition, TaskInstance, eligibility, execution
-    Inventory/                  ItemDefinition, ItemStack, Inventory, cargo capacity
+    Items/                      ItemDefinition, Inventory, InventoryId, InventoryCapacity
     Ship/                       Ship, hull/rigging/bilge condition
     World/                      SimulationClock, SimulationRunner (time + task execution), weather (later)
     History/                    Chronicle (append-only event history)
     Content/                    loaders for data/ definitions
-    Persistence/                save/load, schema version, migrations
+    Persistence/                SaveData (file shape), SaveSerializer (versioned JSON + validation), SaveStore (slot files)
     Core/                       IDs, ID allocation, command results, SimulationRandom (PCG32)
 tests/
   Expedition.Simulation.Tests/  xUnit — unit and headless simulation scenarios
@@ -53,6 +53,16 @@ is added only when a ticket needs it.
   `CampaignState.ActiveTasks`) tracks progress. `SimulationRunner.AssignTask` checks eligibility
   (alive, idle, not exhausted, skill, tools, materials) and consumes materials when the task
   starts. `Advance` returns the tasks that completed or were interrupted.
+- **Supplies.** Every character has a personal inventory (`InventoryId.ForCharacter`), and the
+  campaign names one shared store (`SharedStoreId`): the hold at sea, a camp store ashore.
+  Characters take what they need from their own pack first, then from the shared store.
+  Items move only through `Inventory.TryTransfer`, which either moves everything or nothing.
+- **Eating and drinking** happen inside `Advance`. A character eats or drinks one unit when
+  hunger or thirst reaches the threshold set in the rules. At 100, starvation or dehydration
+  costs health, which leads to incapacitation and then death, each recorded with its cause.
+- **Saving.** `SaveSerializer.Serialize` and `Deserialize(json, content)` convert the entire
+  `CampaignState`, including the random generator, to and from JSON. The presentation layer
+  chooses the folder and passes it to `SaveStore`.
 - **Survival state through the campaign.** `Character.SurvivalState` can only be changed by
   `CampaignState.ChangeSurvivalState`, which enforces "dead is final" and records the cause.
 - **Chronicle.** Important outcomes append an entry to the chronicle: tick, type, the IDs

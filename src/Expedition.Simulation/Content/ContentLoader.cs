@@ -1,11 +1,12 @@
 using System.Text.Json;
+using Expedition.Simulation.Items;
 using Expedition.Simulation.Tasks;
 
 namespace Expedition.Simulation.Content;
 
 /// <summary>
 /// Reads content definitions from JSON. Expected layout under the data directory:
-/// <c>simulation_rules.json</c>, <c>skills.json</c> and any number of <c>tasks/*.json</c> files,
+/// <c>simulation_rules.json</c>, <c>skills.json</c>, <c>items.json</c> and any number of <c>tasks/*.json</c> files,
 /// each holding a JSON array of definitions.
 /// </summary>
 public static class ContentLoader
@@ -24,18 +25,20 @@ public static class ContentLoader
     {
         var rules = Read<SimulationRules>(Path.Combine(dataDirectory, "simulation_rules.json"));
         var skills = Read<List<SkillDefinition>>(Path.Combine(dataDirectory, "skills.json"));
+        var items = Read<List<ItemDefinition>>(Path.Combine(dataDirectory, "items.json"));
         var tasks = Directory.EnumerateFiles(Path.Combine(dataDirectory, "tasks"), "*.json")
             .Order(StringComparer.Ordinal)
             .SelectMany(Read<List<TaskDefinition>>)
             .ToList();
-        return new GameContent(rules, skills, tasks);
+        return new GameContent(rules, skills, items, tasks);
     }
 
     /// <summary>Parses content from JSON strings. Intended for tests and tools.</summary>
     /// <exception cref="ContentValidationException">The JSON is malformed or the content is invalid.</exception>
-    public static GameContent LoadFromJson(string rulesJson, string skillsJson, string tasksJson) =>
+    public static GameContent LoadFromJson(string rulesJson, string skillsJson, string itemsJson, string tasksJson) =>
         new(Parse<SimulationRules>(rulesJson, "rules"),
             Parse<List<SkillDefinition>>(skillsJson, "skills"),
+            Parse<List<ItemDefinition>>(itemsJson, "items"),
             Parse<List<TaskDefinition>>(tasksJson, "tasks"));
 
     private static T Read<T>(string path)

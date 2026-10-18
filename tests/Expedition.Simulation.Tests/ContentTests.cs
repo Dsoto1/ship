@@ -12,8 +12,18 @@ public class ContentTests
           "baselineNeedsPerHour": { "hunger": 0.5, "thirst": 1, "fatigue": 1 },
           "workRateBySkillLevel": [0.5, 0.75, 1, 1.25, 1.5, 1.75],
           "maxFatigueToStartWork": 90, "exhaustionFatigue": 100,
-          "tiredFatigue": 75, "tiredWorkRateMultiplier": 0.75, "incapacitatedAtHealth": 25
+          "tiredFatigue": 75, "tiredWorkRateMultiplier": 0.75, "incapacitatedAtHealth": 25,
+          "eatAtHunger": 35, "drinkAtThirst": 35,
+          "starvationHealthLossPerHour": 0.5, "dehydrationHealthLossPerHour": 2,
+          "personalCarryCapacity": { "maxWeightKg": 25 }
         }
+        """;
+
+    private const string Items = """
+        [
+          { "id": "item.marlinspike", "name": "Marlinspike", "category": "tool", "weightKg": 0.3, "volumeLitres": 0.1 },
+          { "id": "item.rope", "name": "Rope", "category": "material", "weightKg": 4, "volumeLitres": 6 }
+        ]
         """;
 
     [Fact]
@@ -25,12 +35,35 @@ public class ContentTests
         Assert.Contains("skill.navigation", content.Skills.Keys);
         Assert.True(content.Tasks["task.rest"].IsRest);
         Assert.Equal(1.0, content.Rules.WorkRateBySkillLevel[2]);
+        Assert.Contains(content.Foods, f => f.Id == "item.biscuit");
+        Assert.Contains(content.Drinks, d => d.Id == "item.water");
+        Assert.Equal(25, content.Rules.PersonalCarryCapacity.MaxWeightKg);
+    }
+
+    [Fact]
+    public void TaskReferringToUnknownItemIsRejected()
+    {
+        var ex = Assert.Throws<ContentValidationException>(() => ContentLoader.LoadFromJson(Rules, Skills, Items, """
+            [{ "id": "task.a", "name": "A", "durationMinutes": 10, "requiredTools": ["item.hammer"], "consumes": { "item.nails": 3 } }]
+            """));
+
+        Assert.Contains(ex.Errors, e => e.Contains("unknown item 'item.hammer'"));
+        Assert.Contains(ex.Errors, e => e.Contains("unknown item 'item.nails'"));
+    }
+
+    [Fact]
+    public void NegativeItemWeightIsRejected()
+    {
+        var ex = Assert.Throws<ContentValidationException>(() => ContentLoader.LoadFromJson(Rules, Skills,
+            """[{ "id": "item.x", "name": "X", "category": "tool", "weightKg": -1, "volumeLitres": 1 }]""", "[]"));
+
+        Assert.Contains(ex.Errors, e => e.Contains("item.x"));
     }
 
     [Fact]
     public void TasksParseFromJson()
     {
-        var content = ContentLoader.LoadFromJson(Rules, Skills, """
+        var content = ContentLoader.LoadFromJson(Rules, Skills, Items, """
             [{
               "id": "task.repair", "name": "Repair", "durationMinutes": 30, "skill": "skill.rigging", "minSkill": 2,
               "requiredTools": ["item.marlinspike"], "consumes": { "item.rope": 1 },
@@ -49,7 +82,7 @@ public class ContentTests
     [Fact]
     public void AllProblemsAreReportedTogether()
     {
-        var ex = Assert.Throws<ContentValidationException>(() => ContentLoader.LoadFromJson(Rules, Skills, """
+        var ex = Assert.Throws<ContentValidationException>(() => ContentLoader.LoadFromJson(Rules, Skills, Items, """
             [
               { "id": "task.a", "name": "A", "durationMinutes": 0 },
               { "id": "task.a", "name": "A again", "durationMinutes": 10 },
@@ -69,7 +102,7 @@ public class ContentTests
     {
         var badRules = TestContent.Rules with { WorkRateBySkillLevel = [1.0, 1.0], TiredWorkRateMultiplier = 0 };
 
-        var ex = Assert.Throws<ContentValidationException>(() => new GameContent(badRules, [], []));
+        var ex = Assert.Throws<ContentValidationException>(() => new GameContent(badRules, [], [], []));
 
         Assert.Contains(ex.Errors, e => e.Contains("workRateBySkillLevel"));
         Assert.Contains(ex.Errors, e => e.Contains("tiredWorkRateMultiplier"));
@@ -78,13 +111,13 @@ public class ContentTests
     [Fact]
     public void MalformedJsonIsReportedAsContentError()
     {
-        Assert.Throws<ContentValidationException>(() => ContentLoader.LoadFromJson(Rules, Skills, "[{ not json"));
+        Assert.Throws<ContentValidationException>(() => ContentLoader.LoadFromJson(Rules, Skills, Items, "[{ not json"));
     }
 
     [Fact]
     public void MisspelledFieldIsRejectedRatherThanIgnored()
     {
-        var ex = Assert.Throws<ContentValidationException>(() => ContentLoader.LoadFromJson(Rules, Skills,
+        var ex = Assert.Throws<ContentValidationException>(() => ContentLoader.LoadFromJson(Rules, Skills, Items,
             """[{ "id": "task.a", "name": "A", "durationMinutes": 10, "durationMinuts": 99 }]"""));
 
         Assert.Contains("durationMinuts", ex.Message);
@@ -93,7 +126,7 @@ public class ContentTests
     [Fact]
     public void MissingRequiredFieldIsRejected()
     {
-        Assert.Throws<ContentValidationException>(() => ContentLoader.LoadFromJson(Rules, Skills, """[{ "id": "task.a" }]"""));
+        Assert.Throws<ContentValidationException>(() => ContentLoader.LoadFromJson(Rules, Skills, Items, """[{ "id": "task.a" }]"""));
     }
 
     [Fact]

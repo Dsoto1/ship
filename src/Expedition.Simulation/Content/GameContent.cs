@@ -1,3 +1,4 @@
+using Expedition.Simulation.Items;
 using Expedition.Simulation.Tasks;
 
 namespace Expedition.Simulation.Content;
@@ -10,33 +11,55 @@ public sealed class GameContent
 {
     /// <summary>Builds and validates content.</summary>
     /// <exception cref="ContentValidationException">Any definition is invalid; all problems are listed.</exception>
-    public GameContent(SimulationRules rules, IEnumerable<SkillDefinition> skills, IEnumerable<TaskDefinition> tasks)
+    public GameContent(
+        SimulationRules rules,
+        IEnumerable<SkillDefinition> skills,
+        IEnumerable<ItemDefinition> items,
+        IEnumerable<TaskDefinition> tasks)
     {
         var errors = new List<string>();
         Rules = rules;
         Skills = IndexById(skills, s => s.Id, "skill", errors);
+        Items = IndexById(items, i => i.Id, "item", errors);
         Tasks = IndexById(tasks, t => t.Id, "task", errors);
 
         ContentValidator.ValidateRules(rules, errors);
+        foreach (var item in Items.Values)
+        {
+            ContentValidator.ValidateItem(item, errors);
+        }
+
         foreach (var task in Tasks.Values)
         {
-            ContentValidator.ValidateTask(task, Skills, errors);
+            ContentValidator.ValidateTask(task, Skills, Items, errors);
         }
 
         if (errors.Count > 0)
         {
             throw new ContentValidationException(errors);
         }
+
+        Foods = Items.Values.Where(i => i.HungerRelief > 0).OrderBy(i => i.Id, StringComparer.Ordinal).ToList();
+        Drinks = Items.Values.Where(i => i.ThirstRelief > 0).OrderBy(i => i.Id, StringComparer.Ordinal).ToList();
     }
 
-    /// <summary>Tunable rules for needs and work.</summary>
+    /// <summary>Tunable rules for needs, work and provisions.</summary>
     public SimulationRules Rules { get; }
 
     /// <summary>Skill definitions by ID.</summary>
     public IReadOnlyDictionary<string, SkillDefinition> Skills { get; }
 
+    /// <summary>Item definitions by ID.</summary>
+    public IReadOnlyDictionary<string, ItemDefinition> Items { get; }
+
     /// <summary>Task definitions by ID.</summary>
     public IReadOnlyDictionary<string, TaskDefinition> Tasks { get; }
+
+    /// <summary>Items that relieve hunger, in ID order. Characters eat the first one available.</summary>
+    public IReadOnlyList<ItemDefinition> Foods { get; }
+
+    /// <summary>Items that relieve thirst, in ID order. Characters drink the first one available.</summary>
+    public IReadOnlyList<ItemDefinition> Drinks { get; }
 
     private static Dictionary<string, T> IndexById<T>(IEnumerable<T> items, Func<T, string> id, string kind, List<string> errors)
     {

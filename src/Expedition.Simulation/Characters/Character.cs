@@ -1,4 +1,5 @@
 using Expedition.Simulation.Core;
+using Expedition.Simulation.Items;
 
 namespace Expedition.Simulation.Characters;
 
@@ -53,6 +54,9 @@ public sealed class Character
     /// <summary>Place of origin, for example a city or region.</summary>
     public string Origin { get; }
 
+    /// <summary>The character's personal inventory: what they carry with them through every phase.</summary>
+    public InventoryId InventoryId => InventoryId.ForCharacter(Id);
+
     /// <summary>Actual skill levels.</summary>
     public Skills Skills { get; } = new();
 
@@ -102,4 +106,7 @@ public sealed class Character
         SurvivalState = newState;
         return CommandResult.Ok();
     }
+
+    /// <summary>Sets survival state directly while loading a save. Never use for gameplay.</summary>
+    internal void RestoreSurvivalState(SurvivalState state) => SurvivalState = state;
 }

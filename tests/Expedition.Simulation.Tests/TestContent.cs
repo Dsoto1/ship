@@ -1,5 +1,6 @@
 using Expedition.Simulation.Characters;
 using Expedition.Simulation.Content;
+using Expedition.Simulation.Items;
 using Expedition.Simulation.Tasks;
 
 namespace Expedition.Simulation.Tests;
@@ -16,7 +17,21 @@ internal static class TestContent
         TiredFatigue = 75,
         TiredWorkRateMultiplier = 0.5,
         IncapacitatedAtHealth = 25,
+        EatAtHunger = 30,
+        DrinkAtThirst = 30,
+        StarvationHealthLossPerHour = 1.0,
+        DehydrationHealthLossPerHour = 4.0,
+        PersonalCarryCapacity = new InventoryCapacity { MaxWeightKg = 20, MaxVolumeLitres = 30 },
     };
+
+    public static IReadOnlyList<ItemDefinition> Items { get; } =
+    [
+        new() { Id = "item.biscuit", Name = "Biscuit", Category = "food", WeightKg = 0.25, VolumeLitres = 0.5, HungerRelief = 12 },
+        new() { Id = "item.water", Name = "Water", Category = "water", WeightKg = 1, VolumeLitres = 1, ThirstRelief = 12 },
+        new() { Id = "item.marlinspike", Name = "Marlinspike", Category = "tool", WeightKg = 0.3, VolumeLitres = 0.1 },
+        new() { Id = "item.rope", Name = "Rope", Category = "material", WeightKg = 4, VolumeLitres = 6 },
+        new() { Id = "item.plank", Name = "Plank", Category = "material", WeightKg = 9, VolumeLitres = 12 },
+    ];
 
     public static TaskDefinition Rest { get; } = new()
     {
@@ -27,7 +42,7 @@ internal static class TestContent
     public static TaskDefinition Pump { get; } = new()
     {
         Id = "task.pump", Name = "Pump", DurationMinutes = 60,
-        NeedsPerHour = new NeedRates { Fatigue = 6 },
+        NeedsPerHour = new NeedRates { Fatigue = 6, Thirst = 1 },
     };
 
     /// <summary>Long, tiring work for exhaustion tests: 10 fatigue per hour including baseline.</summary>
@@ -56,5 +71,6 @@ internal static class TestContent
     public static GameContent Create() => new(
         Rules,
         [new SkillDefinition { Id = "skill.rigging", Name = "Rigging", Group = "maritime" }],
+        Items,
         [Rest, Pump, Haul, RepairRigging, StormWork]);
 }

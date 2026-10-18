@@ -7,5 +7,12 @@
   "exhaustionFatigue": 100,
   "tiredFatigue": 75,
   "tiredWorkRateMultiplier": 0.75,
-  "incapacitatedAtHealth": 25
+  "incapacitatedAtHealth": 25,
+  // Crew eat or drink one unit from their pack, then from the shared store, at these levels.
+  "eatAtHunger": 35,
+  "drinkAtThirst": 35,
+  // Health lost per hour while hunger or thirst is at 100.
+  "starvationHealthLossPerHour": 0.5,
+  "dehydrationHealthLossPerHour": 2.0,
+  "personalCarryCapacity": { "maxWeightKg": 25, "maxVolumeLitres": 40 }
 }

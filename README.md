@@ -5,8 +5,9 @@ A single-player isometric historical survival, expedition and settlement game se
 and survives what follows: a storm, a shipwreck, landfall and settlement. The same crew is
 carried through every phase.
 
-**Status:** P0 (simulation foundation). The core character and campaign model exist; nothing is
-playable yet.
+**Status:** P0 (simulation foundation). Characters, tasks, time, needs, provisions, inventories
+and save/load are implemented and tested headless. Nothing is playable yet; the first Godot
+scene is next.
 
 ## Build and test
 

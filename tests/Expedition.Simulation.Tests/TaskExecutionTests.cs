@@ -120,14 +120,14 @@ public class TaskExecutionTests
     public void TaskNeedingMissingSkillIsIneligible()
     {
         var (runner, sailor) = Setup();
-        runner.Campaign.Supplies.Add("item.marlinspike", 1);
-        runner.Campaign.Supplies.Add("item.rope", 2);
+        runner.AddItems(runner.Campaign.SharedStoreId, "item.marlinspike", 1);
+        runner.AddItems(runner.Campaign.SharedStoreId, "item.rope", 2);
 
         var result = runner.AssignTask(sailor.Id, "task.repair_rigging");
 
         Assert.False(result.Succeeded);
         Assert.Contains("skill.rigging", result.Reason);
-        Assert.Equal(2, runner.Campaign.Supplies.Count("item.rope"));
+        Assert.Equal(2, runner.Campaign.SharedStore.Count("item.rope"));
     }
 
     [Fact]
@@ -135,7 +135,7 @@ public class TaskExecutionTests
     {
         var (runner, sailor) = Setup();
         sailor.Skills.Set("skill.rigging", 3);
-        runner.Campaign.Supplies.Add("item.rope", 2);
+        runner.AddItems(runner.Campaign.SharedStoreId, "item.rope", 2);
 
         var result = runner.AssignTask(sailor.Id, "task.repair_rigging");
 
@@ -148,14 +148,14 @@ public class TaskExecutionTests
     {
         var (runner, sailor) = Setup();
         sailor.Skills.Set("skill.rigging", 3);
-        runner.Campaign.Supplies.Add("item.marlinspike", 1);
-        runner.Campaign.Supplies.Add("item.rope", 1);
+        runner.AddItems(runner.Campaign.SharedStoreId, "item.marlinspike", 1);
+        runner.AddItems(runner.Campaign.SharedStoreId, "item.rope", 1);
 
         var result = runner.AssignTask(sailor.Id, "task.repair_rigging");
 
         Assert.False(result.Succeeded);
         Assert.Contains("item.rope x2", result.Reason);
-        Assert.Equal(1, runner.Campaign.Supplies.Count("item.rope"));
+        Assert.Equal(1, runner.Campaign.SharedStore.Count("item.rope"));
     }
 
     [Fact]
@@ -163,15 +163,15 @@ public class TaskExecutionTests
     {
         var (runner, sailor) = Setup();
         sailor.Skills.Set("skill.rigging", 2);
-        runner.Campaign.Supplies.Add("item.marlinspike", 1);
-        runner.Campaign.Supplies.Add("item.rope", 3);
+        runner.AddItems(runner.Campaign.SharedStoreId, "item.marlinspike", 1);
+        runner.AddItems(runner.Campaign.SharedStoreId, "item.rope", 3);
 
         Assert.True(runner.AssignTask(sailor.Id, "task.repair_rigging").Succeeded);
-        Assert.Equal(1, runner.Campaign.Supplies.Count("item.rope"));
-        Assert.Equal(1, runner.Campaign.Supplies.Count("item.marlinspike"));
+        Assert.Equal(1, runner.Campaign.SharedStore.Count("item.rope"));
+        Assert.Equal(1, runner.Campaign.SharedStore.Count("item.marlinspike"));
 
         Assert.True(runner.CancelTask(sailor.Id).Succeeded);
-        Assert.Equal(1, runner.Campaign.Supplies.Count("item.rope"));
+        Assert.Equal(1, runner.Campaign.SharedStore.Count("item.rope"));
         Assert.Empty(runner.Campaign.ActiveTasks);
     }
 
@@ -183,8 +183,8 @@ public class TaskExecutionTests
     {
         var (runner, sailor) = Setup();
         sailor.Skills.Set("skill.rigging", level);
-        runner.Campaign.Supplies.Add("item.marlinspike", 1);
-        runner.Campaign.Supplies.Add("item.rope", 2);
+        runner.AddItems(runner.Campaign.SharedStoreId, "item.marlinspike", 1);
+        runner.AddItems(runner.Campaign.SharedStoreId, "item.rope", 2);
 
         runner.AssignTask(sailor.Id, "task.repair_rigging");
         var outcome = Assert.Single(runner.Advance(5 * Hour));

@@ -17,4 +17,7 @@ public enum ChronicleEntryKind
 
     /// <summary>A character's task stopped before it was finished.</summary>
     TaskInterrupted,
+
+    /// <summary>Someone needed food or water and none was available.</summary>
+    SupplyShortage,
 }

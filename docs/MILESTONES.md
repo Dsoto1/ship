@@ -10,8 +10,8 @@ This file tracks status and breaks the next work into tickets.
 | 0 | Repository and feasibility audit | Done (2026-10-18) |
 | 1 | Solution scaffold, core data model and invariants | Done (2026-10-18) |
 | 2 | Simulation clock and task execution | Done (2026-10-18) |
-| 3 | Inventory, supplies, and save/load | Proposed (next) |
-| 4 | Small playable Godot test scene | Not started |
+| 3 | Inventory, supplies, and save/load | Done (2026-10-18) |
+| 4 | Small playable Godot test scene | Next |
 | 5 | Recruitment prototype | Not started |
 | 6 | Voyage-to-crisis vertical slice | Not started |
 | 7 | Shipwreck or landfall continuation | Not started |
@@ -93,3 +93,48 @@ load produces an equivalent state (structural comparison). A corrupt or newer-ve
 fails with a clear error. A dead character stays dead after loading.
 **Risks.** Save schema churn while models are young. Mitigation: a version field and a
 migration hook from the first save.
+
+**Result.** Implemented:
+- **Items.** `data/items.json` holds 9 items, each with weight, volume and food or drink value.
+  Task data that names unknown items is rejected.
+- **Inventories.** `Items/Inventory` has weight and volume limits, all-or-nothing removal, and
+  transfers that cannot create or destroy items. Every character has a personal inventory with a
+  carry limit. The campaign has a shared store (the ship's hold at sea).
+- **Supplies.** Tasks take materials from the character's own pack first, then from the shared
+  store.
+- **Eating and drinking.** Crew eat or drink one unit at a threshold, so hard work uses more
+  provisions. Incapacitated crew are fed; the dead are not. Starvation and dehydration wear
+  health down until the character is incapacitated, then dead. A shortage is recorded once and
+  again only after resupply.
+- **Saves.** Versioned JSON with full validation (D-003), and `SaveStore` for slot files with
+  atomic writes, in the standard per-user folder (D-005).
+
+129 xUnit tests pass. Coverage includes a 30-day provisions count, save → load → identical
+document, a storm-damaged crew that continues exactly the same way after loading, the dead
+staying dead, a real format upgrade, and 16 corrupt or tampered save cases.
+
+Deliberately left for later:
+- Food does not spoil, and there is no rationing policy (full or half rations) yet.
+- Characters always eat the first available food in ID order; there are no preferences.
+- Condition IDs (injuries) and trait IDs are not defined in content or validated yet.
+- There is no ship model yet, so ship condition is not saved (Ticket 6).
+- The Godot side of saving (resolving `user://`, save and load buttons) is Ticket 4.
+
+## Ticket 4 — Small playable Godot test scene
+
+**Depends on:** Tickets 1–3. **Must be run locally** (Godot cannot be installed in the cloud
+environment).
+**Scope.**
+- Create `game/`, a Godot 4 .NET project that references `Expedition.Simulation`, with a custom
+  user dir of `The Expedition` (D-005).
+- One deck-sized isometric test scene with a few characters drawn as placeholder shapes. Clicking
+  a character shows their needs, health, task and inventory.
+- Assign a task from a list, which shows the eligibility reason when it is refused.
+- Pause, normal and fast time controls. Settle the real-time speeds left open in D-004.
+- Save and load buttons that use `SaveStore` in `user://saves`.
+- A chronicle panel.
+
+**Acceptance.** The scene runs on macOS. The simulation stays the only source of state: the
+scene only reads it and sends commands. A save made in the scene can be loaded back.
+**Risks.** Godot .NET version and SDK mismatches on macOS. I can't run Godot here, so the
+developer must run each step and report back what they see.

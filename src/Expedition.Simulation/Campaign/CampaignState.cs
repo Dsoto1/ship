@@ -1,30 +1,45 @@
 using Expedition.Simulation.Characters;
 using Expedition.Simulation.Core;
 using Expedition.Simulation.History;
-using Expedition.Simulation.Inventory;
+using Expedition.Simulation.Items;
 using Expedition.Simulation.Tasks;
 using Expedition.Simulation.World;
 
 namespace Expedition.Simulation.Campaign;
 
 /// <summary>
-/// Root of all persistent campaign state. Owns the single roster of characters, the clock, the random
-/// generator, active tasks, supplies and the chronicle. State changes that matter to the story go
-/// through methods here or through <see cref="SimulationRunner"/> so they are validated and recorded.
+/// Root of all persistent campaign state. Owns the single roster of characters, their inventories and
+/// the shared stores, the clock, the random generator, active tasks and the chronicle. State changes
+/// that matter to the story go through methods here or through <see cref="SimulationRunner"/> so they
+/// are validated and recorded.
 /// </summary>
 public sealed class CampaignState
 {
     /// <summary>Seed used when none is given. Tests and scenarios should pass their own.</summary>
     public const ulong DefaultSeed = 0x5EA_F00D;
 
+    /// <summary>ID of the shared store every new campaign starts with.</summary>
+    public static readonly InventoryId DefaultStoreId = new("inv.stores");
+
     private readonly Dictionary<CharacterId, Character> _characters = [];
     private readonly Dictionary<CharacterId, TaskInstance> _activeTasks = [];
+    private readonly Dictionary<InventoryId, Inventory> _inventories = [];
 
-    /// <summary>Creates a campaign in the given starting phase with a seeded random generator.</summary>
+    /// <summary>
+    /// Creates a campaign in the given starting phase with a seeded random generator and one
+    /// unlimited shared store (<see cref="DefaultStoreId"/>).
+    /// </summary>
     public CampaignState(CampaignPhase startingPhase = CampaignPhase.SponsorCommission, ulong seed = DefaultSeed)
+        : this(startingPhase, new SimulationRandom(seed))
     {
-        Phase = startingPhase;
-        Random = new SimulationRandom(seed);
+        CreateInventory(DefaultStoreId, "Stores", InventoryCapacity.Unlimited);
+        SharedStoreId = DefaultStoreId;
+    }
+
+    private CampaignState(CampaignPhase phase, SimulationRandom random)
+    {
+        Phase = phase;
+        Random = random;
     }
 
     /// <summary>Current campaign phase.</summary>
@@ -39,9 +54,6 @@ public sealed class CampaignState
     /// <summary>The only source of gameplay randomness. Its state is saved with the campaign.</summary>
     public SimulationRandom Random { get; }
 
-    /// <summary>Shared supplies that tasks draw tools and materials from. Replaced by real inventories in Ticket 3.</summary>
-    public Stockpile Supplies { get; } = new();
-
     /// <summary>History of important events.</summary>
     public Chronicle Chronicle { get; } = new();
 
@@ -51,20 +63,45 @@ public sealed class CampaignState
     /// <summary>The task each busy character is doing. Characters without an entry are idle.</summary>
     public IReadOnlyDictionary<CharacterId, TaskInstance> ActiveTasks => _activeTasks;
 
-    /// <summary>Creates a new character with a freshly issued ID and adds it to the campaign.</summary>
-    public Character CreateCharacter(string name, int age, string origin)
+    /// <summary>Every inventory: personal ones (one per character) and shared stores.</summary>
+    public IReadOnlyDictionary<InventoryId, Inventory> Inventories => _inventories;
+
+    /// <summary>
+    /// The store the crew eats from and draws task materials from after their own packs:
+    /// the ship's hold at sea, the camp store ashore.
+    /// </summary>
+    public InventoryId SharedStoreId { get; private set; }
+
+    /// <summary>The inventory named by <see cref="SharedStoreId"/>.</summary>
+    public Inventory SharedStore => _inventories[SharedStoreId];
+
+    /// <summary>True while a food shortage has been recorded and nobody has eaten since. Avoids repeating the entry every minute.</summary>
+    public bool FoodShortageRecorded { get; internal set; }
+
+    /// <summary>True while a water shortage has been recorded and nobody has drunk since.</summary>
+    public bool WaterShortageRecorded { get; internal set; }
+
+    /// <summary>
+    /// Creates a new character with a freshly issued ID and an empty personal inventory, and adds
+    /// both to the campaign.
+    /// </summary>
+    /// <param name="name">Full name.</param>
+    /// <param name="age">Age in years.</param>
+    /// <param name="origin">Place of origin.</param>
+    /// <param name="carryCapacity">Limits on what the character can carry; unlimited if null.</param>
+    public Character CreateCharacter(string name, int age, string origin, InventoryCapacity? carryCapacity = null)
     {
         var character = new Character(Ids.NextCharacterId(), name, age, origin);
-        _characters.Add(character.Id, character);
+        AddCharacter(character, carryCapacity);
         return character;
     }
 
     /// <summary>
     /// Adds an existing character (for example, one restored from a save). The ID is reserved so
-    /// it will never be issued again.
+    /// it will never be issued again. A personal inventory is created if one does not already exist.
     /// </summary>
     /// <exception cref="InvalidOperationException">A character with the same ID is already in the campaign.</exception>
-    public void AddCharacter(Character character)
+    public void AddCharacter(Character character, InventoryCapacity? carryCapacity = null)
     {
         if (_characters.ContainsKey(character.Id))
         {
@@ -73,6 +110,10 @@ public sealed class CampaignState
 
         Ids.Reserve(character.Id);
         _characters.Add(character.Id, character);
+        if (!_inventories.ContainsKey(character.InventoryId))
+        {
+            CreateInventory(character.InventoryId, $"{character.Name}'s belongings", carryCapacity ?? InventoryCapacity.Unlimited);
+        }
     }
 
     /// <summary>Returns the character with <paramref name="id"/>.</summary>
@@ -81,6 +122,37 @@ public sealed class CampaignState
         _characters.TryGetValue(id, out var character)
             ? character
             : throw new KeyNotFoundException($"No character with ID {id} in the campaign.");
+
+    /// <summary>Creates an empty inventory, for example a ship's hold.</summary>
+    /// <exception cref="InvalidOperationException">An inventory with that ID already exists.</exception>
+    public Inventory CreateInventory(InventoryId id, string name, InventoryCapacity capacity)
+    {
+        if (_inventories.ContainsKey(id))
+        {
+            throw new InvalidOperationException($"An inventory with ID {id} already exists.");
+        }
+
+        var inventory = new Inventory(id, name, capacity);
+        _inventories.Add(id, inventory);
+        return inventory;
+    }
+
+    /// <summary>Makes <paramref name="id"/> the store the crew draws on, for example after landing.</summary>
+    public CommandResult SetSharedStore(InventoryId id)
+    {
+        if (!_inventories.ContainsKey(id))
+        {
+            return CommandResult.Rejected($"No inventory with ID {id}.");
+        }
+
+        if (_characters.Values.Any(c => c.InventoryId == id))
+        {
+            return CommandResult.Rejected($"{id} is a personal inventory and cannot be the shared store.");
+        }
+
+        SharedStoreId = id;
+        return CommandResult.Ok();
+    }
 
     /// <summary>
     /// Moves the campaign to <paramref name="target"/> if <see cref="PhaseTransitions"/> allows it.
@@ -158,4 +230,18 @@ public sealed class CampaignState
         Record(ChronicleEntryKind.TaskInterrupted, $"{_characters[id].Name} stopped {task.DefinitionId}: {reason}", id);
         return new TaskOutcome(Clock.Tick, id, task.DefinitionId, TaskEnd.Interrupted, reason);
     }
+
+    /// <summary>
+    /// Creates an empty campaign shell for the save loader to fill. It has no inventories and no
+    /// shared store until the loader restores them.
+    /// </summary>
+    internal static CampaignState CreateForRestore(CampaignPhase phase, SimulationRandom random, long tick)
+    {
+        var campaign = new CampaignState(phase, random);
+        campaign.Clock.Restore(tick);
+        return campaign;
+    }
+
+    /// <summary>Restores the shared store pointer while loading.</summary>
+    internal void RestoreSharedStore(InventoryId id) => SharedStoreId = id;
 }

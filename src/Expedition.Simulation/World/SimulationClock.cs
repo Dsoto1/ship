@@ -39,6 +39,9 @@ public sealed class SimulationClock
     /// <summary>Advances the clock by one tick. Called only by the simulation runner.</summary>
     internal void Step() => Tick++;
 
+    /// <summary>Sets the tick while loading a save.</summary>
+    internal void Restore(long tick) => Tick = tick;
+
     /// <summary>Readable time such as <c>Day 3, 14:05</c>.</summary>
     public override string ToString() => $"Day {Day}, {TimeOfDay:hh\\:mm}";
 }
