@@ -1,6 +1,7 @@
 # Milestones and Ticket Plan
 
-Milestone definitions (P0–P3) and acceptance criteria are in `GAME_VISION.md` §10–§11.
+Milestone definitions (P0–P3) and acceptance criteria are in `GAME_VISION.md` §10–§11 and
+`TECHNICAL_SPEC.md` §35–§38. The revised plan after the spec audit is in `SPEC_AUDIT.md` §6.
 This file tracks status and breaks the next work into tickets.
 
 ## Status
@@ -11,7 +12,8 @@ This file tracks status and breaks the next work into tickets.
 | 1 | Solution scaffold, core data model and invariants | Done (2026-10-18) |
 | 2 | Simulation clock and task execution | Done (2026-10-18) |
 | 3 | Inventory, supplies, and save/load | Done (2026-10-18) |
-| 4 | Small playable Godot test scene | Next |
+| 3a–3e | Spec alignment (CI, structured chronicle, attributes, random streams, relationships, task queue) | Proposed — see SPEC_AUDIT.md §6 |
+| 4 | Small playable Godot test scene (split into 4a positions, 4b Godot graybox, 4c appearance) | Proposed — waits for the projection decision |
 | 5 | Recruitment prototype | Not started |
 | 6 | Voyage-to-crisis vertical slice | Not started |
 | 7 | Shipwreck or landfall continuation | Not started |
