@@ -1,0 +1,56 @@
+# Decisions
+
+Consequential project decisions: what was chosen, the alternatives, and why.
+Add new entries at the bottom. Do not rewrite old entries; supersede them with a new one.
+
+---
+
+## D-001 — Engine: Godot 4 (.NET) with an engine-independent C# simulation core
+
+**Date:** 2026-10-18
+**Status:** Accepted (chosen by project owner)
+
+**Decision.** Presentation, input and scenes use Godot 4 (.NET build). All gameplay rules
+(campaign state, characters, tasks, inventory, ship, world clock, persistence) live in a plain
+C# class library that has **no reference to Godot**. The Godot project references that library
+and only reads state from it or sends commands to it.
+
+**Alternatives considered.**
+- *Godot 4 + GDScript:* fastest to iterate in the editor, but weaker typing, and the simulation
+  would be tied to the engine. Headless tests would need GUT running inside Godot.
+- *Unity (C#):* mature tooling, but a proprietary licence and a heavier editor. It offers no
+  advantage for a sim-first prototype.
+- *TypeScript + web renderer:* easiest to run in CI, but a lower ceiling for a long-term
+  isometric game.
+
+**Why.** The handoff requires that simulation is independent of presentation and is testable
+headless (§9.1, §9.4). A plain C# library tested with xUnit meets both requirements directly
+and runs with only the .NET SDK, without Godot. Godot is free and open source, and handles
+isometric 2D/3D well.
+
+**Consequences.**
+- Target framework `net8.0` for the simulation library, which Godot 4.x .NET supports.
+- The Godot editor/runtime cannot be downloaded in the current cloud dev environment (GitHub
+  releases are blocked by the network policy). Simulation work and tests are unaffected.
+  Scene work (Ticket 4+) must be run locally by the developer.
+
+---
+
+## D-002 — Deterministic, serializable RNG (proposed)
+
+**Status:** Proposed, to be confirmed in Ticket 2
+
+`System.Random`'s internal state cannot be serialized, so a save could not resume the same
+random sequence. Proposal: a small seeded PRNG (e.g. PCG32 or xoshiro128**) that the simulation
+owns, with its state stored in saves. Important random rolls are logged with their inputs.
+
+---
+
+## D-003 — Save format: versioned JSON (proposed)
+
+**Status:** Proposed, to be confirmed in Ticket 3
+
+Saves are JSON files written with `System.Text.Json`. Each file has a top-level
+`schemaVersion` and a migration step for each version. Loading fails with an explicit error
+and never falls back to a fresh campaign. JSON is readable during development. A binary format
+can be considered later if size or speed requires it.
