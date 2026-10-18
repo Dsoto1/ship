@@ -1,0 +1,27 @@
+# Builds the simulation, its tests and the Godot C# project, then runs the tests.
+# Godot itself is not needed: the game project compiles against the Godot.NET.Sdk NuGet package.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore Expedition.sln
+
+      - name: Build (warnings are errors)
+        run: dotnet build Expedition.sln --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test Expedition.sln --no-build --configuration Release --logger "console;verbosity=normal"
