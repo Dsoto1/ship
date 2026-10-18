@@ -14,7 +14,7 @@ This file tracks status and breaks the next work into tickets.
 | 3 | Inventory, supplies, and save/load | Done (2026-10-18) |
 | 3a–3e | Spec alignment (CI, structured chronicle, attributes, random streams, relationships, task queue) | Proposed, after 4b (owner's chosen order) — see SPEC_AUDIT.md §6 |
 | 4a | Positions, work spots and movement in the simulation | Done (2026-10-18) |
-| 4b | Godot graybox interaction scene | In progress |
+| 4b | Godot graybox interaction scene | Built; awaiting the owner's first run on macOS |
 | 4c | Appearance record | Proposed |
 | 5 | Recruitment prototype | Not started |
 | 6 | Voyage-to-crisis vertical slice | Not started |
@@ -142,3 +142,50 @@ environment).
 scene only reads it and sends commands. A save made in the scene can be loaded back.
 **Risks.** Godot .NET version and SDK mismatches on macOS. I can't run Godot here, so the
 developer must run each step and report back what they see.
+
+## Ticket 4b — Godot graybox interaction scene
+
+**What exists.**
+- **Project:** `game/` is a Godot 4.7.2 .NET project (Forward+, custom user dir `The Expedition`).
+  It compiles against `Godot.NET.Sdk` 4.7.2 and is part of `Expedition.sln`, so `dotnet build`
+  catches C# breakage.
+- **Code-built scene:** the scene is built in code (`Scripts/Main.cs`) so almost no hand-written
+  scene format can go wrong.
+- **Starting state:** comes from `Scenarios/TestDeckScenario` in the simulation library, which is
+  tested headless.
+- **Drawing:** orthographic isometric camera (D-006). Graybox deck, masts, fittings, work spots
+  and water. The ship rolls gently.
+- **Crew figures:** vary in height, build and clothing colour. They lie down when incapacitated
+  or dead, and sit lower when resting.
+- **Interface:** time controls (D-007), quick save and load to `user://saves`, crew list, ship's
+  hold contents, a character record (needs bars, skills, conditions, pack, current task and
+  progress), task orders with refusal reasons, and the chronicle.
+- **Boundary:** the scene never changes game state directly. It calls `SimulationRunner` commands
+  and redraws from `CampaignState` every frame (TECHNICAL_SPEC.md §31).
+
+**Not verified in the cloud.** Godot cannot run here, so the scene's runtime behaviour (layout,
+camera framing, clicks) has not been seen yet.
+
+**Manual test (TECHNICAL_SPEC.md §26.5).** Run the scene, then check each step:
+1. The deck shows six labelled crew, two masts and seven work-spot markers. The camera looks down
+   at an angle.
+2. Click Diego (forward, near the first mast). His record shows rigging 3 and sailing 3.
+3. Click **Repair rigging**. He walks to the "rigging fore" marker, and his label reads
+   "Repair rigging". The hold's rope count drops by 1.
+4. Select Pedro and click **Patch the hull**. It is dimmed; clicking shows that he lacks
+   ship repair skill.
+5. Right-click an open plank. The selected person walks there. If they had a task, the chronicle
+   records that it stopped.
+6. Press 4 (60×). The clock runs about an hour per second. Hunger and thirst bars rise and drop as
+   people eat and drink, and the hold's biscuit and water counts fall.
+7. Press F5, wait, then press F9. Everyone returns to where they were at the save, mid-task
+   progress included.
+8. Quit and run again, then press F9. The saved voyage loads, because saves persist between runs.
+
+**Known limitations.**
+- Exported builds can't find `data/` yet, because the scene reads it from the repository folder.
+  Packaging content for export is a later ticket.
+- Only one save slot (the quick save).
+- Godot's default theme. The captain's-papers UI language (ART_BIBLE.md §14) needs approval
+  before it's built.
+- Placeholder names and appearance. Ticket 4c adds saved appearance data.

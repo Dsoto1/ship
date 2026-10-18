@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TheExpedition", "TheExpedition.csproj", "{E8F03955-E88D-4412-AF2D-1BBEB23B20B2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Expedition.Simulation", "..\src\Expedition.Simulation\Expedition.Simulation.csproj", "{8190C799-50FB-4330-8ED3-24AFD0B35010}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E8F03955-E88D-4412-AF2D-1BBEB23B20B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E8F03955-E88D-4412-AF2D-1BBEB23B20B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E8F03955-E88D-4412-AF2D-1BBEB23B20B2}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{E8F03955-E88D-4412-AF2D-1BBEB23B20B2}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{8190C799-50FB-4330-8ED3-24AFD0B35010}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8190C799-50FB-4330-8ED3-24AFD0B35010}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8190C799-50FB-4330-8ED3-24AFD0B35010}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8190C799-50FB-4330-8ED3-24AFD0B35010}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

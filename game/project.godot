@@ -1,0 +1,28 @@
+; Engine configuration file.
+; Hand-written for Godot 4.7. Godot rewrites this file when settings change in the editor;
+; that is expected and those edits should be committed.
+
+config_version=5
+
+[application]
+
+config/name="The Expedition"
+config/description="Graybox interaction scene (Ticket 4b)."
+run/main_scene="res://Main.tscn"
+config/use_custom_user_dir=true
+config/custom_user_dir_name="The Expedition"
+config/features=PackedStringArray("4.7", "C#", "Forward Plus")
+
+[display]
+
+window/size/viewport_width=1600
+window/size/viewport_height=900
+
+[dotnet]
+
+project/assembly_name="TheExpedition"
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+anti_aliasing/quality/msaa_3d=2

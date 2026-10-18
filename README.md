@@ -5,9 +5,9 @@ A single-player isometric historical survival, expedition and settlement game se
 and survives what follows: a storm, a shipwreck, landfall and settlement. The same crew is
 carried through every phase.
 
-**Status:** P0 (simulation foundation). Characters, tasks, time, needs, provisions, inventories
-and save/load are implemented and tested headless. Nothing is playable yet; the first Godot
-scene is next.
+**Status:** P0 (simulation foundation). Characters, tasks, time, needs, provisions, inventories,
+positions and save/load are implemented and tested headless. A graybox Godot scene (`game/`)
+shows the simulation on a placeholder deck.
 
 ## Build and test
 
@@ -17,6 +17,25 @@ Requires the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0).
 dotnet build
 dotnet test
 ```
+
+## Run the graybox scene (Godot 4.7.2 .NET)
+
+1. Open Godot 4.7.2 (.NET), choose **Import**, and select `game/project.godot`.
+2. Click **Build** (the hammer, top right) once, then **Run Project** (F5).
+
+Controls:
+
+| Input | Action |
+|---|---|
+| Left-click | Select a crew member |
+| Right-click | Walk the selected crew member there |
+| Right-hand panel | Order a task (dimmed tasks show why they are refused) |
+| Space, 1–4 | Pause and time speed |
+| WASD / arrow keys, wheel, Q/E | Pan, zoom, turn the camera |
+| F5 / F9 | Quick save / quick load |
+| Tab | Select the next crew member |
+
+Saves go to `~/Library/Application Support/The Expedition/saves/` on macOS.
 
 ## Docs
 

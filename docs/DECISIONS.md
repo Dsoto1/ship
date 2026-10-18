@@ -136,3 +136,21 @@ multiply the hand-drawn frames needed.
 **Consequences.** One grid cell maps to one world metre. Simulation grid X maps to world X, and
 grid Y to world Z (row 0 is the bow). Exact camera angle and zoom range are tuned in the graybox
 scene and remain open until the Art Bible's Test A.
+
+---
+
+## D-007 — Real-time speeds
+
+**Date:** 2026-10-18
+**Status:** Accepted for the graybox; to be tuned in playtesting (resolves the open item in D-004)
+
+| Speed | In-game minutes per real second | 40-day voyage takes |
+|---|---|---|
+| Pause | 0 | — |
+| 1× | 1 | about 16 hours |
+| 10× | 10 | about 1.6 hours |
+| 60× | 60 (1 hour per second) | about 16 minutes |
+
+1× is for direct control and crises, and 60× is for routine sailing. A frame never simulates more
+than 600 ticks, so a slow frame cannot snowball. Automatic slowdown on critical events
+(TECHNICAL_SPEC.md §8) comes with the event system.
