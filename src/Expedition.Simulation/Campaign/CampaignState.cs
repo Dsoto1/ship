@@ -169,13 +169,17 @@ public sealed class CampaignState
         if (!PhaseTransitions.IsAllowed(Phase, target))
         {
             var reason = $"Cannot move from {Phase} to {target}.";
-            Record(ChronicleEntryKind.TransitionRejected, $"{reason} Requested because: {cause}");
+            Record(ChronicleEntryKind.TransitionRejected, [
+                new(ChronicleParameters.From, Phase.ToString()), new(ChronicleParameters.To, target.ToString()), new(ChronicleParameters.Cause, cause),
+            ]);
             return CommandResult.Rejected(reason);
         }
 
         var previous = Phase;
         Phase = target;
-        Record(ChronicleEntryKind.PhaseChanged, $"{previous} -> {target}: {cause}");
+        Record(ChronicleEntryKind.PhaseChanged, [
+            new(ChronicleParameters.From, previous.ToString()), new(ChronicleParameters.To, target.ToString()), new(ChronicleParameters.Cause, cause),
+        ]);
         return CommandResult.Ok();
     }
 
@@ -201,10 +205,14 @@ public sealed class CampaignState
             return result;
         }
 
-        Record(ChronicleEntryKind.SurvivalStateChanged, $"{character.Name}: {previous} -> {newState}. Cause: {cause}", id);
+        Record(ChronicleEntryKind.SurvivalStateChanged, [
+            new(ChronicleParameters.From, previous.ToString()), new(ChronicleParameters.To, newState.ToString()), new(ChronicleParameters.Cause, cause),
+        ], id);
         if (!character.CanWork)
         {
-            InterruptTask(id, $"{character.Name} is {newState}: {cause}");
+            InterruptTask(id, InterruptReasons.Incapacitated, [
+                new(ChronicleParameters.To, newState.ToString()), new(ChronicleParameters.Cause, cause),
+            ]);
             StopMovement(id);
         }
 
@@ -212,8 +220,8 @@ public sealed class CampaignState
     }
 
     /// <summary>Appends a chronicle entry stamped with the current tick.</summary>
-    internal void Record(ChronicleEntryKind kind, string description, params CharacterId[] characters) =>
-        Chronicle.Record(Clock.Tick, kind, description, characters);
+    internal void Record(ChronicleEntryKind kind, IEnumerable<KeyValuePair<string, string?>> parameters, params CharacterId[] characters) =>
+        Chronicle.Record(Clock.Tick, kind, parameters, characters);
 
     /// <summary>Starts a task. Eligibility must already have been checked by <see cref="SimulationRunner"/>.</summary>
     internal void StartTask(TaskInstance task) => _activeTasks.Add(task.CharacterId, task);
@@ -225,14 +233,19 @@ public sealed class CampaignState
     /// Stops the character's current task, if any, and records why. Materials already used are not refunded.
     /// Returns the outcome, or null if the character was idle.
     /// </summary>
-    internal TaskOutcome? InterruptTask(CharacterId id, string reason)
+    /// <param name="id">Character whose task stops.</param>
+    /// <param name="reason">One of <see cref="InterruptReasons"/>.</param>
+    /// <param name="details">Extra chronicle parameters, such as the cause.</param>
+    internal TaskOutcome? InterruptTask(CharacterId id, string reason, IEnumerable<KeyValuePair<string, string?>>? details = null)
     {
         if (!_activeTasks.Remove(id, out var task))
         {
             return null;
         }
 
-        Record(ChronicleEntryKind.TaskInterrupted, $"{_characters[id].Name} stopped {task.DefinitionId}: {reason}", id);
+        Record(ChronicleEntryKind.TaskInterrupted, [
+            new(ChronicleParameters.Task, task.DefinitionId), new(ChronicleParameters.Reason, reason), .. details ?? [],
+        ], id);
         return new TaskOutcome(Clock.Tick, id, task.DefinitionId, TaskEnd.Interrupted, reason);
     }
 

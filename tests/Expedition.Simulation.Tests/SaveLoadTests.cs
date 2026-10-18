@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using Expedition.Simulation.Campaign;
 using Expedition.Simulation.Characters;
+using Expedition.Simulation.History;
 using Expedition.Simulation.Items;
 using Expedition.Simulation.Persistence;
 using Expedition.Simulation.World;
@@ -182,7 +183,7 @@ public class SaveLoadTests
     [Fact]
     public void OlderVersionIsUpgradedThroughMigrations()
     {
-        // Pretend this build reads format 3, and format 2 called the phase field "stage".
+        // Pretend this build reads format 4, and format 3 called the phase field "stage".
         var current = SaveSerializer.Serialize(StormDamagedVoyage().Campaign);
         var formatOne = Edit(current, root =>
         {
@@ -191,7 +192,7 @@ public class SaveLoadTests
         });
         var migrations = new Dictionary<int, Func<JsonObject, JsonObject>>
         {
-            [2] = root =>
+            [3] = root =>
             {
                 root["phase"] = root["stage"]!.DeepClone();
                 root.Remove("stage");
@@ -199,7 +200,7 @@ public class SaveLoadTests
             },
         };
 
-        var loaded = SaveSerializer.Deserialize(formatOne, TestContent.Create(), migrations, currentVersion: 3);
+        var loaded = SaveSerializer.Deserialize(formatOne, TestContent.Create(), migrations, currentVersion: 4);
 
         Assert.Equal(CampaignPhase.Voyage, loaded.Phase);
         Assert.Equal(current, SaveSerializer.Serialize(loaded));
@@ -211,15 +212,15 @@ public class SaveLoadTests
         var json = SaveSerializer.Serialize(StormDamagedVoyage().Campaign);
 
         var ex = Assert.Throws<SaveLoadException>(() =>
-            SaveSerializer.Deserialize(json, TestContent.Create(), new Dictionary<int, Func<JsonObject, JsonObject>>(), currentVersion: 3));
+            SaveSerializer.Deserialize(json, TestContent.Create(), new Dictionary<int, Func<JsonObject, JsonObject>>(), currentVersion: 4));
 
-        Assert.Contains("no upgrade from format 2", ex.Message);
+        Assert.Contains("no upgrade from format 3", ex.Message);
     }
 
     [Fact]
-    public void FormatOneSaveIsUpgradedToFormatTwo()
+    public void FormatOneSaveIsUpgradedToTheCurrentFormat()
     {
-        // A real format-1 file: no placements, no spot IDs.
+        // A real format-1 file: no placements, no spot IDs, prose chronicle descriptions.
         var formatOne = Edit(SaveSerializer.Serialize(StormDamagedVoyage().Campaign), root =>
         {
             root["schemaVersion"] = 1;
@@ -228,12 +229,41 @@ public class SaveLoadTests
             {
                 task!.AsObject().Remove("spotId");
             }
+
+            ToProseChronicle(root);
         });
 
         var loaded = SaveSerializer.Deserialize(formatOne, TestContent.Create());
 
         Assert.Empty(loaded.Placements);
-        Assert.Contains("\"schemaVersion\": 2", SaveSerializer.Serialize(loaded));
+        Assert.Contains($"\"schemaVersion\": {SaveSerializer.CurrentSchemaVersion}", SaveSerializer.Serialize(loaded));
+        Assert.All(loaded.Chronicle.Entries, e => Assert.StartsWith("Old entry", e.Get(ChronicleParameters.LegacyText)));
+    }
+
+    [Fact]
+    public void FormatTwoChronicleTextIsKeptAsLegacyText()
+    {
+        var formatTwo = Edit(SaveSerializer.Serialize(StormDamagedVoyage().Campaign), root =>
+        {
+            root["schemaVersion"] = 2;
+            ToProseChronicle(root);
+        });
+
+        var loaded = SaveSerializer.Deserialize(formatTwo, TestContent.Create());
+        var formatter = new ChronicleFormatter(loaded, TestContent.Create());
+
+        Assert.Equal("Old entry 1", formatter.Format(loaded.Chronicle.Entries[0]));
+    }
+
+    /// <summary>Rewrites chronicle entries the way formats 1 and 2 stored them: a description, no parameters.</summary>
+    private static void ToProseChronicle(JsonObject root)
+    {
+        foreach (var entry in root["chronicle"]!.AsArray())
+        {
+            var fields = entry!.AsObject();
+            fields.Remove("parameters");
+            fields["description"] = $"Old entry {fields["sequence"]}";
+        }
     }
 
     [Fact]

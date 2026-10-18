@@ -1,6 +1,6 @@
 # Technical Design
 
-Status: P0 simulation foundation implemented (Tickets 1–3: core model, clock and tasks, inventory and save/load). Presentation (Ticket 4+) is proposed. Update this file when architecture or behavior changes.
+Status: P0 implemented in graybox (Tickets 1–4b, 3a–3b). Save format 3. Update this file when architecture or behavior changes.
 See `DECISIONS.md` for why each choice was made, and `GAME_VISION.md` for the product vision.
 
 ## 1. Solution layout (proposed)
@@ -76,8 +76,13 @@ is added only when a ticket needs it.
     it never decides where anyone is.
 - **Survival state through the campaign.** `Character.SurvivalState` can only be changed by
   `CampaignState.ChangeSurvivalState`, which enforces "dead is final" and records the cause.
-- **Chronicle.** Important outcomes append an entry to the chronicle: tick, type, the IDs
-  involved, and a causal note. This is the source for the journal and for debugging.
+- **Chronicle.** Important outcomes append an entry: tick, kind, the character IDs involved, and
+  named parameters holding IDs, enum names or numbers (see `History/ChronicleParameters`). Entries
+  never contain prose. `History/ChronicleFormatter` turns them into English and is the only place
+  chronicle wording lives (TECHNICAL_SPEC.md §23, §33).
+- **Diagnostics.** `World/NeedLedger` keeps the last day of need and health changes per character,
+  by source, in hourly buckets. `SimulationRunner.ExplainNeed` answers "why is this character
+  exhausted / hungry / losing health?". Not saved.
 
 ## 3. Invariants (enforced and tested from Ticket 1)
 

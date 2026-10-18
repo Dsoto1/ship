@@ -61,7 +61,8 @@ public class SurvivalStateTests
 
         var entry = Assert.Single(campaign.Chronicle.Entries);
         Assert.Equal(ChronicleEntryKind.SurvivalStateChanged, entry.Kind);
-        Assert.Contains("falling spar", entry.Description);
+        Assert.Equal("struck by a falling spar", entry.Get(ChronicleParameters.Cause));
+        Assert.Equal(nameof(SurvivalState.Incapacitated), entry.Get(ChronicleParameters.To));
         Assert.Equal([character.Id], entry.Characters);
     }
 

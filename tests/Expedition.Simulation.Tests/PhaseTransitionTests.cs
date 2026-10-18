@@ -41,7 +41,8 @@ public class PhaseTransitionTests
         Assert.Equal(CampaignPhase.PortPreparation, campaign.Phase);
         var entry = Assert.Single(campaign.Chronicle.Entries);
         Assert.Equal(ChronicleEntryKind.TransitionRejected, entry.Kind);
-        Assert.Contains("skip the voyage", entry.Description);
+        Assert.Equal("skip the voyage", entry.Get(ChronicleParameters.Cause));
+        Assert.Equal(nameof(CampaignPhase.SettlementSurvival), entry.Get(ChronicleParameters.To));
     }
 
     [Theory]

@@ -12,7 +12,9 @@ This file tracks status and breaks the next work into tickets.
 | 1 | Solution scaffold, core data model and invariants | Done (2026-10-18) |
 | 2 | Simulation clock and task execution | Done (2026-10-18) |
 | 3 | Inventory, supplies, and save/load | Done (2026-10-18) |
-| 3a–3e | Spec alignment (CI, structured chronicle, attributes, random streams, relationships, task queue) | Proposed, after 4b (owner's chosen order) — see SPEC_AUDIT.md §6 |
+| 3a | CI: build and test on every push | Done (2026-10-18) |
+| 3b | Structured chronicle, need diagnostics, long-run tests | Done (2026-10-18) |
+| 3c–3e | Attributes and random streams; relationships, traits and conditions; task queue | Proposed — see SPEC_AUDIT.md §6 |
 | 4a | Positions, work spots and movement in the simulation | Done (2026-10-18) |
 | 4b | Godot graybox interaction scene | Done (2026-10-18) — owner ran the manual test on macOS, all 8 steps passed |
 | 4c | Appearance record | Proposed |
@@ -198,3 +200,28 @@ after restarting the game.
 - Godot's default theme. The captain's-papers UI language (ART_BIBLE.md §14) needs approval
   before it's built.
 - Placeholder names and appearance. Ticket 4c adds saved appearance data.
+
+## Tickets 3a and 3b — CI, structured chronicle, diagnostics
+
+**3a.** `.github/workflows/ci.yml` restores, builds in Release with warnings treated as errors, and
+tests `Expedition.sln` on every push and pull request. The Godot project is included; it compiles
+against the `Godot.NET.Sdk` package, so CI needs no Godot install.
+
+**3b.**
+- **Structured chronicle.** Entries store a kind, the character IDs involved, and named parameters
+  (`task`, `cause`, `condition`, `from`, `to`, `reason`, …), never prose.
+  `History/ChronicleFormatter` is the single English text layer. It resolves current names, so
+  renaming a task or character changes old entries' wording without touching saves.
+- **Save format 3, with migrations.** Format-2 and format-1 entries keep their old sentence as
+  `legacyText`.
+- **Need diagnostics.** `SimulationRunner.ExplainNeed(character, need)` lists what changed hunger,
+  thirst, fatigue, stress or health over the last day, by source: daily life, a task, an item eaten,
+  starvation, dehydration, an injury. The Godot record panel shows a "Why (last day)" section. The
+  ledger is a diagnostic and isn't saved, so it starts empty after a load.
+- **Missing tests from TECHNICAL_SPEC.md §38:**
+  - one-tick and one-hour stepping give identical saves over 48 hours (#15);
+  - a 90-day voyage with ample provisions keeps everyone alive, and stores only fall (#2);
+  - a 90-day voyage that runs dry ends in six recorded dehydration deaths, each after the shortage
+    entry.
+
+165 tests pass.

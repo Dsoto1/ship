@@ -1,3 +1,4 @@
+using System.Globalization;
 using Expedition.Simulation.Campaign;
 using Expedition.Simulation.Characters;
 using Expedition.Simulation.Content;
@@ -30,6 +31,16 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
 
     /// <summary>Definitions and rules in use.</summary>
     public GameContent Content { get; } = content;
+
+    /// <summary>What changed each character's needs recently. Diagnostic only; not saved.</summary>
+    public NeedLedger NeedLedger { get; } = new();
+
+    /// <summary>
+    /// What changed <paramref name="need"/> for a character over the last day, largest effect first.
+    /// Answers questions such as "why is Diego exhausted?".
+    /// </summary>
+    public IReadOnlyList<NeedChange> ExplainNeed(CharacterId characterId, TrackedNeed need) =>
+        NeedLedger.Explain(characterId, need, Campaign.Clock.Tick);
 
     /// <summary>
     /// Checks whether <paramref name="characterId"/> could start <paramref name="taskId"/> now,
@@ -172,15 +183,15 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
             return CommandResult.Rejected($"{character.Name} cannot reach {destination}.");
         }
 
-        Campaign.InterruptTask(characterId, "ordered elsewhere");
+        Campaign.InterruptTask(characterId, InterruptReasons.Moved);
         StartWalk(characterId, path);
         return CommandResult.Ok();
     }
 
     /// <summary>Stops a character's task on the player's order. Materials already used are not refunded.</summary>
-    public CommandResult CancelTask(CharacterId characterId, string reason = "ordered to stop")
+    public CommandResult CancelTask(CharacterId characterId)
     {
-        return Campaign.InterruptTask(characterId, reason) is null
+        return Campaign.InterruptTask(characterId, InterruptReasons.Cancelled) is null
             ? CommandResult.Rejected($"{characterId} has no task to cancel.")
             : CommandResult.Ok();
     }
@@ -243,6 +254,11 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
         Campaign.ActiveTasks.TryGetValue(character.Id, out var task);
         var definition = task is null ? null : Content.Tasks[task.DefinitionId];
         character.Needs.Apply(Content.Rules.BaselineNeedsPerHour + (definition?.NeedsPerHour ?? NeedRates.None), HoursPerTick);
+        RecordRates(character.Id, NeedLedger.Baseline, Content.Rules.BaselineNeedsPerHour);
+        if (definition is not null)
+        {
+            RecordRates(character.Id, definition.Id, definition.NeedsPerHour);
+        }
 
         EatAndDrink(character);
         SufferDeprivation(character, outcomes);
@@ -254,7 +270,7 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
 
         if (!definition.IsRest && character.Needs.Fatigue >= Content.Rules.ExhaustionFatigue)
         {
-            AddIfPresent(outcomes, Campaign.InterruptTask(character.Id, $"{character.Name} is exhausted"));
+            AddIfPresent(outcomes, Campaign.InterruptTask(character.Id, InterruptReasons.Exhausted));
             return;
         }
 
@@ -294,13 +310,15 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
             var food = TakeFirstAvailable(character, Content.Foods);
             if (food is not null)
             {
+                var before = character.Needs.Hunger;
                 character.Needs.Hunger = Needs.Clamp(character.Needs.Hunger - food.HungerRelief);
+                Ledger(character.Id, TrackedNeed.Hunger, food.Id, character.Needs.Hunger - before);
                 Campaign.FoodShortageRecorded = false;
             }
             else if (!Campaign.FoodShortageRecorded)
             {
                 Campaign.FoodShortageRecorded = true;
-                Campaign.Record(ChronicleEntryKind.SupplyShortage, $"{character.Name} went hungry: there is no food left.", character.Id);
+                Campaign.Record(ChronicleEntryKind.SupplyShortage, [new(ChronicleParameters.Need, "food")], character.Id);
             }
         }
 
@@ -309,13 +327,15 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
             var drink = TakeFirstAvailable(character, Content.Drinks);
             if (drink is not null)
             {
+                var before = character.Needs.Thirst;
                 character.Needs.Thirst = Needs.Clamp(character.Needs.Thirst - drink.ThirstRelief);
+                Ledger(character.Id, TrackedNeed.Thirst, drink.Id, character.Needs.Thirst - before);
                 Campaign.WaterShortageRecorded = false;
             }
             else if (!Campaign.WaterShortageRecorded)
             {
                 Campaign.WaterShortageRecorded = true;
-                Campaign.Record(ChronicleEntryKind.SupplyShortage, $"{character.Name} went thirsty: there is nothing left to drink.", character.Id);
+                Campaign.Record(ChronicleEntryKind.SupplyShortage, [new(ChronicleParameters.Need, "water")], character.Id);
             }
         }
     }
@@ -325,16 +345,34 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
         var rules = Content.Rules;
         if (character.Needs.Thirst >= Needs.Max)
         {
-            character.Health.Lose(rules.DehydrationHealthLossPerHour * HoursPerTick);
-            CheckHealthThresholds(character, "dehydration", outcomes);
+            LoseHealth(character, rules.DehydrationHealthLossPerHour * HoursPerTick, ChronicleCauses.Dehydration);
+            CheckHealthThresholds(character, ChronicleCauses.Dehydration, outcomes);
         }
 
         if (character.Needs.Hunger >= Needs.Max && character.SurvivalState != SurvivalState.Dead)
         {
-            character.Health.Lose(rules.StarvationHealthLossPerHour * HoursPerTick);
-            CheckHealthThresholds(character, "starvation", outcomes);
+            LoseHealth(character, rules.StarvationHealthLossPerHour * HoursPerTick, ChronicleCauses.Starvation);
+            CheckHealthThresholds(character, ChronicleCauses.Starvation, outcomes);
         }
     }
+
+    private void RecordRates(CharacterId id, string source, NeedRates rates)
+    {
+        Ledger(id, TrackedNeed.Hunger, source, rates.Hunger * HoursPerTick);
+        Ledger(id, TrackedNeed.Thirst, source, rates.Thirst * HoursPerTick);
+        Ledger(id, TrackedNeed.Fatigue, source, rates.Fatigue * HoursPerTick);
+        Ledger(id, TrackedNeed.Stress, source, rates.Stress * HoursPerTick);
+    }
+
+    private void LoseHealth(Character character, double amount, string source)
+    {
+        var before = character.Health.Value;
+        character.Health.Lose(amount);
+        Ledger(character.Id, TrackedNeed.Health, source, character.Health.Value - before);
+    }
+
+    private void Ledger(CharacterId id, TrackedNeed need, string source, double amount) =>
+        NeedLedger.Add(Campaign.Clock.Tick, id, need, source, amount);
 
     /// <summary>Work-minutes produced per in-game minute: skill multiplier, slowed when tired.</summary>
     private double WorkRate(Character character, TaskDefinition task)
@@ -352,13 +390,15 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
 
     private void Injure(Character character, TaskDefinition task, TaskHazard hazard, List<TaskOutcome> outcomes)
     {
-        character.Health.Lose(hazard.HealthDamage);
+        LoseHealth(character, hazard.HealthDamage, hazard.Condition);
         character.Health.AddCondition(hazard.Condition);
-        Campaign.Record(
-            ChronicleEntryKind.Injury,
-            $"{character.Name} suffered {hazard.Condition} while doing {task.Name} (-{hazard.HealthDamage} health, now {character.Health.Value:0.#}).",
-            character.Id);
-        CheckHealthThresholds(character, $"{hazard.Condition} during {task.Name}", outcomes);
+        Campaign.Record(ChronicleEntryKind.Injury, [
+            new(ChronicleParameters.Condition, hazard.Condition),
+            new(ChronicleParameters.Task, task.Id),
+            new(ChronicleParameters.Damage, hazard.HealthDamage.ToString(CultureInfo.InvariantCulture)),
+            new(ChronicleParameters.Health, character.Health.Value.ToString("0.#", CultureInfo.InvariantCulture)),
+        ], character.Id);
+        CheckHealthThresholds(character, hazard.Condition, outcomes);
     }
 
     /// <summary>Incapacitates a character at low health and kills them at zero, interrupting their work.</summary>
@@ -373,7 +413,9 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
             return;
         }
 
-        AddIfPresent(outcomes, Campaign.InterruptTask(character.Id, $"{character.Name} was struck down by {cause}"));
+        AddIfPresent(outcomes, Campaign.InterruptTask(character.Id, InterruptReasons.Incapacitated, [
+            new(ChronicleParameters.To, newState.Value.ToString()), new(ChronicleParameters.Cause, cause),
+        ]));
         Campaign.ChangeSurvivalState(character.Id, newState.Value, cause);
     }
 

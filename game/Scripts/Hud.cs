@@ -1,5 +1,6 @@
 using Expedition.Simulation.Characters;
 using Expedition.Simulation.Core;
+using Expedition.Simulation.History;
 using Expedition.Simulation.World;
 using Godot;
 
@@ -27,7 +28,9 @@ public partial class Hud : CanvasLayer
     private Label _details = null!;
     private Label _pack = null!;
     private VBoxContainer _taskList = null!;
+    private Label _why = null!;
     private RichTextLabel _chronicle = null!;
+    private ChronicleFormatter _formatter = null!;
     private int _chronicleCount = -1;
 
     /// <summary>The player chose a time speed (index into the speeds Main defines).</summary>
@@ -68,6 +71,7 @@ public partial class Hud : CanvasLayer
         _crewButtons.Clear();
         _taskButtons.Clear();
         _chronicleCount = -1;
+        _formatter = new ChronicleFormatter(runner.Campaign, runner.Content);
 
         foreach (var character in runner.Campaign.Characters.Values.OrderBy(c => c.Id))
         {
@@ -123,7 +127,7 @@ public partial class Hud : CanvasLayer
         {
             _chronicleCount = campaign.Chronicle.Entries.Count;
             _chronicle.Text = string.Join("\n", campaign.Chronicle.Entries.TakeLast(40)
-                .Select(e => $"[{new SimulationClock(e.Tick)}] {e.Description}"));
+                .Select(e => $"[{new SimulationClock(e.Tick)}] {_formatter.Format(e)}"));
         }
     }
 
@@ -151,6 +155,7 @@ public partial class Hud : CanvasLayer
         {
             _name.Text = "No one selected";
             _details.Text = "Click a crew member on deck or in the list.";
+            _why.Text = "";
             _pack.Text = "";
             return;
         }
@@ -174,6 +179,11 @@ public partial class Hud : CanvasLayer
         _needBars["Thirst"].Value = character.Needs.Thirst;
         _needBars["Fatigue"].Value = character.Needs.Fatigue;
         _needBars["Stress"].Value = character.Needs.Stress;
+
+        _why.Text = "Why (last day):\n" + string.Join("\n", new[] { TrackedNeed.Fatigue, TrackedNeed.Hunger, TrackedNeed.Thirst, TrackedNeed.Health }
+            .Select(need => (Need: need, Causes: runner.ExplainNeed(id, need).Take(3).ToList()))
+            .Where(line => line.Causes.Count > 0)
+            .Select(line => $"  {line.Need}: " + string.Join(", ", line.Causes.Select(c => $"{c.Amount:+0;-0} {_formatter.DescribeNeedSource(c.Source)}"))));
 
         var pack = runner.Campaign.Inventories[character.InventoryId].Quantities;
         _pack.Text = "Carrying: " + (pack.Count == 0 ? "nothing" : string.Join(", ", pack.Select(p => $"{runner.Content.Items[p.Key].Name} ×{p.Value}")));
@@ -262,6 +272,9 @@ public partial class Hud : CanvasLayer
             _needBars[need] = bar;
         }
 
+        _why = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(320, 0) };
+        _why.AddThemeFontSizeOverride("font_size", 13);
+        column.AddChild(_why);
         _pack = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(320, 0) };
         column.AddChild(_pack);
         column.AddChild(new HSeparator());

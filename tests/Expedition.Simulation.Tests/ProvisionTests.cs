@@ -91,10 +91,10 @@ public class ProvisionTests
         // Hunger hits 100 at hour 224; losing 1 health/h, health reaches 25 at hour 299.
         var shortage = Assert.Single(runner.Campaign.Chronicle.Entries, e => e.Kind == ChronicleEntryKind.SupplyShortage);
         Assert.InRange(shortage.Tick, 84 * Hour, 84 * Hour + 1);
-        Assert.Contains("no food", shortage.Description);
+        Assert.Equal("food", shortage.Get(ChronicleParameters.Need));
         Assert.Equal(SurvivalState.Incapacitated, sailor.SurvivalState);
         var collapse = Assert.Single(runner.Campaign.Chronicle.Entries, e => e.Kind == ChronicleEntryKind.SurvivalStateChanged);
-        Assert.Contains("starvation", collapse.Description);
+        Assert.Equal(ChronicleCauses.Starvation, collapse.Get(ChronicleParameters.Cause));
         Assert.InRange(collapse.Tick, 299 * Hour - 2, 299 * Hour + 2);
 
         // Starvation continues while incapacitated: health 25 reaches 0 at hour 324.
@@ -113,8 +113,8 @@ public class ProvisionTests
         // Thirst hits 100 at hour 100; 4 health/h means death at hour 125.
         Assert.Equal(SurvivalState.Dead, sailor.SurvivalState);
         var death = runner.Campaign.Chronicle.Entries.Last(e => e.Kind == ChronicleEntryKind.SurvivalStateChanged);
-        Assert.Contains("Dead", death.Description);
-        Assert.Contains("dehydration", death.Description);
+        Assert.Equal(nameof(SurvivalState.Dead), death.Get(ChronicleParameters.To));
+        Assert.Equal(ChronicleCauses.Dehydration, death.Get(ChronicleParameters.Cause));
         Assert.InRange(death.Tick, 125 * Hour - 2, 125 * Hour + 2);
     }
 

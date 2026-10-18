@@ -323,7 +323,7 @@ public class TaskExecutionTests
 
         var people = crew.Select(c =>
             $"{c.Id}:{c.SurvivalState}:{c.Health.Value}:{c.Needs.Fatigue:R}:{c.Needs.Stress:R}:{string.Join(",", c.Health.Conditions)}");
-        var history = campaign.Chronicle.Entries.Select(e => $"{e.Tick}:{e.Kind}:{e.Description}");
+        var history = campaign.Chronicle.Entries.Select(e => $"{e.Tick}:{e.Kind}:{string.Join(",", e.Parameters)}");
         return string.Join("\n", people.Concat(history));
     }
 }

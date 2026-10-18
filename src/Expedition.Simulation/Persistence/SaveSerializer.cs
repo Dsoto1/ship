@@ -20,7 +20,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 2;
+    public const int CurrentSchemaVersion = 3;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -33,6 +33,22 @@ public static class SaveSerializer
             [1] = root =>
             {
                 root["placements"] = new JsonArray();
+                return root;
+            },
+            // Format 3 replaced each chronicle entry's English description with structured parameters.
+            // Old entries keep their text as a legacy parameter, which the formatter shows unchanged.
+            [2] = root =>
+            {
+                foreach (var entry in root["chronicle"]?.AsArray() ?? [])
+                {
+                    if (entry is JsonObject fields)
+                    {
+                        var text = fields["description"]?.GetValue<string>() ?? "";
+                        fields.Remove("description");
+                        fields["parameters"] = new JsonObject { [ChronicleParameters.LegacyText] = text };
+                    }
+                }
+
                 return root;
             },
         };
@@ -194,8 +210,8 @@ public static class SaveSerializer
                 Sequence = e.Sequence,
                 Tick = e.Tick,
                 Kind = e.Kind.ToString(),
-                Description = e.Description,
                 Characters = e.Characters.Select(id => id.Value).ToList(),
+                Parameters = new SortedDictionary<string, string>(e.Parameters.ToDictionary(), StringComparer.Ordinal),
             }).ToList(),
         };
     }
@@ -321,7 +337,8 @@ public static class SaveSerializer
             }
 
             campaign.Chronicle.Restore(new ChronicleEntry(
-                saved.Sequence, saved.Tick, ParseEnum<ChronicleEntryKind>(saved.Kind, "chronicle kind"), saved.Description, characters));
+                saved.Sequence, saved.Tick, ParseEnum<ChronicleEntryKind>(saved.Kind, "chronicle kind"), characters,
+                new SortedDictionary<string, string>(saved.Parameters.ToDictionary(), StringComparer.Ordinal)));
         }
 
         return campaign;

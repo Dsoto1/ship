@@ -189,9 +189,9 @@ public sealed record ChronicleEntryData
     /// <summary>Entry kind name.</summary>
     public required string Kind { get; init; }
 
-    /// <summary>Description.</summary>
-    public required string Description { get; init; }
-
-    /// <summary>Character ID numbers involved.</summary>
+    /// <summary>Character ID numbers involved, the main one first.</summary>
     public required IReadOnlyList<int> Characters { get; init; }
+
+    /// <summary>Named values (IDs, enum names, numbers). Replaced the prose description in format 3.</summary>
+    public required IReadOnlyDictionary<string, string> Parameters { get; init; }
 }

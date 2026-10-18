@@ -42,6 +42,8 @@
 
 ## 3. Gaps against the spec
 
+**Update (Tickets 3a, 3b, 4a):** G1, G2, G7, G9 and G10 are closed.
+
 Ordered by how soon they block work. Each **[REQUIRED]** item in the spec is marked R.
 
 | # | Spec | Gap | When it matters |

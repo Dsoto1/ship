@@ -14,15 +14,23 @@ public sealed class Chronicle
     public IReadOnlyList<ChronicleEntry> Entries => _entries;
 
     /// <summary>Appends an entry stamped with <paramref name="tick"/> and returns it.</summary>
-    /// <exception cref="ArgumentException">The description is empty.</exception>
-    public ChronicleEntry Record(long tick, ChronicleEntryKind kind, string description, params CharacterId[] characters)
+    /// <param name="tick">When it happened.</param>
+    /// <param name="kind">What kind of event it is.</param>
+    /// <param name="parameters">Named values; null values are left out.</param>
+    /// <param name="characters">Characters involved, the main one first.</param>
+    public ChronicleEntry Record(
+        long tick, ChronicleEntryKind kind, IEnumerable<KeyValuePair<string, string?>> parameters, params CharacterId[] characters)
     {
-        if (string.IsNullOrWhiteSpace(description))
+        var values = new SortedDictionary<string, string>(StringComparer.Ordinal);
+        foreach (var (name, value) in parameters)
         {
-            throw new ArgumentException("Chronicle entries need a description.", nameof(description));
+            if (value is not null)
+            {
+                values[name] = value;
+            }
         }
 
-        var entry = new ChronicleEntry(_entries.Count + 1, tick, kind, description, characters.ToArray());
+        var entry = new ChronicleEntry(_entries.Count + 1, tick, kind, characters.ToArray(), values);
         _entries.Add(entry);
         return entry;
     }

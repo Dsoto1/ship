@@ -172,7 +172,8 @@ public class MovementTests
         Assert.Empty(runner.Campaign.ActiveTasks);
         var entry = Assert.Single(runner.Campaign.Chronicle.Entries);
         Assert.Equal(ChronicleEntryKind.TaskInterrupted, entry.Kind);
-        Assert.Contains("ordered elsewhere", entry.Description);
+        Assert.Equal(InterruptReasons.Moved, entry.Get(ChronicleParameters.Reason));
+        Assert.Equal("task.spot_pump", entry.Get(ChronicleParameters.Task));
     }
 
     [Fact]
