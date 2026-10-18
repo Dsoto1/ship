@@ -23,7 +23,7 @@ dotnet test
 Step-by-step guide for macOS: [`docs/TESTING_ON_MAC.md`](docs/TESTING_ON_MAC.md).
 
 1. Open Godot 4.7.2 (.NET), choose **Import**, and select `game/project.godot`.
-2. Click **Build** (the hammer, top right) once, then **Run Project** (F5).
+2. Click **Build** (the hammer, top right) once, then **Run Project** (▶, or Cmd + B on macOS / F5 elsewhere). The editor's own 3D view is empty by design; the scene is built when the game runs.
 
 Controls:
 

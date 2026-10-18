@@ -43,8 +43,11 @@ If this fails, stop and send me the output; the game won't work either.
    **Import & Edit**. (Next time it's in the Project Manager's list; just double-click it.)
 3. In the editor, click the **hammer icon (Build)** in the top-right corner. Wait for the build to
    finish; the bottom **MSBuild** panel shows the result.
-4. Click **Run Project** (the ▶ play button, top right) or press **F5** (on some Macs, **Fn + F5**).
-   The game window opens.
+4. Click **Run Project** (the ▶ play button, top right) or press **Cmd + B**.
+   A separate game window opens.
+
+   **The editor's 3D view stays empty. That's expected:** the deck, crew and panels are built by
+   code when the game runs. In the editor you only see the empty `Main` node in the Scene panel.
 
 Then follow the 8-step manual test in `docs/MILESTONES.md` (Ticket 4b section).
 
@@ -65,6 +68,9 @@ Tell me which checklist steps worked. For anything wrong, send:
 | Build errors in the MSBuild panel | Run `dotnet build` in Terminal from the `ship` folder and send me the output. |
 | Game shows "The game content could not be loaded" | Make sure you opened `game/project.godot` inside the cloned repository (it reads `../data`). |
 | Godot added `.uid` files or changed `project.godot` | Normal on first open. Commit them: `git add -A && git commit -m "Godot import files" && git push`. |
+
+In the running game, Save and Load are also buttons in the top bar, so you don't need F5/F9
+(on a Mac those may need **Fn**).
 
 ## Where saves go
 
