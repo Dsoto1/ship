@@ -14,7 +14,7 @@ This file tracks status and breaks the next work into tickets.
 | 3 | Inventory, supplies, and save/load | Done (2026-10-18) |
 | 3a–3e | Spec alignment (CI, structured chronicle, attributes, random streams, relationships, task queue) | Proposed, after 4b (owner's chosen order) — see SPEC_AUDIT.md §6 |
 | 4a | Positions, work spots and movement in the simulation | Done (2026-10-18) |
-| 4b | Godot graybox interaction scene | Built; awaiting the owner's first run on macOS |
+| 4b | Godot graybox interaction scene | Done (2026-10-18) — owner ran the manual test on macOS, all 8 steps passed |
 | 4c | Appearance record | Proposed |
 | 5 | Recruitment prototype | Not started |
 | 6 | Voyage-to-crisis vertical slice | Not started |
@@ -143,6 +143,13 @@ scene only reads it and sends commands. A save made in the scene can be loaded b
 **Risks.** Godot .NET version and SDK mismatches on macOS. I can't run Godot here, so the
 developer must run each step and report back what they see.
 
+## P0 status
+
+With Ticket 4b accepted, the P0 completion gate in TECHNICAL_SPEC.md §35 is met in graybox form.
+Characters move, perform tasks, consume resources, become tired, hungry and thirsty, keep their state
+through save/load, and are simulated independently of the renderer. Still outstanding from the
+spec audit: 3a–3e and 4c, before P1 work begins.
+
 ## Ticket 4b — Godot graybox interaction scene
 
 **What exists.**
@@ -163,8 +170,10 @@ developer must run each step and report back what they see.
 - **Boundary:** the scene never changes game state directly. It calls `SimulationRunner` commands
   and redraws from `CampaignState` every frame (TECHNICAL_SPEC.md §31).
 
-**Not verified in the cloud.** Godot cannot run here, so the scene's runtime behaviour (layout,
-camera framing, clicks) has not been seen yet.
+**Verified.** The owner ran the manual test below on macOS (Godot 4.7.2 .NET, .NET 10 SDK) and all
+8 steps passed: selection, task orders with walking to work spots, refusal reasons, direct walking
+with interruption, accelerated time with eating and drinking, and save/load within a session and
+after restarting the game.
 
 **Manual test (TECHNICAL_SPEC.md §26.5).** Run the scene, then check each step:
 1. The deck shows six labelled crew, two masts and seven work-spot markers. The camera looks down
