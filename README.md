@@ -20,6 +20,8 @@ dotnet test
 
 ## Run the graybox scene (Godot 4.7.2 .NET)
 
+Step-by-step guide for macOS: [`docs/TESTING_ON_MAC.md`](docs/TESTING_ON_MAC.md).
+
 1. Open Godot 4.7.2 (.NET), choose **Import**, and select `game/project.godot`.
 2. Click **Build** (the hammer, top right) once, then **Run Project** (F5).
 
