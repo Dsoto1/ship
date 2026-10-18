@@ -1,6 +1,6 @@
 # Testing on your Mac
 
-You need **Git**, the **.NET 8 SDK**, and **Godot 4.7.2 .NET** (the "mono" build). Everything else
+You need **Git**, the **.NET SDK 8 or newer** (10 works), and **Godot 4.7.2 .NET** (the "mono" build). Everything else
 is in the repository: you do not download a separate project file.
 
 All commands go in the **Terminal** app (or VS Code's built-in terminal). You don't need VS Code
@@ -58,6 +58,8 @@ Tell me which checklist steps worked. For anything wrong, send:
 
 | Problem | Fix |
 |---|---|
+| `dotnet test` says "You must install or update .NET… Framework 'Microsoft.NETCore.App', version '8.0.0'" | Fixed: the projects now run on newer .NET versions. Run `git pull` and try again. If it still fails, install the .NET 8 SDK alongside .NET 10 from https://dotnet.microsoft.com/download/dotnet/8.0 (macOS Arm64 installer). |
+| "An issue was encountered verifying workloads" | Harmless, ignore it. |
 | Godot says it can't find .NET / dotnet | Quit Godot. In Terminal run `dotnet --version` (it should print 8.x or newer). If .NET came from Homebrew, start Godot from Terminal so it inherits your PATH: `open -a "Godot_mono"` (use your app's exact name). |
 | macOS says Godot "can't be opened" | Right-click Godot in Applications → **Open** → **Open**. |
 | Build errors in the MSBuild panel | Run `dotnet build` in Terminal from the `ship` folder and send me the output. |

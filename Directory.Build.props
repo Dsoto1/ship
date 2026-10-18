@@ -4,5 +4,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Target .NET 8 but run on any newer installed runtime (e.g. a Mac with only .NET 10). -->
+    <RollForward>Major</RollForward>
   </PropertyGroup>
 </Project>
