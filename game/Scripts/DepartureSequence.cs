@@ -184,7 +184,7 @@ public partial class DepartureSequence : CanvasLayer
             _sailing += dt;
             var t = Mathf.Clamp(_sailing / SailSeconds, 0, 1);
             var ease = t * t * (3 - 2 * t);
-            Ship = (new Vector3(-8f * ease, 0, 34f * ease * ease + 4f * ease), -20f * ease);
+            Ship = (new Vector3(12f * ease, 0, 34f * ease * ease + 4f * ease), 18f * ease);
             if (Camera is { } view)
             {
                 Camera = (view.Target.Lerp(_berth + Ship.Offset, dt * 0.6f), Mathf.Lerp(15f, 34f, ease));

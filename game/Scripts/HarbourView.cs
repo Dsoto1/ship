@@ -60,12 +60,12 @@ public partial class HarbourView : Node3D
         _lamp = new StandardMaterial3D { AlbedoColor = new Color(1f, 0.8f, 0.45f), EmissionEnabled = true, Emission = new Color(1f, 0.7f, 0.35f), EmissionEnergyMultiplier = 0f };
 
         // A nao further out, a caravel off the west pier, a fishing caravel off the yard.
-        Ship("nao", new Vector3(30, SeaAndSky.WaterLevel, 66), 0.35f, 24f, 7f);
+        Ship("nao", new Vector3(4, SeaAndSky.WaterLevel, 76), 0.35f, 24f, 7f);
         Ship("caravel", new Vector3(-6, SeaAndSky.WaterLevel, 56), -0.5f, 17f, 5f);
         Ship("fishing", new Vector3(86, SeaAndSky.WaterLevel, 52), 1.2f, 10f, 3.4f);
 
         RowingBoat([new Vector3(11.4f, 0, 44.5f), new Vector3(6, 0, 50), new Vector3(-2.5f, 0, 53.4f)]);
-        RowingBoat([new Vector3(48.2f, 0, 43f), new Vector3(44, 0, 52), new Vector3(34.5f, 0, 62.4f)]);
+        RowingBoat([new Vector3(48.2f, 0, 43f), new Vector3(44, 0, 52), new Vector3(12.5f, 0, 72f)]);
     }
 
     /// <summary>Moves the boats on by <paramref name="minutes"/> of game time and rocks the ships.</summary>
