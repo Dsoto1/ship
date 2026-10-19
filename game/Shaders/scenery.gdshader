@@ -18,6 +18,8 @@ uniform sampler2DArray rough_tex : hint_default_white, filter_linear_mipmap, rep
 uniform vec3 tile_metres = vec3(1.0, 1.69, 1.8);
 uniform vec3 strength = vec3(0.55, 0.85, 0.85);
 uniform float wetness = 0.0;
+// 0 still .. 1 a strong breeze: cloth (vertex alpha 0.99) ripples along its normal.
+uniform float wind = 0.15;
 
 varying vec3 world_position;
 varying vec3 world_normal;
@@ -30,6 +32,12 @@ vec3 to_linear(vec3 c) {
 
 void vertex() {
 	world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	if (abs(COLOR.a - 0.99) < 0.004) {
+		float ripple = sin(TIME * (2.0 + wind * 4.0) + world_position.x * 1.7 + world_position.z * 1.1)
+			* sin(TIME * 1.3 + world_position.x * 0.6 - world_position.y * 2.0);
+		VERTEX += NORMAL * ripple * (0.012 + wind * 0.05);
+		world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	}
 	world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 	tint = to_linear(COLOR.rgb);
 	surface = COLOR.a;

@@ -80,6 +80,21 @@ public partial class Main : Node3D
     private HarbourView _harbour = null!;
     private AmbientScenes _ambient = null!;
     private DepartureSequence _departure = null!;
+    private FrameProfiler _profiler = null!;
+    private string? _stageShown;
+    private Vector3 _profileCentre;
+
+    // The four validation scenes of PORT_EXPERIENCE §21 (R3), each staged the same way every time: a
+    // fixed seed, the hour, the weather, the hands and stores, and where the camera looks.
+    private sealed record Stage(string Id, string Title, int Minutes, string Weather, Vector2 Look, float Zoom, int Hire, string Buy);
+
+    private static readonly Stage[] Stages =
+    [
+        new("dawn-quay", "Scene A: the quay at dawn", 1335, "mist", new Vector2(42, 34), 22f, 0, ""),
+        new("midday-market", "Scene B: the market at midday", 240, "fair", new Vector2(40, 23), 22f, 2, "0,1"),
+        new("rainy-workshops", "Scene C: the workshop street in rain", 450, "rain", new Vector2(65, 17), 18f, 0, ""),
+        new("departure-morning", "Scene D: departure morning", 2740, "fair", new Vector2(32, 33), 16f, 7, "0,0,1,2,3"),
+    ];
     private PreparationView _preparation = null!;
     private bool _farewells;
     private bool _portBuilt;
@@ -218,6 +233,16 @@ public partial class Main : Node3D
         // Sailing plays the departure first (R2e): the real crew, cargo and claims, then the lines cast off.
         _departure = new DepartureSequence { Name = "Departure" };
         AddChild(_departure);
+        _profiler = new FrameProfiler { Name = "Profiler", Crowd = () => _crowd.Count };
+        AddChild(_profiler);
+        _profiler.Finished += (_, saved) =>
+        {
+            _hud.Toast($"Profile saved: {saved}");
+            if (_developerProfile && _screenshotPath is null)
+            {
+                GetTree().Quit();
+            }
+        };
         _departure.Beat += kind =>
         {
             switch (kind)
@@ -363,7 +388,13 @@ public partial class Main : Node3D
         if (inPort)
         {
             _seaState = 0.35f;
-            if (_departure.Camera is { } shot)
+            if (_profiler.Capturing)
+            {
+                // A slow circle over the scene, the same in every run.
+                var angle = _profiler.Progress * Mathf.Tau;
+                _camera.Target = _profileCentre + new Vector3(Mathf.Cos(angle) - 1f, 0, Mathf.Sin(angle)) * 5f;
+            }
+            else if (_departure.Camera is { } shot)
             {
                 // The departure moves the camera itself: to the gangway, then after the ship.
                 _follow = false;
@@ -379,6 +410,7 @@ public partial class Main : Node3D
             ListenToThePort(hour, (float)delta);
             // Rain and fog thin the crowd; stall covers go on, the ships at anchor vanish into fog.
             _crowd.Density = 1f - 0.7f * _portWet - 0.3f * _portFog;
+            SceneryMaterial.Wind = 0.15f + _portWind;
             _crowd.Update(hour, (float)(delta * speed), _portWet);
             _harbour.Update(hour, (float)(delta * speed), (float)delta, _world.Darkness, _portFog);
             _port.Covered = raining >= 0.5f;
@@ -734,6 +766,13 @@ public partial class Main : Node3D
                 return;
             }
 
+            // Ctrl+1..4 in debug builds: stage validation scene A..D (R3).
+            if (key.CtrlPressed && OS.IsDebugBuild() && key.Keycode is >= Key.Key1 and <= Key.Key4)
+            {
+                StageScene(Stages[(int)key.Keycode - (int)Key.Key1].Id, profile: false);
+                return;
+            }
+
             switch (key.Keycode)
             {
                 case Key.Space when _hud.EventShowing: break;
@@ -749,6 +788,10 @@ public partial class Main : Node3D
                 case Key.F9: Load(); break;
                 case Key.Tab: SelectNext(); break;
                 case Key.F: _follow = true; break;
+                case Key.F10:
+                    // A frame-time capture of the view (R3 profiling).
+                    StartProfile();
+                    break;
                 case Key.R when key.ShiftPressed && OS.IsDebugBuild():
                     _runner.DeveloperSetPortWeather(_runner.RainingInPort ? "weather.fair" : "weather.rain");
                     break;
@@ -758,6 +801,7 @@ public partial class Main : Node3D
                 case Key.H: _hud.TogglePanel(PanelId.Ship); break;
                 case Key.L: _hud.TogglePanel(PanelId.Chronicle); break;
                 case Key.Escape:
+                    _profiler.Close();
                     // Back out one layer at a time: the open screen, then the card (§48).
                     if (!_hud.ClosePanel())
                     {
@@ -768,6 +812,58 @@ public partial class Main : Node3D
                     break;
             }
         }
+    }
+
+    /// <summary>
+    /// Stages one of the four validation scenes (R3): a new campaign on a fixed seed, run on to the hour,
+    /// with the scene's weather, hands and stores, and the camera on it. Optionally profiles it.
+    /// </summary>
+    private void StageScene(string id, bool profile)
+    {
+        if (Stages.FirstOrDefault(s => s.Id == id) is not { } stage || _content.Port is not { } rules)
+        {
+            GD.PushWarning($"No validation scene '{id}'. Scenes: {string.Join(", ", Stages.Select(s => s.Id))}.");
+            return;
+        }
+
+        StartCampaign(ExpeditionScenario.Create(_content, 1519UL), stage.Title);
+        _runner.Advance(stage.Minutes);
+        foreach (var seeker in rules.People.Where(p => p.Seeking is not null && _runner.CharacterFor(p.Id) is { } c && _runner.Campaign.Placements.ContainsKey(c.Id)).Take(stage.Hire))
+        {
+            _runner.DeveloperHire(_runner.CharacterFor(seeker.Id)!.Id);
+        }
+
+        foreach (var lot in stage.Buy.Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            _runner.Buy(int.Parse(lot, System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        if (_runner.DeveloperSetPortWeather("weather." + stage.Weather).Succeeded)
+        {
+            _portWet = (float)(_runner.PortWeather?.Rain ?? 0);
+            _portFog = (float)(_runner.PortWeather?.Fog ?? 0);
+            _portWind = (float)(_runner.PortWeather?.Wind ?? 0);
+            _gloom = (float)(_runner.PortWeather?.Gloom ?? 0);
+            _weatherShown = _runner.PortWeather?.Id;
+        }
+
+        _camera.Target = new Vector3(stage.Look.X, 0, stage.Look.Y);
+        _camera.Size = stage.Zoom;
+        _follow = false;
+        SetSpeed(1);
+        _stageShown = stage.Id;
+        if (profile)
+        {
+            StartProfile();
+        }
+    }
+
+    // A frame-time capture of what is in view, the camera drifting slowly round it.
+    private void StartProfile()
+    {
+        _profileCentre = _camera.Target;
+        _follow = false;
+        _profiler.Start(_stageShown ?? "view");
     }
 
     // Sailing from port plays the departure first (R2e); the departure sails when it ends.
@@ -1225,6 +1321,8 @@ public partial class Main : Node3D
     private int _developerAfter;
     private string? _developerScene;
     private bool _developerDepart;
+    private string? _developerStage;
+    private bool _developerProfile;
     private double _shotDelay = 3.0;
 
     // For screenshots of the port: --select=person.velho opens their card (and --talk walks the captain
@@ -1326,6 +1424,17 @@ public partial class Main : Node3D
             _ambient.Force(scene);
         }
 
+        // --stage=dawn-quay (midday-market, rainy-workshops, departure-morning) stages a validation scene;
+        // --profile profiles it (or the view) for 20 seconds, saves the report and quits.
+        if (_developerStage is { } staged)
+        {
+            StageScene(staged, _developerProfile);
+        }
+        else if (_developerProfile)
+        {
+            StartProfile();
+        }
+
         // --depart plays the departure at once (with --shotdelay to catch a moment of it).
         if (_developerDepart && _runner.Campaign.Port is not null)
         {
@@ -1362,6 +1471,8 @@ public partial class Main : Node3D
                 case "buy": _developerBuy = value; break;
                 case "scene": _developerScene = value; break;
                 case "depart": _developerDepart = true; break;
+                case "stage": _developerStage = value; break;
+                case "profile": _developerProfile = true; break;
                 case "shotdelay" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var wait): _shotDelay = wait; break;
                 case "hire" when int.TryParse(value, out var hands): _developerHire = hands; break;
                 case "after" when int.TryParse(value, out var later): _developerAfter = later; break;

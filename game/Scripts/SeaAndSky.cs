@@ -132,7 +132,10 @@ public partial class SeaAndSky : Node3D
         _environment.AmbientLightEnergy = light.AmbientEnergy * Mathf.Lerp(1f, 1.15f, gloom) + _flash * 3f;
         _environment.TonemapExposure = light.Exposure * Mathf.Lerp(1f, 0.92f, gloom);
         _environment.FogLightColor = haze;
-        _environment.FogDensity = light.FogDensity + gloom * 0.005f + fog * 0.0085f;
+        // Light mist lies low on the water (height fog); only thick fog closes in on everything.
+        _environment.FogDensity = light.FogDensity + gloom * 0.005f + fog * fog * 0.0085f;
+        _environment.FogHeight = WaterLevel + 1.2f;
+        _environment.FogHeightDensity = fog * 0.6f;
         _rain.Emitting = gloom > 0.55f;
         _rain.Position = focus + new Vector3(0, 14, 0);
 

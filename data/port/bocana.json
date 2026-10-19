@@ -73,7 +73,8 @@
     "next": {
      "weather.breezy": 3,
      "weather.overcast": 3,
-     "weather.fog": 1
+     "weather.fog": 1,
+     "weather.mist": 2
     }
    },
    {
@@ -113,6 +114,21 @@
     "wind": 0.4,
     "next": {
      "weather.overcast": 3,
+     "weather.fair": 1
+    }
+   },
+   {
+    "id": "weather.mist",
+    "name": "Mist",
+    "says": "A morning mist lies on the water. The ships further out are shapes in it.",
+    "minHours": 1,
+    "maxHours": 3,
+    "fromHour": 3,
+    "toHour": 9,
+    "fog": 0.45,
+    "gloom": 0.12,
+    "sight": 0.8,
+    "next": {
      "weather.fair": 1
     }
    },

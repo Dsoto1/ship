@@ -38,7 +38,7 @@ This file tracks status and breaks the next work into tickets.
 | R2d | Sound zones, port weather and reactions, ambient micro-events (steps 10–12) | Done (2026-10-19) |
 | A-2 | Asset pass: recorded CC0 beds for surf, market crowd, tavern, wind and rain (Freesound) | Done (2026-10-19), awaiting the owner's listen |
 | R2e | Recognition and the departure sequence (steps 13, 14) | Done (2026-10-19) |
-| R3 | Visual validation: the four port scenes of PORT_EXPERIENCE §21, then Test B ship, with the hybrid pipeline (D-021) | Planned |
+| R3 | Visual validation: the four port scenes of PORT_EXPERIENCE §21, then Test B ship, with the hybrid pipeline (D-021) | Part one done (2026-10-19): A and C judged, all staged, baseline profiled; part two after C-1 (D-028) |
 | R4a | Wind, heading and sailing: wind direction, visibility, warning signs; why she is slow (VOYAGE §5, §20) | Planned |
 | R4b | True vs estimated position; the chart: dead reckoning, a latitude sight, uncertainty region, route legs, annotations (NAVIGATION) | Planned |
 | R4c | Standing navigation orders and configurable interrupts; alerts by severity (VOYAGE §8, §35; NAV §7–9) | Planned |
@@ -1065,3 +1065,21 @@ greetings given.
 4. Sign on Pons: Grilo comes for his money. Pay or refuse him from his card.
 5. Set sail with at least four hands: watch the departure through to the open sea, or press
    Escape to skip.
+
+## R3, part one — Staging, scenes A and C, profiling
+
+See `docs/R3_VALIDATION.md` for the verdicts, the screenshots and what is still to do.
+
+- **Staging:** `--stage=dawn-quay|midday-market|rainy-workshops|departure-morning`, or Ctrl+1–4 in
+  debug builds. A fixed seed, the hour, the weather, the hands and stores, and the camera.
+- **Mist:** a new morning weather that lies low on the water and burns off. Light fog is height fog;
+  only thick fog closes in.
+- **Wind:** cloth (awnings, banners, the ensign) ripples, more in a breeze.
+- **Rain:** the sailcloth in the yard is taken in.
+- **Profiler:** F10, or `--profile`. A 20-second capture gives frame-time percentiles, draw calls,
+  primitives, nodes, video memory and the GPU, saved under the user data folder.
+- **Verdicts:** A, *partly* (lighting and ship scale yes). C, *partly* (wetness yes, interiors no).
+  B and D wait for the characters.
+- **Also fixed:** the departure's course out of the harbour no longer runs through the nao at anchor.
+
+**Manual test (macOS):** run the four profiles in `R3_VALIDATION.md` and send the reports.

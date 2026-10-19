@@ -26,7 +26,13 @@ public static class SceneryMaterial
         set => Shared.SetShaderParameter("wetness", value);
     }
 
-    /// <summary>Marks a colour to stay flat whatever it looks like: cloth, canvas, sails.</summary>
+    /// <summary>0 still .. 1 a strong breeze: cloth ripples with it (awnings, banners, the ensign).</summary>
+    public static float Wind
+    {
+        set => Shared.SetShaderParameter("wind", value);
+    }
+
+    /// <summary>Marks a colour to stay flat whatever it looks like: cloth, canvas, sails. Cloth also moves in the wind.</summary>
     public static Color Cloth(Color colour) => colour with { A = 0.99f };
 
     /// <summary>

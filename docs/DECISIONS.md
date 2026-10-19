@@ -687,3 +687,32 @@ UI/UX.md")
 
 **Why.** Both briefs say people are the game's primary system. Approving the rig and budgets before
 building avoids redoing every figure (CHARACTER_ART §53).
+
+## D-028 — R3 in two parts; the character slice's rig, budgets and portraits
+
+**Date:** 2026-10-19
+**Status:** Accepted (owner: "go with your recommendations, start R3 part one").
+
+**Decision.**
+- **R3 is split:**
+  - **Part one, now:** stage all four validation scenes of PORT_EXPERIENCE §21 so they can be
+    reproduced. Validate scene A (the dawn quay) and scene C (the rainy workshop street). Profile,
+    with a frame-time capture the owner runs on the Mac.
+  - **Then C-1,** the character slice.
+  - **Part two:** validate scene B (the midday market) and scene D (departure morning) with the six
+    real characters.
+- **C-1 rig and animation:** the Quaternius Universal Base Characters and Universal Animation Library
+  (CC0, one shared humanoid rig, glTF). Clothing, hair and beards are separate modular pieces built
+  on that body, driven by each person's appearance record.
+- **C-1 budgets (working targets):**
+  - about 3,000–5,000 triangles per persistent person at gameplay distance;
+  - about 1,500 at a lower level of detail;
+  - shared texture sheets.
+
+  They are confirmed or adjusted against the R3 profiling baseline before the six are built.
+- **C-1 portraits:** rendered from each person's own 3D head in one consistent painterly style, so
+  portrait and model always match (CHARACTER_ART §34). Commissioned or AI-drafted portraits may
+  replace them later, checked against the model.
+
+**Why.** A and C test the world, which can be judged now; B and D test people, who are still
+primitive figures. Profiling first gives the baseline the character budgets need.

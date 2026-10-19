@@ -31,8 +31,10 @@ public partial class PortView : Node3D
     private MeshBatcher _batch = new();
     private MeshBatcher _covers = new();
     private Node3D _coverNode = null!;
+    private MeshBatcher _dry = new();
+    private Node3D _dryNode = null!;
 
-    /// <summary>True while it rains: the stallholders' goods are under cloth.</summary>
+    /// <summary>True while it rains: the stallholders' goods are under cloth, the sailcloth taken in.</summary>
     public bool Covered
     {
         set
@@ -40,6 +42,7 @@ public partial class PortView : Node3D
             if (_coverNode is not null)
             {
                 _coverNode.Visible = value;
+                _dryNode.Visible = !value;
             }
         }
     }
@@ -92,6 +95,7 @@ public partial class PortView : Node3D
 
         _batch = new MeshBatcher();
         _covers = new MeshBatcher();
+        _dry = new MeshBatcher();
         _location = location;
         _lanterns.Clear();
         _fires.Clear();
@@ -123,6 +127,9 @@ public partial class PortView : Node3D
         _coverNode = new Node3D { Name = "RainCovers", Visible = false };
         AddChild(_coverNode);
         _covers.Commit(_coverNode);
+        _dryNode = new Node3D { Name = "FairWeatherOnly" };
+        AddChild(_dryNode);
+        _dry.Commit(_dryNode);
     }
 
     // Hands a shader the colour, normal and roughness maps of a CC0 texture (Assets/CREDITS.md).
@@ -304,9 +311,12 @@ public partial class PortView : Node3D
                 AddBox(middle + new Vector3(0, 0.68f, 0), new Vector3(0.6f, 0.16f, 0.25f), new Color(0.2f, 0.2f, 0.22f));
                 break;
             case "canvas":
-                // Sailcloth spread on the ground for mending.
+                // Sailcloth spread on the ground for mending: taken in when it rains.
+                var dry = _batch;
+                _batch = _dry;
                 AddBox(middle + new Vector3(0, 0.02f, 0), new Vector3(right - left, 0.03f, front - back), SceneryMaterial.Cloth(Canvas));
                 AddBox(middle + new Vector3(0.6f, 0.04f, 0.2f), new Vector3(0.9f, 0.02f, 0.5f), SceneryMaterial.Cloth(Canvas.Darkened(0.12f)));
+                _batch = dry;
                 break;
             case "fence":
                 Fence(left, right, back, front);
@@ -1130,8 +1140,8 @@ public partial class PortView : Node3D
         // Her ensign at the stern staff, lifting in the breeze: the Company's colours over the Crown's red.
         var staff = new Vector3(berth.X - 11.6f, 0.8f, berth.Z);
         Spar(staff, staff + new Vector3(0, 4.2f, 0), 0.04f, Timber);
-        AddBox(staff + new Vector3(-0.75f, 3.7f, 0), new Vector3(1.4f, 0.9f, 0.03f), new Color(0.62f, 0.13f, 0.12f), rotation: new Vector3(0, 12, 0));
-        AddBox(staff + new Vector3(-0.75f, 3.7f, 0.02f), new Vector3(0.5f, 0.5f, 0.02f), new Color(0.85f, 0.7f, 0.25f), rotation: new Vector3(0, 12, 0));
+        AddBox(staff + new Vector3(-0.75f, 3.7f, 0), new Vector3(1.4f, 0.9f, 0.03f), SceneryMaterial.Cloth(new Color(0.62f, 0.13f, 0.12f)), rotation: new Vector3(0, 12, 0));
+        AddBox(staff + new Vector3(-0.75f, 3.7f, 0.02f), new Vector3(0.5f, 0.5f, 0.02f), SceneryMaterial.Cloth(new Color(0.85f, 0.7f, 0.25f)), rotation: new Vector3(0, 12, 0));
         // Fenders and ensign go with her lines: in when she casts off.
         _batch.Commit(Lines);
         _batch = scenery;
@@ -1141,8 +1151,8 @@ public partial class PortView : Node3D
 
     private void Banner(Vector3 at, Color field, Color charge)
     {
-        AddBox(at + new Vector3(0.55f, -0.7f, 0), new Vector3(1.0f, 1.3f, 0.03f), field);
-        AddBox(at + new Vector3(0.55f, -0.7f, 0.03f), new Vector3(0.35f, 0.35f, 0.02f), charge);
+        AddBox(at + new Vector3(0.55f, -0.7f, 0), new Vector3(1.0f, 1.3f, 0.03f), SceneryMaterial.Cloth(field));
+        AddBox(at + new Vector3(0.55f, -0.7f, 0.03f), new Vector3(0.35f, 0.35f, 0.02f), SceneryMaterial.Cloth(charge));
     }
 
     private void Board(Vector3 at)
