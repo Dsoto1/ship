@@ -53,9 +53,12 @@ public partial class PortView : Node3D
         return 0f;
     }
 
-    /// <summary>Builds the waterfront for <paramref name="location"/>.</summary>
-    public void Build(LocationDefinition location)
+    private IReadOnlyDictionary<string, Expedition.Simulation.Tasks.TaskDefinition> _tasks = new Dictionary<string, Expedition.Simulation.Tasks.TaskDefinition>();
+
+    /// <summary>Builds the waterfront for <paramref name="location"/>; the tasks say where work loops run.</summary>
+    public void Build(LocationDefinition location, IReadOnlyDictionary<string, Expedition.Simulation.Tasks.TaskDefinition> tasks)
     {
+        _tasks = tasks;
         foreach (var child in GetChildren())
         {
             child.QueueFree();
@@ -67,6 +70,8 @@ public partial class PortView : Node3D
         _roof = new ShaderMaterial { Shader = GD.Load<Shader>("res://Shaders/roof.gdshader") };
         _ground = new ShaderMaterial { Shader = GD.Load<Shader>("res://Shaders/ground.gdshader") };
         _ground.SetShaderParameter("quay_from", 29.5f);
+        _ground.SetShaderParameter("detail", GroundDetail.Build(location, _tasks));
+        _ground.SetShaderParameter("map_size", new Vector2(location.Width, location.Height));
         _glass = new StandardMaterial3D { AlbedoColor = new Color(1f, 0.8f, 0.45f), EmissionEnabled = true, Emission = new Color(1f, 0.7f, 0.35f), EmissionEnergyMultiplier = 0.2f };
         _gableMaterial = new StandardMaterial3D { VertexColorUseAsAlbedo = true, VertexColorIsSrgb = true, Roughness = 0.95f, CullMode = BaseMaterial3D.CullModeEnum.Disabled };
 

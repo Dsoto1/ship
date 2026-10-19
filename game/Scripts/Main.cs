@@ -578,7 +578,7 @@ public partial class Main : Node3D
         _deck.Build(location);
         if (_content.Port is { } rules && !_portBuilt)
         {
-            _port.Build(_content.Locations[rules.Location]);
+            _port.Build(_content.Locations[rules.Location], _content.Tasks);
             _portBuilt = true;
         }
 
