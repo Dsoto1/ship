@@ -903,6 +903,7 @@ public partial class Main : Node3D
     private string? _developerLook;
     private bool _developerTalk;
     private bool _developerJournal;
+    private bool _developerPerf;
     private int? _developerOffer;
     private float? _developerYaw;
 
@@ -983,6 +984,7 @@ public partial class Main : Node3D
                 case "look": _developerLook = value; break;
                 case "talk": _developerTalk = true; break;
                 case "journal": _developerJournal = true; break;
+                case "perf": _developerPerf = true; break;
                 case "offer" when int.TryParse(value, out var advance): _developerOffer = advance; break;
                 case "yaw" when float.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var yaw): _developerYaw = yaw; break;
             }
@@ -1028,6 +1030,15 @@ public partial class Main : Node3D
     {
         await ToSignal(GetTree().CreateTimer(3.0), SceneTreeTimer.SignalName.Timeout);
         await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+        if (_developerPerf)
+        {
+            // Render cost of the frame just drawn (--perf): what the scene asks of the GPU.
+            GD.Print($"PERF fps={Engine.GetFramesPerSecond():0} drawCalls={Performance.GetMonitor(Performance.Monitor.RenderTotalDrawCallsInFrame):0} " +
+                $"objects={Performance.GetMonitor(Performance.Monitor.RenderTotalObjectsInFrame):0} primitives={Performance.GetMonitor(Performance.Monitor.RenderTotalPrimitivesInFrame):0} " +
+                $"nodes={Performance.GetMonitor(Performance.Monitor.ObjectNodeCount):0} processMs={Performance.GetMonitor(Performance.Monitor.TimeProcess) * 1000:0.0} " +
+                $"videoMemMB={Performance.GetMonitor(Performance.Monitor.RenderVideoMemUsed) / 1048576:0}");
+        }
+
         GetViewport().GetTexture().GetImage().SavePng(_screenshotPath);
         GetTree().Quit();
     }
