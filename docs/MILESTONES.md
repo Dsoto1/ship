@@ -1049,7 +1049,7 @@ greetings given.
 - **port-to-voyage continuity:** the same IDs, names, relationships, knowledge, hold and chronicle;
 - saving and migration.
 
-**Screenshots:** `docs/screenshots/r2e-departure-farewell.jpg`.
+**Screenshots:** `docs/screenshots/r2e-departure-farewell.jpg`, `r2e-departure-cast-off.jpg`.
 
 **Limits:**
 - the crew are already aboard (they board when signed on), so the departure shows them at the rail,

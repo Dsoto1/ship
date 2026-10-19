@@ -35,6 +35,9 @@ public partial class DepartureSequence : CanvasLayer
     /// <summary>True while the departure is playing.</summary>
     public bool Playing { get; private set; }
 
+    /// <summary>True once the captain has gone up the gangway: he is no longer on the quay.</summary>
+    public bool Boarded { get; private set; }
+
     /// <summary>How far the Garza has moved from her berth, in metres, and turned, in degrees.</summary>
     public (Vector3 Offset, float Turn) Ship { get; private set; }
 
@@ -97,6 +100,7 @@ public partial class DepartureSequence : CanvasLayer
         _sailing = -1;
         _closing = -1;
         _waiting = false;
+        Boarded = false;
         Ship = (Vector3.Zero, 0);
         Camera = (gangway, 15f);
         _fade.Color = new Color(0, 0, 0, 0);
@@ -136,6 +140,7 @@ public partial class DepartureSequence : CanvasLayer
 
         _closing = 0;
         _sailing = SailSeconds;
+        Boarded = true;
     }
 
     public override void _UnhandledInput(InputEvent @event)
@@ -223,6 +228,7 @@ public partial class DepartureSequence : CanvasLayer
             _pay.Disabled = _runner.Campaign.Port is { } port && port.Funds < claim.Amount;
         }
 
+        Boarded |= beat.Kind == "board";
         Beat?.Invoke(beat.Kind);
         if (beat.Kind == "away")
         {

@@ -438,13 +438,14 @@ public partial class Main : Node3D
                     : definition is not null ? WorkPose(definition.Id, spot?.Kind)
                     : Pose.Standing;
                 var inside = character.Membership == Membership.Local && _runner.IsIndoors(id);
-                figure.Visible = character.SurvivalState != SurvivalState.Missing && !inside;
+                // In the departure the captain leaves the quay when he goes up the gangway (R2e).
+                figure.Visible = character.SurvivalState != SurvivalState.Missing && !inside && !(id == _runner.Campaign.CaptainId && _departure.Boarded && _departure.Playing);
                 var onPort = placement.LocationId == _runner.Content.Port?.Location;
                 var isCaptain = id == _runner.Campaign.CaptainId;
                 figure.Refresh(character, placement, drawTick, id == _selected, Hud.Activity(_runner, character),
                     isCaptain, pose, (float)delta, animationRate,
                     onPort ? _port.HeightAt : null, carrying,
-                    showLabel: !inPort || isCaptain || id == _hovered, shownName: inPort ? PortHud.KnownName(_runner, id) : null,
+                    showLabel: !_departure.Playing && (!inPort || isCaptain || id == _hovered), shownName: inPort ? PortHud.KnownName(_runner, id) : null,
                     facing: spot is null ? null : FacingAt(location, spot));
             }
         }
