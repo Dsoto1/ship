@@ -11,6 +11,9 @@ public enum VoyageOutcome
 
     /// <summary>The ship filled and sank.</summary>
     Foundered,
+
+    /// <summary>Nobody is left alive aboard.</summary>
+    AllHandsLost,
 }
 
 /// <summary>How much sail the captain orders carried (D-018).</summary>

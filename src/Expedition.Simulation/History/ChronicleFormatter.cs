@@ -51,6 +51,7 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
             ChronicleEntryKind.CaptainAppointed => $"{who} took command of the expedition ({cause}).",
             ChronicleEntryKind.WeatherChanged => WeatherChange(entry),
             ChronicleEntryKind.EventResolved => EventLine(entry),
+            ChronicleEntryKind.AllHandsLost => $"No one is left alive aboard {Ship()}.",
             ChronicleEntryKind.SailPlanChanged => entry.Get(ChronicleParameters.To) switch
             {
                 "PressOn" => "The captain ordered every sail set: press on.",

@@ -56,4 +56,7 @@ public enum ChronicleEntryKind
 
     /// <summary>The captain changed how much sail is carried (parameter: to = plan name).</summary>
     SailPlanChanged,
+
+    /// <summary>Nobody is left alive aboard.</summary>
+    AllHandsLost,
 }

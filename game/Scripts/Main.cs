@@ -204,6 +204,7 @@ public partial class Main : Node3D
                     : definition is { IsRest: true } ? Pose.Resting
                     : definition is not null ? Pose.Working
                     : Pose.Standing;
+                figure.Visible = character.SurvivalState != SurvivalState.Missing;
                 figure.Refresh(character, placement, drawTick, id == _selected, Hud.Activity(_runner, character),
                     id == _runner.Campaign.CaptainId, pose, (float)delta, animationRate);
             }
@@ -377,7 +378,8 @@ public partial class Main : Node3D
     {
         var crew = _runner.Campaign.Characters.Values.ToList();
         var alive = crew.Count(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated);
-        var dead = crew.Where(c => c.SurvivalState == SurvivalState.Dead).Select(c => c.Name).ToList();
+        var dead = crew.Where(c => c.SurvivalState is SurvivalState.Dead or SurvivalState.Missing)
+            .Select(c => c.SurvivalState == SurvivalState.Missing ? $"{c.Name} (lost at sea)" : c.Name).ToList();
         var days = _runner.Campaign.Clock.Tick / (double)SimulationClock.TicksPerDay;
         var (food, water) = _runner.SupplyForecast();
         var losses = dead.Count == 0 ? "Every soul aboard is still alive." : $"Lost on the way: {string.Join(", ", dead)}.";
@@ -387,6 +389,12 @@ public partial class Main : Node3D
                 $"{losses} {alive} of {crew.Count} come to the coast, with water for about {water:0} days and food for about {food:0}. " +
                 $"The hull stands at {ship.Hull:0}% and the rigging at {ship.Rigging:0}%.\n\n" +
                 "What waits ashore, and what became of the old factory at Punta Ceniza, is still to be written.");
+        }
+        else if (ship.Outcome == Expedition.Simulation.Voyage.VoyageOutcome.AllHandsLost)
+        {
+            _hud.ShowEnding("All hands lost", $"On day {Math.Floor(days) + 1:0}, {ship.LeaguesRemaining:0} leagues short of {ship.Destination}, the last of " +
+                $"{ship.ShipName}'s company is gone. She drifts on, empty.\n\n{losses}\n\n" +
+                "Keep the water and food coming, rest the exhausted before they collapse, and think twice about the choices that cost lives.");
         }
         else
         {

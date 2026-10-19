@@ -590,6 +590,42 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         return result;
     }
 
+    /// <summary>
+    /// Keeps someone in command. If the captain is dead or missing, the able crew member the others
+    /// regard most highly (trust and respect, plus leadership) takes command as acting captain. This is a
+    /// placeholder until the owner approves succession rules (TECHNICAL_SPEC.md §18.1). If no one is left
+    /// alive aboard, the voyage ends with all hands lost and the campaign fails.
+    /// </summary>
+    private void CheckCommand()
+    {
+        var aboard = Campaign.Characters.Values.Where(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated).ToList();
+        if (aboard.Count == 0)
+        {
+            if (Campaign.Voyage is { Outcome: VoyageOutcome.UnderWay } lost)
+            {
+                lost.Outcome = VoyageOutcome.AllHandsLost;
+                Campaign.Record(ChronicleEntryKind.AllHandsLost, []);
+                Campaign.TryTransitionTo(CampaignPhase.CampaignFailed, $"no one is left alive aboard {lost.ShipName}");
+            }
+
+            return;
+        }
+
+        if (Campaign.CaptainId is not { } captain || Campaign.Characters[captain].SurvivalState is not (SurvivalState.Dead or SurvivalState.Missing))
+        {
+            return;
+        }
+
+        double Standing(Character candidate) =>
+            Campaign.Relationships.Values.Where(r => r.To == candidate.Id).Sum(r => r.Trust + r.Respect)
+            + candidate.Skills.Get("skill.leadership") * 15;
+        var successor = aboard.Where(c => c.CanWork).OrderByDescending(Standing).ThenBy(c => c.Id).FirstOrDefault();
+        if (successor is not null)
+        {
+            Campaign.AppointCaptain(successor.Id, "the crew looked to them when the captain was lost");
+        }
+    }
+
     private static string Number(double value) => Math.Round(value).ToString(System.Globalization.CultureInfo.InvariantCulture);
 
     /// <summary>
@@ -723,6 +759,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             }
 
             StepVoyage();
+            CheckCommand();
             ConsiderEvents();
         }
 

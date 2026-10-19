@@ -351,6 +351,40 @@ public class VoyageTests
     }
 
     [Fact]
+    public void WhenEveryoneIsGoneTheVoyageEnds()
+    {
+        var (runner, ship, crew) = Setup();
+        foreach (var id in crew.Skip(1))
+        {
+            runner.Campaign.ChangeSurvivalState(id, Characters.SurvivalState.Dead, "fever");
+        }
+
+        runner.Campaign.ChangeSurvivalState(crew[0], Characters.SurvivalState.Missing, "lost overboard");
+        runner.Advance(1);
+
+        Assert.Equal(VoyageOutcome.AllHandsLost, ship.Outcome);
+        Assert.Equal(CampaignPhase.CampaignFailed, runner.Campaign.Phase);
+        var before = (ship.Hull, ship.Bilge, ship.LeaguesSailed);
+        runner.Advance(24 * 60);
+        Assert.Equal(before, (ship.Hull, ship.Bilge, ship.LeaguesSailed));
+    }
+
+    [Fact]
+    public void WhenTheCaptainIsLostTheMostRespectedTakesCommand()
+    {
+        var (runner, _, crew) = Setup();
+
+        runner.Campaign.ChangeSurvivalState(crew[0], Characters.SurvivalState.Missing, "lost overboard");
+        runner.Advance(1);
+
+        // Diego is trusted and respected by the captain's old friends; no one else has standing.
+        var captain = runner.Campaign.CaptainId!.Value;
+        Assert.NotEqual(crew[0], captain);
+        Assert.Equal(Characters.SurvivalState.Alive, runner.Campaign.Characters[captain].SurvivalState);
+        Assert.Equal(ChronicleEntryKind.CaptainAppointed, runner.Campaign.Chronicle.Entries.Last(e => e.Kind == ChronicleEntryKind.CaptainAppointed).Kind);
+    }
+
+    [Fact]
     public void BadVoyageRulesAreRejected()
     {
         var rules = Shipped.Voyage! with { StartingWeather = "weather.sunshine" };
