@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 17;
+    public const int CurrentSchemaVersion = 18;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -143,6 +143,18 @@ public static class SaveSerializer
                 root["eventHistory"] = new JsonArray();
                 root["lastEventTick"] = long.MinValue / 2;
                 root["rationing"] = false;
+                return root;
+            },
+
+            // Format 18 gave the port weather. Older ports start fair, changing at once.
+            [17] = root =>
+            {
+                if (root["port"] is JsonObject port)
+                {
+                    port["weather"] = null;
+                    port["weatherUntil"] = 0;
+                }
+
                 return root;
             },
 
@@ -466,6 +478,8 @@ public static class SaveSerializer
                     Warned = port.Warned,
                     Leads = port.Leads.Select(l => new HeardLeadData { Lead = l.LeadId, Tick = l.Tick }).ToList(),
                     Purchases = port.Purchases.Select(p => new PurchaseData { Lot = p.Lot, Tick = p.Tick }).ToList(),
+                    Weather = port.WeatherId,
+                    WeatherUntil = port.WeatherUntil,
                 }
                 : null,
             PendingEvent = campaign.PendingEvent is { } pending
@@ -745,6 +759,14 @@ public static class SaveSerializer
             }
 
             var port = new Port.PortState { Funds = savedPort.Funds, LateFeesCharged = savedPort.LateFeesCharged, Warned = savedPort.Warned };
+            if (savedPort.Weather is { } weather && portRules.Weather?.Find(weather) is null)
+            {
+                throw new SaveLoadException($"The save's port weather '{weather}' is not in this game.");
+            }
+
+            // A port saved before it had weather starts fair and changes on the next minute.
+            port.WeatherId = savedPort.Weather ?? portRules.Weather?.Start;
+            port.WeatherUntil = savedPort.Weather is null ? data.Tick : savedPort.WeatherUntil;
             foreach (var (lot, lots) in savedPort.Stock) port.SetStock(lot, lots);
             foreach (var id in savedPort.TalkedTo) port.MarkTalked(Known(id));
             foreach (var pair in savedPort.Asked) port.MarkAsked(Known(pair[0]), Known(pair[1]));

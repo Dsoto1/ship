@@ -674,4 +674,107 @@ public class PortTests
     {
         Assert.All(Shipped.Items.Values, item => Assert.Contains(item.PackedIn, Expedition.Simulation.Items.ItemDefinition.Packages));
     }
+
+    private static List<(long Tick, string Weather)> WeatherOver(SimulationRunner runner, int days)
+    {
+        var seen = new List<(long, string)>();
+        for (var minute = 0; minute < days * SimulationClock.TicksPerDay; minute += 10)
+        {
+            var now = runner.Campaign.Port!.WeatherId!;
+            if (seen.Count == 0 || seen[^1].Item2 != now)
+            {
+                seen.Add((runner.Campaign.Clock.Tick, now));
+            }
+
+            runner.Advance(10);
+        }
+
+        return seen;
+    }
+
+    [Fact]
+    public void ThePortsWeatherChangesTheSameWayEveryTime()
+    {
+        var first = WeatherOver(Port(), 2);
+        var again = WeatherOver(Port(), 2);
+
+        Assert.Equal(first, again);
+        Assert.Equal("weather.fair", first[0].Weather);
+        Assert.True(first.Count >= 3, string.Join(", ", first));
+        Assert.NotEqual(first, WeatherOver(Port(seed: 99), 2));
+    }
+
+    [Fact]
+    public void FogComesOnlyInTheMorning()
+    {
+        foreach (var seed in new ulong[] { 1, 2, 3, 4, 5, 6 })
+        {
+            foreach (var (tick, weather) in WeatherOver(Port(seed), 2).Where(w => w.Weather == "weather.fog"))
+            {
+                var hour = tick % SimulationClock.TicksPerDay / SimulationClock.TicksPerHour;
+                Assert.InRange(hour, 3, 9);
+            }
+        }
+    }
+
+    [Fact]
+    public void RainSendsPeopleToShelterAndTheyGoBackWhenItStops()
+    {
+        var runner = Port();
+        AdvanceTo(runner, 1, 13, 20);
+        Assert.Equal("task.gossip", Doing(runner, "person.catalina"));
+
+        Assert.True(runner.DeveloperSetPortWeather("weather.rain").Succeeded);
+        runner.Advance(1);
+        Assert.Equal("task.shelter", Doing(runner, "person.catalina"));
+        Assert.DoesNotContain(runner.Campaign.ActiveTasks.Values, t => Shipped.Tasks[t.DefinitionId].InRain is not null);
+
+        Assert.True(runner.DeveloperSetPortWeather("weather.fair").Succeeded);
+        runner.Advance(1);
+        Assert.Equal("task.gossip", Doing(runner, "person.catalina"));
+    }
+
+    [Fact]
+    public void FogShortensHowFarTheCaptainCanSee()
+    {
+        var runner = Port();
+        AdvanceTo(runner, 1, 10);
+        var captain = runner.Campaign.Placements[Captain(runner)].Cell;
+        var far = runner.Campaign.Characters.Values
+            .Where(c => c.Membership == Membership.Local && runner.CaptainSees(c.Id) && runner.Campaign.Placements.TryGetValue(c.Id, out var p)
+                && Math.Max(Math.Abs(p.Cell.X - captain.X), Math.Abs(p.Cell.Y - captain.Y)) is > 7 and <= 14)
+            .Select(c => c.Id)
+            .ToList();
+        Assert.NotEmpty(far);
+
+        runner.DeveloperSetPortWeather("weather.fog");
+        Assert.All(far, id => Assert.False(runner.CaptainSees(id)));
+    }
+
+    [Fact]
+    public void TheWeatherIsSavedAndOldPortsStartFair()
+    {
+        var runner = Port();
+        runner.DeveloperSetPortWeather("weather.rain");
+        var json = SaveSerializer.Serialize(runner.Campaign);
+        var restored = SaveSerializer.Deserialize(json, Shipped);
+        Assert.Equal("weather.rain", restored.Port!.WeatherId);
+        Assert.Equal(runner.Campaign.Port!.WeatherUntil, restored.Port.WeatherUntil);
+
+        var old = JsonNode.Parse(json)!.AsObject();
+        old["schemaVersion"] = 17;
+        old["port"]!.AsObject().Remove("weather");
+        old["port"]!.AsObject().Remove("weatherUntil");
+        Assert.Equal("weather.fair", SaveSerializer.Deserialize(old.ToJsonString(), Shipped).Port!.WeatherId);
+    }
+
+    [Fact]
+    public void ThePortHasAmbientScenesOfManyKinds()
+    {
+        var scenes = Shipped.Port!.Ambient;
+        Assert.InRange(scenes.Count, 8, 12);
+        Assert.True(scenes.Select(s => s.Kind).Distinct().Count() >= 8);
+        Assert.Contains(scenes, s => s.FromHour > s.ToHour);
+        Assert.True(scenes.Single(s => s.Id == "ambient.drunk").AtHour(1));
+    }
 }

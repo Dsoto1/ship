@@ -48,6 +48,12 @@ public sealed record PortRules
     /// <summary>How the ship's preparation shows: when stores are carried aboard, and the stages.</summary>
     public PreparationRules Preparation { get; init; } = new();
 
+    /// <summary>The port's weather (R2d), or null for always fair.</summary>
+    public PortWeatherRules? Weather { get; init; }
+
+    /// <summary>Small scenes the port plays out around the player, with no reward (PORT_EXPERIENCE §12).</summary>
+    public IReadOnlyList<AmbientScene> Ambient { get; init; } = [];
+
     /// <summary>Everyone on the waterfront.</summary>
     public required IReadOnlyList<PersonDefinition> People { get; init; }
 }
@@ -72,6 +78,107 @@ public sealed record PreparationRules
 
     /// <summary>Hours before the convoy sails that departure morning begins.</summary>
     public double DepartureMorningHours { get; init; } = 3;
+}
+
+/// <summary>
+/// The port's weather (R2d, PORT_EXPERIENCE §14): kinds of weather, each lasting a while and followed by
+/// another, chosen by weights from those that can begin at that hour (fog only in the morning).
+/// </summary>
+public sealed record PortWeatherRules
+{
+    /// <summary>The weather when the port opens.</summary>
+    public required string Start { get; init; }
+
+    /// <summary>Every kind of weather.</summary>
+    public required IReadOnlyList<PortWeatherKind> Kinds { get; init; }
+
+    /// <summary>A kind by ID, or null.</summary>
+    public PortWeatherKind? Find(string id) => Kinds.FirstOrDefault(k => k.Id == id);
+}
+
+/// <summary>A kind of port weather and what it does.</summary>
+public sealed record PortWeatherKind
+{
+    /// <summary>ID, for example <c>weather.rain</c>.</summary>
+    public required string Id { get; init; }
+
+    /// <summary>Name, for the status chip.</summary>
+    public required string Name { get; init; }
+
+    /// <summary>A line when it sets in, for the player.</summary>
+    public required string Says { get; init; }
+
+    /// <summary>Shortest and longest it lasts, in hours.</summary>
+    public required double MinHours { get; init; }
+
+    /// <summary>Longest it lasts, in hours.</summary>
+    public required double MaxHours { get; init; }
+
+    /// <summary>Hour from which it can begin (inclusive), and before which (exclusive); 0 and 24 for any time.</summary>
+    public int FromHour { get; init; }
+
+    /// <summary>Hour before which it can begin.</summary>
+    public int ToHour { get; init; } = 24;
+
+    /// <summary>What may follow, by weight.</summary>
+    public required IReadOnlyDictionary<string, int> Next { get; init; }
+
+    /// <summary>0 dry .. 1 heavy rain. From 0.5 people caught outside take shelter.</summary>
+    public double Rain { get; init; }
+
+    /// <summary>0 clear .. 1 thick fog.</summary>
+    public double Fog { get; init; }
+
+    /// <summary>0 still .. 1 a strong breeze.</summary>
+    public double Wind { get; init; }
+
+    /// <summary>0 bright .. 1 dark sky.</summary>
+    public double Gloom { get; init; }
+
+    /// <summary>How far one can see, as a share of the usual: fog shortens it.</summary>
+    public double Sight { get; init; } = 1;
+
+    /// <summary>True if it rains hard enough to send people to shelter.</summary>
+    public bool Raining => Rain >= 0.5;
+}
+
+/// <summary>
+/// A small scene the port plays out (PORT_EXPERIENCE §12): sailors arguing, a porter dropping a sack, a
+/// procession. Presentation only, with no reward; it says when and where it can happen and in what
+/// weather, and the game draws it.
+/// </summary>
+public sealed record AmbientScene
+{
+    /// <summary>The kinds of scene the game can draw.</summary>
+    public static readonly IReadOnlySet<string> Kinds = new HashSet<string>(
+        ["argument", "dropped_load", "procession", "funeral", "thief", "cart_wheel", "farewell", "drunk", "dispute", "children"], StringComparer.Ordinal);
+
+    /// <summary>ID, for example <c>ambient.argument_tavern</c>.</summary>
+    public required string Id { get; init; }
+
+    /// <summary>One of <see cref="Kinds"/>.</summary>
+    public required string Kind { get; init; }
+
+    /// <summary>What the player is told if they are near, in a line.</summary>
+    public required string Text { get; init; }
+
+    /// <summary>Where it happens: a walkable cell [x, y].</summary>
+    public required IReadOnlyList<int> At { get; init; }
+
+    /// <summary>For scenes that move, where to: a walkable cell [x, y].</summary>
+    public IReadOnlyList<int>? To { get; init; }
+
+    /// <summary>Hour from which it can happen.</summary>
+    public int FromHour { get; init; }
+
+    /// <summary>Hour before which it can happen; may be less than <see cref="FromHour"/> to wrap past midnight.</summary>
+    public int ToHour { get; init; } = 24;
+
+    /// <summary><c>any</c>, <c>dry</c> (not in rain) or <c>wet</c> (only in rain).</summary>
+    public string Weather { get; init; } = "any";
+
+    /// <summary>True if the scene can happen at <paramref name="hour"/>.</summary>
+    public bool AtHour(int hour) => FromHour <= ToHour ? hour >= FromHour && hour < ToHour : hour >= FromHour || hour < ToHour;
 }
 
 /// <summary>A day of the campaign (1 is the first) and an hour.</summary>

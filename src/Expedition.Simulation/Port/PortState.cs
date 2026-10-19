@@ -37,6 +37,12 @@ public sealed class PortState
     /// <summary>Lots bought from the chandler, oldest first, and when: what is being loaded (R2c).</summary>
     public IReadOnlyList<Purchase> Purchases => _purchases;
 
+    /// <summary>The weather now (R2d), or null where the port has none.</summary>
+    public string? WeatherId { get; internal set; }
+
+    /// <summary>When the weather next changes.</summary>
+    public long WeatherUntil { get; internal set; }
+
     /// <summary>Half days of late fees already charged.</summary>
     public int LateFeesCharged { get; internal set; }
 

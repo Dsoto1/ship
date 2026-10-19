@@ -450,6 +450,12 @@ public sealed record PortData
     /// <summary>Leads heard, oldest first. Added in format 16.</summary>
     public IReadOnlyList<HeardLeadData> Leads { get; init; } = [];
 
+    /// <summary>The weather now, or null. Added in format 18.</summary>
+    public string? Weather { get; init; }
+
+    /// <summary>When the weather next changes. Added in format 18.</summary>
+    public long WeatherUntil { get; init; }
+
     /// <summary>Lots bought, oldest first. Added in format 17.</summary>
     public IReadOnlyList<PurchaseData> Purchases { get; init; } = [];
 

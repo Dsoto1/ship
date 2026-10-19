@@ -93,6 +93,11 @@ public sealed class GameContent
                 errors.Add($"Task '{task.Id}': then names unknown task '{task.Then}'.");
             }
 
+            if (task.InRain is not null && !Tasks.ContainsKey(task.InRain))
+            {
+                errors.Add($"Task '{task.Id}': inRain names unknown task '{task.InRain}'.");
+            }
+
             if (task.DutyWhen?.StartBetween is { } windows && windows.Any(w => w.Length != 2 || w[0] < 0 || w[1] > 24 || w[0] >= w[1]))
             {
                 errors.Add($"Task '{task.Id}': dutyWhen.startBetween windows must be [from, to) hours with 0 <= from < to <= 24.");
@@ -147,6 +152,46 @@ public sealed class GameContent
         if (rules.Funds < 0 || rules.Berths < 1 || rules.MinimumCrew < 1 || rules.MinimumCrew > rules.Berths || rules.LateFeePerHalfDay < 0)
         {
             errors.Add("Port: needs funds >= 0, 1 <= minimumCrew <= berths, and a late fee >= 0.");
+        }
+
+        if (rules.Weather is { } weather)
+        {
+            if (weather.Find(weather.Start) is null)
+            {
+                errors.Add($"Port weather: the start '{weather.Start}' is not one of the kinds.");
+            }
+
+            foreach (var kind in weather.Kinds)
+            {
+                if (kind.MinHours <= 0 || kind.MaxHours < kind.MinHours || kind.FromHour < 0 || kind.ToHour > 24 || kind.FromHour >= kind.ToHour
+                    || kind.Rain is < 0 or > 1 || kind.Fog is < 0 or > 1 || kind.Wind is < 0 or > 1 || kind.Gloom is < 0 or > 1 || kind.Sight is <= 0 or > 1)
+                {
+                    errors.Add($"Port weather '{kind.Id}': needs 0 < minHours <= maxHours, 0 <= fromHour < toHour <= 24, rain, fog, wind and gloom in 0..1, sight in (0, 1].");
+                }
+
+                foreach (var (next, weight) in kind.Next)
+                {
+                    if (weather.Find(next) is null || weight < 0)
+                    {
+                        errors.Add($"Port weather '{kind.Id}': next names unknown weather '{next}' or a negative weight.");
+                    }
+                }
+            }
+
+            if (weather.Kinds.Select(k => k.Id).Distinct().Count() != weather.Kinds.Count)
+            {
+                errors.Add("Port weather: two kinds share an ID.");
+            }
+        }
+
+        foreach (var scene in rules.Ambient)
+        {
+            bool Walkable(IReadOnlyList<int>? cell) => cell is [var x, var y] && waterfront is not null && waterfront.IsWalkable(new World.GridPosition(x, y));
+            if (!Expedition.Simulation.Port.AmbientScene.Kinds.Contains(scene.Kind) || !Walkable(scene.At) || (scene.To is not null && !Walkable(scene.To))
+                || scene.Weather is not ("any" or "dry" or "wet") || scene.FromHour is < 0 or > 23 || scene.ToHour is < 1 or > 24 || string.IsNullOrWhiteSpace(scene.Text))
+            {
+                errors.Add($"Ambient scene '{scene.Id}': needs a known kind, walkable 'at' (and 'to') cells, weather any, dry or wet, hours in 0..24 and a text.");
+            }
         }
 
         if (rules.Preparation is { LoadingHours: <= 0 } or { StowingHours: < 0 } or { DepartureMorningHours: < 0 } or { TakingShapeLots: < 0 }

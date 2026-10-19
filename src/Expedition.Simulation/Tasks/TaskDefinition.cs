@@ -68,6 +68,12 @@ public sealed record TaskDefinition
     /// </summary>
     public string? Then { get; init; }
 
+    /// <summary>
+    /// What someone does instead while it rains in port (R2d, PORT_EXPERIENCE §14): gossip at the well,
+    /// play in the square or mend nets on the quay become sheltering under the eaves. Null to carry on.
+    /// </summary>
+    public string? InRain { get; init; }
+
     /// <summary>What is carried while walking to and doing this task, for drawing: crate, basket, plank, yarn.</summary>
     public string? Carries { get; init; }
 

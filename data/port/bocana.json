@@ -3,6 +3,9 @@
 // what they ask, the least they will take, what they claim, when they give up, and whom they will not
 // sail with. 'knows' is what a person says about others when asked; 'secrets' are seen, not told.
 // Schedules are hour blocks [from, to), wrapping past midnight. Numbers are placeholders to tune.
+// 'weather' is the port's weather (R2d): each kind lasts minHours..maxHours, may begin only in
+// [fromHour, toHour), and is followed by one of 'next' by weight. 'ambient' are small scenes the game
+// plays out near the player, with no reward (PORT_EXPERIENCE §12); cells are [x, y] on the waterfront.
 {
  "location": "location.bocana",
  "shipLocation": "location.test_deck",
@@ -22,6 +25,220 @@
   "readyLots": 6,
   "departureMorningHours": 3
  },
+ "weather": {
+  "start": "weather.fair",
+  "kinds": [
+   {
+    "id": "weather.fair",
+    "name": "Fair",
+    "says": "The sky clears over the harbour.",
+    "minHours": 4,
+    "maxHours": 9,
+    "next": {
+     "weather.breezy": 3,
+     "weather.overcast": 3,
+     "weather.fog": 1
+    }
+   },
+   {
+    "id": "weather.breezy",
+    "name": "Breezy",
+    "says": "The wind gets up off the sea; flags stand out and loose canvas snaps.",
+    "minHours": 3,
+    "maxHours": 7,
+    "wind": 0.85,
+    "next": {
+     "weather.fair": 3,
+     "weather.overcast": 2
+    }
+   },
+   {
+    "id": "weather.overcast",
+    "name": "Overcast",
+    "says": "Cloud comes over from the sea.",
+    "minHours": 2,
+    "maxHours": 5,
+    "gloom": 0.35,
+    "wind": 0.3,
+    "next": {
+     "weather.rain": 3,
+     "weather.fair": 2,
+     "weather.breezy": 1
+    }
+   },
+   {
+    "id": "weather.rain",
+    "name": "Rain",
+    "says": "Rain sweeps in off the sea. Stallholders cover their goods; people run for the doorways.",
+    "minHours": 1.5,
+    "maxHours": 4,
+    "rain": 1,
+    "gloom": 0.68,
+    "wind": 0.4,
+    "next": {
+     "weather.overcast": 3,
+     "weather.fair": 1
+    }
+   },
+   {
+    "id": "weather.fog",
+    "name": "Fog",
+    "says": "Fog rolls in over the harbour. The ships at anchor are gone into it, and you can see only a few paces.",
+    "minHours": 2,
+    "maxHours": 4,
+    "fromHour": 3,
+    "toHour": 9,
+    "fog": 1,
+    "gloom": 0.2,
+    "sight": 0.45,
+    "next": {
+     "weather.fair": 3,
+     "weather.overcast": 1
+    }
+   }
+  ]
+ },
+ "ambient": [
+  {
+   "id": "ambient.argument_tavern",
+   "kind": "argument",
+   "text": "Two sailors argue outside the Three Anchors over who owes whom for the last jug.",
+   "at": [
+    29,
+    17
+   ],
+   "fromHour": 12,
+   "toHour": 23
+  },
+  {
+   "id": "ambient.dropped_sack",
+   "kind": "dropped_load",
+   "text": "A porter's sack splits on the quay; dried beans scatter and he swears at them.",
+   "at": [
+    36,
+    30
+   ],
+   "to": [
+    50,
+    30
+   ],
+   "fromHour": 7,
+   "toHour": 17,
+   "weather": "dry"
+  },
+  {
+   "id": "ambient.procession",
+   "kind": "procession",
+   "text": "A small procession leaves the chapel behind its cross, singing, and the square makes way for it.",
+   "at": [
+    40,
+    15
+   ],
+   "to": [
+    50,
+    21
+   ],
+   "fromHour": 9,
+   "toHour": 11,
+   "weather": "dry"
+  },
+  {
+   "id": "ambient.funeral",
+   "kind": "funeral",
+   "text": "A funeral leaves the chapel for the burial ground beyond the yards. Men take off their caps as it passes.",
+   "at": [
+    40,
+    15
+   ],
+   "to": [
+    79,
+    16
+   ],
+   "fromHour": 10,
+   "toHour": 16
+  },
+  {
+   "id": "ambient.thief",
+   "kind": "thief",
+   "text": "A boy snatches something from a stall and runs; the fishwife's shout follows him across the square.",
+   "at": [
+    44,
+    23
+   ],
+   "to": [
+    55,
+    26
+   ],
+   "fromHour": 9,
+   "toHour": 14,
+   "weather": "dry"
+  },
+  {
+   "id": "ambient.cart_wheel",
+   "kind": "cart_wheel",
+   "text": "A carter's wheel comes off by the warehouse. He sits on the shaft and looks at it.",
+   "at": [
+    48,
+    19
+   ],
+   "fromHour": 7,
+   "toHour": 18,
+   "weather": "dry"
+  },
+  {
+   "id": "ambient.farewell",
+   "kind": "farewell",
+   "text": "On the west pier a woman holds a sailor a long moment before he climbs down into the boat.",
+   "at": [
+    9,
+    40
+   ],
+   "to": [
+    9,
+    42
+   ],
+   "fromHour": 6,
+   "toHour": 19
+  },
+  {
+   "id": "ambient.drunk",
+   "kind": "drunk",
+   "text": "A man reels out of the Three Anchors, sings two lines of something and sits down hard in the street.",
+   "at": [
+    28,
+    15
+   ],
+   "to": [
+    20,
+    22
+   ],
+   "fromHour": 20,
+   "toHour": 2
+  },
+  {
+   "id": "ambient.dispute",
+   "kind": "dispute",
+   "text": "On the terrace a merchant waves his papers at the Chamber's clerk over a duty he will not pay.",
+   "at": [
+    12,
+    16
+   ],
+   "fromHour": 9,
+   "toHour": 13
+  },
+  {
+   "id": "ambient.children",
+   "kind": "children",
+   "text": "Children chase each other round the well until someone shouts at them.",
+   "at": [
+    32,
+    23
+   ],
+   "fromHour": 9,
+   "toHour": 18,
+   "weather": "dry"
+  }
+ ],
  "goods": [
   {
    "item": "item.water",

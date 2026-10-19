@@ -57,6 +57,136 @@
   ],
   "spots": [
    {
+    "id": "spot.shelter_1",
+    "x": 24,
+    "y": 14,
+    "tasks": [
+     "task.shelter"
+    ],
+    "kind": "ShelterPoint",
+    "face": "S"
+   },
+   {
+    "id": "spot.shelter_2",
+    "x": 27,
+    "y": 14,
+    "tasks": [
+     "task.shelter"
+    ],
+    "kind": "ShelterPoint",
+    "face": "S"
+   },
+   {
+    "id": "spot.shelter_3",
+    "x": 32,
+    "y": 14,
+    "tasks": [
+     "task.shelter"
+    ],
+    "kind": "ShelterPoint",
+    "face": "S"
+   },
+   {
+    "id": "spot.shelter_4",
+    "x": 39,
+    "y": 14,
+    "tasks": [
+     "task.shelter"
+    ],
+    "kind": "ShelterPoint",
+    "face": "S"
+   },
+   {
+    "id": "spot.shelter_5",
+    "x": 42,
+    "y": 14,
+    "tasks": [
+     "task.shelter"
+    ],
+    "kind": "ShelterPoint",
+    "face": "S"
+   },
+   {
+    "id": "spot.shelter_6",
+    "x": 48,
+    "y": 14,
+    "tasks": [
+     "task.shelter"
+    ],
+    "kind": "ShelterPoint",
+    "face": "S"
+   },
+   {
+    "id": "spot.shelter_7",
+    "x": 52,
+    "y": 14,
+    "tasks": [
+     "task.shelter"
+    ],
+    "kind": "ShelterPoint",
+    "face": "S"
+   },
+   {
+    "id": "spot.shelter_8",
+    "x": 60,
+    "y": 4,
+    "tasks": [
+     "task.shelter"
+    ],
+    "kind": "ShelterPoint",
+    "face": "S"
+   },
+   {
+    "id": "spot.shelter_9",
+    "x": 66,
+    "y": 4,
+    "tasks": [
+     "task.shelter"
+    ],
+    "kind": "ShelterPoint",
+    "face": "S"
+   },
+   {
+    "id": "spot.shelter_10",
+    "x": 72,
+    "y": 4,
+    "tasks": [
+     "task.shelter"
+    ],
+    "kind": "ShelterPoint",
+    "face": "S"
+   },
+   {
+    "id": "spot.shelter_11",
+    "x": 3,
+    "y": 30,
+    "tasks": [
+     "task.shelter"
+    ],
+    "kind": "ShelterPoint",
+    "face": "S"
+   },
+   {
+    "id": "spot.shelter_12",
+    "x": 12,
+    "y": 30,
+    "tasks": [
+     "task.shelter"
+    ],
+    "kind": "ShelterPoint",
+    "face": "S"
+   },
+   {
+    "id": "spot.shelter_13",
+    "x": 15,
+    "y": 30,
+    "tasks": [
+     "task.shelter"
+    ],
+    "kind": "ShelterPoint",
+    "face": "S"
+   },
+   {
     "id": "spot.tavern_door",
     "x": 28,
     "y": 14,

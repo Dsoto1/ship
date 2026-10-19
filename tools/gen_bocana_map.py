@@ -121,6 +121,12 @@ def spot(id, x, y, tasks, kind, indoors=False, face=None):
     spots.append(d)
 
 
+# Shelter from the rain (R2d): under the eaves along the square, under the ropewalk's roof, in the
+# mouths of the vaults. People caught out in rain wait here, looking out at it.
+for i, (x, y) in enumerate([(24, 14), (27, 14), (32, 14), (39, 14), (42, 14), (48, 14), (52, 14),
+                            (60, 4), (66, 4), (72, 4), (3, 30), (12, 30), (15, 30)]):
+    spot(f"spot.shelter_{i + 1}", x, y, ["task.shelter"], "ShelterPoint", face="S")
+
 # Three Anchors
 spot("spot.tavern_door", 28, 14, ["task.drink"], "DrinkPoint", True)
 for i, x in enumerate([24, 26, 31, 33]):

@@ -43,6 +43,12 @@ public sealed partial class SimulationRunner
         }
 
         var port = new PortState { Funds = rules.Funds };
+        if (rules.Weather?.Find(rules.Weather.Start) is { } start)
+        {
+            port.WeatherId = start.Id;
+            port.WeatherUntil = Campaign.Clock.Tick + WeatherDuration(start);
+        }
+
         for (var lot = 0; lot < rules.Goods.Count; lot++)
         {
             port.SetStock(lot, rules.Goods[lot].Stock);
@@ -74,7 +80,83 @@ public sealed partial class SimulationRunner
         }
 
         var location = Content.Locations[watched.LocationId];
-        return location.SightRange is not { } range || Distance(watcher.CellAt(Campaign.Clock.Tick), watched.CellAt(Campaign.Clock.Tick)) <= range;
+        // Fog shortens how far one can see on the waterfront (R2d).
+        var sight = watched.LocationId == Content.Port?.Location ? PortWeather?.Sight ?? 1 : 1;
+        return location.SightRange is not { } range || Distance(watcher.CellAt(Campaign.Clock.Tick), watched.CellAt(Campaign.Clock.Tick)) <= range * sight;
+    }
+
+    /// <summary>The weather in port now, or null at sea or where the port has none.</summary>
+    public PortWeatherKind? PortWeather =>
+        Content.Port?.Weather is { } weather && Campaign.Port?.WeatherId is { } id ? weather.Find(id) : null;
+
+    /// <summary>True while it rains hard enough in port to send people to shelter.</summary>
+    public bool RainingInPort => PortWeather?.Raining == true;
+
+    /// <summary>
+    /// Developer tool for screenshots and testing: sets the port's weather now, for six hours. Never
+    /// called by the game itself.
+    /// </summary>
+    public CommandResult DeveloperSetPortWeather(string id)
+    {
+        if (Campaign.Port is not { } port || Content.Port?.Weather?.Find(id) is not { } kind)
+        {
+            return CommandResult.Rejected($"No port weather '{id}'.");
+        }
+
+        ChangeWeather(port, kind);
+        port.WeatherUntil = Campaign.Clock.Tick + 6 * SimulationClock.TicksPerHour;
+        return CommandResult.Ok();
+    }
+
+    // How long a spell of weather lasts, rolled from the weather stream.
+    private long WeatherDuration(PortWeatherKind kind) =>
+        (long)Math.Round((kind.MinHours + (kind.MaxHours - kind.MinHours) * Campaign.Randomness.Weather.NextDouble()) * SimulationClock.TicksPerHour);
+
+    // When a spell of weather ends, the next is drawn by weight from those that can begin at this hour.
+    private void StepWeather(PortState port, PortRules rules)
+    {
+        if (rules.Weather is not { } weather || port.WeatherId is null || Campaign.Clock.Tick < port.WeatherUntil
+            || weather.Find(port.WeatherId) is not { } current)
+        {
+            return;
+        }
+
+        var hour = (int)(Campaign.Clock.Tick % SimulationClock.TicksPerDay / SimulationClock.TicksPerHour);
+        var options = current.Next
+            .Select(pair => (Kind: weather.Find(pair.Key), Weight: pair.Value))
+            .Where(o => o.Kind is not null && o.Weight > 0 && hour >= o.Kind.FromHour && hour < o.Kind.ToHour)
+            .OrderBy(o => o.Kind!.Id, StringComparer.Ordinal)
+            .ToList();
+        var next = current;
+        if (options.Count > 0)
+        {
+            var roll = Campaign.Randomness.Weather.NextInt(options.Sum(o => o.Weight));
+            foreach (var (kind, weight) in options)
+            {
+                if ((roll -= weight) < 0)
+                {
+                    next = kind!;
+                    break;
+                }
+            }
+        }
+
+        ChangeWeather(port, next);
+    }
+
+    private void ChangeWeather(PortState port, PortWeatherKind next)
+    {
+        var wasRaining = RainingInPort;
+        port.WeatherId = next.Id;
+        port.WeatherUntil = Campaign.Clock.Tick + WeatherDuration(next);
+        if (wasRaining != next.Raining)
+        {
+            // Rain sends people to shelter at once, and when it stops they go back to what they were doing.
+            foreach (var local in Campaign.Characters.Values.Where(c => c.Membership == Membership.Local).OrderBy(c => c.Id).ToList())
+            {
+                FollowSchedule(local, force: true);
+            }
+        }
     }
 
     /// <summary>True if the character is at an indoor spot (in a house, the chapel, an office): out of sight and reach.</summary>
@@ -93,7 +175,7 @@ public sealed partial class SimulationRunner
 
     // A local's day: the schedule block for this hour, at its spot. Demonstrations the captain asked for
     // come first. Checked when idle, and on the hour when the block may change.
-    private void FollowSchedule(Character character)
+    private void FollowSchedule(Character character, bool force = false)
     {
         if (!character.CanWork || character.PersonId is null || !People.TryGetValue(character.PersonId, out var person)
             || !Campaign.Placements.ContainsKey(character.Id))
@@ -108,19 +190,28 @@ public sealed partial class SimulationRunner
         }
 
         var minute = Campaign.Clock.Tick % SimulationClock.TicksPerHour;
-        if (current is not null && minute != 0)
+        if (current is not null && minute != 0 && !force)
         {
             return;
         }
 
-        if (current is null && minute % 10 != 0 && Campaign.Clock.Tick > 0 && !_scheduleStarting)
+        if (current is null && minute % 10 != 0 && Campaign.Clock.Tick > 0 && !_scheduleStarting && !force)
         {
             return;
         }
 
         var hour = (int)(Campaign.Clock.Tick % SimulationClock.TicksPerDay / SimulationClock.TicksPerHour);
         var block = person.Schedule.FirstOrDefault(b => b.Contains(hour));
-        if (block is null || (current is not null && IsStepOf(block.Task, current.DefinitionId)))
+        if (block is null)
+        {
+            return;
+        }
+
+        // In rain, work and idling out in the open give way to shelter (R2d, PORT_EXPERIENCE §14).
+        var planned = Content.Tasks[block.Task];
+        var sheltering = RainingInPort && planned.InRain is not null;
+        var taskId = sheltering ? planned.InRain! : block.Task;
+        if (current is not null && IsStepOf(taskId, current.DefinitionId))
         {
             return;
         }
@@ -130,8 +221,15 @@ public sealed partial class SimulationRunner
             Campaign.AbandonTask(character.Id);
         }
 
-        var task = Content.Tasks[block.Task];
-        var spot = block.Spot ?? (task.Id == "task.sleep_at_home" ? person.Home : null);
+        var task = Content.Tasks[taskId];
+        var spot = sheltering ? null : block.Spot ?? (task.Id == "task.sleep_at_home" ? person.Home : null);
+        if (sheltering && FindWorkSpot(character, task, spot).Spot is null)
+        {
+            // Every doorway and arch taken: they carry on in the wet.
+            task = planned;
+            spot = block.Spot;
+        }
+
         if (FindWorkSpot(character, task, spot).Spot is not null)
         {
             Start(character, new TaskInstance(Campaign.Ids.NextTaskId(), character.Id, task.Id, TaskPriority.Normal) { Origin = TaskOrigin.Schedule }, spot);
@@ -188,6 +286,7 @@ public sealed partial class SimulationRunner
         }
 
         var tick = Campaign.Clock.Tick;
+        StepWeather(port, rules);
         if (tick % 5 == 0)
         {
             NoticeSecrets();

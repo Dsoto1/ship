@@ -2,6 +2,7 @@
 // or attribute a task names is what the captain learns by watching someone finish it. People in port
 // have no needs simulated, so these carry no need rates. 'then' chains a loop of work (PORT_EXPERIENCE §7):
 // the next task starts at once when one finishes. 'carries' is what is carried there (crate, basket, plank).
+// 'inRain' is done instead while it rains in port (R2d): people caught outside take shelter.
 [
   { "id": "task.sleep_at_home", "name": "Asleep at home", "durationMinutes": 120, "isRest": true, "needsWorkSpot": true },
   { "id": "task.drink", "name": "Drinking at the Three Anchors", "durationMinutes": 60, "needsWorkSpot": true },
@@ -10,7 +11,7 @@
   { "id": "task.port_cooking", "name": "Cooking at the tavern fire", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.cooking" },
   { "id": "task.pray", "name": "At prayer", "durationMinutes": 60, "needsWorkSpot": true },
   { "id": "task.office_work", "name": "Working in the Chamber office", "durationMinutes": 60, "needsWorkSpot": true },
-  { "id": "task.read_notices", "name": "Reading the Chamber's notices", "durationMinutes": 30, "needsWorkSpot": true },
+  { "id": "task.read_notices", "name": "Reading the Chamber's notices", "durationMinutes": 30, "needsWorkSpot": true, "inRain": "task.shelter" },
   { "id": "task.study_charts", "name": "Studying charts", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.navigation" },
   { "id": "task.keep_accounts", "name": "Keeping accounts", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.negotiation" },
   { "id": "task.trade_goods", "name": "Trading", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.negotiation" },
@@ -27,23 +28,24 @@
   { "id": "task.haul_cargo", "name": "Shouldering cargo", "durationMinutes": 8, "needsWorkSpot": true, "attribute": "attribute.strength", "then": "task.deliver_cargo" },
   { "id": "task.deliver_cargo", "name": "Carrying cargo to the lighter", "durationMinutes": 4, "needsWorkSpot": true, "carries": "crate", "then": "task.catch_breath" },
   { "id": "task.catch_breath", "name": "Catching breath by the pier", "durationMinutes": 6, "needsWorkSpot": true },
-  { "id": "task.buy_at_market", "name": "Buying at the stalls", "durationMinutes": 25, "needsWorkSpot": true, "skill": "skill.negotiation" },
-  { "id": "task.gossip", "name": "Gossiping at the well", "durationMinutes": 45, "needsWorkSpot": true },
+  { "id": "task.buy_at_market", "name": "Buying at the stalls", "durationMinutes": 25, "needsWorkSpot": true, "skill": "skill.negotiation", "inRain": "task.shelter" },
+  { "id": "task.shelter", "name": "Sheltering from the rain", "durationMinutes": 30, "needsWorkSpot": true },
+  { "id": "task.gossip", "name": "Gossiping at the well", "durationMinutes": 45, "needsWorkSpot": true, "inRain": "task.shelter" },
   { "id": "task.saw_planks", "name": "Sawing planks for the Garza", "durationMinutes": 30, "needsWorkSpot": true, "skill": "skill.carpentry", "then": "task.fetch_plank" },
   { "id": "task.fetch_plank", "name": "Fetching a plank", "durationMinutes": 6, "needsWorkSpot": true, "then": "task.fit_garza_plank" },
   { "id": "task.fit_garza_plank", "name": "Fitting a plank to the Garza's side", "durationMinutes": 30, "needsWorkSpot": true, "skill": "skill.carpentry", "carries": "plank" },
   { "id": "task.steady_plank", "name": "Steadying the plank for the carpenter", "durationMinutes": 60, "needsWorkSpot": true, "attribute": "attribute.strength" },
   { "id": "task.port_rigging", "name": "Working a boat's rigging", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.rigging" },
-  { "id": "task.mend_nets", "name": "Mending nets", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.seamanship" },
+  { "id": "task.mend_nets", "name": "Mending nets", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.seamanship", "inRain": "task.shelter" },
   { "id": "task.wait_in_irons", "name": "Waiting in irons", "durationMinutes": 120, "needsWorkSpot": true },
   { "id": "task.stand_guard", "name": "Standing guard", "durationMinutes": 120, "needsWorkSpot": true },
-  { "id": "task.play", "name": "Playing in the square", "durationMinutes": 60, "needsWorkSpot": true },
+  { "id": "task.play", "name": "Playing in the square", "durationMinutes": 60, "needsWorkSpot": true, "inRain": "task.shelter" },
   { "id": "task.meet_in_secret", "name": "Talking quietly in the alley", "durationMinutes": 60, "needsWorkSpot": true },
-  { "id": "task.watch_water", "name": "Watching the harbour", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.navigation" },
+  { "id": "task.watch_water", "name": "Watching the harbour", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.navigation", "inRain": "task.shelter" },
   { "id": "task.make_rope", "name": "Spinning yarn on the ropewalk", "durationMinutes": 20, "needsWorkSpot": true, "skill": "skill.crafting", "then": "task.lay_rope" },
   { "id": "task.lay_rope", "name": "Walking the yarn down the ropewalk", "durationMinutes": 20, "needsWorkSpot": true, "carries": "yarn" },
   { "id": "task.smithing", "name": "At the forge", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.crafting" },
-  { "id": "task.mend_sails", "name": "Mending sailcloth", "durationMinutes": 50, "needsWorkSpot": true, "skill": "skill.rigging", "then": "task.deliver_canvas" },
+  { "id": "task.mend_sails", "name": "Mending sailcloth", "durationMinutes": 50, "needsWorkSpot": true, "skill": "skill.rigging", "then": "task.deliver_canvas", "inRain": "task.shelter" },
   { "id": "task.deliver_canvas", "name": "Carrying mended canvas to the ships", "durationMinutes": 5, "needsWorkSpot": true, "carries": "canvas" },
   { "id": "task.inspect_ship", "name": "Looking over the Garza", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.seamanship" },
   { "id": "task.board", "name": "Going aboard", "durationMinutes": 1, "needsWorkSpot": true }
