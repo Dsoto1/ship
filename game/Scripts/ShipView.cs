@@ -26,6 +26,7 @@ public partial class ShipView : Node3D
 
     private readonly List<ShaderMaterial> _sails = [];
     private readonly List<(Node3D Sail, int Tier)> _squareSails = [];
+    private readonly List<(Node3D Set, Node3D Stowed)> _lateens = [];
     private readonly List<(OmniLight3D Light, StandardMaterial3D Glass)> _lanterns = [];
     private ShaderMaterial _deckMaterial = null!;
     private OmniLight3D? _galleyFire;
@@ -51,6 +52,7 @@ public partial class ShipView : Node3D
 
         _sails.Clear();
         _squareSails.Clear();
+        _lateens.Clear();
         _lanterns.Clear();
         _galleyFire = null;
         MeasureHull(location);
@@ -77,13 +79,20 @@ public partial class ShipView : Node3D
     /// <param name="galleyLit">Whether someone is cooking.</param>
     /// <param name="seaState">0 calm .. 3 storm: topsails are furled from a gale, courses reefed in a storm.</param>
     /// <param name="delta">Seconds since the last frame, so sail changes take a moment.</param>
-    public void UpdateLook(float darkness, float sailOpacity, float time, bool galleyLit, float seaState = 1f, float delta = 0f)
+    /// <param name="furled">At her berth: every sail furled on its yard, the lateen stowed.</param>
+    public void UpdateLook(float darkness, float sailOpacity, float time, bool galleyLit, float seaState = 1f, float delta = 0f, bool furled = false)
     {
+        foreach (var (set, stowed) in _lateens)
+        {
+            set.Visible = !furled;
+            stowed.Visible = furled;
+        }
+
         foreach (var (sail, tier) in _squareSails)
         {
-            var set = tier == 1 ? Mathf.Clamp(1.9f - seaState * 0.75f, 0.08f, 1f) : Mathf.Clamp(2.3f - seaState * 0.65f, 0.4f, 1f);
+            var set = furled ? 0.05f : tier == 1 ? Mathf.Clamp(1.9f - seaState * 0.75f, 0.08f, 1f) : Mathf.Clamp(2.3f - seaState * 0.65f, 0.4f, 1f);
             var scale = Mathf.Lerp(sail.Scale.Y, set, Mathf.Clamp(delta * 1.5f, 0, 1));
-            sail.Scale = new Vector3(1, delta == 0 ? set : scale, Mathf.Lerp(0.3f, 1f, Mathf.Clamp(seaState, 0.2f, 1f)));
+            sail.Scale = new Vector3(1, delta == 0 ? set : scale, furled ? 0.12f : Mathf.Lerp(0.3f, 1f, Mathf.Clamp(seaState, 0.2f, 1f)));
         }
 
         var flicker = 0.9f + 0.1f * Mathf.Sin(time * 11f) * Mathf.Sin(time * 4.3f);
@@ -446,7 +455,22 @@ public partial class ShipView : Node3D
             SailQuad(tool, a, b, c, d, new Vector2(t0, 0), new Vector2(t1, 1));
         }
 
-        AddSailMesh(tool);
+        // The sail as set, and as stowed: furled along its yard, shown at her berth.
+        var set = new Node3D();
+        AddChild(set);
+        AddSailMesh(tool, set);
+        var stowed = new Node3D { Visible = false };
+        AddChild(stowed);
+        var along = yardHigh - yardLow;
+        var bundle = new MeshInstance3D
+        {
+            Mesh = new CylinderMesh { TopRadius = 0.08f, BottomRadius = 0.14f, Height = along.Length() * 0.8f, RadialSegments = 6, Rings = 1 },
+            MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.8f, 0.76f, 0.66f), Roughness = 1f },
+            Position = yardLow.Lerp(yardHigh, 0.45f) + new Vector3(0, -0.12f, 0),
+            Quaternion = new Quaternion(Vector3.Up, along.Normalized()),
+        };
+        stowed.AddChild(bundle);
+        _lateens.Add((set, stowed));
     }
 
     private void AddSailMesh(SurfaceTool tool, Node3D? parent = null)

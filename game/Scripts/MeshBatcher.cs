@@ -62,12 +62,13 @@ public sealed class MeshBatcher
         }
     }
 
-    /// <summary>Builds the meshes under <paramref name="parent"/> and clears the batcher.</summary>
-    public void Commit(Node3D parent)
+    /// <summary>Builds the meshes under <paramref name="parent"/>, clears the batcher, and returns what it made.</summary>
+    public List<MeshInstance3D> Commit(Node3D parent)
     {
+        var made = new List<MeshInstance3D>();
         foreach (var ((material, _, _), tool) in _indexed)
         {
-            parent.AddChild(new MeshInstance3D { Mesh = tool.Commit(), MaterialOverride = material });
+            made.Add(new MeshInstance3D { Mesh = tool.Commit(), MaterialOverride = material });
         }
 
         foreach (var ((material, _, _), tool) in _loose)
@@ -77,11 +78,17 @@ public sealed class MeshBatcher
                 tool.GenerateNormals();
             }
 
-            parent.AddChild(new MeshInstance3D { Mesh = tool.Commit(), MaterialOverride = material });
+            made.Add(new MeshInstance3D { Mesh = tool.Commit(), MaterialOverride = material });
+        }
+
+        foreach (var instance in made)
+        {
+            parent.AddChild(instance);
         }
 
         _indexed.Clear();
         _loose.Clear();
+        return made;
     }
 
     private static SurfaceTool Tool(Dictionary<(Material, int, int), SurfaceTool> tools, Material material, Vector3 at, bool indexed)

@@ -28,7 +28,9 @@ public partial class PortView : Node3D
 
     private readonly Dictionary<Color, StandardMaterial3D> _materials = [];
     private readonly List<OmniLight3D> _lanterns = [];
-    private readonly MeshBatcher _batch = new();
+    private MeshBatcher _batch = new();
+    private StandardMaterial3D _scenery = null!;
+    private readonly List<(Node3D Node, StandardMaterial3D Material, Aabb Bounds)> _foreground = [];
     private StandardMaterial3D _glass = null!;
     private StandardMaterial3D _gableMaterial = null!;
     private readonly List<OmniLight3D> _fires = [];
@@ -38,6 +40,12 @@ public partial class PortView : Node3D
 
     /// <summary>Centre of the Garza's hull where she lies alongside, at the waterline-relative deck height.</summary>
     public Vector3 Berth { get; private set; }
+
+    /// <summary>
+    /// Tall pieces near the camera (the hoist, a moored ship's masts) that fade when they cover the
+    /// people the player is following (PORT_VISUAL_PASS §3.12): node, its material, and world bounds.
+    /// </summary>
+    public IReadOnlyList<(Node3D Node, StandardMaterial3D Material, Aabb Bounds)> Foreground => _foreground;
 
     /// <summary>Ground height in metres at a point, for standing figures on the terrace and the steps.</summary>
     public float HeightAt(float x, float z)
@@ -64,9 +72,11 @@ public partial class PortView : Node3D
             child.QueueFree();
         }
 
+        _batch = new MeshBatcher();
         _location = location;
         _lanterns.Clear();
         _fires.Clear();
+        _foreground.Clear();
         _roof = new ShaderMaterial { Shader = GD.Load<Shader>("res://Shaders/roof.gdshader") };
         _ground = new ShaderMaterial { Shader = GD.Load<Shader>("res://Shaders/ground.gdshader") };
         _ground.SetShaderParameter("quay_from", 29.5f);
@@ -86,6 +96,7 @@ public partial class PortView : Node3D
 
         BuildTownBehind();
         BuildLights();
+        _scenery = _batch.Coloured;
         _batch.Commit(this);
     }
 
@@ -106,6 +117,10 @@ public partial class PortView : Node3D
         }
 
         _ground.SetShaderParameter("wetness", wetness);
+
+        // Rain darkens and glosses everything that stands out in it, not only the ground.
+        _scenery.Roughness = Mathf.Lerp(0.9f, 0.45f, wetness);
+        _scenery.AlbedoColor = Colors.White.Lerp(new Color(0.8f, 0.8f, 0.82f), wetness);
     }
 
     // ---- ground, terrace, steps, quay edge
@@ -393,6 +408,52 @@ public partial class PortView : Node3D
         }
     }
 
+    // Builds a piece into its own mesh with a fading material, so it can thin out when it covers
+    // someone; everything drawn inside <paramref name="draw"/> belongs to the piece.
+    private void ForegroundPiece(Action draw)
+    {
+        var scenery = _batch;
+        _batch = new MeshBatcher();
+        draw();
+        var root = new Node3D();
+        AddChild(root);
+        var made = _batch.Commit(root);
+        _batch = scenery;
+        var material = (StandardMaterial3D)made[0].MaterialOverride;
+        material.Transparency = BaseMaterial3D.TransparencyEnum.AlphaDepthPrePass;
+        var bounds = made.Select(m => m.GetAabb()).Aggregate((a, b) => a.Merge(b));
+        _foreground.Add((root, material, bounds));
+    }
+
+    // Shear-legs over the lighter: two spars lashed at the head, a block and tackle, a sling of casks
+    // halfway up; how a small quay without a crane swings loads into a boat.
+    private void ShearLegs(Vector3 foot, float height)
+    {
+        ForegroundPiece(() =>
+        {
+            var head = foot + new Vector3(0, height, 1.2f);
+            foreach (var side in new[] { -1.1f, 1.1f })
+            {
+                Spar(foot + new Vector3(side, 0, 0), head, 0.09f, WetWood);
+            }
+
+            Spar(head, foot + new Vector3(0, 0, -3.2f), 0.025f, Rope);
+            Spar(head, head + new Vector3(0, -2.6f, 0), 0.02f, Rope);
+            AddBox(head + new Vector3(0, -0.25f, 0), new Vector3(0.18f, 0.32f, 0.12f), Wood.Darkened(0.2f));
+            AddBox(head + new Vector3(0, -2.85f, 0), new Vector3(0.7f, 0.5f, 0.5f), new Color(0.46f, 0.32f, 0.18f));
+            AddBox(head + new Vector3(0, -2.85f, 0), new Vector3(0.72f, 0.05f, 0.52f), Rope);
+        });
+    }
+
+    // A pole between two points.
+    private void Spar(Vector3 from, Vector3 to, float radius, Color colour)
+    {
+        var direction = to - from;
+        var length = direction.Length();
+        var mesh = new CylinderMesh { TopRadius = radius * 0.85f, BottomRadius = radius, Height = length, RadialSegments = 6, Rings = 1 };
+        _batch.AddColoured(mesh, new Transform3D(new Basis(new Quaternion(Vector3.Up, direction / length)), (from + to) / 2f), colour);
+    }
+
     // ---- dressing kits: the secondary layer that says what a building is for (PORT_VISUAL_PASS §3.4)
 
     // The chandler's: doors open on the stores, a load on the hoist line, rope, canvas and the steelyard.
@@ -600,6 +661,8 @@ public partial class PortView : Node3D
     }
 
     // A merchantman lying at anchor out in the harbour: a hull, castles and three masts (Tier C, §6).
+    // A merchantman lying at anchor out in the harbour: a hull with castles and three masts with their
+    // sails furled on the yards (Tier C, PORT_EXPERIENCE §6). The rig fades when it covers someone.
     private void Merchantman(Vector3 at, float length)
     {
         var hull = new Color(0.25f, 0.19f, 0.14f);
@@ -607,12 +670,18 @@ public partial class PortView : Node3D
         AddBox(at + new Vector3(-length * 0.32f, 2.4f, 0), new Vector3(length * 0.22f, 1.8f, 5.3f), hull.Lightened(0.08f));
         AddBox(at + new Vector3(length * 0.33f, 2.1f, 0), new Vector3(length * 0.16f, 1.2f, 4.6f), hull.Lightened(0.08f));
         AddBox(at + new Vector3(0, 1.85f, 2.76f), new Vector3(length * 0.8f, 0.18f, 0.05f), new Color(0.75f, 0.6f, 0.3f));
-        foreach (var (x, height) in new[] { (-length * 0.2f, 11f), (length * 0.08f, 14f), (length * 0.3f, 9f) })
+        ForegroundPiece(() =>
         {
-            AddCylinder(at + new Vector3(x, 1.8f + height / 2f, 0), 0.18f, height, Timber);
-            AddBox(at + new Vector3(x, 1.8f + height * 0.75f, 0), new Vector3(0.14f, 0.14f, height * 0.6f), Timber);
-            AddBox(at + new Vector3(x, 1.8f + height * 0.75f + 0.15f, 0), new Vector3(0.3f, 0.25f, height * 0.55f), Canvas.Darkened(0.2f));
-        }
+            foreach (var (x, height) in new[] { (-length * 0.2f, 11f), (length * 0.08f, 14f), (length * 0.3f, 9f) })
+            {
+                Spar(at + new Vector3(x, 1.8f, 0), at + new Vector3(x, 1.8f + height, 0), 0.16f, Timber);
+                var yard = at + new Vector3(x, 1.8f + height * 0.72f, 0);
+                Spar(yard + new Vector3(0, 0, -height * 0.32f), yard + new Vector3(0, 0, height * 0.32f), 0.07f, Timber);
+                Spar(yard + new Vector3(0, -0.12f, -height * 0.28f), yard + new Vector3(0, -0.12f, height * 0.28f), 0.11f, Canvas.Darkened(0.35f));
+                Spar(at + new Vector3(x, 1.8f + height, 0), at + new Vector3(x + 2.5f, 2.2f, 2.6f), 0.015f, Rope);
+                Spar(at + new Vector3(x, 1.8f + height, 0), at + new Vector3(x + 2.5f, 2.2f, -2.6f), 0.015f, Rope);
+            }
+        });
     }
 
     private void Ropewalk(float left, float right, float back, float front)
@@ -674,35 +743,41 @@ public partial class PortView : Node3D
     }
 
     // A small hull on the stocks: keel, ribs, part-planked, pointing down the slip to the water.
+    // A small hull on the stocks, pointing down the slip to the water: keel, stem and sternpost, a row of
+    // frames (a floor timber with futtocks rising from it), and the first strakes of planking.
     private void HullOnStocks(float left, float right, float back, float front)
     {
         var x = (left + right) / 2f;
         var length = front - back;
         AddBox(new Vector3(x, 0.15f, (back + front) / 2f + 1.5f), new Vector3(1.2f, 0.3f, length + 3f), Wood.Darkened(0.25f));
-        AddBox(new Vector3(x, 0.55f, (back + front) / 2f), new Vector3(0.25f, 0.4f, length), Timber);
-        for (var i = 0; i < 9; i++)
+        AddBox(new Vector3(x, 0.5f, (back + front) / 2f), new Vector3(0.22f, 0.35f, length), Timber);
+        AddBox(new Vector3(x, 1.6f, front - 0.3f), new Vector3(0.22f, 2.4f, 0.22f), Timber, rotation: new Vector3(-18, 0, 0));
+        AddBox(new Vector3(x, 1.5f, back + 0.3f), new Vector3(0.22f, 2.2f, 0.22f), Timber, rotation: new Vector3(8, 0, 0));
+        const int frames = 8;
+        for (var i = 0; i < frames; i++)
         {
-            var z = back + 0.8f + i * (length - 1.6f) / 8f;
-            var t = Mathf.Sin((i + 0.5f) / 9f * Mathf.Pi);
-            var half = 0.9f + t * 1.6f;
+            var z = back + 1.2f + i * (length - 2.4f) / (frames - 1);
+            var fullness = Mathf.Sin((i + 0.6f) / frames * Mathf.Pi);
+            var half = 0.7f + fullness * 1.3f;
+            AddBox(new Vector3(x, 0.75f, z), new Vector3(half * 2f, 0.16f, 0.14f), Wood);
             foreach (var side in new[] { -1f, 1f })
             {
-                AddBox(new Vector3(x + side * half * 0.6f, 1.6f, z), new Vector3(0.12f, 2.4f, 0.14f), Wood, rotation: new Vector3(0, 0, -side * 22f));
+                AddBox(new Vector3(x + side * (half + 0.18f), 1.55f, z), new Vector3(0.14f, 1.7f, 0.14f), Wood, rotation: new Vector3(0, 0, -side * 12f));
             }
         }
 
-        // Planking up the lower half on the camera's side.
-        for (var row = 0; row < 3; row++)
+        // Two strakes of planking along each side, and a ribband holding the frames' heads.
+        foreach (var side in new[] { -1f, 1f })
         {
-            AddBox(new Vector3(x + 1.1f + row * 0.2f, 0.95f + row * 0.32f, (back + front) / 2f + 0.3f), new Vector3(0.06f, 0.3f, length - 2.2f - row * 0.8f), Wood.Lightened(0.08f), rotation: new Vector3(0, 0, -22f));
-        }
-
-        // Shores holding her upright.
-        foreach (var z in new[] { back + 1.5f, front - 1.5f })
-        {
-            foreach (var side in new[] { -1f, 1f })
+            for (var row = 0; row < 2; row++)
             {
-                AddBox(new Vector3(x + side * 2.4f, 1.0f, z), new Vector3(0.14f, 2.3f, 0.14f), Wood.Darkened(0.15f), rotation: new Vector3(0, 0, side * 30f));
+                AddBox(new Vector3(x + side * (1.5f + row * 0.12f), 0.95f + row * 0.32f, (back + front) / 2f), new Vector3(0.06f, 0.3f, length - 2.6f - row * 0.6f), Wood.Lightened(0.1f), rotation: new Vector3(0, 0, -side * 12f));
+            }
+
+            AddBox(new Vector3(x + side * 2.1f, 2.35f, (back + front) / 2f), new Vector3(0.08f, 0.1f, length - 2.2f), Wood.Darkened(0.1f));
+            foreach (var z in new[] { back + 2f, front - 2.5f })
+            {
+                AddBox(new Vector3(x + side * 2.7f, 1.0f, z), new Vector3(0.14f, 2.2f, 0.14f), Wood.Darkened(0.15f), rotation: new Vector3(0, 0, side * 28f));
             }
         }
     }
@@ -944,6 +1019,55 @@ public partial class PortView : Node3D
         }
 
         Lantern(new Vector3(9.6f, 5f, 24f), onPost: true);
+
+        // The shear-legs that swing loads down into the lighter at the east pier.
+        ShearLegs(new Vector3(43.5f, 0, 33.6f), 6.5f);
+        MooringAndGangway();
+    }
+
+    // What ties the Garza to La Bocana: bow, stern and spring lines to the bollards, a gangway with
+    // man-ropes, fenders, and her ensign at the stern (PORT_VISUAL_PASS §3.11).
+    private void MooringAndGangway()
+    {
+        var berth = Berth;
+        var side = berth.Z - 4.3f;
+        foreach (var (bollard, onShip) in new[] { (19f, berth.X - 10.5f), (27f, berth.X - 2.5f), (35f, berth.X + 2.5f), (41f, berth.X + 10f) })
+        {
+            var post = new Vector3(bollard, 0.6f, 34f);
+            var cleat = new Vector3(onShip, 0.85f, side + 0.1f);
+            var sag = (post + cleat) / 2f + new Vector3(0, -0.35f, 0);
+            Spar(post, sag, 0.025f, Rope);
+            Spar(sag, cleat, 0.025f, Rope);
+        }
+
+        // The gangway: a plank with cleats, rising from the quay to her rail, man-ropes either side.
+        var foot = new Vector3(berth.X, 0.06f, 33.6f);
+        var top = new Vector3(berth.X, 0.75f, side + 0.5f);
+        var mid = (foot + top) / 2f;
+        var tilt = Mathf.Atan2(top.Y - foot.Y, top.Z - foot.Z) * 180f / Mathf.Pi;
+        AddBox(mid, new Vector3(0.75f, 0.07f, (top - foot).Length()), Wood, rotation: new Vector3(-tilt, 0, 0));
+        for (var i = 1; i < 6; i++)
+        {
+            AddBox(foot.Lerp(top, i / 6f) + new Vector3(0, 0.05f, 0), new Vector3(0.7f, 0.03f, 0.05f), Wood.Darkened(0.2f));
+        }
+
+        foreach (var x in new[] { -0.4f, 0.4f })
+        {
+            AddBox(foot + new Vector3(x, 0.5f, 0), new Vector3(0.06f, 1f, 0.06f), Timber);
+            Spar(foot + new Vector3(x, 1f, 0), top + new Vector3(x, 0.9f, 0), 0.015f, Rope);
+        }
+
+        // Fenders of old rope hanging between her side and the quay.
+        foreach (var x in new[] { -7f, -1.5f, 4f, 8.5f })
+        {
+            AddCylinder(new Vector3(berth.X + x, -0.25f, side - 0.05f), 0.13f, 0.45f, Rope.Darkened(0.2f));
+        }
+
+        // Her ensign at the stern staff, lifting in the breeze: the Company's colours over the Crown's red.
+        var staff = new Vector3(berth.X - 11.6f, 0.8f, berth.Z);
+        Spar(staff, staff + new Vector3(0, 4.2f, 0), 0.04f, Timber);
+        AddBox(staff + new Vector3(-0.75f, 3.7f, 0), new Vector3(1.4f, 0.9f, 0.03f), new Color(0.62f, 0.13f, 0.12f), rotation: new Vector3(0, 12, 0));
+        AddBox(staff + new Vector3(-0.75f, 3.7f, 0.02f), new Vector3(0.5f, 0.5f, 0.02f), new Color(0.85f, 0.7f, 0.25f), rotation: new Vector3(0, 12, 0));
     }
 
     // ---- small parts

@@ -62,6 +62,8 @@ public partial class Main : Node3D
     private readonly List<SeaBird> _birds = [];
     private float _seaState = 1f;
     private float _gloom;
+    private bool _portRain;
+    private float _portWet;
     private float _sink;
     private int _chronicleSeen;
     private bool _endingShown;
@@ -273,7 +275,9 @@ public partial class Main : Node3D
         var weather = voyage is null ? null : _content.Voyage?.Weathers.FirstOrDefault(w => w.Id == voyage.WeatherId);
         var step = Mathf.Clamp((float)delta * 0.6f, 0, 1);
         _seaState = Mathf.Lerp(_seaState, (float)(weather?.SeaState ?? 0.8), step);
-        _gloom = Mathf.Lerp(_gloom, (float)(weather?.Gloom ?? 0), step);
+        // In port there is no simulated weather yet (R2d): rain is a look, set for validation (D-026).
+        _portWet = Mathf.MoveToward(_portWet, _portRain ? 1f : 0f, (float)delta * 0.25f);
+        _gloom = Mathf.Lerp(_gloom, _runner.Campaign.Port is not null ? (_portRain ? 0.68f : 0f) : (float)(weather?.Gloom ?? 0), step);
         var targetSink = voyage is null ? 0f : voyage.Outcome == Expedition.Simulation.Voyage.VoyageOutcome.Foundered ? 3.2f : (float)voyage.Bilge / 100f * 0.8f;
         _sink = Mathf.Lerp(_sink, targetSink, Mathf.Clamp((float)delta * 0.4f, 0, 1));
         if (_gloom > 0.75f && speed > 0 && _flicker.NextDouble() < delta * 0.12)
@@ -296,13 +300,14 @@ public partial class Main : Node3D
         {
             _seaState = 0.35f;
             FollowCaptain((float)delta);
-            _port.UpdateLook(_world.Darkness, t);
+            _port.UpdateLook(_world.Darkness, t, _portWet);
+            FadeForeground((float)delta);
         }
         var making = voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } ? 0.3f + (float)voyage.SpeedLeaguesPerHour * 1.3f : 0f;
         _world.UpdateWorld(hour, _seaState, making, (float)delta, _camera.Target, hull, _gloom);
         var cooking = _runner.Campaign.ActiveTasks.Values.Any(task => task.DefinitionId == "task.cook");
         // Sails turn see-through at working zoom so they never hide the crew (ART_BIBLE.md 3); zoom out to see them whole.
-        _deck.UpdateLook(_world.Darkness, Mathf.Lerp(0.38f, 1f, Mathf.SmoothStep(18f, 32f, _camera.Size)), t, cooking, inPort ? 3.2f : SailSetting(voyage), (float)delta);
+        _deck.UpdateLook(_world.Darkness, Mathf.Lerp(0.38f, 1f, Mathf.SmoothStep(18f, 32f, _camera.Size)), t, cooking, inPort ? 3.2f : SailSetting(voyage), (float)delta, furled: inPort);
         foreach (var bird in _birds)
         {
             bird.Centre = inPort ? _port.Berth + new Vector3(0, 4f, -4f) : _shipCentre + new Vector3(0, 0, -2f);
@@ -392,6 +397,39 @@ public partial class Main : Node3D
             _ => Pose.Working,
         },
     };
+
+    // Foreground pieces (the hoist, a moored ship's rig) thin out while they stand between the camera and
+    // the captain or the person selected, so they add depth without hiding people (PORT_VISUAL_PASS §3.12).
+    private void FadeForeground(float delta)
+    {
+        var watched = new[] { _runner.Campaign.CaptainId, _selected }.OfType<CharacterId>().Distinct()
+            .Where(_figures.ContainsKey).Select(id => _figures[id].GlobalPosition + new Vector3(0, 0.9f, 0)).ToList();
+        foreach (var (node, material, bounds) in _port.Foreground)
+        {
+            var covering = false;
+            foreach (var person in watched)
+            {
+                if (_camera.IsPositionBehind(person))
+                {
+                    continue;
+                }
+
+                var screen = _camera.UnprojectPosition(person);
+                var rect = new Rect2(_camera.UnprojectPosition(bounds.Position), Vector2.Zero);
+                for (var i = 0; i < 8; i++)
+                {
+                    rect = rect.Expand(_camera.UnprojectPosition(bounds.GetEndpoint(i)));
+                }
+
+                // In front of them (nearer the camera) and over them on screen.
+                var nearer = _camera.GlobalTransform.Basis.Z.Dot(bounds.GetCenter() - person) > 0;
+                covering |= nearer && rect.Grow(12).HasPoint(screen);
+            }
+
+            var alpha = material.AlbedoColor.A;
+            material.AlbedoColor = new Color(1, 1, 1, Mathf.MoveToward(alpha, covering ? 0.28f : 1f, delta * 3f));
+        }
+    }
 
     // The camera keeps the captain in view in port until the player pans away; F brings it back.
     private void FollowCaptain(float delta)
@@ -577,6 +615,9 @@ public partial class Main : Node3D
                 case Key.F9: Load(); break;
                 case Key.Tab: SelectNext(); break;
                 case Key.F: _follow = true; break;
+                case Key.R when key.ShiftPressed && OS.IsDebugBuild():
+                    _portRain = !_portRain;
+                    break;
                 case Key.P: _hud.TogglePanel(PanelId.People); break;
                 case Key.X: _hud.TogglePanel(PanelId.Expedition); break;
                 case Key.C: _hud.TogglePanel(PanelId.Cargo); break;
@@ -1053,6 +1094,13 @@ public partial class Main : Node3D
         if (_developerJournal)
         {
             _portHud.ShowJournal();
+        }
+
+        if (_forceWeather == "rain" && _runner.Campaign.Port is not null)
+        {
+            _portRain = true;
+            _portWet = 1f;
+            _gloom = 0.68f;
         }
 
         if (_developerPanel is { } open)
