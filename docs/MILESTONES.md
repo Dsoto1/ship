@@ -330,3 +330,14 @@ Closes audit gap G12.
 - **Save format 9:** older saves load knowing nothing; tampered knowledge is rejected.
 
 274 tests pass.
+
+## UI pass (after 5b, owner feedback "UI hard to use")
+
+- **Fits the window:** the game scales its interface to the window (1280×720 base), and the selected
+  character's panel is split into scrolling tabs (Orders, Record, Needs) so nothing falls off the
+  bottom. The name, current work and need bars stay visible above the tabs.
+- **Keys keep working:** buttons no longer take keyboard focus, so Space pauses and Tab cycles crew
+  even after clicking a button (before, Space re-clicked the last button).
+- **Refusals are visible:** a dimmed order says why on the button itself, not only in a tooltip.
+- **Mac shortcuts:** Cmd+S / Cmd+L save and load. A controls reminder sits under the hold.
+

@@ -127,6 +127,13 @@ public partial class Main : Node3D
         }
         else if (@event is InputEventKey { Pressed: true, Echo: false } key)
         {
+            // Cmd+S / Cmd+L on macOS (Ctrl elsewhere), since F-keys need Fn on a MacBook.
+            if (key.IsCommandOrControlPressed() && key.Keycode is Key.S or Key.L)
+            {
+                if (key.Keycode == Key.S) Save(); else Load();
+                return;
+            }
+
             switch (key.Keycode)
             {
                 case Key.Space: SetSpeed(_speedIndex == 0 ? _lastRunningSpeed : 0); break;

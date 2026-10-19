@@ -69,8 +69,8 @@ Tell me which checklist steps worked. For anything wrong, send:
 | Game shows "The game content could not be loaded" | Make sure you opened `game/project.godot` inside the cloned repository (it reads `../data`). |
 | Godot added `.uid` files or changed `project.godot` | Normal on first open. Commit them: `git add -A && git commit -m "Godot import files" && git push`. |
 
-In the running game, Save and Load are also buttons in the top bar, so you don't need F5/F9
-(on a Mac those may need **Fn**).
+In the running game, save with **Cmd + S** and load with **Cmd + L**, or use the Save and Load
+buttons in the top bar (F5/F9 also work, but need **Fn** on a MacBook).
 
 ## Where saves go
 

@@ -32,10 +32,10 @@ Controls:
 |---|---|
 | Left-click | Select a crew member |
 | Right-click | Walk the selected crew member there |
-| Right-hand panel | Order a task (dimmed tasks show why they are refused) |
+| Right-hand panel, Orders tab | Order a task (dimmed tasks say why they are refused) |
 | Space, 1–4 | Pause and time speed |
 | WASD / arrow keys, wheel, Q/E | Pan, zoom, turn the camera |
-| F5 / F9 | Quick save / quick load |
+| Cmd+S / Cmd+L (Ctrl elsewhere), or F5 / F9 | Quick save / quick load |
 | Tab | Select the next crew member |
 
 Saves go to `~/Library/Application Support/The Expedition/saves/` on macOS.
