@@ -1,6 +1,6 @@
 # Technical Design
 
-Status: P0 complete in graybox (Tickets 1–4c, 3a–3e); P1 under way (5a, 5b, duties). Save format 10. Update this file when architecture or behavior changes.
+Status: P0 complete in graybox (Tickets 1–4c, 3a–3e); Building the playable voyage (D-015): V1 and V2 done. Save format 11. Update this file when architecture or behavior changes.
 See `DECISIONS.md` for why each choice was made, and `GAME_VISION.md` for the product vision.
 
 ## 1. Solution layout (proposed)
@@ -95,6 +95,11 @@ is added only when a ticket needs it.
   (`SimulationRunner.SetDuties`, `CampaignState.Duties`). `TaskInstance.Origin` records why. An order
   takes over from duty or self-care work at once, which waits behind orders and resumes later.
   `WhyNoDuty` explains an idle character for the interface.
+- **Voyage (D-016).** `CampaignState.Voyage` (`Voyage/VoyageState`) holds hull, bilge, rigging,
+  distance and weather; `SimulationRunner` steps it once per tick after the characters, using
+  `data/voyage.json` (`GameContent.Voyage`). Tasks change the ship through `shipPerHour`,
+  `shipOnComplete` and `keepsWatch`, and duties carry a `dutyWhen` condition. Landfall and foundering
+  are phase transitions with chronicle entries. `SupplyForecast` estimates days of food and water.
 - **Identity (Ticket 5a).** `Character.Sex` (Male, Female, Unrecorded), `Character.Languages`
   (0–5 per language from `data/languages.json`) and `Character.StatusId` (from `data/statuses.json`,
   with a typical monthly wage in sueldos). Appearance options can be limited to one sex.

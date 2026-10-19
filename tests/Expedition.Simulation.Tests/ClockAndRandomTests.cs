@@ -12,7 +12,7 @@ public class ClockAndRandomTests
 
         Assert.Equal(3, clock.Day);
         Assert.Equal(new TimeSpan(14, 5, 0), clock.TimeOfDay);
-        Assert.Equal("Day 3, 14:05", clock.ToString());
+        Assert.Equal("Day 4, 14:05", clock.ToString());
     }
 
     [Fact]

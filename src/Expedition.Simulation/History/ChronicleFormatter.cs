@@ -49,9 +49,32 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
                 : $"{who} went hungry: there is no food left.",
             ChronicleEntryKind.RelationshipChanged => Relationship(entry, who, cause),
             ChronicleEntryKind.CaptainAppointed => $"{who} took command of the expedition ({cause}).",
+            ChronicleEntryKind.WeatherChanged => WeatherChange(entry),
+            ChronicleEntryKind.HullStruck =>
+                $"A heavy sea struck {Ship()} and opened a seam (hull down {entry.Get(ChronicleParameters.Damage)}, now {entry.Get(ChronicleParameters.Level)}%).",
+            ChronicleEntryKind.BilgeAlarm => $"The bilge is {entry.Get(ChronicleParameters.Level)}% full and rising. Man the pumps!",
+            ChronicleEntryKind.Foundered => $"{Capitalise(entry.Get(ChronicleParameters.To) ?? "The ship")} filled and foundered.",
+            ChronicleEntryKind.Landfall => $"Land! {Capitalise(entry.Get(ChronicleParameters.To) ?? "The coast")} sighted from the masthead.",
             _ => $"{entry.Kind}: {string.Join(", ", entry.Parameters.Select(p => $"{p.Key}={p.Value}"))}",
         };
     }
+
+    /// <summary>The name of a kind of weather, for example "a gale".</summary>
+    public string WeatherName(string? id) =>
+        id is not null && content.Voyage?.Weathers.FirstOrDefault(w => w.Id == id) is { } weather ? weather.Name : Prettify(id ?? "weather");
+
+    private string WeatherChange(ChronicleEntry entry)
+    {
+        var to = entry.Get(ChronicleParameters.To);
+        var wind = content.Voyage?.Weathers.FirstOrDefault(w => w.Id == to)?.WindLeaguesPerHour ?? 1;
+        var from = content.Voyage?.Weathers.FirstOrDefault(w => w.Id == entry.Get(ChronicleParameters.From))?.WindLeaguesPerHour ?? 1;
+        var verb = to is "weather.gale" or "weather.storm" ? "The weather worsened" : wind > from ? "The wind rose" : "The wind eased";
+        return $"{verb}: {WeatherName(to)}.";
+    }
+
+    private string Ship() => campaign.Voyage?.ShipName ?? "the ship";
+
+    private static string Capitalise(string text) => text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];
 
     /// <summary>Readable name for a <see cref="World.NeedChange"/> source, for "why" explanations.</summary>
     public string DescribeNeedSource(string source) => source switch

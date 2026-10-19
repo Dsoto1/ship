@@ -23,7 +23,8 @@ public sealed class GameContent
         IEnumerable<ConditionDefinition>? conditions = null,
         AppearanceOptions? appearance = null,
         IEnumerable<LanguageDefinition>? languages = null,
-        IEnumerable<StatusDefinition>? statuses = null)
+        IEnumerable<StatusDefinition>? statuses = null,
+        Voyage.VoyageRules? voyage = null)
     {
         var errors = new List<string>();
         Rules = rules;
@@ -64,6 +65,12 @@ public sealed class GameContent
         }
 
         ContentValidator.ValidateRules(rules, errors);
+        Voyage = voyage;
+        if (voyage is not null)
+        {
+            errors.AddRange(voyage.Validate());
+        }
+
         foreach (var item in Items.Values)
         {
             ContentValidator.ValidateItem(item, errors);
@@ -75,6 +82,11 @@ public sealed class GameContent
             if (task.Attribute is not null && !Attributes.ContainsKey(task.Attribute))
             {
                 errors.Add($"Task '{task.Id}': unknown attribute '{task.Attribute}'.");
+            }
+
+            if (task.DutyWhen?.StartBetween is { } windows && windows.Any(w => w.Length != 2 || w[0] < 0 || w[1] > 24 || w[0] >= w[1]))
+            {
+                errors.Add($"Task '{task.Id}': dutyWhen.startBetween windows must be [from, to) hours with 0 <= from < to <= 24.");
             }
 
             if (task.Hazard is { } hazard && !Conditions.ContainsKey(hazard.Condition))
@@ -96,6 +108,9 @@ public sealed class GameContent
         Foods = Items.Values.Where(i => i.HungerRelief > 0).OrderBy(i => i.Id, StringComparer.Ordinal).ToList();
         Drinks = Items.Values.Where(i => i.ThirstRelief > 0).OrderBy(i => i.Id, StringComparer.Ordinal).ToList();
     }
+
+    /// <summary>Rules for sea passages, or null if the content has none.</summary>
+    public Voyage.VoyageRules? Voyage { get; }
 
     /// <summary>Tunable rules for needs, work and provisions.</summary>
     public SimulationRules Rules { get; }

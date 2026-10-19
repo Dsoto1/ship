@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 10;
+    public const int CurrentSchemaVersion = 11;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -121,6 +121,18 @@ public static class SaveSerializer
                 }
 
                 root["duties"] = new JsonArray();
+                return root;
+            },
+
+            // Format 11 added the voyage, and duties became a priority list instead of a rotation.
+            [10] = root =>
+            {
+                foreach (var duty in root["duties"]?.AsArray() ?? [])
+                {
+                    duty!.AsObject().Remove("next");
+                }
+
+                root["voyage"] = null;
                 return root;
             },
         };
@@ -372,8 +384,17 @@ public static class SaveSerializer
                 .ToList(),
             Duties = campaign.Duties.OrderBy(pair => pair.Key).Select(pair => new DutyData
             {
-                CharacterId = pair.Key.Value, Tasks = pair.Value.Tasks.ToList(), Next = pair.Value.Next,
+                CharacterId = pair.Key.Value, Tasks = pair.Value.Tasks.ToList(),
             }).ToList(),
+            Voyage = campaign.Voyage is { } voyage
+                ? new VoyageData
+                {
+                    ShipName = voyage.ShipName, Destination = voyage.Destination, TotalLeagues = voyage.TotalLeagues,
+                    LeaguesSailed = voyage.LeaguesSailed, Hull = voyage.Hull, Bilge = voyage.Bilge, Rigging = voyage.Rigging,
+                    Weather = voyage.WeatherId, WeatherUntilTick = voyage.WeatherUntilTick, Speed = voyage.SpeedLeaguesPerHour,
+                    WatchKept = voyage.WatchKept, Outcome = voyage.Outcome.ToString(),
+                }
+                : null,
             Knowledge = campaign.Knowledge.Entries.Select(k => new KnowledgeData
             {
                 Tick = k.Tick, Subject = k.Subject.Value, Topic = k.Topic, Level = k.Level,
@@ -615,13 +636,32 @@ public static class SaveSerializer
             }
 
             if (campaign.Duties.ContainsKey(id) || saved.Tasks.Count == 0 || saved.Tasks.Distinct().Count() != saved.Tasks.Count
-                || saved.Next < 0 || saved.Next >= saved.Tasks.Count
                 || saved.Tasks.Any(task => !content.Tasks.TryGetValue(task, out var definition) || definition.IsRest))
             {
                 throw new SaveLoadException($"{worker.Name}'s duties are invalid or refer to tasks that no longer exist.");
             }
 
-            campaign.SetDuties(id, saved.Tasks.ToList(), saved.Next);
+            campaign.SetDuties(id, saved.Tasks.ToList());
+        }
+
+        if (data.Voyage is { } savedVoyage)
+        {
+            var values = new[] { savedVoyage.Hull, savedVoyage.Bilge, savedVoyage.Rigging };
+            if (content.Voyage is not { } rules || rules.Weathers.All(w => w.Id != savedVoyage.Weather))
+            {
+                throw new SaveLoadException($"The voyage's weather '{savedVoyage.Weather}' is not in the game content.");
+            }
+
+            if (values.Any(v => v is < 0 or > 100 || double.IsNaN(v)) || savedVoyage.TotalLeagues <= 0 || savedVoyage.LeaguesSailed < 0
+                || savedVoyage.Speed < 0 || string.IsNullOrWhiteSpace(savedVoyage.ShipName))
+            {
+                throw new SaveLoadException("The voyage has an invalid hull, bilge, rigging, distance or speed.");
+            }
+
+            var voyage = new Voyage.VoyageState(savedVoyage.ShipName, savedVoyage.Destination, savedVoyage.TotalLeagues, savedVoyage.Weather, savedVoyage.WeatherUntilTick);
+            voyage.Restore(savedVoyage.LeaguesSailed, savedVoyage.Hull, savedVoyage.Bilge, savedVoyage.Rigging, savedVoyage.Speed,
+                savedVoyage.WatchKept, ParseEnum<Voyage.VoyageOutcome>(savedVoyage.Outcome, "voyage outcome"));
+            campaign.SetVoyage(voyage);
         }
 
         foreach (var saved in data.Knowledge)

@@ -1,6 +1,7 @@
 using Expedition.Simulation.Characters;
 using Expedition.Simulation.Content;
 using Expedition.Simulation.Core;
+using Expedition.Simulation.History;
 using Expedition.Simulation.Persistence;
 using Expedition.Simulation.Scenarios;
 using Expedition.Simulation.Tasks;
@@ -35,6 +36,12 @@ public partial class Main : Node3D
     private SeaAndSky _world = null!;
     private readonly List<SeaBird> _birds = [];
     private float _seaState = 1f;
+    private float _gloom;
+    private float _sink;
+    private int _chronicleSeen;
+    private bool _endingShown;
+    private ChronicleFormatter _formatter = null!;
+    private readonly System.Random _flicker = new();
     private Hud _hud = null!;
     private CharacterId? _selected;
     private int _speedIndex;
@@ -73,6 +80,12 @@ public partial class Main : Node3D
             if (on) duties.Add(taskId);
             _hud.ShowResult(_runner.SetDuties(id, duties));
         };
+        _hud.ContinueRequested += CarryOn;
+        _hud.NewVoyageRequested += () =>
+        {
+            _hud.HideEnding();
+            StartCampaign(TestDeckScenario.Create(_content, (ulong)System.Random.Shared.NextInt64()), "A new voyage. Fair winds.");
+        };
         _hud.QueueCleared += () => { if (_selected is { } id) _hud.ShowResult(_runner.ClearQueue(id), "Queued orders cleared."); };
 
         // Each new voyage gets its own seed; the seed is saved, so a reported problem can be replayed.
@@ -88,6 +101,8 @@ public partial class Main : Node3D
         {
             _runner.Advance(_advanceOnStart);
         }
+
+        DeveloperForceVoyage();
 
         if (!string.IsNullOrEmpty(_screenshotPath))
         {
@@ -115,19 +130,35 @@ public partial class Main : Node3D
             }
         }
 
+        CheckAlerts();
+
+        // Weather sets the sea and sky; a filling bilge makes her ride lower (ART_BIBLE.md 6.3, 7.2).
+        var voyage = _runner.Campaign.Voyage;
+        var weather = voyage is null ? null : _content.Voyage?.Weathers.FirstOrDefault(w => w.Id == voyage.WeatherId);
+        var step = Mathf.Clamp((float)delta * 0.6f, 0, 1);
+        _seaState = Mathf.Lerp(_seaState, (float)(weather?.SeaState ?? 0.8), step);
+        _gloom = Mathf.Lerp(_gloom, (float)(weather?.Gloom ?? 0), step);
+        var targetSink = voyage is null ? 0f : voyage.Outcome == Expedition.Simulation.Voyage.VoyageOutcome.Foundered ? 3.2f : (float)voyage.Bilge / 100f * 0.8f;
+        _sink = Mathf.Lerp(_sink, targetSink, Mathf.Clamp((float)delta * 0.4f, 0, 1));
+        if (_gloom > 0.75f && speed > 0 && _flicker.NextDouble() < delta * 0.12)
+        {
+            _world.Flash();
+        }
+
         // The ship rolls, pitches and heaves with the sea (ART_BIBLE.md 12). Visual only.
         var t = (float)_elapsed;
         var swell = 0.35f + _seaState * 0.65f;
         _ship.RotationDegrees = new Vector3(Mathf.Sin(t * 0.45f) * 0.8f * swell, 0, Mathf.Sin(t * 0.6f) * 1.6f * swell);
-        _ship.Position = _shipCentre + new Vector3(0, Mathf.Sin(t * 0.7f) * 0.08f * swell, 0);
+        _ship.Position = _shipCentre + new Vector3(0, Mathf.Sin(t * 0.7f) * 0.08f * swell - _sink, 0);
 
         var clock = _runner.Campaign.Clock;
         var hour = (float)((clock.Tick + (speed > 0 ? _tickFraction : 0)) % SimulationClock.TicksPerDay / SimulationClock.TicksPerHour);
         var hull = new Vector4(_deck.CentreX, (_deck.Length.Bow + _deck.Length.Stern) / 2f, _deck.HalfBeam, (_deck.Length.Stern - _deck.Length.Bow) / 2f);
-        _world.UpdateWorld(hour, _seaState, 1.6f, (float)delta, _camera.Target, hull);
+        var making = voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } ? 0.3f + (float)voyage.SpeedLeaguesPerHour * 1.3f : 0f;
+        _world.UpdateWorld(hour, _seaState, making, (float)delta, _camera.Target, hull, _gloom);
         var cooking = _runner.Campaign.ActiveTasks.Values.Any(task => task.DefinitionId == "task.cook");
         // Sails turn see-through at working zoom so they never hide the crew (ART_BIBLE.md 3); zoom out to see them whole.
-        _deck.UpdateLook(_world.Darkness, Mathf.Lerp(0.38f, 1f, Mathf.SmoothStep(18f, 32f, _camera.Size)), t, cooking);
+        _deck.UpdateLook(_world.Darkness, Mathf.Lerp(0.38f, 1f, Mathf.SmoothStep(18f, 32f, _camera.Size)), t, cooking, _seaState, (float)delta);
         foreach (var bird in _birds)
         {
             bird.Centre = _shipCentre + new Vector3(0, 0, -2f);
@@ -184,6 +215,7 @@ public partial class Main : Node3D
 
             switch (key.Keycode)
             {
+                case Key.Space when _hud.AlertShowing: CarryOn(); break;
                 case Key.Space: SetSpeed(_speedIndex == 0 ? _lastRunningSpeed : 0); break;
                 case Key.Key1: SetSpeed(0); break;
                 case Key.Key2: SetSpeed(1); break;
@@ -226,8 +258,81 @@ public partial class Main : Node3D
         }
 
         _selected = runner.Campaign.CaptainId ?? runner.Campaign.Characters.Keys.Order().FirstOrDefault();
+        _formatter = new ChronicleFormatter(runner.Campaign, _content);
+        _chronicleSeen = runner.Campaign.Chronicle.Entries.Count;
+        _endingShown = runner.Campaign.Voyage is { Outcome: not Expedition.Simulation.Voyage.VoyageOutcome.UnderWay };
+        _sink = 0;
+        _hud.HideAlert();
+        _hud.HideEnding();
         _hud.Bind(runner);
         _hud.ShowStatus(message);
+    }
+
+    // Danger stops the clock so the player can act: a storm breaking, the bilge rising, someone hurt.
+    private void CheckAlerts()
+    {
+        var entries = _runner.Campaign.Chronicle.Entries;
+        var alerts = new List<string>();
+        for (; _chronicleSeen < entries.Count; _chronicleSeen++)
+        {
+            var entry = entries[_chronicleSeen];
+            var urgent = entry.Kind switch
+            {
+                ChronicleEntryKind.WeatherChanged => entry.Get(ChronicleParameters.To) is "weather.gale" or "weather.storm",
+                ChronicleEntryKind.HullStruck or ChronicleEntryKind.BilgeAlarm or ChronicleEntryKind.Injury => true,
+                ChronicleEntryKind.SurvivalStateChanged => entry.Get(ChronicleParameters.To) is "Dead" or "Incapacitated",
+                ChronicleEntryKind.SupplyShortage => true,
+                _ => false,
+            };
+            if (urgent)
+            {
+                alerts.Add(_formatter.Format(entry));
+            }
+        }
+
+        if (alerts.Count > 0 && _speedIndex > 0)
+        {
+            SetSpeed(0);
+            _hud.ShowAlert(string.Join("\n", alerts.TakeLast(3)));
+        }
+
+        if (!_endingShown && _runner.Campaign.Voyage is { Outcome: not Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } ship)
+        {
+            _endingShown = true;
+            SetSpeed(0);
+            _hud.HideAlert();
+            ShowEnding(ship);
+        }
+    }
+
+    private void ShowEnding(Expedition.Simulation.Voyage.VoyageState ship)
+    {
+        var crew = _runner.Campaign.Characters.Values.ToList();
+        var alive = crew.Count(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated);
+        var dead = crew.Where(c => c.SurvivalState == SurvivalState.Dead).Select(c => c.Name).ToList();
+        var days = _runner.Campaign.Clock.Tick / (double)SimulationClock.TicksPerDay;
+        var (food, water) = _runner.SupplyForecast();
+        var losses = dead.Count == 0 ? "Every soul aboard is still alive." : $"Lost on the way: {string.Join(", ", dead)}.";
+        if (ship.Outcome == Expedition.Simulation.Voyage.VoyageOutcome.Arrived)
+        {
+            _hud.ShowEnding("Land!", $"After {days:0.#} days at sea, {ship.ShipName} raises {ship.Destination}.\n\n" +
+                $"{losses} {alive} of {crew.Count} come to the coast, with water for about {water:0} days and food for about {food:0}. " +
+                $"The hull stands at {ship.Hull:0}% and the rigging at {ship.Rigging:0}%.\n\n" +
+                "What waits ashore, and what became of the old factory at Punta Ceniza, is still to be written.");
+        }
+        else
+        {
+            var boat = dead.Count == 0 ? $"All {alive} got into the ship's boat as she went." : $"{losses} The {alive} left alive got into the ship's boat as she went.";
+            _hud.ShowEnding("Foundered", $"On day {Math.Floor(days) + 1:0}, {ship.LeaguesRemaining:0} leagues short of {ship.Destination}, {ship.ShipName} filled faster " +
+                $"than her crew could pump and went down.\n\n{boat} What becomes of them is a story for a later version.\n\n" +
+                "Watch the bilge, keep hands on the pumps in heavy weather, and patch the hull while there is oakum and plank to do it.");
+        }
+    }
+
+    private void CarryOn()
+    {
+        _hud.HideAlert();
+        SetSpeed(_lastRunningSpeed);
     }
 
     private void OrderTask(string taskId, TaskPriority priority)
@@ -355,6 +460,9 @@ public partial class Main : Node3D
     private string? _screenshotPath;
     private int _advanceOnStart;
     private float? _startZoom;
+    private string? _forceWeather;
+    private bool _idleCrew;
+    private double? _forceBilge;
 
     private void ReadDeveloperArguments(ref ulong seed)
     {
@@ -368,8 +476,41 @@ public partial class Main : Node3D
                 case "speed" when int.TryParse(value, out var speed): SetSpeed(Math.Clamp(speed, 0, TicksPerSecond.Length - 1)); break;
                 case "advance" when int.TryParse(value, out var minutes): _advanceOnStart = minutes; break;
                 case "screenshot": _screenshotPath = value; break;
+                case "weather": _forceWeather = value; break;
+                case "idle": _idleCrew = true; break;
+                case "bilge" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var bilge): _forceBilge = bilge; break;
                 case "zoom" when float.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var zoom): _startZoom = zoom; break;
             }
+        }
+    }
+
+    // For screenshots of weather and danger without waiting for them.
+    private void DeveloperForceVoyage()
+    {
+        if (_runner.Campaign.Voyage is not { } ship)
+        {
+            return;
+        }
+
+        if (_forceWeather is not null)
+        {
+            ship.DeveloperSetWeather(_forceWeather);
+            _seaState = (float)(_content.Voyage?.Weathers.FirstOrDefault(w => w.Id == _forceWeather)?.SeaState ?? 1);
+            _gloom = (float)(_content.Voyage?.Weathers.FirstOrDefault(w => w.Id == _forceWeather)?.Gloom ?? 0);
+        }
+
+        if (_idleCrew)
+        {
+            foreach (var id in _runner.Campaign.Characters.Keys)
+            {
+                _runner.SetDuties(id, []);
+            }
+        }
+
+        if (_forceBilge is { } bilge)
+        {
+            ship.DeveloperSetBilge(bilge);
+            _sink = (float)bilge / 100f * 0.8f;
         }
     }
 

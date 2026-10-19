@@ -379,3 +379,29 @@ steps the owner can play after each:
 stakes, events and a visible world it is not a game. The full port (5c, 5d) waits until the voyage
 is worth playing.
 
+---
+
+## D-016 — The voyage: leaks, wear, weather and distance
+
+**Date:** 2026-10-19
+**Status:** Accepted (V2; numbers are placeholders to tune)
+
+**Decision.**
+- **The ship:** a voyage is persistent state: hull, bilge and rigging (0–100), distance, and the
+  weather, all saved.
+- **Weather:** five kinds, from calm to storm, on the weather random stream, defined in
+  `data/voyage.json`.
+- **Each minute:**
+  - the bilge rises by `(baseLeak + hullLost × leakPerHullPoint) × weather.leakMultiplier`;
+  - the hull and rigging wear;
+  - the ship moves at `wind × (floor + (1 − floor) × rigging) × (watch kept ? 1 : 0.4)`.
+- **Endings:** a full bilge founders her (phase: Shipwreck survival); running the distance makes
+  landfall (phase: Landfall).
+- **Tasks affect the ship** through data: `shipPerHour`, `shipOnComplete`, `crewOnComplete`,
+  `keepsWatch`.
+- **Duties (amends D-014):** they are a priority list, each with an optional `dutyWhen` condition.
+  They are no longer a rotation.
+
+**Why.** It gives the routine work real consequences and gives the player things to watch and
+decide: how many hands on the pumps, when to spend planks, whether the stores will last.
+

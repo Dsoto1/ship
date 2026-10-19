@@ -49,6 +49,39 @@ public sealed record TaskDefinition
 
     /// <summary>Risk of injury while working, or null for safe tasks.</summary>
     public TaskHazard? Hazard { get; init; }
+
+    /// <summary>Change to the ship per hour of work at normal speed, for example pumping the bilge.</summary>
+    public Voyage.ShipEffects? ShipPerHour { get; init; }
+
+    /// <summary>Change to the ship when the work is finished, for example a hull patch.</summary>
+    public Voyage.ShipEffects? ShipOnComplete { get; init; }
+
+    /// <summary>Need changes for everyone aboard when the work is finished, for example a hot meal easing stress.</summary>
+    public NeedRates? CrewOnComplete { get; init; }
+
+    /// <summary>True if doing this keeps the ship's watch (helm and lookout), which she needs to make full speed.</summary>
+    public bool KeepsWatch { get; init; }
+
+    /// <summary>When this task is worth taking up as a standing duty; null means always.</summary>
+    public DutyCondition? DutyWhen { get; init; }
+}
+
+/// <summary>
+/// When a standing duty needs doing. All conditions given must hold. Ship conditions only apply at sea.
+/// </summary>
+public sealed record DutyCondition
+{
+    /// <summary>Only when the bilge is above this level.</summary>
+    public double? BilgeAbove { get; init; }
+
+    /// <summary>Only when the hull is below this condition.</summary>
+    public double? HullBelow { get; init; }
+
+    /// <summary>Only when the rigging is below this condition.</summary>
+    public double? RiggingBelow { get; init; }
+
+    /// <summary>Only starting within one of these hour windows, each [from, to), for example meal times.</summary>
+    public IReadOnlyList<double[]>? StartBetween { get; init; }
 }
 
 /// <summary>Chance of injury while doing a task.</summary>

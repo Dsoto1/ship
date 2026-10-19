@@ -37,6 +37,12 @@ public partial class Hud : CanvasLayer
     private VBoxContainer _dutyList = null!;
     private CheckBox _urgent = null!;
     private RichTextLabel _chronicle = null!;
+    private readonly Dictionary<string, Label> _gauges = [];
+    private PanelContainer _alert = null!;
+    private Label _alertText = null!;
+    private Control _ending = null!;
+    private Label _endingTitle = null!;
+    private Label _endingText = null!;
     private ChronicleFormatter _formatter = null!;
     private int _chronicleCount = -1;
 
@@ -58,6 +64,12 @@ public partial class Hud : CanvasLayer
     /// <summary>The player turned one of the selected character's standing duties on or off.</summary>
     public event Action<string, bool>? DutyToggled;
 
+    /// <summary>The player dismissed an alert to carry on.</summary>
+    public event Action? ContinueRequested;
+
+    /// <summary>The player asked for a new voyage from the end screen.</summary>
+    public event Action? NewVoyageRequested;
+
     /// <summary>The player cleared the selected character's waiting orders.</summary>
     public event Action? QueueCleared;
 
@@ -74,6 +86,9 @@ public partial class Hud : CanvasLayer
         BuildLeftPanel(root);
         BuildRightPanel(root);
         BuildChronicle(root);
+        BuildVoyageBar(root);
+        BuildAlert(root);
+        BuildEnding(root);
     }
 
     // Smaller text and see-through dark panels, so the interface frames the scene instead of covering it.
@@ -147,12 +162,47 @@ public partial class Hud : CanvasLayer
                 continue;
             }
 
-            var box = new CheckBox { Text = task.Name, FocusMode = Control.FocusModeEnum.None };
+            var box = new CheckBox { Text = DutyLabel(task), FocusMode = Control.FocusModeEnum.None };
             box.Toggled += on => DutyToggled?.Invoke(taskId, on);
             _dutyList.AddChild(box);
             _dutyBoxes.Add((box, taskId));
         }
     }
+
+    // "Pump the bilge (when it is above 15%)": what the duty is and when it is taken up.
+    private static string DutyLabel(TaskDefinition task)
+    {
+        var when = new List<string>();
+        if (task.DutyWhen?.BilgeAbove is { } bilge) when.Add($"bilge above {bilge:0}%");
+        if (task.DutyWhen?.HullBelow is { } hull) when.Add($"hull below {hull:0}%");
+        if (task.DutyWhen?.RiggingBelow is { } rigging) when.Add($"rigging below {rigging:0}%");
+        if (task.DutyWhen?.StartBetween is { } windows) when.Add("at " + string.Join(" and ", windows.Select(w => $"{w[0]:00}:00")));
+        return when.Count == 0 ? task.Name : $"{task.Name} ({string.Join(", ", when)})";
+    }
+
+    /// <summary>Shows an alert banner, for example when a storm breaks. The game is paused while it shows.</summary>
+    public void ShowAlert(string text)
+    {
+        _alertText.Text = text;
+        _alert.Visible = true;
+    }
+
+    /// <summary>Hides the alert banner.</summary>
+    public void HideAlert() => _alert.Visible = false;
+
+    /// <summary>Whether an alert is showing.</summary>
+    public bool AlertShowing => _alert.Visible;
+
+    /// <summary>Shows the end of the voyage, won or lost.</summary>
+    public void ShowEnding(string title, string text)
+    {
+        _endingTitle.Text = title;
+        _endingText.Text = text;
+        _ending.Visible = true;
+    }
+
+    /// <summary>Hides the end screen.</summary>
+    public void HideEnding() => _ending.Visible = false;
 
     private TaskPriority CurrentPriority => _urgent.ButtonPressed ? TaskPriority.Urgent : TaskPriority.Normal;
 
@@ -169,7 +219,8 @@ public partial class Hud : CanvasLayer
     public void Refresh(SimulationRunner runner, CharacterId? selected, int speedIndex)
     {
         var campaign = runner.Campaign;
-        _time.Text = $"{campaign.Clock}   ·   {campaign.Phase}";
+        _time.Text = campaign.Clock.ToString();
+        RefreshVoyage(runner);
         foreach (var (button, speed) in _speedButtons)
         {
             button.ButtonPressed = speed == speedIndex;
@@ -332,6 +383,121 @@ public partial class Hud : CanvasLayer
             })
             .ToList();
         return views.Count == 0 ? "" : "Views of others:\n" + string.Join("\n", views) + "\n";
+    }
+
+    private void RefreshVoyage(SimulationRunner runner)
+    {
+        _voyageBarPanel.Visible = runner.Campaign.Voyage is not null;
+        if (runner.Campaign.Voyage is not { } ship)
+        {
+            return;
+        }
+
+        var good = new Color(0.86f, 0.9f, 0.82f);
+        var warn = new Color(1f, 0.78f, 0.35f);
+        var bad = new Color(1f, 0.42f, 0.35f);
+        void Set(string key, string text, Color colour)
+        {
+            _gauges[key].Text = text;
+            _gauges[key].Modulate = colour;
+        }
+
+        var daysLeft = ship.SpeedLeaguesPerHour > 0.05 ? ship.LeaguesRemaining / (ship.SpeedLeaguesPerHour * 24) : double.PositiveInfinity;
+        var eta = double.IsInfinity(daysLeft) || daysLeft > 99 ? "becalmed" : $"~{Math.Ceiling(daysLeft):0} days at this pace";
+        Set("distance", ship.Outcome switch
+        {
+            Expedition.Simulation.Voyage.VoyageOutcome.Arrived => $"Arrived at {ship.Destination}",
+            Expedition.Simulation.Voyage.VoyageOutcome.Foundered => $"{Capital(ship.ShipName)} has foundered",
+            _ => $"{ship.LeaguesRemaining:0} leagues to {ship.Destination} ({eta})",
+        }, good);
+        var weather = runner.Content.Voyage?.Weathers.FirstOrDefault(w => w.Id == ship.WeatherId);
+        Set("wind", $"Wind: {_formatter.WeatherName(ship.WeatherId)}", weather?.SeaState >= 2.5 ? bad : weather?.SeaState >= 1.8 ? warn : good);
+        Set("hull", $"Hull {ship.Hull:0}%", ship.Hull < 40 ? bad : ship.Hull < 70 ? warn : good);
+        Set("bilge", $"Bilge {ship.Bilge:0}%", ship.Bilge > 60 ? bad : ship.Bilge > 30 ? warn : good);
+        Set("rigging", $"Rigging {ship.Rigging:0}%", ship.Rigging < 40 ? bad : ship.Rigging < 70 ? warn : good);
+        var (food, water) = runner.SupplyForecast();
+        Set("water", $"Water ~{water:0} days", water < 5 ? bad : water < 10 ? warn : good);
+        Set("food", $"Food ~{food:0} days", food < 5 ? bad : food < 10 ? warn : good);
+        Set("watch", ship.WatchKept ? "Watch kept" : "No one on watch!", ship.WatchKept ? good : bad);
+    }
+
+    private static string Capital(string text) => text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];
+
+    private void BuildVoyageBar(Control root)
+    {
+        var panel = new PanelContainer
+        {
+            AnchorRight = 1, OffsetLeft = 246, OffsetRight = -326, OffsetTop = 40,
+        };
+        root.AddChild(panel);
+        var flow = new HFlowContainer { Alignment = FlowContainer.AlignmentMode.Center };
+        flow.AddThemeConstantOverride("h_separation", 14);
+        panel.AddChild(flow);
+        foreach (var key in new[] { "distance", "wind", "watch", "hull", "bilge", "rigging", "water", "food" })
+        {
+            var label = new Label();
+            flow.AddChild(label);
+            _gauges[key] = label;
+        }
+
+        _voyageBarPanel = panel;
+    }
+
+    private PanelContainer _voyageBarPanel = null!;
+
+    private void BuildAlert(Control root)
+    {
+        _alert = new PanelContainer
+        {
+            AnchorLeft = 0.5f, AnchorRight = 0.5f, OffsetLeft = -260, OffsetRight = 260, OffsetTop = 120,
+            Visible = false,
+        };
+        var style = new StyleBoxFlat
+        {
+            BgColor = new Color(0.25f, 0.08f, 0.05f, 0.92f),
+            BorderColor = new Color(0.95f, 0.7f, 0.35f),
+            BorderWidthTop = 2, BorderWidthBottom = 2, BorderWidthLeft = 2, BorderWidthRight = 2,
+            ContentMarginLeft = 14, ContentMarginRight = 14, ContentMarginTop = 10, ContentMarginBottom = 10,
+            CornerRadiusTopLeft = 4, CornerRadiusTopRight = 4, CornerRadiusBottomLeft = 4, CornerRadiusBottomRight = 4,
+        };
+        _alert.AddThemeStyleboxOverride("panel", style);
+        root.AddChild(_alert);
+        var column = new VBoxContainer();
+        _alert.AddChild(column);
+        _alertText = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(490, 0), HorizontalAlignment = HorizontalAlignment.Center };
+        _alertText.AddThemeFontSizeOverride("font_size", 16);
+        column.AddChild(_alertText);
+        column.AddChild(new Label { Text = "The game is paused. Give your orders, then carry on.", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.75f) });
+        var carryOn = new Button { Text = "Carry on (Space)", FocusMode = Control.FocusModeEnum.None, SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter };
+        carryOn.Pressed += () => ContinueRequested?.Invoke();
+        column.AddChild(carryOn);
+    }
+
+    private void BuildEnding(Control root)
+    {
+        _ending = new ColorRect { Color = new Color(0, 0, 0, 0.55f), Visible = false };
+        _ending.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        root.AddChild(_ending);
+        var panel = new PanelContainer { AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 0.5f, AnchorBottom = 0.5f, OffsetLeft = -300, OffsetRight = 300, OffsetTop = -170, OffsetBottom = 170 };
+        _ending.AddChild(panel);
+        var column = new VBoxContainer();
+        column.AddThemeConstantOverride("separation", 10);
+        panel.AddChild(column);
+        _endingTitle = new Label { HorizontalAlignment = HorizontalAlignment.Center };
+        _endingTitle.AddThemeFontSizeOverride("font_size", 26);
+        column.AddChild(_endingTitle);
+        _endingText = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(560, 0), SizeFlagsVertical = Control.SizeFlags.ExpandFill };
+        _endingText.AddThemeFontSizeOverride("font_size", 14);
+        column.AddChild(_endingText);
+        var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        buttons.AddThemeConstantOverride("separation", 12);
+        column.AddChild(buttons);
+        var again = new Button { Text = "New voyage", FocusMode = Control.FocusModeEnum.None };
+        again.Pressed += () => NewVoyageRequested?.Invoke();
+        buttons.AddChild(again);
+        var look = new Button { Text = "Look around", FocusMode = Control.FocusModeEnum.None };
+        look.Pressed += HideEnding;
+        buttons.AddChild(look);
     }
 
     private void BuildTopBar(Control root)

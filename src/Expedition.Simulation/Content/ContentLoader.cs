@@ -49,7 +49,9 @@ public static class ContentLoader
         var locations = Directory.Exists(locationsDirectory)
             ? Directory.EnumerateFiles(locationsDirectory, "*.json").Order(StringComparer.Ordinal).SelectMany(Read<List<LocationDefinition>>).ToList()
             : [];
-        return new GameContent(rules, skills, items, tasks, locations, attributes, traits, conditions, appearance, languages, statuses);
+        var voyagePath = Path.Combine(dataDirectory, "voyage.json");
+        var voyage = File.Exists(voyagePath) ? Read<Voyage.VoyageRules>(voyagePath) : null;
+        return new GameContent(rules, skills, items, tasks, locations, attributes, traits, conditions, appearance, languages, statuses, voyage);
     }
 
     /// <summary>Parses content from JSON strings. Intended for tests and tools.</summary>

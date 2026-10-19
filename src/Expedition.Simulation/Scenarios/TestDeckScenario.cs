@@ -15,6 +15,15 @@ public static class TestDeckScenario
     /// <summary>Location the scenario uses.</summary>
     public const string LocationId = "location.test_deck";
 
+    /// <summary>The ship (SETTING.md 4).</summary>
+    public const string ShipName = "the Garza";
+
+    /// <summary>Where she is bound (SETTING.md 5).</summary>
+    public const string Destination = "the Ember Coast";
+
+    /// <summary>Length of the crossing. A placeholder tuned for about three weeks at sea (D-016).</summary>
+    public const double VoyageLeagues = 560;
+
     /// <summary>ID of the scenario's ship's hold.</summary>
     public static readonly InventoryId HoldId = new("inv.hold");
 
@@ -49,10 +58,10 @@ public static class TestDeckScenario
     [
         ["task.stand_watch"],
         ["task.repair_rigging", "task.stand_watch"],
-        ["task.cook"],
+        ["task.cook", "task.pump_bilge"],
         ["task.pump_bilge", "task.stand_watch"],
         ["task.patch_hull", "task.pump_bilge"],
-        ["task.stand_watch", "task.pump_bilge"],
+        ["task.pump_bilge", "task.stand_watch"],
     ];
 
     /// <summary>Creates the scenario. Requires the shipped content (<c>data/</c>).</summary>
@@ -60,7 +69,8 @@ public static class TestDeckScenario
     /// <param name="content">The shipped content.</param>
     /// <param name="seed">Campaign seed.</param>
     /// <param name="withDuties">False leaves the crew without standing duties, so they only do what they are told.</param>
-    public static SimulationRunner Create(GameContent content, ulong seed = CampaignState.DefaultSeed, bool withDuties = true)
+    /// <param name="withVoyage">False leaves the ship without a voyage (no leaks, weather or distance).</param>
+    public static SimulationRunner Create(GameContent content, ulong seed = CampaignState.DefaultSeed, bool withDuties = true, bool withVoyage = true)
     {
         if (!content.Locations.ContainsKey(LocationId))
         {
@@ -68,6 +78,9 @@ public static class TestDeckScenario
         }
 
         var campaign = new CampaignState(CampaignPhase.SponsorCommission, seed);
+
+        // The voyage begins at dawn, with the morning tide.
+        campaign.Clock.Restore(6 * SimulationClock.TicksPerHour);
         var runner = new SimulationRunner(campaign, content);
         campaign.TryTransitionTo(CampaignPhase.PortPreparation, "accepted the sponsor's charter");
         campaign.TryTransitionTo(CampaignPhase.Voyage, "sailed with the morning tide");
@@ -76,7 +89,7 @@ public static class TestDeckScenario
         Require(campaign.SetSharedStore(HoldId));
         foreach (var (item, quantity) in new[]
                  {
-                     ("item.biscuit", 300), ("item.salt_pork", 120), ("item.water", 400), ("item.wine", 60),
+                     ("item.biscuit", 170), ("item.salt_pork", 60), ("item.water", 300), ("item.wine", 40),
                      ("item.rope", 8), ("item.oakum", 10), ("item.plank", 6),
                      ("item.marlinspike", 2), ("item.caulking_mallet", 1),
                  })
@@ -129,6 +142,11 @@ public static class TestDeckScenario
         for (var i = 0; i < Duties.Length && withDuties; i++)
         {
             Require(runner.SetDuties(ids[i], Duties[i]));
+        }
+
+        if (withVoyage && content.Voyage is not null)
+        {
+            Require(runner.StartVoyage(ShipName, Destination, VoyageLeagues));
         }
 
         return runner;

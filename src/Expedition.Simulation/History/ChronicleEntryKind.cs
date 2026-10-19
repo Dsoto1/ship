@@ -32,4 +32,19 @@ public enum ChronicleEntryKind
 
     /// <summary>How one character regards another changed (characters: holder first, then subject).</summary>
     RelationshipChanged,
+
+    /// <summary>The weather at sea changed (parameters: from, to).</summary>
+    WeatherChanged,
+
+    /// <summary>A heavy sea struck the hull and opened a seam (parameters: damage, level = hull now).</summary>
+    HullStruck,
+
+    /// <summary>The bilge rose past an alarm level (parameter: level).</summary>
+    BilgeAlarm,
+
+    /// <summary>The ship filled and sank.</summary>
+    Foundered,
+
+    /// <summary>The destination was sighted (parameter: to = destination).</summary>
+    Landfall,
 }

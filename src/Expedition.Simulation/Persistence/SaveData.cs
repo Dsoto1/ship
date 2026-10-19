@@ -61,6 +61,9 @@ public sealed record SaveData
     /// <summary>Active tasks, in character ID order.</summary>
     public required IReadOnlyList<TaskData> ActiveTasks { get; init; }
 
+    /// <summary>The voyage, or null when not at sea. Added in format 11.</summary>
+    public VoyageData? Voyage { get; init; }
+
     /// <summary>Standing duties, by character ID. Added in format 10.</summary>
     public required IReadOnlyList<DutyData> Duties { get; init; }
 
@@ -344,9 +347,46 @@ public sealed record DutyData
     /// <summary>Character ID number.</summary>
     public required int CharacterId { get; init; }
 
-    /// <summary>Task definition IDs, in turn order.</summary>
+    /// <summary>Task definition IDs, most important first.</summary>
     public required IReadOnlyList<string> Tasks { get; init; }
+}
 
-    /// <summary>Index of the duty to try next.</summary>
-    public required int Next { get; init; }
+/// <summary>A saved voyage. Added in format 11.</summary>
+public sealed record VoyageData
+{
+    /// <summary>Ship name.</summary>
+    public required string ShipName { get; init; }
+
+    /// <summary>Destination.</summary>
+    public required string Destination { get; init; }
+
+    /// <summary>Length of the passage in leagues.</summary>
+    public required double TotalLeagues { get; init; }
+
+    /// <summary>Leagues sailed.</summary>
+    public required double LeaguesSailed { get; init; }
+
+    /// <summary>Hull condition.</summary>
+    public required double Hull { get; init; }
+
+    /// <summary>Bilge level.</summary>
+    public required double Bilge { get; init; }
+
+    /// <summary>Rigging condition.</summary>
+    public required double Rigging { get; init; }
+
+    /// <summary>Weather ID.</summary>
+    public required string Weather { get; init; }
+
+    /// <summary>Tick the weather next changes.</summary>
+    public required long WeatherUntilTick { get; init; }
+
+    /// <summary>Last speed, leagues per hour.</summary>
+    public required double Speed { get; init; }
+
+    /// <summary>Whether a watch was kept in the last minute.</summary>
+    public required bool WatchKept { get; init; }
+
+    /// <summary>Outcome name.</summary>
+    public required string Outcome { get; init; }
 }

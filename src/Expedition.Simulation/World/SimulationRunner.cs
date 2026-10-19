@@ -6,6 +6,7 @@ using Expedition.Simulation.Core;
 using Expedition.Simulation.History;
 using Expedition.Simulation.Items;
 using Expedition.Simulation.Tasks;
+using Expedition.Simulation.Voyage;
 
 namespace Expedition.Simulation.World;
 
@@ -379,17 +380,178 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
             return;
         }
 
-        for (var i = 0; i < roster.Tasks.Count; i++)
+        foreach (var task in roster.Tasks.Select(id => Content.Tasks[id]))
         {
-            var index = (roster.Next + i) % roster.Tasks.Count;
-            var task = Content.Tasks[roster.Tasks[index]];
-            if (Check(character, task, materialsAlreadyUsed: false).Succeeded)
+            if (DutyNeeded(task) && Check(character, task, materialsAlreadyUsed: false).Succeeded)
             {
-                roster.Next = (index + 1) % roster.Tasks.Count;
                 Start(character, new TaskInstance(Campaign.Ids.NextTaskId(), character.Id, task.Id, TaskPriority.Normal) { Origin = TaskOrigin.Duty });
                 return;
             }
         }
+    }
+
+    /// <summary>
+    /// Whether a duty needs doing now (its <see cref="TaskDefinition.DutyWhen"/>): for example pumping only
+    /// when the bilge is up, cooking only at meal times. Ship conditions only count at sea.
+    /// </summary>
+    public bool DutyNeeded(TaskDefinition task)
+    {
+        if (task.DutyWhen is not { } when)
+        {
+            return true;
+        }
+
+        if (when.BilgeAbove is not null || when.HullBelow is not null || when.RiggingBelow is not null)
+        {
+            if (Campaign.Voyage is not { Outcome: VoyageOutcome.UnderWay } ship)
+            {
+                return false;
+            }
+
+            if ((when.BilgeAbove is { } bilge && ship.Bilge <= bilge)
+                || (when.HullBelow is { } hull && ship.Hull >= hull)
+                || (when.RiggingBelow is { } rigging && ship.Rigging >= rigging))
+            {
+                return false;
+            }
+        }
+
+        var hour = Campaign.Clock.TimeOfDay.TotalHours;
+        return when.StartBetween is not { } windows || windows.Any(w => hour >= w[0] && hour < w[1]);
+    }
+
+    /// <summary>
+    /// A crew member on routine duty drops it when a duty higher in their list becomes needed and can start:
+    /// the bilge rising pulls the watch to the pump. Checked every few minutes.
+    /// </summary>
+    private void ReconsiderDuty(Character character)
+    {
+        if (Campaign.Clock.Tick % 5 != 0 || !character.CanWork
+            || !Campaign.ActiveTasks.TryGetValue(character.Id, out var current) || current.Origin != TaskOrigin.Duty
+            || !Campaign.Duties.TryGetValue(character.Id, out var roster))
+        {
+            return;
+        }
+
+        var rank = roster.Tasks.ToList().IndexOf(current.DefinitionId);
+        foreach (var task in roster.Tasks.Take(rank < 0 ? roster.Tasks.Count : rank).Select(id => Content.Tasks[id]))
+        {
+            if (DutyNeeded(task) && Check(character, task, materialsAlreadyUsed: false).Succeeded)
+            {
+                Campaign.AbandonTask(character.Id);
+                Start(character, new TaskInstance(Campaign.Ids.NextTaskId(), character.Id, task.Id, TaskPriority.Normal) { Origin = TaskOrigin.Duty });
+                return;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Starts a voyage: the expedition must be at sea (phase Voyage) and not already on one. The weather
+    /// starts as the voyage rules say.
+    /// </summary>
+    public CommandResult StartVoyage(string shipName, string destination, double leagues)
+    {
+        if (Content.Voyage is not { } rules)
+        {
+            return CommandResult.Rejected("The game content has no voyage rules (data/voyage.json).");
+        }
+
+        if (Campaign.Phase != CampaignPhase.Voyage || Campaign.Voyage is not null || leagues <= 0)
+        {
+            return CommandResult.Rejected("A voyage can only start once, at sea, with a positive distance.");
+        }
+
+        var weather = rules.Weather(rules.StartingWeather);
+        var until = Campaign.Clock.Tick + WeatherSpell(weather);
+        Campaign.SetVoyage(new VoyageState(shipName, destination, leagues, weather.Id, until));
+        return CommandResult.Ok();
+    }
+
+    private long WeatherSpell(WeatherDefinition weather) =>
+        (weather.MinHours + Campaign.Randomness.Weather.NextInt(weather.MaxHours - weather.MinHours + 1)) * (long)SimulationClock.TicksPerHour;
+
+    // One minute at sea: weather, leaks, wear, speed, alarms, and the end of the voyage.
+    private void StepVoyage()
+    {
+        if (Campaign.Voyage is not { Outcome: VoyageOutcome.UnderWay } ship || Content.Voyage is not { } rules)
+        {
+            return;
+        }
+
+        var weather = rules.Weather(ship.WeatherId);
+        if (Campaign.Clock.Tick >= ship.WeatherUntilTick)
+        {
+            var roll = Campaign.Randomness.Weather.NextDouble() * weather.Next.Values.Sum();
+            var next = weather.Next.OrderBy(n => n.Key, StringComparer.Ordinal).SkipWhile(n => (roll -= n.Value) > 0).Select(n => n.Key).FirstOrDefault()
+                       ?? weather.Next.Keys.Order(StringComparer.Ordinal).Last();
+            if (next != weather.Id)
+            {
+                Campaign.Record(ChronicleEntryKind.WeatherChanged, [new(ChronicleParameters.From, weather.Id), new(ChronicleParameters.To, next)]);
+            }
+
+            weather = rules.Weather(next);
+            ship.WeatherId = next;
+            ship.WeatherUntilTick = Campaign.Clock.Tick + WeatherSpell(weather);
+        }
+
+        var bilgeBefore = ship.Bilge;
+        var leak = (rules.BaseLeakPerHour + (100 - ship.Hull) * rules.LeakPerHullPointLost) * weather.LeakMultiplier;
+        ship.Apply(new ShipEffects { Bilge = leak, Hull = -weather.HullWearPerHour, Rigging = -weather.RiggingWearPerHour }, HoursPerTick);
+        if (weather.HullStrikeChancePerHour > 0 && Campaign.Randomness.Weather.Chance(weather.HullStrikeChancePerHour * HoursPerTick))
+        {
+            ship.Apply(new ShipEffects { Hull = -weather.HullStrikeDamage }, 1);
+            Campaign.Record(ChronicleEntryKind.HullStruck, [
+                new(ChronicleParameters.Damage, Number(weather.HullStrikeDamage)), new(ChronicleParameters.Level, Number(ship.Hull)),
+            ]);
+        }
+
+        ship.WatchKept = Campaign.ActiveTasks.Values.Any(task =>
+            Content.Tasks[task.DefinitionId].KeepsWatch && Campaign.Characters[task.CharacterId].CanWork
+            && !(Campaign.Placements.TryGetValue(task.CharacterId, out var placement) && placement.IsMoving));
+        ship.SpeedLeaguesPerHour = weather.WindLeaguesPerHour
+            * (rules.RiggingSpeedFloor + (1 - rules.RiggingSpeedFloor) * ship.Rigging / 100)
+            * (ship.WatchKept ? 1 : rules.NoWatchSpeedMultiplier);
+        ship.LeaguesSailed += ship.SpeedLeaguesPerHour * HoursPerTick;
+
+        foreach (var level in rules.BilgeAlarms.Where(level => bilgeBefore < level && ship.Bilge >= level))
+        {
+            Campaign.Record(ChronicleEntryKind.BilgeAlarm, [new(ChronicleParameters.Level, Number(level))]);
+        }
+
+        if (ship.Bilge >= 100)
+        {
+            ship.Outcome = VoyageOutcome.Foundered;
+            Campaign.Record(ChronicleEntryKind.Foundered, [new(ChronicleParameters.To, ship.ShipName)]);
+            Campaign.TryTransitionTo(CampaignPhase.ShipwreckSurvival, $"{ship.ShipName} filled and foundered");
+        }
+        else if (ship.LeaguesRemaining <= 0)
+        {
+            ship.Outcome = VoyageOutcome.Arrived;
+            Campaign.Record(ChronicleEntryKind.Landfall, [new(ChronicleParameters.To, ship.Destination)]);
+            Campaign.TryTransitionTo(CampaignPhase.Landfall, $"sighted {ship.Destination}");
+        }
+    }
+
+    private static string Number(double value) => Math.Round(value).ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Roughly how many days the food and the drink in the shared store will last the living crew at
+    /// their everyday rate (work makes them hungrier and thirstier, so this errs on the long side).
+    /// </summary>
+    public (double FoodDays, double WaterDays) SupplyForecast()
+    {
+        var mouths = Campaign.Characters.Values.Count(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated);
+        if (mouths == 0)
+        {
+            return (0, 0);
+        }
+
+        var store = Campaign.SharedStore;
+        var food = Content.Foods.Sum(item => store.Count(item.Id) * item.HungerRelief);
+        var drink = Content.Drinks.Sum(item => store.Count(item.Id) * item.ThirstRelief);
+        var hungerPerDay = Math.Max(Content.Rules.BaselineNeedsPerHour.Hunger * 24 * 1.15, 0.01) * mouths;
+        var thirstPerDay = Math.Max(Content.Rules.BaselineNeedsPerHour.Thirst * 24 * 1.15, 0.01) * mouths;
+        return (food / hungerPerDay, drink / thirstPerDay);
     }
 
     /// <summary>Puts a character on a location's grid, for example when a scenario starts. Ends any walk.</summary>
@@ -501,6 +663,8 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
             {
                 StepCharacter(character, outcomes);
             }
+
+            StepVoyage();
         }
 
         return outcomes;
@@ -515,6 +679,7 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
         }
 
         ResolveArrival(character.Id);
+        ReconsiderDuty(character);
         StartNextQueued(character);
         StartOnOwnAccord(character);
         Campaign.ActiveTasks.TryGetValue(character.Id, out var task);
@@ -546,7 +711,12 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
             return;
         }
 
-        task.Progress += WorkRate(character, definition) * SimulationClock.MinutesPerTick;
+        var rate = WorkRate(character, definition);
+        task.Progress += rate * SimulationClock.MinutesPerTick;
+        if (definition.ShipPerHour is { } effects && Campaign.Voyage is { Outcome: VoyageOutcome.UnderWay } voyage)
+        {
+            voyage.Apply(effects, rate * HoursPerTick);
+        }
 
         if (definition.Hazard is { } hazard && Campaign.Randomness.Tasks.Chance(hazard.ChancePerHour * HoursPerTick))
         {
@@ -573,6 +743,18 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
 
             Campaign.EndTask(character.Id);
             outcomes.Add(new TaskOutcome(Campaign.Clock.Tick, character.Id, definition.Id, TaskEnd.Completed, string.Empty));
+            if (definition.ShipOnComplete is { } repair && Campaign.Voyage is { Outcome: VoyageOutcome.UnderWay } ship)
+            {
+                ship.Apply(repair, 1);
+            }
+
+            if (definition.CrewOnComplete is { } relief)
+            {
+                foreach (var shipmate in Campaign.Characters.Values.Where(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated))
+                {
+                    shipmate.Needs.Apply(relief, 1);
+                }
+            }
         }
     }
 

@@ -14,21 +14,14 @@ public enum TaskOrigin
 }
 
 /// <summary>
-/// A character's standing duties: tasks they take up in turn whenever they are idle and have no orders.
-/// Player orders always come first, and a player order pre-empts duty work (which resumes afterwards).
-/// Part of persistent campaign state.
+/// A character's standing duties, most important first. When idle with no orders they take up the first
+/// duty that needs doing and can start, and they leave routine duty work for a more important duty that
+/// becomes needed. Player orders always come first. Part of persistent campaign state.
 /// </summary>
 public sealed class DutyRoster
 {
-    internal DutyRoster(IReadOnlyList<string> tasks, int next = 0)
-    {
-        Tasks = tasks;
-        Next = next;
-    }
+    internal DutyRoster(IReadOnlyList<string> tasks) => Tasks = tasks;
 
-    /// <summary>Task definition IDs, in the order they are taken up.</summary>
+    /// <summary>Task definition IDs, most important first.</summary>
     public IReadOnlyList<string> Tasks { get; }
-
-    /// <summary>Index of the duty to try first next time, so duties are done in turn.</summary>
-    public int Next { get; internal set; }
 }

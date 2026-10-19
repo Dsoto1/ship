@@ -81,6 +81,12 @@ public sealed class CampaignState
     /// <summary>History of important events.</summary>
     public Chronicle Chronicle { get; } = new();
 
+    /// <summary>The ship at sea, or null when the expedition is not on a voyage.</summary>
+    public Voyage.VoyageState? Voyage { get; private set; }
+
+    /// <summary>Sets the voyage. The runner checks it may start; the loader restores it.</summary>
+    internal void SetVoyage(Voyage.VoyageState? voyage) => Voyage = voyage;
+
     /// <summary>What the captain knows about people, separate from the truth (TECHNICAL_SPEC.md §5.2).</summary>
     public KnowledgeBook Knowledge { get; } = new();
 
@@ -107,14 +113,14 @@ public sealed class CampaignState
     /// </summary>
     public IReadOnlyList<TaskInstance> QueueOf(CharacterId id) => _queues.TryGetValue(id, out var queue) ? queue : [];
 
-    /// <summary>A character's standing duties, in the order they are taken up; empty if none.</summary>
+    /// <summary>A character's standing duties, most important first; empty if none.</summary>
     public IReadOnlyList<string> DutiesOf(CharacterId id) => _duties.TryGetValue(id, out var roster) ? roster.Tasks : [];
 
     /// <summary>Every character's standing duties, by character.</summary>
     public IReadOnlyDictionary<CharacterId, DutyRoster> Duties => _duties;
 
     /// <summary>Replaces a character's standing duties. The runner validates the task IDs.</summary>
-    internal void SetDuties(CharacterId id, IReadOnlyList<string> tasks, int next = 0)
+    internal void SetDuties(CharacterId id, IReadOnlyList<string> tasks)
     {
         if (tasks.Count == 0)
         {
@@ -122,7 +128,7 @@ public sealed class CampaignState
         }
         else
         {
-            _duties[id] = new DutyRoster(tasks, next % tasks.Count);
+            _duties[id] = new DutyRoster(tasks);
         }
     }
 
@@ -448,6 +454,15 @@ public sealed class CampaignState
 
     /// <summary>Removes a finished task without recording anything.</summary>
     internal void EndTask(CharacterId id) => _activeTasks.Remove(id);
+
+    /// <summary>Drops duty work for more pressing duty work, without recording it (it is routine).</summary>
+    internal void AbandonTask(CharacterId id)
+    {
+        if (_activeTasks.Remove(id))
+        {
+            StopMovement(id);
+        }
+    }
 
     /// <summary>
     /// Stops the character's current task, if any, and records why. Materials already used are not refunded.

@@ -24,8 +24,8 @@ This file tracks status and breaks the next work into tickets.
 | 5b | Captain's knowledge: truth vs what is known | Done (2026-10-19) |
 | 5b+ | Standing duties and self-care (owner: "the crew needs automating") | Done (2026-10-19) |
 | V1 | The world around you: sea, sky, day and night, a real ship, people (D-015) | Done (2026-10-19) |
-| V2 | The ship in danger: leaks, wear, supplies, distance, need-driven duties | Next |
-| V3 | Things happen: events with choices, crew who speak up | Planned |
+| V2 | The ship in danger: leaks, wear, supplies, distance, need-driven duties | Done (2026-10-19) |
+| V3 | Things happen: events with choices, crew who speak up | Next |
 | V4 | Choose who comes: simple pre-voyage hiring (the core of 5c) | Planned |
 | 5c | Recruitment rules in full: investigation, references, counteroffers | Later (core moves into V4) |
 | 5d | Godot waterfront recruitment scene | Later, once the voyage is fun |
@@ -395,4 +395,35 @@ D-015. Visual only: the simulation is unchanged except clearer refusal messages.
 296 tests pass. Rendered and checked with Godot 4.7.2 (Compatibility renderer, software GPU) at day,
 dusk and night and at three zoom levels; the owner's Mac uses Forward+, which may look a little
 different.
+
+## V2 — The ship in danger
+
+D-016. The crossing now has stakes, and the crew's work has a reason.
+- **The voyage** (`Voyage/VoyageState`, rules in `data/voyage.json`): the *Garza* sails 560 leagues
+  for the Ember Coast. Each minute the hull leaks into the bilge (faster when the hull is damaged and
+  in heavy weather), the hull and rigging wear, and she makes way at a speed set by the wind, the
+  rigging, and whether anyone is standing watch.
+- **Weather** changes on its own random stream: calm, fair, fresh breeze, gale, storm, each with its
+  own wind, sea, leaks and wear. Gales and storms can strike the hull and open a seam.
+- **Arrive or founder:** the destination sighted moves the campaign to Landfall; a full bilge sinks
+  her and moves it to Shipwreck survival.
+- **Work matters:** pumping lowers the bilge while it goes on, patching the hull and repairing the
+  rigging restore them (using oakum, planks and rope, which run out), standing watch keeps her
+  sailing, and a hot meal eases everyone's stress. The deck now has two pumps, as the *Garza* does.
+- **Duties respond to need, in priority order** (amends D-014): pump when the bilge is above 15%,
+  repair below 88%, patch below 85%, cook at 10:00 and 17:00. A crew member on routine duty drops it
+  for a more important one that becomes needed (the watch goes to the pumps when the bilge rises).
+- **Tighter stores:** about 24 days of water and 26 of food for a crossing of 20–30 days.
+- **Godot:** a voyage bar (distance and estimate, wind, watch, hull, bilge, rigging, water, food,
+  amber and red when in danger); the game pauses with a banner when a gale or storm breaks, the hull
+  is struck, the bilge passes 50% or 80%, someone is hurt or dies, or stores run out; an end screen
+  for landfall or foundering, with a new voyage button. Weather shows: rougher sea, overcast light,
+  rain, lightning, topsails furled and courses reefed; she rides lower as the bilge fills and sinks
+  when she founders. Days are counted from 1.
+- **Save format 11.** Older saves load without a voyage; duties lose their rotation pointer.
+
+Balance (30 seeds, crew left on their default duties): 24 arrive in 20–32 days, often with water
+nearly gone, and 6 founder after a run of storms uses up the planks and oakum. A captain who puts
+more hands on the pumps in a storm and saves materials should do better. 319 tests pass, including
+a ten-seed balance check.
 

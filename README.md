@@ -7,8 +7,9 @@ carried through every phase.
 
 ![The Garza at sea](docs/screenshots/v1-day.jpg)
 
-**Status:** building a playable voyage (D-015). V1, the world around you, is done; next is V2, the ship
-in danger. P0 (simulation foundation) is complete. Characters with skills, attributes, traits,
+**Status:** building a playable voyage (D-015). V1 (the world around you) and V2 (the ship in danger:
+leaks, weather, wear, supplies, landfall or foundering) are done; next is V3, events with choices.
+P0 (simulation foundation) is complete. Characters with skills, attributes, traits,
 relationships and appearance; tasks with queues and priorities; time, needs, provisions, inventories,
 positions, a structured chronicle and versioned save/load. All of it is tested headless and shown in
 a graybox Godot scene (`game/`). Next: P1, the first playable vertical slice.

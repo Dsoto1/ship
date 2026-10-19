@@ -25,6 +25,7 @@ public partial class ShipView : Node3D
     private static readonly Color Iron = new(0.2f, 0.2f, 0.21f);
 
     private readonly List<ShaderMaterial> _sails = [];
+    private readonly List<(Node3D Sail, int Tier)> _squareSails = [];
     private readonly List<(OmniLight3D Light, StandardMaterial3D Glass)> _lanterns = [];
     private ShaderMaterial _deckMaterial = null!;
     private OmniLight3D? _galleyFire;
@@ -49,6 +50,7 @@ public partial class ShipView : Node3D
         }
 
         _sails.Clear();
+        _squareSails.Clear();
         _lanterns.Clear();
         _galleyFire = null;
         MeasureHull(location);
@@ -67,8 +69,17 @@ public partial class ShipView : Node3D
     /// <param name="sailOpacity">1 for solid sails.</param>
     /// <param name="time">Seconds, for flicker.</param>
     /// <param name="galleyLit">Whether someone is cooking.</param>
-    public void UpdateLook(float darkness, float sailOpacity, float time, bool galleyLit)
+    /// <param name="seaState">0 calm .. 3 storm: topsails are furled from a gale, courses reefed in a storm.</param>
+    /// <param name="delta">Seconds since the last frame, so sail changes take a moment.</param>
+    public void UpdateLook(float darkness, float sailOpacity, float time, bool galleyLit, float seaState = 1f, float delta = 0f)
     {
+        foreach (var (sail, tier) in _squareSails)
+        {
+            var set = tier == 1 ? Mathf.Clamp(1.9f - seaState * 0.75f, 0.08f, 1f) : Mathf.Clamp(2.3f - seaState * 0.65f, 0.4f, 1f);
+            var scale = Mathf.Lerp(sail.Scale.Y, set, Mathf.Clamp(delta * 1.5f, 0, 1));
+            sail.Scale = new Vector3(1, delta == 0 ? set : scale, Mathf.Lerp(0.3f, 1f, Mathf.Clamp(seaState, 0.2f, 1f)));
+        }
+
         var flicker = 0.9f + 0.1f * Mathf.Sin(time * 11f) * Mathf.Sin(time * 4.3f);
         foreach (var (light, glass) in _lanterns)
         {
@@ -347,12 +358,12 @@ public partial class ShipView : Node3D
         var courseYard = height * (main ? 0.66f : 0.8f);
         var yardHalf = beam * (main ? 1.45f : 1.2f);
         AddSpar(foot + new Vector3(-yardHalf, courseYard, 0), foot + new Vector3(yardHalf, courseYard, 0), 0.07f, Spar);
-        AddSquareSail(foot + new Vector3(0, courseYard, 0.15f), yardHalf * 1.9f, courseYard - 1.9f, belly: 1.2f);
+        AddSquareSail(foot + new Vector3(0, courseYard, 0.15f), yardHalf * 1.9f, courseYard - 1.9f, belly: 1.2f, tier: 0);
         if (main)
         {
             var topYard = height * 0.9f;
             AddSpar(foot + new Vector3(-yardHalf * 0.55f, topYard, 0), foot + new Vector3(yardHalf * 0.55f, topYard, 0), 0.05f, Spar);
-            AddSquareSail(foot + new Vector3(0, topYard, 0.1f), yardHalf * 1.05f, topYard - courseYard - 0.6f, belly: 0.6f);
+            AddSquareSail(foot + new Vector3(0, topYard, 0.1f), yardHalf * 1.05f, topYard - courseYard - 0.6f, belly: 0.6f, tier: 1);
             AddPennant(foot + new Vector3(0, height + 0.05f, 0));
         }
 
@@ -375,8 +386,12 @@ public partial class ShipView : Node3D
     }
 
     // A square sail hanging from a yard at <paramref name="top"/>, bellied forward (towards -z) by the wind from astern.
-    private void AddSquareSail(Vector3 top, float width, float height, float belly)
+    // Tier 0 is a course, 1 a topsail: in heavy weather topsails are furled first, then courses reefed.
+    private void AddSquareSail(Vector3 top, float width, float height, float belly, int tier)
     {
+        var anchor = new Node3D { Position = top };
+        AddChild(anchor);
+        _squareSails.Add((anchor, tier));
         const int columns = 10;
         const int rows = 8;
         var tool = new SurfaceTool();
@@ -391,7 +406,7 @@ public partial class ShipView : Node3D
                 var x = (u - 0.5f) * width * (1f - 0.08f * v);
                 var y = -v * height;
                 var z = -belly * Mathf.Sin(u * Mathf.Pi) * Mathf.Sin(Mathf.Clamp(v * 1.1f, 0, 1) * Mathf.Pi * 0.85f + 0.12f);
-                points[c, r] = top + new Vector3(x, y, z);
+                points[c, r] = new Vector3(x, y, z);
             }
         }
 
@@ -404,7 +419,7 @@ public partial class ShipView : Node3D
             }
         }
 
-        AddSailMesh(tool);
+        AddSailMesh(tool, anchor);
     }
 
     private void AddLateenSail(Vector3 yardLow, Vector3 yardHigh, Vector3 tack)
@@ -428,12 +443,13 @@ public partial class ShipView : Node3D
         AddSailMesh(tool);
     }
 
-    private void AddSailMesh(SurfaceTool tool)
+    private void AddSailMesh(SurfaceTool tool, Node3D? parent = null)
     {
         tool.GenerateNormals();
         var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://Shaders/sail.gdshader") };
         _sails.Add(material);
-        AddMesh(tool.Commit(), material);
+        var instance = new MeshInstance3D { Mesh = tool.Commit(), MaterialOverride = material };
+        (parent ?? this).AddChild(instance);
     }
 
     private static void SailQuad(SurfaceTool tool, Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector2 uv0, Vector2 uv1)

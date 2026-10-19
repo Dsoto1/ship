@@ -57,9 +57,11 @@ public class LongRunTests
     [Fact]
     public void NinetyDayVoyageWithAmpleProvisionsKeepsEveryoneAlive()
     {
-        var runner = TestDeckScenario.Create(Shipped());
+        var runner = TestDeckScenario.Create(Shipped(), withDuties: false, withVoyage: false);
         runner.AddItems(TestDeckScenario.HoldId, "item.water", 1000);
         runner.AddItems(TestDeckScenario.HoldId, "item.biscuit", 500);
+        runner.AddItems(TestDeckScenario.HoldId, "item.salt_pork", 200);
+        runner.AddItems(TestDeckScenario.HoldId, "item.wine", 100);
         var waterBefore = runner.Campaign.SharedStore.Count("item.water");
 
         var previous = runner.Campaign.SharedStore.Quantities.ToDictionary();
@@ -88,7 +90,7 @@ public class LongRunTests
     [Fact]
     public void NinetyDayVoyageThatRunsDryEndsInRecordedDeaths()
     {
-        var runner = TestDeckScenario.Create(Shipped());
+        var runner = TestDeckScenario.Create(Shipped(), withDuties: false, withVoyage: false);
 
         for (var day = 0; day < 90; day++)
         {

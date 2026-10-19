@@ -39,7 +39,7 @@ public class ContentTests
         Assert.Contains(content.Foods, f => f.Id == "item.biscuit");
         Assert.Contains(content.Drinks, d => d.Id == "item.water");
         Assert.Equal(25, content.Rules.PersonalCarryCapacity.MaxWeightKg);
-        Assert.Equal(7, content.Locations["location.test_deck"].Spots.Count);
+        Assert.Equal(8, content.Locations["location.test_deck"].Spots.Count);
     }
 
     [Fact]

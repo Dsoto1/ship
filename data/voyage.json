@@ -1,0 +1,43 @@
+// Sea passage rules (V2, D-016). Placeholder values tuned so a 560-league crossing takes about three
+// weeks with a crew that keeps the ship up, and goes badly for one that does not.
+{
+  // Bilge rise per hour with a sound hull (percent of what she can hold before foundering).
+  "baseLeakPerHour": 1.2,
+  // Extra bilge rise per hour for each hull point lost below 100.
+  "leakPerHullPointLost": 0.1,
+  // Speed left with the rigging in tatters; full speed at 100.
+  "riggingSpeedFloor": 0.35,
+  // Nobody at the helm or on lookout: she yaws about and the sails are not trimmed.
+  "noWatchSpeedMultiplier": 0.4,
+  "bilgeAlarms": [50, 80],
+  "startingWeather": "weather.fair",
+  "weathers": [
+    {
+      "id": "weather.calm", "name": "a flat calm", "windLeaguesPerHour": 0.25, "seaState": 0.3, "gloom": 0,
+      "leakMultiplier": 0.7, "hullWearPerHour": 0.02, "riggingWearPerHour": 0.03, "minHours": 6, "maxHours": 20,
+      "next": { "weather.fair": 3, "weather.calm": 0.6 }
+    },
+    {
+      "id": "weather.fair", "name": "a fair wind", "windLeaguesPerHour": 1.05, "seaState": 0.8, "gloom": 0,
+      "leakMultiplier": 1.0, "hullWearPerHour": 0.05, "riggingWearPerHour": 0.12, "minHours": 8, "maxHours": 30,
+      "next": { "weather.calm": 0.8, "weather.fair": 1.5, "weather.fresh": 3, "weather.gale": 0.8 }
+    },
+    {
+      "id": "weather.fresh", "name": "a fresh breeze", "windLeaguesPerHour": 1.5, "seaState": 1.25, "gloom": 0.1,
+      "leakMultiplier": 1.3, "hullWearPerHour": 0.12, "riggingWearPerHour": 0.28, "minHours": 6, "maxHours": 24,
+      "next": { "weather.fair": 3, "weather.fresh": 1, "weather.gale": 1.6 }
+    },
+    {
+      "id": "weather.gale", "name": "a gale", "windLeaguesPerHour": 1.2, "seaState": 2.0, "gloom": 0.5,
+      "leakMultiplier": 2.4, "hullWearPerHour": 0.45, "riggingWearPerHour": 1.0,
+      "hullStrikeChancePerHour": 0.05, "hullStrikeDamage": 6, "minHours": 4, "maxHours": 14,
+      "next": { "weather.fresh": 3, "weather.storm": 1.4, "weather.fair": 1 }
+    },
+    {
+      "id": "weather.storm", "name": "a storm", "windLeaguesPerHour": 0.4, "seaState": 2.8, "gloom": 0.85,
+      "leakMultiplier": 5.0, "hullWearPerHour": 1.3, "riggingWearPerHour": 2.4,
+      "hullStrikeChancePerHour": 0.15, "hullStrikeDamage": 12, "minHours": 4, "maxHours": 12,
+      "next": { "weather.gale": 3, "weather.fresh": 1 }
+    }
+  ]
+}

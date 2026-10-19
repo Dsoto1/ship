@@ -20,7 +20,7 @@ public class TestDeckScenarioTests
         var deck = runner.Content.Locations[TestDeckScenario.LocationId];
         Assert.All(campaign.Placements.Values, p => Assert.True(deck.IsWalkable(p.Cell)));
         Assert.Equal(TestDeckScenario.HoldId, campaign.SharedStoreId);
-        Assert.Equal(300, campaign.SharedStore.Count("item.biscuit"));
+        Assert.Equal(170, campaign.SharedStore.Count("item.biscuit"));
     }
 
     [Fact]

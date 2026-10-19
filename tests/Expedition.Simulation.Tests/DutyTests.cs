@@ -5,6 +5,7 @@ using Expedition.Simulation.Core;
 using Expedition.Simulation.Persistence;
 using Expedition.Simulation.Scenarios;
 using Expedition.Simulation.Tasks;
+using Expedition.Simulation.Voyage;
 using Expedition.Simulation.World;
 
 namespace Expedition.Simulation.Tests;
@@ -20,29 +21,77 @@ public class DutyTests
     }
 
     [Fact]
-    public void IdleCrewTakeUpTheirDuties()
+    public void AtDawnTheWatchIsSetAndNobodyPumpsADryBilge()
     {
-        var (runner, crew) = Setup(withDuties: true);
+        var (runner, _) = Setup(withDuties: true);
 
         runner.Advance(1);
 
-        Assert.All(crew, id => Assert.Equal(TaskOrigin.Duty, runner.Campaign.ActiveTasks[id].Origin));
+        var working = runner.Campaign.ActiveTasks.Values.ToList();
+        Assert.All(working, task => Assert.Equal(TaskOrigin.Duty, task.Origin));
+        Assert.Equal(2, working.Count(task => task.DefinitionId == "task.stand_watch"));
+        Assert.DoesNotContain(working, task => task.DefinitionId == "task.pump_bilge");
     }
 
     [Fact]
-    public void DutiesAreDoneInTurn()
+    public void TheMostImportantNeededDutyComesFirst()
     {
         var (runner, crew) = Setup();
-        var diego = crew[1];
-        Assert.True(runner.SetDuties(diego, ["task.repair_rigging", "task.stand_watch"]).Succeeded);
+        runner.SetDuties(crew[3], ["task.pump_bilge", "task.stand_watch"]);
+        runner.Campaign.Voyage!.Apply(new ShipEffects { Bilge = 40 }, 1);
 
-        var done = new List<string>();
-        for (var i = 0; i < 12 * 60 && done.Count < 3; i++)
+        runner.Advance(1);
+
+        Assert.Equal("task.pump_bilge", runner.Campaign.ActiveTasks[crew[3]].DefinitionId);
+    }
+
+    [Fact]
+    public void ARisingBilgeCallsTheWatchToThePump()
+    {
+        var (runner, crew) = Setup();
+        runner.SetDuties(crew[3], ["task.pump_bilge", "task.stand_watch"]);
+        runner.Advance(10);
+        Assert.Equal("task.stand_watch", runner.Campaign.ActiveTasks[crew[3]].DefinitionId);
+
+        runner.Campaign.Voyage!.Apply(new ShipEffects { Bilge = 40 }, 1);
+        runner.Advance(10);
+
+        Assert.Equal("task.pump_bilge", runner.Campaign.ActiveTasks[crew[3]].DefinitionId);
+        Assert.DoesNotContain(runner.Campaign.QueueOf(crew[3]), task => task.DefinitionId == "task.stand_watch");
+    }
+
+    [Fact]
+    public void TheCookCooksAtMealTimesOnly()
+    {
+        var (runner, crew) = Setup();
+        runner.SetDuties(crew[2], ["task.cook"]);
+        var started = new List<long>();
+        for (var minute = 0; minute < 24 * 60; minute++)
         {
-            done.AddRange(runner.Advance(1).Where(o => o.CharacterId == diego && o.End == TaskEnd.Completed).Select(o => o.DefinitionId));
+            var wasCooking = runner.Campaign.ActiveTasks.ContainsKey(crew[2]);
+            runner.Advance(1);
+            if (!wasCooking && runner.Campaign.ActiveTasks.ContainsKey(crew[2]))
+            {
+                started.Add(runner.Campaign.Clock.Tick % SimulationClock.TicksPerDay / SimulationClock.TicksPerHour);
+            }
         }
 
-        Assert.Equal(["task.repair_rigging", "task.stand_watch", "task.repair_rigging"], done);
+        Assert.Equal([10L, 17L], started.Order());
+    }
+
+    [Fact]
+    public void AHotMealEasesEveryonesStress()
+    {
+        var (runner, crew) = Setup();
+        foreach (var character in runner.Campaign.Characters.Values)
+        {
+            character.Needs.Stress = 30;
+        }
+
+        Assert.True(runner.AssignTask(crew[2], "task.cook").Succeeded);
+        runner.Advance(4 * 60);
+
+        Assert.All(runner.Campaign.Characters.Values, c => Assert.True(c.Needs.Stress < 30, $"{c.Name}: {c.Needs.Stress}"));
     }
 
     [Fact]
@@ -226,7 +275,6 @@ public class DutyTests
     [InlineData("unknown character")]
     [InlineData("unknown task")]
     [InlineData("rest as duty")]
-    [InlineData("next out of range")]
     [InlineData("empty")]
     [InlineData("bad origin")]
     public void TamperedDutiesAreRejected(string tampering)
@@ -240,8 +288,7 @@ public class DutyTests
             case "unknown character": duty["characterId"] = 999; break;
             case "unknown task": duty["tasks"]!.AsArray().Add("task.dance"); break;
             case "rest as duty": duty["tasks"]!.AsArray().Add("task.rest"); break;
-            case "next out of range": duty["next"] = 7; break;
-            case "empty": duty["tasks"] = new JsonArray(); duty["next"] = 0; break;
+            case "empty": duty["tasks"] = new JsonArray(); break;
             case "bad origin": root["activeTasks"]!.AsArray()[0]!["origin"] = "Whim"; break;
         }
 

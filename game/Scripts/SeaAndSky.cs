@@ -18,6 +18,8 @@ public partial class SeaAndSky : Node3D
     private DirectionalLight3D _moon = null!;
     private Godot.Environment _environment = null!;
     private Vector2 _flow;
+    private CpuParticles3D _rain = null!;
+    private float _flash;
 
     /// <summary>0 in full daylight, 1 at night. Lanterns use it.</summary>
     public float Darkness { get; private set; }
@@ -53,7 +55,33 @@ public partial class SeaAndSky : Node3D
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
         };
         AddChild(_oceanMesh);
+
+        // Rain: thin streaks falling around the view, on in heavy weather.
+        _rain = new CpuParticles3D
+        {
+            Amount = 1800,
+            Lifetime = 0.7f,
+            Emitting = false,
+            EmissionShape = CpuParticles3D.EmissionShapeEnum.Box,
+            EmissionBoxExtents = new Vector3(30, 1, 30),
+            Direction = new Vector3(0.15f, -1, 0.1f),
+            Spread = 4f,
+            Gravity = new Vector3(0, -30, 0),
+            InitialVelocityMin = 18f,
+            InitialVelocityMax = 24f,
+            Mesh = new BoxMesh { Size = new Vector3(0.02f, 0.7f, 0.02f) },
+            MaterialOverride = new StandardMaterial3D
+            {
+                AlbedoColor = new Color(0.75f, 0.8f, 0.88f, 0.35f),
+                Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+                ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+            },
+        };
+        AddChild(_rain);
     }
+
+    /// <summary>A lightning flash, fading over a fraction of a second.</summary>
+    public void Flash() => _flash = 1f;
 
     /// <summary>Updates light, water and haze.</summary>
     /// <param name="hourOfDay">0..24 from the simulation clock, with fractions.</param>
@@ -62,7 +90,8 @@ public partial class SeaAndSky : Node3D
     /// <param name="delta">Seconds since the last frame.</param>
     /// <param name="focus">Point the camera looks at.</param>
     /// <param name="hull">Hull centre x, centre z, half beam, half length, for the wake.</param>
-    public void UpdateWorld(float hourOfDay, float seaState, float shipSpeed, float delta, Vector3 focus, Vector4 hull)
+    /// <param name="gloom">0 clear, 1 storm-dark: overcast, grey water, rain, close haze (ART_BIBLE.md 9 "Storm").</param>
+    public void UpdateWorld(float hourOfDay, float seaState, float shipSpeed, float delta, Vector3 focus, Vector4 hull, float gloom = 0f)
     {
         // Sun height: -1 at midnight, 0 at 6:00 and 18:00, 1 at noon.
         var elevation = Mathf.Sin((hourOfDay - 6f) / 12f * Mathf.Pi);
@@ -72,22 +101,32 @@ public partial class SeaAndSky : Node3D
 
         _sun.RotationDegrees = new Vector3(-Mathf.Max(elevation, 0.05f) * 70f - 8f, -90f + (hourOfDay - 6f) / 12f * 180f, 0);
         _sun.LightColor = new Color(1f, 0.95f, 0.86f).Lerp(new Color(1f, 0.58f, 0.32f), dusk);
-        _sun.LightEnergy = 1.35f * Mathf.SmoothStep(-0.12f, 0.3f, elevation);
+        _sun.LightEnergy = 1.35f * Mathf.SmoothStep(-0.12f, 0.3f, elevation) * (1f - 0.8f * gloom);
         _sun.Visible = _sun.LightEnergy > 0.01f;
         _moon.LightEnergy = 0.55f * Darkness;
         _moon.Visible = Darkness > 0.05f;
 
-        var haze = Blend(day, dusk, new Color(0.58f, 0.68f, 0.75f), new Color(0.8f, 0.6f, 0.5f), new Color(0.06f, 0.09f, 0.15f));
+        _flash = Mathf.Max(0, _flash - delta * 5f);
+        var overcast = new Color(0.36f, 0.4f, 0.44f) * Mathf.Lerp(0.35f, 1f, day);
+        var haze = Blend(day, dusk, new Color(0.58f, 0.68f, 0.75f), new Color(0.8f, 0.6f, 0.5f), new Color(0.06f, 0.09f, 0.15f)).Lerp(overcast, gloom);
         _environment.BackgroundColor = haze;
-        _environment.AmbientLightColor = Blend(day, dusk, new Color(0.66f, 0.74f, 0.84f), new Color(0.75f, 0.6f, 0.58f), new Color(0.3f, 0.36f, 0.58f));
-        _environment.AmbientLightEnergy = Mathf.Lerp(0.5f, 0.62f, day);
+        _environment.AmbientLightColor = Blend(day, dusk, new Color(0.66f, 0.74f, 0.84f), new Color(0.75f, 0.6f, 0.58f), new Color(0.3f, 0.36f, 0.58f))
+            .Lerp(new Color(0.55f, 0.58f, 0.62f), gloom);
+        _environment.AmbientLightEnergy = Mathf.Lerp(0.5f, 0.62f, day) + _flash * 3f;
+        _rain.Emitting = gloom > 0.55f;
+        _rain.Position = focus + new Vector3(0, 14, 0);
 
-        _ocean.SetShaderParameter("deep_colour", Blend(day, dusk, new Color(0.025f, 0.11f, 0.17f), new Color(0.1f, 0.12f, 0.2f), new Color(0.008f, 0.025f, 0.05f)));
-        _ocean.SetShaderParameter("crest_colour", Blend(day, dusk, new Color(0.08f, 0.25f, 0.31f), new Color(0.5f, 0.36f, 0.32f), new Color(0.04f, 0.09f, 0.16f)));
+        var greyWater = Mathf.Lerp(0.3f, 1f, day);
+        _ocean.SetShaderParameter("deep_colour", Blend(day, dusk, new Color(0.025f, 0.11f, 0.17f), new Color(0.1f, 0.12f, 0.2f), new Color(0.008f, 0.025f, 0.05f))
+            .Lerp(new Color(0.05f, 0.08f, 0.09f) * greyWater, gloom * 0.8f));
+        _ocean.SetShaderParameter("crest_colour", Blend(day, dusk, new Color(0.08f, 0.25f, 0.31f), new Color(0.5f, 0.36f, 0.32f), new Color(0.04f, 0.09f, 0.16f))
+            .Lerp(new Color(0.2f, 0.25f, 0.26f) * greyWater, gloom * 0.8f));
+        _ocean.SetShaderParameter("haze_start", Mathf.Lerp(28f, 10f, gloom));
+        _ocean.SetShaderParameter("haze_end", Mathf.Lerp(70f, 38f, gloom));
         _ocean.SetShaderParameter("sky_colour", Blend(day, dusk, new Color(0.66f, 0.77f, 0.86f), new Color(0.95f, 0.62f, 0.42f), new Color(0.2f, 0.26f, 0.42f)));
         _ocean.SetShaderParameter("haze_colour", haze);
         _ocean.SetShaderParameter("foam_colour", new Color(0.93f, 0.95f, 0.94f).Lerp(new Color(0.35f, 0.42f, 0.52f), Darkness));
-        _ocean.SetShaderParameter("cloud_shadow", 0.3f * day);
+        _ocean.SetShaderParameter("cloud_shadow", 0.3f * day * (1f - gloom));
         _ocean.SetShaderParameter("sea_state", seaState);
 
         // The ship sails towards -z, so the water streams towards +z past it.

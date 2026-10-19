@@ -65,6 +65,9 @@ public static class ChronicleParameters
     /// <summary>Which need ran short: <c>food</c> or <c>water</c>.</summary>
     public const string Need = "need";
 
+    /// <summary>A level or amount, such as the bilge or hull after a change.</summary>
+    public const string Level = "level";
+
     /// <summary>Text of an entry written before the chronicle was structured (save format 2 or older).</summary>
     public const string LegacyText = "legacyText";
 }
