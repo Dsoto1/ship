@@ -184,6 +184,26 @@ public sealed class GameContent
             }
         }
 
+        var personIds = rules.People.Select(p => p.Id).ToHashSet(StringComparer.Ordinal);
+        foreach (var person in rules.People)
+        {
+            if (person.Claim is { } claim && (!personIds.Contains(claim.Debtor) || claim.Amount <= 0))
+            {
+                errors.Add($"Person '{person.Id}': their claim names unknown debtor '{claim.Debtor}' or a non-positive amount.");
+            }
+
+            if (person.Greetings.Concat(rules.Recognition.Greetings).Any(g => g.Standing is < 1 or > 3 || string.IsNullOrWhiteSpace(g.Text)))
+            {
+                errors.Add($"Greetings (for '{person.Id}' or the port): standing must be 1, 2 or 3, with a text.");
+            }
+        }
+
+        if (rules.Recognition is { NoticedAt: < 1 } or { ApproachEveryMinutes: < 1 } or { ApproachRange: < 1 }
+            || rules.Recognition.TalkedOfAt < rules.Recognition.NoticedAt || rules.Recognition.KnownAt < rules.Recognition.TalkedOfAt)
+        {
+            errors.Add("Port recognition: thresholds must rise (noticed <= talked of <= known), with a positive interval and range.");
+        }
+
         foreach (var scene in rules.Ambient)
         {
             bool Walkable(IReadOnlyList<int>? cell) => cell is [var x, var y] && waterfront is not null && waterfront.IsWalkable(new World.GridPosition(x, y));

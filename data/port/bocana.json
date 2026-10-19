@@ -3,6 +3,9 @@
 // what they ask, the least they will take, what they claim, when they give up, and whom they will not
 // sail with. 'knows' is what a person says about others when asked; 'secrets' are seen, not told.
 // Schedules are hour blocks [from, to), wrapping past midnight. Numbers are placeholders to tune.
+// 'recognition' is how the port comes to know the expedition (R2e): greetings by standing, candidates
+// coming to the captain. A person's 'greetings', 'claim' (a debt to collect from someone signed on) and
+// 'farewell' (how they are seen off) are their own.
 // 'weather' is the port's weather (R2d): each kind lasts minHours..maxHours, may begin only in
 // [fromHour, toHour), and is followed by one of 'next' by weight. 'ambient' are small scenes the game
 // plays out near the player, with no reward (PORT_EXPERIENCE §12); cells are [x, y] on the waterfront.
@@ -24,6 +27,39 @@
   "takingShapeLots": 3,
   "readyLots": 6,
   "departureMorningHours": 3
+ },
+ "recognition": {
+  "noticedAt": 2,
+  "talkedOfAt": 6,
+  "knownAt": 11,
+  "approachEveryMinutes": 60,
+  "approachRange": 30,
+  "greetings": [
+   {
+    "standing": 1,
+    "text": "\"Captain.\" A nod, and a look at you as you pass."
+   },
+   {
+    "standing": 1,
+    "text": "\"That's the Garza's man,\" you hear behind you."
+   },
+   {
+    "standing": 2,
+    "text": "\"Signed on {crew} already, they say. Where is it you're bound, Captain?\""
+   },
+   {
+    "standing": 2,
+    "text": "\"God keep you and the Garza, Captain.\""
+   },
+   {
+    "standing": 3,
+    "text": "\"Captain! Sailing with the convoy? {hours} hours, is it?\""
+   },
+   {
+    "standing": 3,
+    "text": "\"There goes the Ember Coast captain.\" Someone laughs, not unkindly."
+   }
+  ]
  },
  "weather": {
   "start": "weather.fair",
@@ -293,6 +329,7 @@
  "people": [
   {
    "id": "person.velho",
+   "farewell": "Velho stoops and touches the quay stones before he goes up the gangway.",
    "name": "Duarte Velho",
    "age": 47,
    "sex": "Male",
@@ -388,6 +425,7 @@
   },
   {
    "id": "person.pons",
+   "farewell": "Pons comes along the quay at a fast walk, looking behind him, and is up the gangway before anyone can stop him.",
    "name": "Ilario Pons",
    "age": 38,
    "sex": "Male",
@@ -597,6 +635,7 @@
   },
   {
    "id": "person.tome",
+   "farewell": "The guard unlocks Tomé's irons at the foot of the gangway and hands up his pardon. Tomé holds it as if it might blow away.",
    "name": "Tomé Arcos",
    "age": 30,
    "sex": "Male",
@@ -664,6 +703,7 @@
   },
   {
    "id": "person.ximena",
+   "farewell": "Catalina has left the fish stalls to see Ximena off. Neither of them says much.",
    "name": "Ximena Durán",
    "age": 33,
    "sex": "Female",
@@ -787,6 +827,7 @@
   },
   {
    "id": "person.nuno",
+   "farewell": "Inés stands in the tavern door with her arms folded and does not wave to Nuño. Then she does.",
    "name": "Nuño Pardo",
    "age": 50,
    "sex": "Male",
@@ -843,6 +884,7 @@
   },
   {
    "id": "person.rodrigo",
+   "farewell": "Two women on the quay both wave to Rodrigo. He waves back to both, and does not look at either long.",
    "name": "Rodrigo Alba",
    "age": 24,
    "sex": "Male",
@@ -916,6 +958,7 @@
   },
   {
    "id": "person.wat",
+   "farewell": "Hob the Brennish trader shouts something to Wat in their own tongue, and Wat laughs for the first time since he came ashore.",
    "name": "Wat Harrow",
    "age": 35,
    "sex": "Male",
@@ -982,6 +1025,7 @@
   },
   {
    "id": "person.pascual",
+   "farewell": "Pascual's mother has come down after all. She holds his face in both hands and tells him to write, though neither of them can.",
    "name": "Pascual Mena",
    "age": 19,
    "sex": "Male",
@@ -1047,6 +1091,7 @@
   },
   {
    "id": "person.ulloa",
+   "farewell": "Don Fernán's servant carries a chest up the gangway that two men could not, and does not come down again.",
    "name": "Don Fernán de Ulloa",
    "age": 44,
    "sex": "Male",
@@ -1105,6 +1150,7 @@
   },
   {
    "id": "person.corbalan",
+   "greetings": [{"standing": 1, "text": "\"Captain. Water and biscuit, when you want them; I keep the best back for the Garza.\""}, {"standing": 3, "text": "\"The whole quay's watching your stores go aboard, Captain. Don't sail short.\""}],
    "name": "Maese Corbalán",
    "age": 55,
    "sex": "Male",
@@ -1166,6 +1212,7 @@
   },
   {
    "id": "person.ines",
+   "greetings": [{"standing": 1, "text": "\"Captain! There's a stool by the fire if you want to hear who's looking for a ship.\""}, {"standing": 2, "text": "\"Half my customers want a berth on the Garza now. The other half want to know where she's going.\""}],
    "name": "Inés Rubio",
    "age": 44,
    "sex": "Female",
@@ -1326,6 +1373,7 @@
   },
   {
    "id": "person.anselmo",
+   "greetings": [{"standing": 1, "text": "\"Go with God, Captain. Bring them back, if you can.\""}, {"standing": 3, "text": "\"I will say a Mass for the Garza on the morning she sails.\""}],
    "name": "Father Anselmo",
    "age": 63,
    "sex": "Male",
@@ -1383,6 +1431,7 @@
   },
   {
    "id": "person.varzi",
+   "greetings": [{"standing": 1, "text": "\"Captain. The Company expects the convoy, not the day after.\""}, {"standing": 3, "text": "\"The Chamber is satisfied, Captain. So, for now, is the Company.\""}],
    "name": "Micer Lorenzo Varzi",
    "age": 36,
    "sex": "Male",
@@ -1539,6 +1588,7 @@
   },
   {
    "id": "person.grilo",
+   "claim": {"debtor": "person.pons", "amount": 400, "says": "\"You have signed on Pons, the barber. He owes me four hundred sueldos, Captain, and I will have it from his advance before he sails, or the Chamber will hear of it.\"", "atGangway": "\"Four hundred sueldos, Captain. Pons does not go up that plank until I have them.\""},
    "name": "Ser Bonifacio Grilo",
    "age": 51,
    "sex": "Male",

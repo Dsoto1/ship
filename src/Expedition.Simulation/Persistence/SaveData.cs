@@ -450,6 +450,24 @@ public sealed record PortData
     /// <summary>Leads heard, oldest first. Added in format 16.</summary>
     public IReadOnlyList<HeardLeadData> Leads { get; init; } = [];
 
+    /// <summary>Who has sought the captain out. Added in format 19.</summary>
+    public IReadOnlyList<int> Approached { get; init; } = [];
+
+    /// <summary>Who is walking over to the captain now, and since when. Added in format 19.</summary>
+    public int? Approaching { get; init; }
+
+    /// <summary>When they set off. Added in format 19.</summary>
+    public long ApproachingSince { get; init; }
+
+    /// <summary>Creditors' claims answered: [creditor, 1 paid or 0 refused]. Added in format 19.</summary>
+    public IReadOnlyList<int[]> Claims { get; init; } = [];
+
+    /// <summary>Greetings given: [who, day]. Added in format 19.</summary>
+    public IReadOnlyList<int[]> Greeted { get; init; } = [];
+
+    /// <summary>When the captain was last greeted. Added in format 19.</summary>
+    public long LastGreeting { get; init; } = long.MinValue / 2;
+
     /// <summary>The weather now, or null. Added in format 18.</summary>
     public string? Weather { get; init; }
 

@@ -665,3 +665,25 @@ UI/UX.md")
 
 **Why.** Both documents ask for a world-first screen, honest uncertainty and one interface family
 (UI_UX §1, §4, §69).
+
+## D-027 — The character briefs are authorities
+
+**Date:** 2026-10-19
+**Status:** Accepted. The owner supplied both briefs with "go ahead with R2e".
+
+**Decision.**
+- **`CHARACTER_DESIGN.md`** governs who characters are, how they are generated, what they know, how
+  they behave and change, and how each persists from port to settlement. Its stable-ID and
+  phase-continuity rules (§0, §29) already hold in the simulation. From R2e, automated tests check
+  them at each phase transition.
+- **`CHARACTER_ART_STANDARD.md`** governs how people look in every representation (portrait,
+  thumbnail, isometric model, clothing, condition, animation). It specialises `ART_BIBLE.md`.
+- **Its character art slice** (§50, six people from identity record to injured state) is the next
+  art ticket. The following need the owner's approval first, as the brief marks them:
+  - the rig and animation layering (§27, §29);
+  - mesh and texture budgets (§16, §36);
+  - any AI-assisted portraits (§40–41).
+- **Until then**, the existing figures stay. Nothing in R2e changes how people are drawn.
+
+**Why.** Both briefs say people are the game's primary system. Approving the rig and budgets before
+building avoids redoing every figure (CHARACTER_ART §53).

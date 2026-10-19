@@ -777,4 +777,162 @@ public class PortTests
         Assert.Contains(scenes, s => s.FromHour > s.ToHour);
         Assert.True(scenes.Single(s => s.Id == "ambient.drunk").AtHour(1));
     }
+
+    private static void Hire(SimulationRunner runner, params string[] people)
+    {
+        foreach (var person in people)
+        {
+            Assert.True(runner.DeveloperHire(Id(runner, person)).Succeeded, person);
+        }
+    }
+
+    private static List<WorldLine> LinesOver(SimulationRunner runner, int minutes)
+    {
+        var lines = new List<WorldLine>();
+        for (var i = 0; i < minutes; i++)
+        {
+            runner.Advance(1);
+            lines.AddRange(runner.TakeLines());
+        }
+
+        return lines;
+    }
+
+    [Fact]
+    public void ThePortComesToKnowTheExpeditionByWhatItDoes()
+    {
+        var runner = Port();
+        Assert.Equal(0, runner.Standing);
+        Hire(runner, "person.gil");
+        Assert.Equal(1, runner.Standing);
+        runner.Buy(0);
+        runner.Buy(1);
+        runner.Buy(2);
+        Hire(runner, "person.tome");
+        Assert.Equal(2, runner.Standing);
+        Hire(runner, "person.wat", "person.pascual");
+        runner.Buy(3);
+        Assert.Equal(3, runner.Standing);
+        Assert.Contains("knows", runner.DescribeStanding());
+    }
+
+    [Fact]
+    public void NobodyGreetsAnUnknownCaptainButOnceNoticedTheyDo()
+    {
+        var runner = Port();
+        AdvanceTo(runner, 1, 10);
+        Approach(runner, new GridPosition(40, 22));
+        Assert.DoesNotContain(LinesOver(runner, 90), l => !l.Approach);
+
+        Hire(runner, "person.gil");
+        var lines = LinesOver(runner, 120).Where(l => !l.Approach).ToList();
+        Assert.NotEmpty(lines);
+        Assert.Equal(lines.Count, lines.Select(l => l.Who).Distinct().Count());
+        Assert.All(lines, l => Assert.StartsWith(runner.Campaign.Characters[l.Who].Name, l.Text));
+    }
+
+    [Fact]
+    public void OnceTheExpeditionIsTalkedOfCandidatesComeToTheCaptain()
+    {
+        var runner = Port();
+        AdvanceTo(runner, 1, 9);
+        Hire(runner, "person.gil", "person.wat");
+        runner.Buy(0);
+        runner.Buy(1);
+        Assert.Equal(2, runner.Standing);
+
+        var came = LinesOver(runner, 6 * 60).Where(l => l.Approach).ToList();
+        Assert.NotEmpty(came);
+        var who = came[0].Who;
+        Assert.NotNull(runner.PersonOf(who)!.Seeking);
+        Assert.Contains(who, runner.Campaign.Port!.TalkedTo);
+        Assert.Contains(runner.PersonOf(who)!.Seeking!.Pitch, came[0].Text);
+    }
+
+    [Fact]
+    public void TheMoneylenderComesForPonsDebtAndMustBeAnswered()
+    {
+        var runner = Port();
+        AdvanceTo(runner, 1, 10);
+        Hire(runner, "person.pons");
+        var grilo = Id(runner, "person.grilo");
+        var lines = LinesOver(runner, 3 * 60);
+        Assert.Contains(lines, l => l.Who == grilo && l.Approach && l.Text.Contains("four hundred"));
+        Assert.Contains(runner.DeparturePlan(), b => b.Kind == "claim" && b.Who == grilo);
+
+        var funds = runner.Campaign.Port!.Funds;
+        Assert.True(runner.PayClaim(grilo).Succeeded);
+        Assert.Equal(funds - 400, runner.Campaign.Port.Funds);
+        Assert.Empty(runner.OpenClaims());
+        Assert.DoesNotContain(runner.DeparturePlan(), b => b.Kind == "claim");
+        Assert.Equal(10, runner.Campaign.Relationships[(Id(runner, "person.pons"), Captain(runner))].Trust);
+    }
+
+    [Fact]
+    public void TheDepartureIsTheExpeditionAsItIs()
+    {
+        var runner = Port();
+        Hire(runner, "person.pascual", "person.tome", "person.gil", "person.wat");
+        runner.Buy(0);
+        var plan = runner.DeparturePlan();
+
+        var crew = plan.Single(b => b.Kind == "crew").Text;
+        Assert.All(new[] { "person.pascual", "person.tome", "person.gil", "person.wat" }, p => Assert.Contains(runner.CharacterFor(p)!.Name, crew));
+        Assert.Equal(4, plan.Count(b => b.Kind == "farewell"));
+        Assert.Contains(plan, b => b.Kind == "farewell" && b.Who == Id(runner, "person.pascual") && b.Text.Contains("mother"));
+        Assert.Contains(plan, b => b.Kind == "cargo" && b.Text.Contains("cask"));
+        Assert.Contains(plan, b => b.Kind == "deadline" && b.Text.Contains("hours before the convoy"));
+        Assert.Equal("away", plan[^1].Kind);
+        Assert.DoesNotContain(plan, b => b.Kind == "claim");
+    }
+
+    [Fact]
+    public void TheSamePeopleWithTheirHistoryAndStoresGoToSea()
+    {
+        // CHARACTER_DESIGN §29: port to voyage keeps IDs, relationships, knowledge and inventory.
+        var runner = Port();
+        AdvanceTo(runner, 1, 10);
+        ApproachPerson(runner, "person.bartolo");
+        runner.TalkTo(Id(runner, "person.bartolo"));
+        Assert.True(runner.Offer(Id(runner, "person.bartolo"), 1000).Succeeded);
+        Hire(runner, "person.tome", "person.gil", "person.wat");
+        runner.Buy(0);
+        var crew = runner.Campaign.Port!.Hired.Select(id => (id, runner.Campaign.Characters[id].Name, runner.Campaign.Characters[id].PersonId)).OrderBy(c => c.id).ToList();
+        var relationships = runner.Campaign.Relationships.ToDictionary(p => p.Key, p => (p.Value.Trust, p.Value.Respect, p.Value.Affection));
+        var knowledge = runner.Campaign.Knowledge.Entries.Count;
+        var hold = runner.Campaign.SharedStore.Quantities.ToDictionary(p => p.Key, p => p.Value);
+        var chronicle = runner.Campaign.Chronicle.Entries.Count;
+
+        Assert.True(ExpeditionScenario.SetSail(runner).Succeeded);
+
+        Assert.Equal(crew, runner.Campaign.Crew.Where(c => c.Id != Captain(runner)).Select(c => (c.Id, c.Name, c.PersonId)).OrderBy(c => c.Id).ToList());
+        Assert.All(relationships, p => Assert.Equal(p.Value, (runner.Campaign.Relationships[p.Key].Trust, runner.Campaign.Relationships[p.Key].Respect, runner.Campaign.Relationships[p.Key].Affection)));
+        Assert.Equal(knowledge, runner.Campaign.Knowledge.Entries.Count);
+        Assert.Equal(hold, runner.Campaign.SharedStore.Quantities.ToDictionary(p => p.Key, p => p.Value));
+        Assert.True(runner.Campaign.Chronicle.Entries.Count >= chronicle);
+    }
+
+    [Fact]
+    public void RecognitionIsSavedAndOldPortsStartUnknown()
+    {
+        var runner = Port();
+        AdvanceTo(runner, 1, 10);
+        Hire(runner, "person.pons");
+        LinesOver(runner, 3 * 60);
+        runner.RefuseClaim(Id(runner, "person.grilo"));
+        var json = SaveSerializer.Serialize(runner.Campaign);
+        var restored = SaveSerializer.Deserialize(json, Shipped);
+        Assert.Equal(runner.Campaign.Port!.Approached, restored.Port!.Approached);
+        Assert.Equal(runner.Campaign.Port.Claims, restored.Port.Claims);
+        Assert.Equal(json, SaveSerializer.Serialize(restored));
+
+        var old = JsonNode.Parse(json)!.AsObject();
+        old["schemaVersion"] = 18;
+        foreach (var field in new[] { "approached", "approaching", "approachingSince", "claims", "greeted", "lastGreeting" })
+        {
+            old["port"]!.AsObject().Remove(field);
+        }
+
+        Assert.Empty(SaveSerializer.Deserialize(old.ToJsonString(), Shipped).Port!.Claims);
+    }
 }

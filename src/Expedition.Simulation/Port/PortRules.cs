@@ -54,6 +54,9 @@ public sealed record PortRules
     /// <summary>Small scenes the port plays out around the player, with no reward (PORT_EXPERIENCE §12).</summary>
     public IReadOnlyList<AmbientScene> Ambient { get; init; } = [];
 
+    /// <summary>How the port comes to know the expedition (R2e, PORT_EXPERIENCE §16).</summary>
+    public RecognitionRules Recognition { get; init; } = new();
+
     /// <summary>Everyone on the waterfront.</summary>
     public required IReadOnlyList<PersonDefinition> People { get; init; }
 }
@@ -181,6 +184,62 @@ public sealed record AmbientScene
     public bool AtHour(int hour) => FromHour <= ToHour ? hour >= FromHour && hour < ToHour : hour >= FromHour || hour < ToHour;
 }
 
+/// <summary>
+/// How the port comes to know the expedition (R2e, PORT_EXPERIENCE §16): its standing grows with the
+/// hands signed on, the stores bought and the money spent, and shows in what people do and say, never
+/// as a number. At "noticed" people greet the captain in passing; at "talked of" those looking for a
+/// berth who have not met the captain seek him out.
+/// </summary>
+public sealed record RecognitionRules
+{
+    /// <summary>Score for being noticed: each hand signed on counts 2, each lot bought 1, each 1,000 sueldos spent 1.</summary>
+    public int NoticedAt { get; init; } = 2;
+
+    /// <summary>Score for the expedition to be talked of around the port.</summary>
+    public int TalkedOfAt { get; init; } = 6;
+
+    /// <summary>Score for everyone to know the Garza's captain.</summary>
+    public int KnownAt { get; init; } = 11;
+
+    /// <summary>What anyone without lines of their own says in passing, by standing.</summary>
+    public IReadOnlyList<Greeting> Greetings { get; init; } = [];
+
+    /// <summary>Minutes between candidates seeking the captain out.</summary>
+    public int ApproachEveryMinutes { get; init; } = 60;
+
+    /// <summary>How far away a candidate will come from, in cells.</summary>
+    public int ApproachRange { get; init; } = 30;
+}
+
+/// <summary>
+/// A line said in passing once the expedition has at least <see cref="Standing"/>. <c>{captain}</c>,
+/// <c>{ship}</c>, <c>{crew}</c> and <c>{days}</c> are filled in.
+/// </summary>
+public sealed record Greeting
+{
+    /// <summary>Least standing: 1 noticed, 2 talked of, 3 known.</summary>
+    public required int Standing { get; init; }
+
+    /// <summary>The line.</summary>
+    public required string Text { get; init; }
+}
+
+/// <summary>A debt a creditor means to have from the wages of someone the captain signs on.</summary>
+public sealed record CreditorClaim
+{
+    /// <summary>Who owes it.</summary>
+    public required string Debtor { get; init; }
+
+    /// <summary>Sueldos owed.</summary>
+    public required int Amount { get; init; }
+
+    /// <summary>What they say when they come to the captain about it.</summary>
+    public required string Says { get; init; }
+
+    /// <summary>What they say at the gangway if it is still unpaid on departure.</summary>
+    public required string AtGangway { get; init; }
+}
+
 /// <summary>A day of the campaign (1 is the first) and an hour.</summary>
 public sealed record DayAndHour
 {
@@ -272,6 +331,15 @@ public sealed record PersonDefinition
 
     /// <summary>Who they will point the captain to when talked with (PORT_EXPERIENCE §9).</summary>
     public IReadOnlyList<LeadDefinition> Leads { get; init; } = [];
+
+    /// <summary>What they say passing the captain, once the expedition is known (R2e); else the port's lines.</summary>
+    public IReadOnlyList<Greeting> Greetings { get; init; } = [];
+
+    /// <summary>A debt they mean to collect from someone the captain signs on (R2e), or null.</summary>
+    public CreditorClaim? Claim { get; init; }
+
+    /// <summary>How they are seen off if they sail (R2e departure), or null for the usual.</summary>
+    public string? Farewell { get; init; }
 }
 
 /// <summary>

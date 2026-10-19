@@ -184,7 +184,7 @@ public sealed partial class SimulationRunner
         }
 
         Campaign.ActiveTasks.TryGetValue(character.Id, out var current);
-        if (current?.Origin == TaskOrigin.Order)
+        if (current?.Origin == TaskOrigin.Order || Campaign.Port?.Approaching == character.Id)
         {
             return;
         }
@@ -287,6 +287,7 @@ public sealed partial class SimulationRunner
 
         var tick = Campaign.Clock.Tick;
         StepWeather(port, rules);
+        StepRecognition(port, rules);
         if (tick % 5 == 0)
         {
             NoticeSecrets();

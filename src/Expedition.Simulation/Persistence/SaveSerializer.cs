@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 18;
+    public const int CurrentSchemaVersion = 19;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -143,6 +143,22 @@ public static class SaveSerializer
                 root["eventHistory"] = new JsonArray();
                 root["lastEventTick"] = long.MinValue / 2;
                 root["rationing"] = false;
+                return root;
+            },
+
+            // Format 19 added the port's recognition of the expedition. Older ports start unknown to it.
+            [18] = root =>
+            {
+                if (root["port"] is JsonObject port)
+                {
+                    port["approached"] = new JsonArray();
+                    port["approaching"] = null;
+                    port["approachingSince"] = 0;
+                    port["claims"] = new JsonArray();
+                    port["greeted"] = new JsonArray();
+                    port["lastGreeting"] = long.MinValue / 2;
+                }
+
                 return root;
             },
 
@@ -480,6 +496,12 @@ public static class SaveSerializer
                     Purchases = port.Purchases.Select(p => new PurchaseData { Lot = p.Lot, Tick = p.Tick }).ToList(),
                     Weather = port.WeatherId,
                     WeatherUntil = port.WeatherUntil,
+                    Approached = port.Approached.Select(id => id.Value).Order().ToList(),
+                    Approaching = port.Approaching?.Value,
+                    ApproachingSince = port.ApproachingSince,
+                    Claims = port.Claims.OrderBy(c => c.Key).Select(c => new[] { c.Key.Value, c.Value ? 1 : 0 }).ToList(),
+                    Greeted = port.Greeted.OrderBy(g => g.Day).ThenBy(g => g.Who).Select(g => new[] { g.Who.Value, g.Day }).ToList(),
+                    LastGreeting = port.LastGreeting,
                 }
                 : null,
             PendingEvent = campaign.PendingEvent is { } pending
@@ -767,6 +789,17 @@ public static class SaveSerializer
             // A port saved before it had weather starts fair and changes on the next minute.
             port.WeatherId = savedPort.Weather ?? portRules.Weather?.Start;
             port.WeatherUntil = savedPort.Weather is null ? data.Tick : savedPort.WeatherUntil;
+            if (savedPort.Claims.Any(c => c.Length != 2) || savedPort.Greeted.Any(g => g.Length != 2))
+            {
+                throw new SaveLoadException("The port's claims or greetings are malformed.");
+            }
+
+            foreach (var id in savedPort.Approached) port.MarkApproached(Known(id));
+            port.Approaching = savedPort.Approaching is { } walking ? Known(walking) : null;
+            port.ApproachingSince = savedPort.ApproachingSince;
+            foreach (var claim in savedPort.Claims) port.SettleClaim(Known(claim[0]), claim[1] != 0);
+            foreach (var greeted in savedPort.Greeted) port.MarkGreeted(Known(greeted[0]), greeted[1]);
+            port.LastGreeting = savedPort.LastGreeting;
             foreach (var (lot, lots) in savedPort.Stock) port.SetStock(lot, lots);
             foreach (var id in savedPort.TalkedTo) port.MarkTalked(Known(id));
             foreach (var pair in savedPort.Asked) port.MarkAsked(Known(pair[0]), Known(pair[1]));

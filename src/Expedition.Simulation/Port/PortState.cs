@@ -12,6 +12,9 @@ public sealed class PortState
     private readonly HashSet<CharacterId> _gone = [];
     private readonly List<HeardLead> _leads = [];
     private readonly List<Purchase> _purchases = [];
+    private readonly HashSet<CharacterId> _approached = [];
+    private readonly Dictionary<CharacterId, bool> _claims = [];
+    private readonly HashSet<(CharacterId Who, int Day)> _greeted = [];
 
     /// <summary>Sueldos left.</summary>
     public int Funds { get; internal set; }
@@ -43,6 +46,24 @@ public sealed class PortState
     /// <summary>When the weather next changes.</summary>
     public long WeatherUntil { get; internal set; }
 
+    /// <summary>People who have come up to the captain of their own accord (R2e), creditors included.</summary>
+    public IReadOnlySet<CharacterId> Approached => _approached;
+
+    /// <summary>Someone walking over to the captain now, or null.</summary>
+    public CharacterId? Approaching { get; internal set; }
+
+    /// <summary>When they set off.</summary>
+    public long ApproachingSince { get; internal set; }
+
+    /// <summary>When someone last greeted the captain in passing.</summary>
+    public long LastGreeting { get; internal set; } = long.MinValue / 2;
+
+    /// <summary>Creditors' claims the captain has answered: true paid, false refused.</summary>
+    public IReadOnlyDictionary<CharacterId, bool> Claims => _claims;
+
+    /// <summary>Who has greeted the captain, and on which day.</summary>
+    public IReadOnlySet<(CharacterId Who, int Day)> Greeted => _greeted;
+
     /// <summary>Half days of late fees already charged.</summary>
     public int LateFeesCharged { get; internal set; }
 
@@ -60,6 +81,12 @@ public sealed class PortState
     internal void MarkGone(CharacterId id) => _gone.Add(id);
 
     internal void AddPurchase(int lot, long tick) => _purchases.Add(new Purchase(lot, tick));
+
+    internal void MarkApproached(CharacterId id) => _approached.Add(id);
+
+    internal void SettleClaim(CharacterId creditor, bool paid) => _claims[creditor] = paid;
+
+    internal void MarkGreeted(CharacterId id, int day) => _greeted.Add((id, day));
 
     internal bool AddLead(string leadId, long tick)
     {

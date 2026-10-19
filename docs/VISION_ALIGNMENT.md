@@ -366,3 +366,61 @@ These are listed in the briefs. Each has a proposed default, used until the owne
 | Full naval physics, combat-heavy play | VOYAGE §51 | Not planned |
 | Spreading fire, deep politics | SETTLEMENT §25, §42 | Not planned for the first settlement slice |
 | Succession rules | TECHNICAL_SPEC §18.1 | The placeholder stays |
+
+---
+
+## 7. The character briefs (added 2026-10-19, D-027)
+
+`CHARACTER_DESIGN.md` and `CHARACTER_ART_STANDARD.md` are authorities.
+
+### 7.1 Character design acceptance criteria (§37) against what exists
+
+| Criterion | Now | Verdict |
+|---|---|---|
+| Stable IDs | Every person has a `CharacterId`; port people also have a stable `personId` | Aligned |
+| Coherent generation | The port's people are written by hand; the test deck's crew are generated | Partly |
+| Truth, knowledge and belief separate | Truth versus the knowledge book with sources. What people believe exists only as what they say about others | Partly |
+| Skills and attributes matter | Tasks use skill, attributes and tools; observation teaches the real level | Aligned |
+| Traits affect behaviour | A few: pride refuses a test; aversions refuse shipmates | Partly |
+| Needs respond to activity | At sea, by task; in port not simulated | Partly |
+| Health affects capability | Survival states stop work; no injuries that limit work by body part | Partly |
+| Relationships have causes | Every change has a cause; asymmetric | Aligned |
+| Purposeful schedules and tasks | Port schedules, loops, rain shelter; standing duties at sea | Aligned |
+| Recruitment respects motives | Asks, lowest, insults, aversions, trust; not yet destination or ship's condition | Partly |
+| Learning and mentorship | — | Missing |
+| History and death persist | Chronicle by ID; the dead stay in the record | Aligned |
+| The same people survive phase transitions | True in the simulation; tested from R2e | Aligned |
+| Save and load preserve state | Format 18, with migrations | Aligned |
+| Behaviour is explainable | What someone is doing and why they refuse, in words | Partly |
+
+### 7.2 Character art acceptance criteria (§52)
+
+| Criterion | Now | Verdict |
+|---|---|---|
+| One identity across representations | `Appearance` (height, build, skin, hair, beard, dyes) drives the figure | Partly |
+| Portrait and model match | No portraits | Missing |
+| Plausible body variation; recognisable faces and age | Height and build vary; no faces | Missing |
+| Historically reviewed clothing; occupation without colour coding | Doublet or shirt in a dye, and hats by standing; not researched | Partly |
+| Condition and injury visible; equipment matches state | Carried loads match tasks; no wet or tired figures, no injuries, no equipment shown | Missing |
+| Work animation reads isometrically | About twenty poses, procedural | Partly |
+| LOD preserves identity; stable-ID naming | Tier C crowd only; persistent people never lose identity | Partly |
+
+### 7.3 Plan
+
+- **R2e** (now): recognition and departure use the real people. It adds port-to-voyage continuity
+  tests (CHARACTER_DESIGN §29, §35).
+- **C-1, the character art slice** (CHARACTER_ART §50). Six persistent people from the port:
+  - Velho, the pilot (navigator);
+  - Bartolo, the carpenter;
+  - Pons, the barber-surgeon (medical);
+  - Rodrigo, the topman (experienced sailor);
+  - Andrés, a docker (labourer);
+  - Varzi, the Company's factor (sponsor context).
+
+  Each gets an identity record, a portrait, a model, clothing, equipment, a thumbnail, walk and
+  idle, one work animation, and wet, fatigued and injured states. Approval is needed first on:
+  - the rig: the Quaternius CC0 base characters and animation library, against a bespoke rig;
+  - the budgets;
+  - how portraits are made.
+- **C-2, character simulation:** injuries that limit work, port needs, traits that change behaviour,
+  mentorship (CHARACTER_DESIGN §10, §7, §18). It is planned alongside the voyage tickets (R4).
