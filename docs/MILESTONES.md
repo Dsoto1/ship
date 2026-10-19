@@ -35,7 +35,7 @@ This file tracks status and breaks the next work into tickets.
 | A-1 | Asset pass: CC0 materials for stone, plaster, timber, roofs, deck and ground; recorded sounds of work (D-021) | Done (2026-10-19) |
 | VP-1 | Port visual pass, first block, Chandler's Quay: lighting, ground, clusters, kits, ship, depth, rain, sound (PORT_VISUAL_PASS §5–6) | Done (2026-10-19), awaiting the owner's review |
 | R2c | Tier C crowd, background ships, ship preparation states, visible cargo (steps 6, 9) | Done (2026-10-19) |
-| R2d | Sound zones, port weather and reactions, ambient micro-events (steps 10–12) | Planned |
+| R2d | Sound zones, port weather and reactions, ambient micro-events (steps 10–12) | Done (2026-10-19) |
 | R2e | Recognition and the departure sequence (steps 13, 14) | Planned |
 | R3 | Visual validation: the four port scenes of PORT_EXPERIENCE §21, then Test B ship, with the hybrid pipeline (D-021) | Planned |
 | R4a | Wind, heading and sailing: wind direction, visibility, warning signs; why she is slow (VOYAGE §5, §20) | Planned |
@@ -886,3 +886,72 @@ The surf, crowd, wind and rain beds are still generated until Freesound is set u
 4. Walk to the yard and listen: mallets and the anvil.
 5. At the top of an hour by day, the chapel bell.
 6. Report the frame rate.
+
+## R2d — Port weather, its reactions, and the small scenes of the port
+
+PORT_EXPERIENCE §12, §14; VISION_ALIGNMENT §5.2.
+
+**Weather, simulated and saved (save format 18):**
+- The kinds of weather are in `data/port/bocana.json` → `weather`: fair, breezy, overcast, rain,
+  and fog that comes only in the morning.
+- Each kind lasts a range of hours and is followed by another, by weight. The rolls come from the
+  campaign's weather stream, so a campaign's weather is the same every time it is played.
+- **Rain:** tasks with an `inRain` alternative give way to sheltering: gossip at the well, shopping,
+  children's play, watching the harbour, mending nets and sails out in the open.
+  - People wait under the eaves along the square, under the ropewalk's roof and in the mouths of the
+    vaults: 13 new shelter spots, where they lean and look out.
+  - They go back to what they were doing when it stops.
+  - If every shelter spot is taken, the rest carry on in the wet.
+  - Dockers, fishermen and craftsmen work on.
+- **Fog:** the captain sees less than half as far, so people further off are out of sight.
+- **Older saves:** they start fair, and the weather changes on the next minute.
+- **Developer:** `--weather=rain|fog|breezy|overcast|fair` sets it. In debug builds Shift+R toggles
+  rain.
+
+**Weather in the scene:**
+- **Rain:** wet stone and timber dry slowly afterwards. Stallholders' goods go under cloth, and the
+  stores waiting on the quay and on the Garza's deck go under tarpaulins. The crowd thins to about a
+  third.
+- **Fog:** pale haze closes in and the far water is gone. The ships at anchor vanish into it, the
+  furthest first. Lanterns are lit, and the boats stay at the piers.
+- **Wind:** the wind sound rises.
+- **Interface:** a weather chip sits among the status chips, and a line appears when the weather
+  changes ("Rain sweeps in off the sea…").
+
+**Ten small scenes** (`AmbientScenes`; data in `ambient`):
+- the scenes: sailors arguing outside the tavern; a porter's sack splitting; a procession behind its
+  cross; a funeral to the burial ground; a boy chased across the market; a cart losing a wheel; a
+  farewell on the west pier; a drunk; a dispute on the terrace; children round the well;
+- each has its place, hours and weather;
+- one plays only where the camera is looking, while time runs at Watch or 2×, about every 20–50
+  seconds, and not again for five minutes;
+- each lasts 10–30 seconds, with crowd figures, a few props and recorded sounds (bell, coins, cups,
+  creaks);
+- they give nothing and change nothing; a line says what is happening;
+- developer options `--scene=ambient.procession` and `--shotdelay=SECONDS` stage one for a
+  screenshot.
+
+**Tests:** 394 pass, including:
+- the weather is deterministic and changes;
+- fog comes only in the morning;
+- rain sends gossipers to shelter and back;
+- fog hides people further off;
+- the weather is saved and migrated;
+- the scene data.
+
+**Screenshots:** `docs/screenshots/r2d-rain.jpg`, `r2d-fog.jpg`, `r2d-scenes.jpg`.
+
+**Limits:**
+- the surf, crowd and rain sound are still generated: Freesound needs the key in a new session;
+- wind moves no flags or canvas yet;
+- no approaching-storm sequence;
+- scenes have no lasting consequences if the player gets involved (the brief's "preferred");
+- scene figures walk through other people;
+- the funeral bier is carried by its front bearer's position, so it can lag a little round corners.
+
+**Manual test (macOS):**
+1. `git pull`, Build, Cmd+B.
+2. Run at 10× until the weather chip says Rain (or use Shift+R in a debug build): the square empties
+   into doorways and the vault arches, and the stalls are covered.
+3. Back at Watch speed near the chapel, the square or the tavern, wait for a scene and its line.
+4. Start a new campaign and run to dawn on day 2 a few times with different seeds to catch the fog.

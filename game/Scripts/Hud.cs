@@ -727,6 +727,13 @@ public partial class Hud : CanvasLayer
                 ? (Ui.IconPeople, $"Crew {signed}/{rules.MinimumCrew} minimum", Severity.Attention, $"The Garza needs at least {rules.MinimumCrew} hands to sail. Find people through the journal (X).")
                 : (Ui.IconPeople, $"Crew {signed}/{rules.Berths}", Severity.Positive, $"Enough hands to sail; {rules.Berths - signed} berths still free."));
             chips.Add((Ui.IconPurse, $"{port.Funds}", port.Funds < 500 ? Severity.Attention : Severity.Information, "Sueldos left in the purse, for advances and stores"));
+            if (runner.PortWeather is { } weather)
+            {
+                chips.Add((Ui.IconWind, weather.Name, Severity.Information, weather.Raining
+                    ? "Rain: people caught outside take shelter in doorways and the vault arches, and the market thins."
+                    : weather.Fog > 0.5 ? "Fog: you can see only a few paces, so people further off are out of sight."
+                    : "The weather in port. It changes through the day."));
+            }
         }
         else if (campaign.Voyage is { } ship)
         {

@@ -29,6 +29,20 @@ public partial class PortView : Node3D
     private readonly Dictionary<Color, StandardMaterial3D> _materials = [];
     private readonly List<OmniLight3D> _lanterns = [];
     private MeshBatcher _batch = new();
+    private MeshBatcher _covers = new();
+    private Node3D _coverNode = null!;
+
+    /// <summary>True while it rains: the stallholders' goods are under cloth.</summary>
+    public bool Covered
+    {
+        set
+        {
+            if (_coverNode is not null)
+            {
+                _coverNode.Visible = value;
+            }
+        }
+    }
     private readonly List<(Node3D Node, StandardMaterial3D Material, Aabb Bounds)> _foreground = [];
     private StandardMaterial3D _glass = null!;
     private readonly List<OmniLight3D> _fires = [];
@@ -71,6 +85,7 @@ public partial class PortView : Node3D
         }
 
         _batch = new MeshBatcher();
+        _covers = new MeshBatcher();
         _location = location;
         _lanterns.Clear();
         _fires.Clear();
@@ -99,6 +114,9 @@ public partial class PortView : Node3D
         BuildTownBehind();
         BuildLights();
         _batch.Commit(this);
+        _coverNode = new Node3D { Name = "RainCovers", Visible = false };
+        AddChild(_coverNode);
+        _covers.Commit(_coverNode);
     }
 
     // Hands a shader the colour, normal and roughness maps of a CC0 texture (Assets/CREDITS.md).
@@ -794,6 +812,23 @@ public partial class PortView : Node3D
 
     // A market stall: a trestle board under an undyed canvas awning that sags and is patched, goods that
     // say what is sold, and the baskets and crates around it (PORT_VISUAL_PASS §3.10).
+    // A cloth thrown over the stall's goods, lumpy over what is under it and hanging over the front:
+    // only shown in rain (PORT_EXPERIENCE §14 "vendors cover goods").
+    private void RainCover(Vector3 at, float width)
+    {
+        var batch = _batch;
+        _batch = _covers;
+        var cloth = SceneryMaterial.Cloth(new Color(0.4f, 0.36f, 0.3f));
+        AddBox(at + new Vector3(0, 1.02f, 0), new Vector3(width + 0.15f, 0.06f, 0.95f), cloth);
+        for (var i = 0; i < 3; i++)
+        {
+            AddShape(new SphereMesh { Radius = 0.28f, Height = 0.22f, RadialSegments = 8, Rings = 3 }, at + new Vector3(-width / 2f + 0.45f + i * width / 3f, 1.06f, 0), cloth);
+        }
+
+        AddBox(at + new Vector3(0, 0.82f, 0.5f), new Vector3(width + 0.15f, 0.42f, 0.03f), cloth.Darkened(0.08f));
+        _batch = batch;
+    }
+
     private void Stall(Vector3 at, float width, string style)
     {
         width = Mathf.Max(width, 2f);
@@ -805,6 +840,7 @@ public partial class PortView : Node3D
             _ => Canvas.Darkened(0.05f + (seed % 3) * 0.04f),
         };
         Trestle(at, width, 0.9f);
+        RainCover(at, width);
         foreach (var (x, z, h) in new[] { (-width / 2f, -0.5f, 2.3f), (width / 2f, -0.5f, 2.3f), (-width / 2f, 0.7f, 1.9f), (width / 2f, 0.7f, 1.9f) })
         {
             AddBox(at + new Vector3(x, h / 2f, z), new Vector3(0.07f, h, 0.07f), Timber);

@@ -231,8 +231,8 @@ Bocana, judged against the real 1490–1530 Atlantic they are modelled on.
 | At least three NPC activity loops visibly work | People sit at one spot for an hour; no carrying | Missing |
 | Crowd tiers create apparent density | Tier A and B are characters; Tier C passers-by, hands on other ships and rowing boats are presentation only (R2c) | Aligned |
 | Time of day changes activity and sound | Activity yes; no sound | Partly |
-| Weather changes visuals and behaviour | No port weather | Missing |
-| Ambient events, without rewards | — | Missing |
+| Weather changes visuals and behaviour | Simulated port weather: rain sends people to shelter, fog shortens sight; covers, crowd, fog and sound follow (R2d) | Aligned |
+| Ambient events, without rewards | Ten data-driven scenes played near the player, no reward or state (R2d) | Aligned |
 | Purchases change authoritative cargo | `Buy` stores goods in the hold | Aligned |
 | Representative cargo appears physically | Bought stores stand on the quay, cross to the deck and go below as casks, sacks, chests and coils; the Garza dresses by preparation stage (R2c) | Aligned |
 | Port recognition changes with the expedition | — | Missing |

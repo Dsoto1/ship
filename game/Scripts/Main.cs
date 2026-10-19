@@ -62,7 +62,9 @@ public partial class Main : Node3D
     private readonly List<SeaBird> _birds = [];
     private float _seaState = 1f;
     private float _gloom;
-    private bool _portRain;
+    private float _portFog;
+    private float _portWind;
+    private string? _weatherShown;
     private float _portWet;
     private float _sink;
     private int _chronicleSeen;
@@ -76,6 +78,7 @@ public partial class Main : Node3D
     private Node3D _portFigures = null!;
     private PortCrowd _crowd = null!;
     private HarbourView _harbour = null!;
+    private AmbientScenes _ambient = null!;
     private PreparationView _preparation = null!;
     private bool _farewells;
     private bool _portBuilt;
@@ -280,9 +283,13 @@ public partial class Main : Node3D
         var weather = voyage is null ? null : _content.Voyage?.Weathers.FirstOrDefault(w => w.Id == voyage.WeatherId);
         var step = Mathf.Clamp((float)delta * 0.6f, 0, 1);
         _seaState = Mathf.Lerp(_seaState, (float)(weather?.SeaState ?? 0.8), step);
-        // In port there is no simulated weather yet (R2d): rain is a look, set for validation (D-026).
-        _portWet = Mathf.MoveToward(_portWet, _portRain ? 1f : 0f, (float)delta * 0.25f);
-        _gloom = Mathf.Lerp(_gloom, _runner.Campaign.Port is not null ? (_portRain ? 0.68f : 0f) : (float)(weather?.Gloom ?? 0), step);
+        // The port's weather (R2d): stone wets quickly in rain and dries slowly, fog and wind come and go.
+        var portWeather = _runner.PortWeather;
+        var raining = (float)(portWeather?.Rain ?? 0);
+        _portWet = Mathf.MoveToward(_portWet, raining, (float)delta * (raining > _portWet ? 0.25f : 0.03f));
+        _portFog = Mathf.MoveToward(_portFog, (float)(portWeather?.Fog ?? 0), (float)delta * 0.08f);
+        _portWind = Mathf.MoveToward(_portWind, (float)(portWeather?.Wind ?? 0), (float)delta * 0.2f);
+        _gloom = Mathf.Lerp(_gloom, _runner.Campaign.Port is not null ? (float)(portWeather?.Gloom ?? 0) : (float)(weather?.Gloom ?? 0), step);
         var targetSink = voyage is null ? 0f : voyage.Outcome == Expedition.Simulation.Voyage.VoyageOutcome.Foundered ? 3.2f : (float)voyage.Bilge / 100f * 0.8f;
         _sink = Mathf.Lerp(_sink, targetSink, Mathf.Clamp((float)delta * 0.4f, 0, 1));
         if (_gloom > 0.75f && speed > 0 && _flicker.NextDouble() < delta * 0.12)
@@ -308,14 +315,27 @@ public partial class Main : Node3D
             _port.UpdateLook(_world.Darkness, t, _portWet);
             FadeForeground((float)delta);
             ListenToThePort(hour, (float)delta);
+            // Rain and fog thin the crowd; stall covers go on, the ships at anchor vanish into fog.
+            _crowd.Density = 1f - 0.7f * _portWet - 0.3f * _portFog;
             _crowd.Update(hour, (float)(delta * speed), _portWet);
-            _harbour.Update(hour, (float)(delta * speed), (float)delta, _world.Darkness);
+            _harbour.Update(hour, (float)(delta * speed), (float)delta, _world.Darkness, _portFog);
+            _port.Covered = raining >= 0.5f;
+            _ambient.Update((int)hour, _runner.RainingInPort, new Vector2(_camera.Target.X, _camera.Target.Z), (float)delta, speed == 0, speed <= 2);
+            if (portWeather is not null && portWeather.Id != _weatherShown)
+            {
+                if (_weatherShown is not null)
+                {
+                    _hud.Toast(portWeather.Says);
+                }
+
+                _weatherShown = portWeather.Id;
+            }
         }
 
         // The Garza's preparation as it stands (R2c): stores on the quay and deck, the stage's dressing.
         if (Engine.GetProcessFrames() % 6 == 0)
         {
-            _preparation.Show(Expedition.Simulation.Port.ShipPreparation.Of(_runner.Campaign, _content));
+            _preparation.Show(Expedition.Simulation.Port.ShipPreparation.Of(_runner.Campaign, _content), _runner.RainingInPort);
 
             // Departure morning: from first light, people come down to the quay to see her off (PORT_EXPERIENCE §5).
             var farewells = inPort && _preparation.Stage == Expedition.Simulation.Port.PreparationStage.DepartureMorning && hour >= 4.5f;
@@ -326,7 +346,7 @@ public partial class Main : Node3D
             }
         }
         var making = voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } ? 0.3f + (float)voyage.SpeedLeaguesPerHour * 1.3f : 0f;
-        _world.UpdateWorld(hour, _seaState, making, (float)delta, _camera.Target, hull, _gloom);
+        _world.UpdateWorld(hour, _seaState, making, (float)delta, _camera.Target, hull, _gloom, inPort ? _portFog : 0f);
         var cooking = _runner.Campaign.ActiveTasks.Values.Any(task => task.DefinitionId == "task.cook");
         // Sails turn see-through at working zoom so they never hide the crew (ART_BIBLE.md 3); zoom out to see them whole.
         _deck.UpdateLook(_world.Darkness, Mathf.Lerp(0.38f, 1f, Mathf.SmoothStep(18f, 32f, _camera.Size)), t, cooking, inPort ? 3.2f : SailSetting(voyage), (float)delta, furled: inPort);
@@ -404,7 +424,7 @@ public partial class Main : Node3D
         "task.trade_goods" or "task.dun_debtor" or "task.serve_drinks" or "task.play" or "task.meet_in_secret" or "task.buy_at_market" or "task.gossip" => Pose.Talking,
         "task.inspect_ship" => Pose.Inspecting,
         "task.watch_water" => Pose.Watching,
-        "task.stand_guard" or "task.read_notices" => Pose.Leaning,
+        "task.stand_guard" or "task.read_notices" or "task.shelter" => Pose.Leaning,
         "task.steady_plank" => Pose.Steadying,
         "task.catch_breath" => Pose.Sitting,
         "task.wait_in_irons" or "task.treat_patients" or "task.keep_accounts" or "task.study_charts" => kind == "SitPoint" ? Pose.Sitting : Pose.Working,
@@ -445,6 +465,7 @@ public partial class Main : Node3D
         }
 
         _portSound.Activity = (market, workers, smiths, fish);
+        _portSound.Wind = _portWind;
         _portSound.Update(new Vector2(_camera.Target.X, _camera.Target.Z), hour, _portWet, delta, (float)TicksPerSecond[_speedIndex]);
     }
 
@@ -666,7 +687,7 @@ public partial class Main : Node3D
                 case Key.Tab: SelectNext(); break;
                 case Key.F: _follow = true; break;
                 case Key.R when key.ShiftPressed && OS.IsDebugBuild():
-                    _portRain = !_portRain;
+                    _runner.DeveloperSetPortWeather(_runner.RainingInPort ? "weather.fair" : "weather.rain");
                     break;
                 case Key.P: _hud.TogglePanel(PanelId.People); break;
                 case Key.X: _hud.TogglePanel(PanelId.Expedition); break;
@@ -705,6 +726,7 @@ public partial class Main : Node3D
             _portSound.Build(_content.Locations[rules.Location]);
             _crowd.Build(_content.Locations[rules.Location], _port.HeightAt);
             _harbour.Build();
+            _ambient.Build(_content.Locations[rules.Location], rules.Ambient, _port.HeightAt);
             _portBuilt = true;
         }
 
@@ -1079,6 +1101,10 @@ public partial class Main : Node3D
         _portFigures.AddChild(_crowd);
         _harbour = new HarbourView { Name = "Harbour" };
         _portFigures.AddChild(_harbour);
+        _ambient = new AmbientScenes { Name = "AmbientScenes" };
+        _portFigures.AddChild(_ambient);
+        _ambient.Told += text => _hud.Toast(text);
+        _ambient.Sound = (kind, volume) => _portSound.Cue(kind, volume);
         _preparation = new PreparationView { Name = "PreparationView" };
         AddChild(_preparation);
         _preparation.Attach(_shipContents, _portFigures);
@@ -1117,6 +1143,8 @@ public partial class Main : Node3D
     private string? _developerBuy;
     private int _developerHire;
     private int _developerAfter;
+    private string? _developerScene;
+    private double _shotDelay = 3.0;
 
     // For screenshots of the port: --select=person.velho opens their card (and --talk walks the captain
     // over and talks, at once; --offer=N then offers that advance); --look=x,z points the camera; --yaw=degrees turns it.
@@ -1192,11 +1220,13 @@ public partial class Main : Node3D
             _portHud.ShowJournal();
         }
 
-        if (_forceWeather == "rain" && _runner.Campaign.Port is not null)
+        // --weather=rain (or fog, breezy, overcast) sets the port's weather at once, already settled in.
+        if (_forceWeather is { } forced && _runner.Campaign.Port is not null && _runner.DeveloperSetPortWeather("weather." + forced).Succeeded)
         {
-            _portRain = true;
-            _portWet = 1f;
-            _gloom = 0.68f;
+            _portWet = (float)(_runner.PortWeather?.Rain ?? 0);
+            _portFog = (float)(_runner.PortWeather?.Fog ?? 0);
+            _gloom = (float)(_runner.PortWeather?.Gloom ?? 0);
+            _weatherShown = _runner.PortWeather?.Id;
         }
 
         if (_developerPanel is { } open)
@@ -1207,6 +1237,12 @@ public partial class Main : Node3D
         if (_developerYaw is { } yaw)
         {
             _camera.SetYaw(yaw);
+        }
+
+        // --scene=ambient.procession starts that scene at once (with --shotdelay to catch it under way).
+        if (_developerScene is { } scene)
+        {
+            _ambient.Force(scene);
         }
     }
 
@@ -1237,6 +1273,8 @@ public partial class Main : Node3D
                 case "panel" when Enum.TryParse<PanelId>(value, true, out var panel): _developerPanel = panel; break;
                 case "offer" when int.TryParse(value, out var advance): _developerOffer = advance; break;
                 case "buy": _developerBuy = value; break;
+                case "scene": _developerScene = value; break;
+                case "shotdelay" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var wait): _shotDelay = wait; break;
                 case "hire" when int.TryParse(value, out var hands): _developerHire = hands; break;
                 case "after" when int.TryParse(value, out var later): _developerAfter = later; break;
                 case "yaw" when float.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var yaw): _developerYaw = yaw; break;
@@ -1281,7 +1319,7 @@ public partial class Main : Node3D
 
     private async void TakeScreenshotAndQuit()
     {
-        await ToSignal(GetTree().CreateTimer(3.0), SceneTreeTimer.SignalName.Timeout);
+        await ToSignal(GetTree().CreateTimer(_shotDelay), SceneTreeTimer.SignalName.Timeout);
         await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
         if (_developerPerf)
         {

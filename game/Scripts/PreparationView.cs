@@ -71,9 +71,10 @@ public partial class PreparationView : Node3D
     }
 
     /// <summary>Redraws if the preparation has changed since the last call.</summary>
-    public void Show(ShipPreparation? preparation)
+    /// <param name="raining">In rain the stores waiting on the quay are under a tarpaulin.</param>
+    public void Show(ShipPreparation? preparation, bool raining = false)
     {
-        var signature = preparation is null ? "" : $"{preparation.Stage}|{Stacks(preparation.OnQuay)}|{Stacks(preparation.OnDeck)}|{preparation.Belongings}";
+        var signature = preparation is null ? "" : $"{preparation.Stage}|{Stacks(preparation.OnQuay)}|{Stacks(preparation.OnDeck)}|{preparation.Belongings}|{raining}";
         if (signature == _shown)
         {
             return;
@@ -93,11 +94,11 @@ public partial class PreparationView : Node3D
 
         var stage = preparation.Stage;
         var quay = new MeshBatcher();
-        Lay(quay, Packages(preparation.OnQuay), QuaySlots, 0f, covered: false);
+        Lay(quay, Packages(preparation.OnQuay), QuaySlots, 0f, covered: raining);
         quay.Commit(_quay);
 
         var deck = new MeshBatcher();
-        var covered = stage is PreparationStage.DepartureReady or PreparationStage.DepartureMorning;
+        var covered = stage is PreparationStage.DepartureReady or PreparationStage.DepartureMorning || raining;
         var hatchOpen = stage is PreparationStage.InspectionUnderway or PreparationStage.InitialLoading or PreparationStage.TakingShape
             || preparation.OnDeck.Count > 0 && !covered;
         // Ready for sea, the deck load is lashed under tarpaulins: what is still being stowed, or else a

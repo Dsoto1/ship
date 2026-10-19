@@ -45,6 +45,9 @@ public partial class PortSound : Node
     /// </summary>
     public (int Market, int Workers, int Smiths, int Fish) Activity { get; set; }
 
+    /// <summary>0 still .. 1 a strong breeze: the wind bed rises with it.</summary>
+    public float Wind { get; set; }
+
     private sealed class Layer
     {
         public AudioStreamPlayer Player = null!;
@@ -135,7 +138,7 @@ public partial class PortSound : Node
         _layers["surf"].Target = 0.35f + 0.45f * Mathf.Clamp(1f - Mathf.Abs(listener.Y - _waterline) / 18f, 0, 1);
         _layers["market"].Target = Near(_market, 18) * Mathf.Clamp(market / 6f, 0.15f, 1f) * day * 0.6f;
         _layers["tavern"].Target = Near(_tavern, 14) * (0.25f + 0.6f * night);
-        _layers["street"].Target = 0.12f;
+        _layers["street"].Target = 0.12f + Wind * 0.35f;
         _layers["rain"].Target = rain * 0.55f;
 
         foreach (var (name, layer) in _layers)
@@ -208,6 +211,9 @@ public partial class PortSound : Node
 
         _next[kind] = wait;
     }
+
+    /// <summary>Plays one take of a recorded sound (mallet, anvil, cup, coins, knife, creak, bell) at once.</summary>
+    public void Cue(string kind, float volume) => Play(kind, volume, _random.RandfRange(0.92f, 1.08f));
 
     private void Play(string kind, float volume, float pitch)
     {

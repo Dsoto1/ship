@@ -105,7 +105,8 @@ public partial class SeaAndSky : Node3D
     /// <param name="focus">Point the camera looks at.</param>
     /// <param name="hull">Hull centre x, centre z, half beam, half length, for the wake.</param>
     /// <param name="gloom">0 clear, 1 storm-dark: overcast, grey water, rain, close haze (ART_BIBLE.md 9 "Storm").</param>
-    public void UpdateWorld(float hourOfDay, float seaState, float shipSpeed, float delta, Vector3 focus, Vector4 hull, float gloom = 0f)
+    /// <param name="fog">0 clear, 1 thick fog in port: pale haze closing in, the far water gone.</param>
+    public void UpdateWorld(float hourOfDay, float seaState, float shipSpeed, float delta, Vector3 focus, Vector4 hull, float gloom = 0f, float fog = 0f)
     {
         // Sun height: 0 at about 05:30 and 19:30 (a summer sailing season in the south), 1 at half past noon.
         var elevation = Mathf.Sin((hourOfDay - 5.5f) / 14f * Mathf.Pi);
@@ -125,13 +126,13 @@ public partial class SeaAndSky : Node3D
 
         _flash = Mathf.Max(0, _flash - delta * 5f);
         var overcast = new Color(0.42f, 0.46f, 0.5f) * Mathf.Lerp(0.3f, 1f, day);
-        var haze = light.Haze.Lerp(overcast, gloom);
+        var haze = light.Haze.Lerp(overcast, gloom).Lerp(new Color(0.74f, 0.76f, 0.76f) * Mathf.Lerp(0.35f, 1f, day), fog * 0.85f);
         _environment.BackgroundColor = haze;
         _environment.AmbientLightColor = light.Ambient.Lerp(new Color(0.58f, 0.62f, 0.66f), gloom);
         _environment.AmbientLightEnergy = light.AmbientEnergy * Mathf.Lerp(1f, 1.15f, gloom) + _flash * 3f;
         _environment.TonemapExposure = light.Exposure * Mathf.Lerp(1f, 0.92f, gloom);
         _environment.FogLightColor = haze;
-        _environment.FogDensity = light.FogDensity + gloom * 0.005f;
+        _environment.FogDensity = light.FogDensity + gloom * 0.005f + fog * 0.0085f;
         _rain.Emitting = gloom > 0.55f;
         _rain.Position = focus + new Vector3(0, 14, 0);
 
@@ -140,8 +141,8 @@ public partial class SeaAndSky : Node3D
             .Lerp(new Color(0.05f, 0.08f, 0.09f) * greyWater, gloom * 0.8f));
         _ocean.SetShaderParameter("crest_colour", Blend(day, dusk, new Color(0.08f, 0.25f, 0.31f), new Color(0.5f, 0.36f, 0.32f), new Color(0.04f, 0.09f, 0.16f))
             .Lerp(new Color(0.2f, 0.25f, 0.26f) * greyWater, gloom * 0.8f));
-        _ocean.SetShaderParameter("haze_start", Mathf.Lerp(28f, 10f, gloom));
-        _ocean.SetShaderParameter("haze_end", Mathf.Lerp(70f, 38f, gloom));
+        _ocean.SetShaderParameter("haze_start", Mathf.Lerp(Mathf.Lerp(28f, 10f, gloom), 3f, fog));
+        _ocean.SetShaderParameter("haze_end", Mathf.Lerp(Mathf.Lerp(70f, 38f, gloom), 16f, fog));
         _ocean.SetShaderParameter("sky_colour", Blend(day, dusk, new Color(0.66f, 0.77f, 0.86f), new Color(0.95f, 0.62f, 0.42f), new Color(0.2f, 0.26f, 0.42f)));
         _ocean.SetShaderParameter("haze_colour", haze);
         _ocean.SetShaderParameter("foam_colour", new Color(0.93f, 0.95f, 0.94f).Lerp(new Color(0.35f, 0.42f, 0.52f), Darkness));

@@ -228,14 +228,14 @@ public partial class PortCrowd : Node3D
                 return null;
             }
 
-            var smoothFirst = Smooth(first);
+            var smoothFirst = WalkPaths.Smooth(_location, first);
             var stopAt = smoothFirst.Count - 1;
-            var path = smoothFirst.Concat(Smooth(second).Skip(1)).ToList();
+            var path = smoothFirst.Concat(WalkPaths.Smooth(_location, second).Skip(1)).ToList();
             return Begin(path, stopAt, s.Facing, hour);
         }
 
         var route = Pathfinder.FindPath(_location, from, to);
-        return route is null ? null : Begin(Smooth(route), -1, Vector2.Zero, hour);
+        return route is null ? null : Begin(WalkPaths.Smooth(_location, route), -1, Vector2.Zero, hour);
     }
 
     private Walker Begin(List<Vector2> path, int stopAt, Vector2 facing, float hour)
@@ -342,46 +342,5 @@ public partial class PortCrowd : Node3D
 
         multimesh.VisibleInstanceCount = index;
         _shadows.Multimesh.VisibleInstanceCount = index;
-    }
-
-    // Straightens a grid path: from each point, on to the farthest one in plain sight.
-    private List<Vector2> Smooth(IReadOnlyList<GridPosition> cells)
-    {
-        var points = new List<Vector2> { new(cells[0].X, cells[0].Y) };
-        var i = 0;
-        while (i < cells.Count - 1)
-        {
-            var j = cells.Count - 1;
-            while (j > i + 1 && !Clear(cells[i], cells[j]))
-            {
-                j--;
-            }
-
-            points.Add(new Vector2(cells[j].X, cells[j].Y));
-            i = j;
-        }
-
-        return points;
-    }
-
-    private bool Clear(GridPosition from, GridPosition to)
-    {
-        var a = new Vector2(from.X, from.Y);
-        var b = new Vector2(to.X, to.Y);
-        var steps = Mathf.CeilToInt(a.DistanceTo(b) / 0.2f);
-        for (var s = 1; s < steps; s++)
-        {
-            var p = a.Lerp(b, s / (float)steps);
-            foreach (var corner in new[] { new Vector2(-0.3f, -0.3f), new Vector2(0.3f, -0.3f), new Vector2(-0.3f, 0.3f), new Vector2(0.3f, 0.3f) })
-            {
-                var q = p + corner;
-                if (!_location.IsWalkable(new GridPosition(Mathf.RoundToInt(q.X), Mathf.RoundToInt(q.Y))))
-                {
-                    return false;
-                }
-            }
-        }
-
-        return true;
     }
 }

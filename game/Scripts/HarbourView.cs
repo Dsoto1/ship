@@ -69,10 +69,23 @@ public partial class HarbourView : Node3D
     }
 
     /// <summary>Moves the boats on by <paramref name="minutes"/> of game time and rocks the ships.</summary>
-    public void Update(float hour, float minutes, float delta, float darkness)
+    /// <param name="fog">0 clear .. 1 thick: the ships further out vanish into it, lanterns are lit and
+    /// the boats stay at the piers (PORT_EXPERIENCE §14).</param>
+    public void Update(float hour, float minutes, float delta, float darkness, float fog = 0f)
     {
         _time += delta;
-        _lamp.EmissionEnergyMultiplier = darkness * 3f;
+        _lamp.EmissionEnergyMultiplier = Mathf.Max(darkness, fog * 0.6f) * 3f;
+        foreach (var ship in _ships)
+        {
+            // The further out, the sooner gone: the nao at 66 m first, the caravel off the pier last.
+            ship.Node.Visible = fog < 1.1f - (ship.At.Z - 40f) / 45f;
+        }
+
+        if (fog > 0.6f)
+        {
+            minutes = 0f;
+        }
+
         foreach (var ship in _ships)
         {
             ship.Node.Position = ship.At + new Vector3(0, Mathf.Sin(_time * 0.5f + ship.Seed) * 0.07f, 0);
