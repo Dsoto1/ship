@@ -39,6 +39,20 @@ public partial class SeaAndSky : Node3D
             GlowEnabled = true,
             GlowIntensity = 0.4f,
             GlowHdrThreshold = 1.4f,
+
+            // Contact darkening where things meet (walls and ground, casks, feet), kept light (PORT_VISUAL_PASS §3.8).
+            SsaoEnabled = true,
+            SsaoRadius = 1.1f,
+            SsaoIntensity = 1.3f,
+            SsaoPower = 1.6f,
+            SsaoDetail = 0.4f,
+            SsaoLightAffect = 0.15f,
+
+            // Aerial haze: the far town and the harbour soften with distance (§3.9, §3.12).
+            FogEnabled = true,
+            FogDensity = 0.004f,
+            FogAerialPerspective = 0.35f,
+            FogSkyAffect = 0f,
         };
         AddChild(new WorldEnvironment { Environment = _environment });
 
@@ -93,26 +107,31 @@ public partial class SeaAndSky : Node3D
     /// <param name="gloom">0 clear, 1 storm-dark: overcast, grey water, rain, close haze (ART_BIBLE.md 9 "Storm").</param>
     public void UpdateWorld(float hourOfDay, float seaState, float shipSpeed, float delta, Vector3 focus, Vector4 hull, float gloom = 0f)
     {
-        // Sun height: -1 at midnight, 0 at 6:00 and 18:00, 1 at noon.
-        var elevation = Mathf.Sin((hourOfDay - 6f) / 12f * Mathf.Pi);
+        // Sun height: 0 at about 05:30 and 19:30 (a summer sailing season in the south), 1 at half past noon.
+        var elevation = Mathf.Sin((hourOfDay - 5.5f) / 14f * Mathf.Pi);
         var day = Mathf.SmoothStep(-0.3f, 0.22f, elevation);
         var dusk = Mathf.Clamp(1f - Mathf.Abs(elevation + 0.05f) / 0.4f, 0, 1);
         Darkness = 1f - day;
 
-        _sun.RotationDegrees = new Vector3(-Mathf.Max(elevation, 0.05f) * 70f - 8f, -90f + (hourOfDay - 6f) / 12f * 180f, 0);
-        _sun.LightColor = new Color(1f, 0.95f, 0.86f).Lerp(new Color(1f, 0.58f, 0.32f), dusk);
-        _sun.LightEnergy = 1.35f * Mathf.SmoothStep(-0.12f, 0.3f, elevation) * (1f - 0.8f * gloom);
+        // The light of the hour from the table of presets, then overcast for the weather (ART_BIBLE §9).
+        var light = Lighting.At(hourOfDay);
+        _sun.RotationDegrees = new Vector3(-Mathf.Max(elevation, 0.06f) * 62f - 10f, -90f + (hourOfDay - 5.5f) / 14f * 180f, 0);
+        _sun.LightColor = light.Sun.Lerp(new Color(0.85f, 0.88f, 0.92f), gloom * 0.7f);
+        _sun.LightEnergy = light.SunEnergy * Mathf.SmoothStep(-0.1f, 0.1f, elevation) * (1f - 0.75f * gloom);
         _sun.Visible = _sun.LightEnergy > 0.01f;
-        _moon.LightEnergy = 0.55f * Darkness;
+        _sun.ShadowBlur = Mathf.Lerp(1f, 3f, gloom);
+        _moon.LightEnergy = 0.45f * Darkness * (1f - 0.6f * gloom);
         _moon.Visible = Darkness > 0.05f;
 
         _flash = Mathf.Max(0, _flash - delta * 5f);
-        var overcast = new Color(0.36f, 0.4f, 0.44f) * Mathf.Lerp(0.35f, 1f, day);
-        var haze = Blend(day, dusk, new Color(0.58f, 0.68f, 0.75f), new Color(0.8f, 0.6f, 0.5f), new Color(0.06f, 0.09f, 0.15f)).Lerp(overcast, gloom);
+        var overcast = new Color(0.42f, 0.46f, 0.5f) * Mathf.Lerp(0.3f, 1f, day);
+        var haze = light.Haze.Lerp(overcast, gloom);
         _environment.BackgroundColor = haze;
-        _environment.AmbientLightColor = Blend(day, dusk, new Color(0.66f, 0.74f, 0.84f), new Color(0.75f, 0.6f, 0.58f), new Color(0.3f, 0.36f, 0.58f))
-            .Lerp(new Color(0.55f, 0.58f, 0.62f), gloom);
-        _environment.AmbientLightEnergy = Mathf.Lerp(0.5f, 0.62f, day) + _flash * 3f;
+        _environment.AmbientLightColor = light.Ambient.Lerp(new Color(0.58f, 0.62f, 0.66f), gloom);
+        _environment.AmbientLightEnergy = light.AmbientEnergy * Mathf.Lerp(1f, 1.15f, gloom) + _flash * 3f;
+        _environment.TonemapExposure = light.Exposure * Mathf.Lerp(1f, 0.92f, gloom);
+        _environment.FogLightColor = haze;
+        _environment.FogDensity = light.FogDensity + gloom * 0.005f;
         _rain.Emitting = gloom > 0.55f;
         _rain.Position = focus + new Vector3(0, 14, 0);
 
@@ -143,4 +162,50 @@ public partial class SeaAndSky : Node3D
     // Day colour, warmed towards the dusk colour near sunrise and sunset, darkened towards night.
     private static Color Blend(float day, float dusk, Color noon, Color sunset, Color night) =>
         night.Lerp(noon, day).Lerp(sunset, dusk * 0.5f);
+}
+
+/// <summary>
+/// The light at each part of the day (PORT_VISUAL_PASS §3.9, ART_BIBLE §9): naturalistic sources,
+/// composed for readability. Dawn has cool haze and a warm low sun; morning, clean light and mild haze;
+/// midday, bright stone and short shadows; evening, long warm light; night, cool ambient against warm
+/// lanterns. Values blend smoothly between the keys.
+/// </summary>
+public static class Lighting
+{
+    /// <summary>One key of the day.</summary>
+    public readonly record struct Preset(float Hour, Color Sun, float SunEnergy, Color Ambient, float AmbientEnergy, Color Haze, float FogDensity, float Exposure);
+
+    private static readonly Preset[] Keys =
+    [
+        new(0f, new Color(0.6f, 0.68f, 0.95f), 0f, new Color(0.24f, 0.3f, 0.5f), 0.42f, new Color(0.05f, 0.07f, 0.13f), 0.0018f, 1.05f),
+        new(5f, new Color(0.7f, 0.6f, 0.75f), 0f, new Color(0.3f, 0.34f, 0.52f), 0.42f, new Color(0.12f, 0.14f, 0.22f), 0.0035f, 1.0f),
+        new(6.5f, new Color(1f, 0.66f, 0.4f), 1.5f, new Color(0.5f, 0.56f, 0.72f), 0.48f, new Color(0.64f, 0.68f, 0.76f), 0.003f, 0.95f),
+        new(9f, new Color(1f, 0.92f, 0.8f), 1.35f, new Color(0.62f, 0.68f, 0.78f), 0.55f, new Color(0.66f, 0.74f, 0.8f), 0.002f, 0.92f),
+        new(13f, new Color(1f, 0.97f, 0.92f), 1.6f, new Color(0.68f, 0.72f, 0.78f), 0.6f, new Color(0.7f, 0.77f, 0.83f), 0.0012f, 0.88f),
+        new(16.5f, new Color(1f, 0.86f, 0.66f), 1.4f, new Color(0.68f, 0.66f, 0.66f), 0.55f, new Color(0.74f, 0.72f, 0.7f), 0.0016f, 0.92f),
+        new(18.6f, new Color(1f, 0.6f, 0.34f), 1.55f, new Color(0.62f, 0.52f, 0.55f), 0.46f, new Color(0.8f, 0.62f, 0.52f), 0.002f, 0.95f),
+        new(19.8f, new Color(0.9f, 0.5f, 0.4f), 0.2f, new Color(0.38f, 0.38f, 0.55f), 0.44f, new Color(0.22f, 0.2f, 0.3f), 0.003f, 1.0f),
+        new(21f, new Color(0.6f, 0.68f, 0.95f), 0f, new Color(0.25f, 0.31f, 0.52f), 0.42f, new Color(0.06f, 0.08f, 0.14f), 0.0018f, 1.05f),
+        new(24f, new Color(0.6f, 0.68f, 0.95f), 0f, new Color(0.24f, 0.3f, 0.5f), 0.42f, new Color(0.05f, 0.07f, 0.13f), 0.0018f, 1.05f),
+    ];
+
+    /// <summary>The light at an hour of the day (0..24).</summary>
+    public static Preset At(float hour)
+    {
+        hour = Mathf.PosMod(hour, 24f);
+        for (var i = 0; i < Keys.Length - 1; i++)
+        {
+            var (a, b) = (Keys[i], Keys[i + 1]);
+            if (hour > b.Hour)
+            {
+                continue;
+            }
+
+            var t = Mathf.SmoothStep(0f, 1f, (hour - a.Hour) / (b.Hour - a.Hour));
+            return new Preset(hour, a.Sun.Lerp(b.Sun, t), Mathf.Lerp(a.SunEnergy, b.SunEnergy, t), a.Ambient.Lerp(b.Ambient, t),
+                Mathf.Lerp(a.AmbientEnergy, b.AmbientEnergy, t), a.Haze.Lerp(b.Haze, t), Mathf.Lerp(a.FogDensity, b.FogDensity, t), Mathf.Lerp(a.Exposure, b.Exposure, t));
+        }
+
+        return Keys[^1];
+    }
 }

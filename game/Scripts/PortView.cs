@@ -90,7 +90,7 @@ public partial class PortView : Node3D
         var flicker = 0.9f + 0.1f * Mathf.Sin(time * 11f) * Mathf.Sin(time * 4.3f);
         foreach (var light in _lanterns)
         {
-            light.LightEnergy = darkness * 2.2f * flicker;
+            light.LightEnergy = darkness * 3.2f * flicker;
         }
 
         _glass.EmissionEnergyMultiplier = 0.2f + darkness * 3f;
@@ -786,7 +786,7 @@ public partial class PortView : Node3D
         }
 
         _batch.Add(new BoxMesh { Size = new Vector3(0.22f, 0.3f, 0.22f) }, new Transform3D(Basis.Identity, at), _glass);
-        var light = new OmniLight3D { Position = at, LightColor = new Color(1f, 0.72f, 0.4f), OmniRange = 8f, OmniAttenuation = 1.4f };
+        var light = new OmniLight3D { Position = at, LightColor = new Color(1f, 0.68f, 0.36f), OmniRange = 10f, OmniAttenuation = 1.6f };
         AddChild(light);
         _lanterns.Add(light);
     }

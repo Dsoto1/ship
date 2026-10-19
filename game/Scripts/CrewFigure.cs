@@ -77,6 +77,22 @@ public partial class CrewFigure : Node3D
     private Node3D _load = null!;
     private string? _carrying;
 
+    private static StandardMaterial3D? _contactShadow;
+
+    /// <summary>The shared soft dark disc drawn under feet, casks and stalls.</summary>
+    public static StandardMaterial3D ContactShadow => _contactShadow ??= new StandardMaterial3D
+    {
+        ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+        Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+        AlbedoTexture = new GradientTexture2D
+        {
+            Width = 64, Height = 64, Fill = GradientTexture2D.FillEnum.Radial,
+            FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1f, 0.5f),
+            Gradient = new Gradient { Colors = [new Color(0, 0, 0, 0.42f), new Color(0, 0, 0, 0)], Offsets = [0f, 1f] },
+        },
+        DepthDrawMode = BaseMaterial3D.DepthDrawModeEnum.Disabled,
+    };
+
     /// <summary>Builds the figure for a character.</summary>
     /// <param name="looks">Their appearance, or null for a plain figure.</param>
     /// <param name="options">The appearance options, for colours.</param>
@@ -172,6 +188,15 @@ public partial class CrewFigure : Node3D
             Visible = false,
         };
         figure.AddChild(figure._ring);
+
+        // A soft contact shadow so people stand on the ground rather than float over it (PORT_VISUAL_PASS §3.8).
+        figure.AddChild(new MeshInstance3D
+        {
+            Mesh = new PlaneMesh { Size = new Vector2(0.95f, 0.95f) * bulk },
+            MaterialOverride = ContactShadow,
+            Position = new Vector3(0, 0.025f, 0),
+            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+        });
 
         figure._label = new Label3D
         {
