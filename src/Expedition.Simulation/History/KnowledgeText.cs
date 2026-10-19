@@ -73,28 +73,40 @@ public static class KnowledgeText
 
             var source = belief.Source switch
             {
-                KnowledgeSource.Rumour => informant is null ? "Rumour" : $"Rumour, from {informant}",
-                KnowledgeSource.Claim => "Their own claim",
-                KnowledgeSource.Reference => informant is null ? "Vouched for" : $"Vouched for by {informant}",
-                KnowledgeSource.Observation => "Seen with your own eyes",
-                KnowledgeSource.Test => "Tested in front of you",
+                KnowledgeSource.Rumour => informant is null ? "gossip" : informant,
+                KnowledgeSource.Claim => "their own word",
+                KnowledgeSource.Reference => informant ?? "someone who knows them",
+                KnowledgeSource.Observation => "seen at work",
+                KnowledgeSource.Test => "shown in front of you",
                 _ => belief.Source.ToString(),
             };
-            lines.Add(new KnowledgeLine(topic, name, value, source, Confidence(belief.Source, belief.Conflicting), belief.Conflicting));
+            lines.Add(new KnowledgeLine(topic, name, value, Status(belief.Source), source, Confidence(belief.Source, belief.Conflicting), belief.Conflicting,
+                newest?.Tick ?? 0));
         }
 
         return lines;
     }
 
-    /// <summary>A skill level in words: 0 none, 1 a beginner, up to 5 a master.</summary>
+    /// <summary>A skill level in words (UI_UX §21): never the hidden number.</summary>
     public static string LevelWord(int level) => level switch
     {
         <= 0 => "none",
-        1 => "a beginner",
+        1 => "novice",
         2 => "competent",
-        3 => "skilled",
+        3 => "experienced",
         4 => "expert",
-        _ => "a master",
+        _ => "master",
+    };
+
+    /// <summary>How a belief was formed, in the shared vocabulary (UI_UX §22).</summary>
+    public static string Status(KnowledgeSource source) => source switch
+    {
+        KnowledgeSource.Rumour => "Rumored",
+        KnowledgeSource.Claim => "Claimed",
+        KnowledgeSource.Reference => "Vouched for",
+        KnowledgeSource.Observation => "Observed",
+        KnowledgeSource.Test => "Confirmed",
+        _ => "Unknown",
     };
 
     private static string AttributeWord(int level) => level switch
@@ -106,16 +118,22 @@ public static class KnowledgeText
         _ => "exceptional",
     };
 
-    /// <summary>How far a belief can be trusted, from its source.</summary>
-    public static string Confidence(KnowledgeSource source, bool conflicting) => conflicting ? "Disputed" : source switch
+    /// <summary>
+    /// How far a belief can be trusted (UI_UX §22): Poor, Low, Fair, High, Very High. Equally good sources
+    /// that disagree lower it a step.
+    /// </summary>
+    public static string Confidence(KnowledgeSource source, bool conflicting)
     {
-        KnowledgeSource.Rumour => "Hearsay",
-        KnowledgeSource.Claim => "Unverified",
-        KnowledgeSource.Reference => "Fairly sure",
-        KnowledgeSource.Observation => "Sure",
-        KnowledgeSource.Test => "Certain",
-        _ => "",
-    };
+        var step = source switch
+        {
+            KnowledgeSource.Rumour => 0,
+            KnowledgeSource.Claim => 1,
+            KnowledgeSource.Reference => 2,
+            KnowledgeSource.Observation => 3,
+            _ => 4,
+        };
+        return new[] { "Poor", "Low", "Fair", "High", "Very High" }[Math.Max(0, conflicting ? step - 1 : step)];
+    }
 
     private static string TopicName(string topic, int level, GameContent content)
     {
@@ -132,11 +150,13 @@ public static class KnowledgeText
     }
 }
 
-/// <summary>One thing the captain believes about someone, in words, with its provenance.</summary>
+/// <summary>One thing the captain believes about someone, in words, with its provenance (UI_UX §21–23).</summary>
 /// <param name="Topic">The skill, attribute, trait, language or fact ID.</param>
 /// <param name="Name">What it is, for example "Rigging".</param>
-/// <param name="Value">What is believed, for example "skilled", or the fact ID for facts.</param>
-/// <param name="Source">Where it came from, for example "Vouched for by Andrés".</param>
-/// <param name="Confidence">How far to trust it: Hearsay, Unverified, Fairly sure, Sure, Certain, or Disputed.</param>
+/// <param name="Value">What is believed, for example "experienced", or the fact ID for facts.</param>
+/// <param name="Status">How it was formed: Rumored, Claimed, Vouched for, Observed or Confirmed.</param>
+/// <param name="Source">Who or what it came from, for example "Andrés" or "their own word".</param>
+/// <param name="Confidence">Poor, Low, Fair, High or Very High.</param>
 /// <param name="Conflicting">True if equally good sources disagree.</param>
-public sealed record KnowledgeLine(string Topic, string Name, string Value, string Source, string Confidence, bool Conflicting);
+/// <param name="Tick">When it was last updated.</param>
+public sealed record KnowledgeLine(string Topic, string Name, string Value, string Status, string Source, string Confidence, bool Conflicting, long Tick);

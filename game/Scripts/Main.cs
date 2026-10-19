@@ -29,6 +29,21 @@ public partial class Main : Node3D
     private static readonly string[] VoyageSpeedNames = ["Pause", "1×", "10×", "60×", "240×", "720×"];
     private static readonly string[] PortSpeedNames = ["Pause", "Watch", "2×", "10×", "60×", "240×"];
 
+    private static readonly string[] VoyageSpeedTips =
+    [
+        "Paused: give orders, read, plan", "One game minute a second: watch the work", "Ten minutes a second",
+        "An hour a second: routine sailing", "Four hours a second", "Twelve hours a second: open ocean, nothing near",
+    ];
+
+    private static readonly string[] PortSpeedTips =
+    [
+        "Paused: give orders, read, plan", "Watch: half a game minute a second, people at walking pace", "Two minutes a second",
+        "Ten minutes a second", "An hour a second", "Four hours a second",
+    ];
+
+    // After an interruption the game never resumes faster than this (UI_UX §16).
+    private const int SafeResumeSpeed = 2;
+
     private double[] TicksPerSecond => _runner?.Campaign.Port is not null ? PortSpeeds : VoyageSpeeds;
 
     // Never simulate more than this many ticks in one frame, so a slow frame cannot snowball.
@@ -140,6 +155,8 @@ public partial class Main : Node3D
 
         _portHud = new PortHud();
         AddChild(_portHud);
+        _portHud.Attach(_hud);
+        _hud.FocusRequested += Focus;
         _portHud.CardClosed += () => _selected = _runner.Campaign.CaptainId;
         _portHud.TalkRequested += id => WalkOverTo(id, "talk", () =>
         {
@@ -190,7 +207,8 @@ public partial class Main : Node3D
 
             ShowWorld();
             _hud.Bind(_runner);
-            _hud.SetSpeedNames(VoyageSpeedNames);
+            _hud.SetSpeedNames(VoyageSpeedNames, VoyageSpeedTips);
+            _hud.ClosePanel();
             _hud.ShowStatus("Lines cast off. La Bocana falls astern.");
         };
 
@@ -198,7 +216,7 @@ public partial class Main : Node3D
         var seed = (ulong)System.Random.Shared.NextInt64();
         ReadDeveloperArguments(ref seed);
         StartCampaign(_testDeck ? TestDeckScenario.Create(_content, seed) : ExpeditionScenario.Create(_content, seed),
-            "La Bocana. Right-click to walk; click anyone to look at them.");
+            _testDeck ? "At sea. Left-click a crew member, right-click to send them." : "La Bocana. Right-click to walk; click anyone to look at them.");
         if (_startZoom is { } size)
         {
             _camera.Size = size;
@@ -527,7 +545,20 @@ public partial class Main : Node3D
                 case Key.F9: Load(); break;
                 case Key.Tab: SelectNext(); break;
                 case Key.F: _follow = true; break;
-                case Key.Escape: _selected = _runner.Campaign.CaptainId; _pending = null; break;
+                case Key.P: _hud.TogglePanel(PanelId.People); break;
+                case Key.X: _hud.TogglePanel(PanelId.Expedition); break;
+                case Key.C: _hud.TogglePanel(PanelId.Cargo); break;
+                case Key.H: _hud.TogglePanel(PanelId.Ship); break;
+                case Key.L: _hud.TogglePanel(PanelId.Chronicle); break;
+                case Key.Escape:
+                    // Back out one layer at a time: the open screen, then the card (§48).
+                    if (!_hud.ClosePanel())
+                    {
+                        _selected = _runner.Campaign.CaptainId;
+                        _pending = null;
+                    }
+
+                    break;
             }
         }
     }
@@ -578,7 +609,14 @@ public partial class Main : Node3D
         _hud.HideEvent();
         _hud.Bind(runner);
         _portHud.Bind(runner);
-        _hud.SetSpeedNames(runner.Campaign.Port is not null ? PortSpeedNames : VoyageSpeedNames);
+        if (runner.Campaign.Port is not null)
+        {
+            _hud.SetSpeedNames(PortSpeedNames, PortSpeedTips);
+        }
+        else
+        {
+            _hud.SetSpeedNames(VoyageSpeedNames, VoyageSpeedTips);
+        }
         _hud.ShowStatus(message);
     }
 
@@ -668,29 +706,42 @@ public partial class Main : Node3D
     // Danger stops the clock so the player can act: a storm breaking, the bilge rising, someone hurt.
     private void CheckAlerts()
     {
+        // Each danger becomes an alert with its severity, cause and who it concerns (UI_UX §17); those in
+        // the categories the player chose stop the clock (§18).
         var entries = _runner.Campaign.Chronicle.Entries;
-        var alerts = new List<string>();
+        var pausing = new List<string>();
         for (; _chronicleSeen < entries.Count; _chronicleSeen++)
         {
             var entry = entries[_chronicleSeen];
-            var urgent = entry.Kind switch
+            (Severity Severity, AutoPause Category, string Title)? alert = entry.Kind switch
             {
-                ChronicleEntryKind.WeatherChanged => entry.Get(ChronicleParameters.To) is "weather.gale" or "weather.storm",
-                ChronicleEntryKind.HullStruck or ChronicleEntryKind.BilgeAlarm or ChronicleEntryKind.Injury => true,
-                ChronicleEntryKind.SurvivalStateChanged => entry.Get(ChronicleParameters.To) is "Dead" or "Incapacitated",
-                ChronicleEntryKind.SupplyShortage => true,
-                _ => false,
+                ChronicleEntryKind.WeatherChanged when entry.Get(ChronicleParameters.To) is "weather.storm" => (Severity.Critical, AutoPause.Weather, "A storm breaks"),
+                ChronicleEntryKind.WeatherChanged when entry.Get(ChronicleParameters.To) is "weather.gale" => (Severity.Urgent, AutoPause.Weather, "A gale is blowing"),
+                ChronicleEntryKind.HullStruck => (Severity.Urgent, AutoPause.ShipDamage, "The hull is struck"),
+                ChronicleEntryKind.BilgeAlarm => (Severity.Critical, AutoPause.ShipDamage, "The bilge is rising"),
+                ChronicleEntryKind.Injury => (Severity.Urgent, AutoPause.InjuryAndDeath, "Someone is hurt"),
+                ChronicleEntryKind.SurvivalStateChanged when entry.Get(ChronicleParameters.To) is "Dead" => (Severity.Critical, AutoPause.InjuryAndDeath, "A death aboard"),
+                ChronicleEntryKind.SurvivalStateChanged when entry.Get(ChronicleParameters.To) is "Incapacitated" => (Severity.Critical, AutoPause.InjuryAndDeath, "Someone has collapsed"),
+                ChronicleEntryKind.SupplyShortage => (Severity.Critical, AutoPause.Shortage, $"Out of {entry.Get(ChronicleParameters.Need)}"),
+                _ => null,
             };
-            if (urgent)
+            if (alert is not { } found)
             {
-                alerts.Add(_formatter.Format(entry));
+                continue;
+            }
+
+            CharacterId? who = entry.Characters.Count > 0 ? entry.Characters[0] : null;
+            _hud.PushAlert(found.Severity, found.Title, _formatter.Format(entry), who, new SimulationClock(entry.Tick).ToString());
+            if (_hud.Pauses(found.Category))
+            {
+                pausing.Add($"{Ui.IconOf(found.Severity)} {found.Title}");
             }
         }
 
-        if (alerts.Count > 0 && _speedIndex > 0)
+        if (pausing.Count > 0 && _speedIndex > 0)
         {
             SetSpeed(0);
-            _hud.ShowAlert(string.Join("\n", alerts.TakeLast(3)));
+            _hud.ShowAlert("Paused for: " + string.Join(" · ", pausing.Distinct().TakeLast(3)));
         }
 
         if (!_endingShown && _runner.Campaign.Voyage is { Outcome: not Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } ship)
@@ -736,7 +787,21 @@ public partial class Main : Node3D
     private void CarryOn()
     {
         _hud.HideAlert();
-        SetSpeed(_lastRunningSpeed);
+        SetSpeed(Math.Min(_lastRunningSpeed, SafeResumeSpeed));
+    }
+
+    // Looks at someone: selects them and brings the camera over (alerts, the roster). In port the camera
+    // stops following the captain until F.
+    private void Focus(CharacterId id)
+    {
+        if (!_figures.TryGetValue(id, out var figure))
+        {
+            return;
+        }
+
+        _selected = id;
+        _follow = false;
+        _camera.Target = figure.GlobalPosition;
     }
 
     private void OrderTask(string taskId, TaskPriority priority)
@@ -774,12 +839,14 @@ public partial class Main : Node3D
     {
         try
         {
+            // Reported only once the file is written (UI_UX §46).
             _saves.Write(QuickSaveSlot, SaveSerializer.Serialize(_runner.Campaign));
-            _hud.ShowStatus($"Saved to {_saves.Directory}");
+            var where = _runner.Campaign.Port is not null ? "in port at La Bocana" : _runner.Campaign.Voyage is { } ship ? $"at sea, bound for {ship.Destination}" : "";
+            _hud.ShowResult(CommandResult.Ok(), $"Saved: {_runner.Campaign.Clock}, {where}.");
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            _hud.ShowStatus($"Save failed: {ex.Message}");
+            _hud.ShowResult(CommandResult.Rejected($"Not saved: {ex.Message}"));
         }
     }
 
@@ -904,6 +971,7 @@ public partial class Main : Node3D
     private bool _developerTalk;
     private bool _developerJournal;
     private bool _developerPerf;
+    private PanelId? _developerPanel;
     private int? _developerOffer;
     private float? _developerYaw;
 
@@ -955,6 +1023,11 @@ public partial class Main : Node3D
             _portHud.ShowJournal();
         }
 
+        if (_developerPanel is { } open)
+        {
+            _hud.OpenPanel(open);
+        }
+
         if (_developerYaw is { } yaw)
         {
             _camera.SetYaw(yaw);
@@ -985,6 +1058,7 @@ public partial class Main : Node3D
                 case "talk": _developerTalk = true; break;
                 case "journal": _developerJournal = true; break;
                 case "perf": _developerPerf = true; break;
+                case "panel" when Enum.TryParse<PanelId>(value, true, out var panel): _developerPanel = panel; break;
                 case "offer" when int.TryParse(value, out var advance): _developerOffer = advance; break;
                 case "yaw" when float.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var yaw): _developerYaw = yaw; break;
             }

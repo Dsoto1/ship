@@ -437,7 +437,7 @@ public class PortTests
 
         var line = KnowledgeText.Lines(runner.Campaign.Knowledge, rodrigo, Shipped, runner.Campaign.Characters).Single(l => l.Topic == "skill.rigging");
 
-        Assert.Equal(("Rigging", "skilled", "Vouched for by Andrés", "Fairly sure"), (line.Name, line.Value, line.Source, line.Confidence));
+        Assert.Equal(("Rigging", "experienced", "Vouched for", "Andrés", "Fair"), (line.Name, line.Value, line.Status, line.Source, line.Confidence));
     }
 
     private static IReadOnlyList<string> Journal(SimulationRunner runner) => runner.Campaign.Port!.Leads.Select(l => l.LeadId).ToList();

@@ -1,0 +1,247 @@
+using Godot;
+
+namespace Expedition.Game;
+
+/// <summary>How much something needs the player (UI_UX_DESIGN_SYSTEM.md §8, §17).</summary>
+public enum Severity
+{
+    /// <summary>Routine; nothing to do.</summary>
+    Information,
+
+    /// <summary>Stable and good.</summary>
+    Positive,
+
+    /// <summary>Worth reviewing.</summary>
+    Attention,
+
+    /// <summary>Action likely needed.</summary>
+    Urgent,
+
+    /// <summary>Immediate threat.</summary>
+    Critical,
+}
+
+/// <summary>
+/// Design tokens for the whole interface (UI_UX_DESIGN_SYSTEM.md §5–11): one palette, spacing scale,
+/// type scale and hit size, and the theme built from them. Every panel in every phase uses these, so
+/// the port, the voyage and later the settlement read as one interface family. Colours carry meaning
+/// only together with an icon or word (§8).
+/// </summary>
+public static class Ui
+{
+    // ---- palette: warm ink on dark, translucent panels; restrained semantic colours
+
+    /// <summary>Main text.</summary>
+    public static readonly Color Ink = new(0.94f, 0.91f, 0.85f);
+
+    /// <summary>Secondary text: metadata, captions.</summary>
+    public static readonly Color InkSoft = new(0.94f, 0.91f, 0.85f, 0.68f);
+
+    /// <summary>Headings and the selected state: a brass tone.</summary>
+    public static readonly Color Brass = new(0.93f, 0.8f, 0.52f);
+
+    /// <summary>Quiet HUD panels.</summary>
+    public static readonly Color Panel = new(0.06f, 0.05f, 0.045f, 0.62f);
+
+    /// <summary>Management drawers: denser, more opaque.</summary>
+    public static readonly Color Drawer = new(0.08f, 0.065f, 0.05f, 0.9f);
+
+    /// <summary>Documents the captain holds (cards, journal, manifest): warm paper-dark.</summary>
+    public static readonly Color Paper = new(0.15f, 0.12f, 0.085f, 0.92f);
+
+    /// <summary>Thin borders on documents.</summary>
+    public static readonly Color Rule = new(0.62f, 0.5f, 0.3f, 0.75f);
+
+    /// <summary>Colour for a severity. Chosen to stay distinct with common colour-vision deficiencies
+    /// (blue, cream, amber, orange-red, magenta-red differ in lightness too), and always paired with an icon.</summary>
+    public static Color Of(Severity severity) => severity switch
+    {
+        Severity.Positive => new Color(0.62f, 0.86f, 0.9f),
+        Severity.Attention => new Color(1f, 0.82f, 0.42f),
+        Severity.Urgent => new Color(1f, 0.6f, 0.3f),
+        Severity.Critical => new Color(1f, 0.42f, 0.5f),
+        _ => Ink,
+    };
+
+    /// <summary>The icon for a severity (§9): shape as well as colour.</summary>
+    public static string IconOf(Severity severity) => severity switch
+    {
+        Severity.Positive => "✓",
+        Severity.Attention => "◆",
+        Severity.Urgent => "▲",
+        Severity.Critical => "✖",
+        _ => "•",
+    };
+
+    /// <summary>Uncertain or unverified information: dimmer, cooler, never bright.</summary>
+    public static readonly Color Uncertain = new(0.78f, 0.82f, 0.9f, 0.85f);
+
+    /// <summary>Disabled controls.</summary>
+    public static readonly Color Disabled = new(0.94f, 0.91f, 0.85f, 0.38f);
+
+    // ---- frequent-concept icons (§9). Plain glyphs until drawn icons exist; always with a tooltip or word.
+
+    /// <summary>Time.</summary>
+    public const string IconTime = "◷";
+
+    /// <summary>Water.</summary>
+    public const string IconWater = "≈";
+
+    /// <summary>Food.</summary>
+    public const string IconFood = "✦";
+
+    /// <summary>People and crew.</summary>
+    public const string IconPeople = "☺";
+
+    /// <summary>Wind and weather.</summary>
+    public const string IconWind = "≋";
+
+    /// <summary>The ship.</summary>
+    public const string IconShip = "⚓";
+
+    /// <summary>Money.</summary>
+    public const string IconPurse = "¤";
+
+    /// <summary>A lead or objective.</summary>
+    public const string IconLead = "➤";
+
+    // ---- spacing and sizes (§10)
+
+    /// <summary>Spacing scale in pixels at the 1280 × 720 base resolution.</summary>
+    public const int SpaceXs = 2, SpaceS = 4, SpaceM = 8, SpaceL = 12, SpaceXl = 18;
+
+    /// <summary>Smallest interactive target (§10).</summary>
+    public const int MinHit = 26;
+
+    /// <summary>Corner radius.</summary>
+    public const int Radius = 4;
+
+    /// <summary>Type roles (§7), in pixels at the base resolution.</summary>
+    public const int TextDisplay = 22, TextHeading = 15, TextBody = 13, TextMeta = 11, TextNumeric = 13;
+
+    /// <summary>Ordinary transitions (§52), in seconds.</summary>
+    public const float Transition = 0.18f;
+
+    /// <summary>The shared theme: buttons with every state (§11), labels, panels, tooltips.</summary>
+    public static Theme BuildTheme()
+    {
+        var theme = new Theme { DefaultFontSize = TextBody };
+        theme.SetStylebox("panel", "PanelContainer", Box(Panel));
+        theme.SetStylebox("panel", "TooltipPanel", Box(new Color(0.1f, 0.08f, 0.06f, 0.96f), Rule));
+        theme.SetColor("font_color", "TooltipLabel", Ink);
+        theme.SetFontSize("font_size", "TooltipLabel", TextMeta + 1);
+
+        var states = new Dictionary<string, (Color Fill, Color? Border)>
+        {
+            ["normal"] = (new Color(0.17f, 0.14f, 0.11f, 0.78f), null),
+            ["hover"] = (new Color(0.27f, 0.22f, 0.16f, 0.9f), null),
+            ["pressed"] = (new Color(0.42f, 0.33f, 0.19f, 0.95f), Brass),
+            ["focus"] = (new Color(0, 0, 0, 0), Brass),
+            ["disabled"] = (new Color(0.12f, 0.1f, 0.08f, 0.5f), null),
+            ["hover_pressed"] = (new Color(0.46f, 0.36f, 0.21f, 0.95f), Brass),
+        };
+        foreach (var (state, (fill, border)) in states)
+        {
+            var box = Box(fill, border, SpaceM, SpaceS);
+            box.CornerRadiusTopLeft = box.CornerRadiusTopRight = box.CornerRadiusBottomLeft = box.CornerRadiusBottomRight = 3;
+            theme.SetStylebox(state, "Button", box);
+            theme.SetStylebox(state, "OptionButton", box);
+        }
+
+        theme.SetColor("font_color", "Label", Ink);
+        theme.SetColor("font_color", "Button", Ink);
+        theme.SetColor("font_hover_color", "Button", Ink);
+        theme.SetColor("font_pressed_color", "Button", Brass);
+        theme.SetColor("font_hover_pressed_color", "Button", Brass);
+        theme.SetColor("font_focus_color", "Button", Ink);
+        theme.SetColor("font_disabled_color", "Button", Disabled);
+        theme.SetColor("font_color", "CheckBox", Ink);
+        theme.SetConstant("separation", "VBoxContainer", SpaceS);
+        theme.SetConstant("separation", "HBoxContainer", SpaceM);
+        return theme;
+    }
+
+    /// <summary>A panel style: fill, optional border, padding.</summary>
+    public static StyleBoxFlat Box(Color fill, Color? border = null, int padX = SpaceL, int padY = SpaceM)
+    {
+        var box = new StyleBoxFlat
+        {
+            BgColor = fill,
+            CornerRadiusTopLeft = Radius, CornerRadiusTopRight = Radius, CornerRadiusBottomLeft = Radius, CornerRadiusBottomRight = Radius,
+            ContentMarginLeft = padX, ContentMarginRight = padX, ContentMarginTop = padY, ContentMarginBottom = padY,
+        };
+        if (border is { } rule)
+        {
+            box.BorderColor = rule;
+            box.BorderWidthTop = box.BorderWidthBottom = box.BorderWidthLeft = box.BorderWidthRight = 1;
+        }
+
+        return box;
+    }
+
+    /// <summary>A label in a type role.</summary>
+    public static Label Text(string text = "", int size = TextBody, Color? colour = null, float wrapWidth = 0)
+    {
+        var label = new Label { Text = text };
+        label.AddThemeFontSizeOverride("font_size", size);
+        if (colour is { } c) label.AddThemeColorOverride("font_color", c);
+        if (wrapWidth > 0)
+        {
+            label.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+            label.CustomMinimumSize = new Vector2(wrapWidth, 0);
+        }
+
+        return label;
+    }
+
+    /// <summary>A section heading.</summary>
+    public static Label Heading(string text) => Text(text, TextHeading, Brass);
+
+    /// <summary>A button with a minimum hit size and a tooltip explaining it (§41, §45).</summary>
+    public static Button Button(string text, string tooltip = "", Action? pressed = null, bool toggle = false)
+    {
+        var button = new Button
+        {
+            Text = text, TooltipText = tooltip, ToggleMode = toggle, FocusMode = Control.FocusModeEnum.None,
+            CustomMinimumSize = new Vector2(0, MinHit),
+        };
+        if (pressed is not null) button.Pressed += pressed;
+        return button;
+    }
+
+    /// <summary>A panel container with a style.</summary>
+    public static PanelContainer PanelOf(Color fill, Color? border = null, int padX = SpaceL, int padY = SpaceM)
+    {
+        var panel = new PanelContainer();
+        panel.AddThemeStyleboxOverride("panel", Box(fill, border, padX, padY));
+        return panel;
+    }
+
+    /// <summary>
+    /// A status chip: icon and short text, coloured by severity, with a tooltip saying what it is, why it
+    /// matters and what affects it (§41).
+    /// </summary>
+    public static Label Chip(string icon, string text, Severity severity, string tooltip = "")
+    {
+        var label = Text($"{icon} {text}", TextBody, Of(severity));
+        label.TooltipText = tooltip;
+        label.MouseFilter = Control.MouseFilterEnum.Stop;
+        return label;
+    }
+
+    /// <summary>Updates a chip made by <see cref="Chip"/>.</summary>
+    public static void SetChip(Label chip, string icon, string text, Severity severity, string tooltip)
+    {
+        chip.Text = $"{icon} {text}";
+        chip.AddThemeColorOverride("font_color", Of(severity));
+        chip.TooltipText = tooltip;
+    }
+
+    /// <summary>Fades a control in, for panels and alerts arriving (§52).</summary>
+    public static void FadeIn(Control control)
+    {
+        control.Modulate = new Color(1, 1, 1, 0);
+        control.Visible = true;
+        control.CreateTween().TweenProperty(control, "modulate:a", 1f, Transition);
+    }
+}

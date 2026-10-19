@@ -30,6 +30,8 @@ This file tracks status and breaks the next work into tickets.
 | R1 | The living port, simulated: waterfront places, ~25 people on schedules, observation, real deadline, candidates who weigh you | Done (2026-10-19) |
 | R2a | Port greybox and play: five districts, the Garza moored, walk, click anyone, talk, ask, offer, demonstrate, chandler, set sail (PORT_EXPERIENCE §23 steps 1, 2, 7, 8) | Done (2026-10-19), awaiting the owner's manual test |
 | R2b | Leads journal and the Chamber's notices; more work loops (steps 3–5) | Done (2026-10-19), awaiting the owner's manual test |
+| UI-1 | UI/UX design system, first pass: tokens, HUD shell, management drawer, alerts, uncertainty vocabulary (UI_UX §68 steps 1–11) | Done (2026-10-19), awaiting the owner's manual test |
+| VP-0 | Port visual pass, step 0: batching and lighter figures (PORT_VISUAL_PASS §5) | Done (2026-10-19) |
 | R2c | Tier C crowd, background ships, ship preparation states, visible cargo (steps 6, 9) | Planned |
 | R2d | Sound zones, port weather and reactions, ambient micro-events (steps 10–12) | Planned |
 | R2e | Recognition and the departure sequence (steps 13, 14) | Planned |
@@ -649,3 +651,77 @@ Roof occlusion is not handled: the captain's name shows through roofs.
 2. Open **Journal** to see the leads.
 3. Click **Read the notices**. The captain walks up to the terrace board and four notices appear.
 4. Find Velho at the chart table in the morning. His card shows the lead before you talk to him.
+
+## VP-0 — Performance foundation (port visual pass, step 0)
+
+- **`MeshBatcher`** merges static scenery into one mesh per material per 16 m chunk. Flat colours
+  share one vertex-coloured material. `PortView` and `ShipView` build through it.
+- **Figures** merge their rigid parts per joint and use low-segment meshes.
+- **Measured** with `--perf` at gameplay zoom in port (the scene looks the same):
+
+  | | Before | After |
+  |---|---|---|
+  | Draw calls | ~1,900 | ~400 |
+  | Triangles | ~1.1 M | ~270 k |
+  | Nodes | ~3,300 | ~960 |
+
+  At sea it is ~230 draw calls.
+
+## UI-1 — The interface, world first (UI_UX_DESIGN_SYSTEM.md, D-026)
+
+- **Design tokens** (`UiTokens.cs`):
+  - palette, type roles, spacing scale, minimum hit size, transition time;
+  - semantic severities, each with its own icon as well as its colour;
+  - a theme giving every control its default, hover, pressed, focus and disabled states.
+- **Persistent HUD** (`Hud.cs`):
+  - **top left:** day, time and speed (current speed highlighted; tooltips explain each);
+  - **top right:** the phase's few gauges as chips: departure, crew minimum and purse in port;
+    wind, the ship's worst system, water, food and the watch at sea. Sail orders stay one click away
+    at sea;
+  - **bottom left:** the selected person (task, progress, concerns in words) and the current
+    objective;
+  - **bottom right:** People, Expedition, Cargo, Ship, Chart (with R4b), Chronicle and ☰.
+- **Management drawer**, one screen at a time (P, X, C, H, L; Esc backs out):
+  - **People:** the roster and the record, with orders, duties and needs;
+  - **Expedition:** objectives (now, expedition, charter), the journal, notices, Set sail;
+  - **Cargo:** a manifest by category with estimated ranges, and the chandler in port;
+  - **Ship:** condition with causes, and rations;
+  - **Chronicle:** newest first, with filters, and an unread count on its button.
+- **Alerts:**
+  - severity, cause, who it concerns and when, with Focus;
+  - critical alerts stay until dismissed; the rest fade;
+  - only the categories ticked in the menu pause the game (injury and death, storms, damage and the
+    bilge, shortages);
+  - Carry on resumes at no more than 10× (§16).
+- **Notices** fade on their own; the chronicle no longer sits on the screen.
+- **What the captain knows:**
+  - beliefs use the shared vocabulary (Rumored, Claimed, Vouched for, Observed, Confirmed) with
+    Confidence Poor, Low, Fair, High or Very High, the source and the date;
+  - skill levels are words ("experienced"), not numbers;
+  - **fixed a leak:** the crew record printed everyone's true physique and languages; it now shows
+    only what is known. Shipmates' feelings are shown in words.
+- **Set sail** asks for confirmation when hands or stores fall short (§43).
+- **Saves** are reported only after the file is written, with the day and place (§46).
+- **Menu:** interface size (90–130%) and auto-pause choices.
+- `--panel=people|expedition|cargo|ship|chronicle` opens a screen, for screenshots.
+
+Screenshots: `docs/screenshots/ui-a-port-exploration.jpg`, `ui-b-recruit-inspection.jpg`,
+`ui-c-voyage-storm.jpg`, `ui-cargo-720p.jpg`.
+
+**Not yet:**
+- ship management with a diagram (R4e);
+- the chart (R4b);
+- settlement screens (R6);
+- the crew screen's sorting and filters;
+- drawn icons in place of glyphs;
+- UI sounds;
+- the workflow usability tests (§60).
+
+**Manual test (macOS):**
+1. Start: only the clock, the status chips, the captain and the objective, and the navigation are
+   showing.
+2. Press X: the objectives and the journal. Press C: the chandler and the manifest. Esc closes.
+3. Talk to Velho: his card shows claims as "Claimed master · Confidence: Low · Source: their own
+   word".
+4. Sign four hands, set sail, and run at 240×. When a storm or a leak comes, an alert appears with
+   Focus, the game pauses, and Carry on resumes at 10×.
