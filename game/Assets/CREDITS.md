@@ -2,8 +2,9 @@
 
 Every asset here is CC0 (public domain): no attribution is required, but it is given. Fetched by
 `tools/fetch_assets.py` from the list in `assets.json`; nothing here was generated or altered
-except by the game's shaders at run time, and `Textures/scenery_array/`, which only stacks the
-layered textures (plaster, stone, timber) into one image per map.
+except by the game's shaders at run time; `Textures/scenery_array/`, which only stacks the
+layered textures (plaster, stone, timber) into one image per map; and `Audio/ambience/`, Freesound
+previews levelled to the same loudness with their ends crossfaded into their starts to loop.
 
 | Asset | Used for | Author | Source | Licence | Files |
 |---|---|---|---|---|---|
@@ -15,3 +16,7 @@ layered textures (plaster, stone, timber) into one image per map.
 | Wood Floor Deck | The Garza's deck | Dimitrios Savva | https://polyhaven.com/a/wood_floor_deck | CC0 | `Textures/wood_floor_deck/` (1.8×1.8 m) |
 | Impact Sounds | Mallets, planks, the anvil, the chapel bell, cups set down | Kenney | https://kenney.nl/assets/impact-sounds | CC0 | `Audio/impact/` (30 files) |
 | RPG Audio | Coins at the stalls, the fishwife's knife, the adze, ship's timbers creaking | Kenney | https://kenney.nl/assets/rpg-audio | CC0 | `Audio/rpg/` (8 files) |
+| Sea waves and rock splash, Málaga | Surf against the quay | soundandmelodies | https://freesound.org/s/784465/ | CC0 | `Audio/ambience/surf.ogg` |
+| Outdoors Walla | The crowd at the market | IENBA | https://freesound.org/s/834339/ | CC0 | `Audio/ambience/market.ogg` |
+| Small Town Bar 007 | Voices in the tavern | conleec | https://freesound.org/s/212094/ | CC0 | `Audio/ambience/tavern.ogg` |
+| Strong Steady Wind | Wind in the streets | craigsmith | https://freesound.org/s/438878/ | CC0 | `Audio/ambience/wind.ogg` |

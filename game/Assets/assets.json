@@ -89,5 +89,50 @@
    "creak2.ogg",
    "creak3.ogg"
   ]
+ },
+ {
+  "source": "freesound",
+  "id": 784465,
+  "name": "Sea waves and rock splash, Málaga",
+  "author": "soundandmelodies",
+  "folder": "Audio/ambience",
+  "file": "surf.ogg",
+  "use": "Surf against the quay"
+ },
+ {
+  "source": "freesound",
+  "id": 834339,
+  "name": "Outdoors Walla",
+  "author": "IENBA",
+  "folder": "Audio/ambience",
+  "file": "market.ogg",
+  "use": "The crowd at the market"
+ },
+ {
+  "source": "freesound",
+  "id": 212094,
+  "name": "Small Town Bar 007",
+  "author": "conleec",
+  "folder": "Audio/ambience",
+  "file": "tavern.ogg",
+  "use": "Voices in the tavern"
+ },
+ {
+  "source": "freesound",
+  "id": 438878,
+  "name": "Strong Steady Wind",
+  "author": "craigsmith",
+  "folder": "Audio/ambience",
+  "file": "wind.ogg",
+  "use": "Wind in the streets"
+ },
+ {
+  "source": "freesound",
+  "id": 467169,
+  "name": "Rain under a stone bridge",
+  "author": "WilliamJMeyer",
+  "folder": "Audio/ambience",
+  "file": "rain.ogg",
+  "use": "Rain"
  }
 ]

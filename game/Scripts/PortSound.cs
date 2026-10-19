@@ -5,8 +5,8 @@ namespace Expedition.Game;
 
 /// <summary>
 /// The port's sound zones (PORT_VISUAL_PASS §3.14, PORT_EXPERIENCE §15). Each zone's loudness follows how
-/// close the camera's focus is to it and how much is happening there. The beds are still generated
-/// (surf, crowd murmur, wind, rain) until recordings are reachable (D-026); the sounds of work are
+/// close the camera's focus is to it and how much is happening there. The beds (surf, crowd murmur, wind,
+/// rain) are looped CC0 recordings from Freesound where fetched, else generated noise; the sounds of work are
 /// recorded CC0 samples (Kenney, <c>Assets/CREDITS.md</c>), played when and where the work is done:
 /// <list type="bullet">
 /// <item>waterfront: surf against the quay, and the Garza's timbers creaking at her lines;</item>
@@ -109,8 +109,20 @@ public partial class PortSound : Node
             _voices.Add(voice);
         }
 
-        foreach (var name in new[] { "surf", "market", "tavern", "street", "rain" })
+        // The beds: a looped CC0 recording (Freesound) where one has been fetched, else generated noise.
+        foreach (var (name, file) in new[] { ("surf", "surf"), ("market", "market"), ("tavern", "tavern"), ("street", "wind"), ("rain", "rain") })
         {
+            var path = $"res://Assets/Audio/ambience/{file}.ogg";
+            if (ResourceLoader.Exists(path) && GD.Load<AudioStream>(path) is AudioStreamOggVorbis recording)
+            {
+                recording.Loop = true;
+                var looped = new AudioStreamPlayer { Stream = recording, VolumeDb = -80 };
+                AddChild(looped);
+                looped.Play((float)(recording.GetLength() * _random.Randf()));
+                _layers[name] = new Layer { Player = looped };
+                continue;
+            }
+
             var player = new AudioStreamPlayer { Stream = new AudioStreamGenerator { MixRate = MixRate, BufferLength = 0.25f }, VolumeDb = -80 };
             AddChild(player);
             player.Play();

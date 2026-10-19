@@ -2,7 +2,8 @@
 """Fetches the game's CC0 assets into game/Assets and records where each came from.
 
 The list is game/Assets/assets.json: Poly Haven textures by ID (at 1K, colour, OpenGL normal and
-roughness maps) and Kenney packs by URL with the files to keep. Everything is CC0 (public domain);
+roughness maps), Kenney packs by URL with the files to keep, and Freesound recordings by ID (the
+high-quality Ogg preview; the API needs FREESOUND_API_KEY unless a proxy supplies it). Everything is CC0 (public domain);
 the script still writes game/Assets/CREDITS.md naming authors and sources, as a courtesy and so the
 provenance of every file is on record (D-021). Re-running skips files already present.
 
@@ -10,7 +11,9 @@ provenance of every file is on record (D-021). Re-running skips files already pr
 """
 import io
 import json
+import os
 import pathlib
+import subprocess
 import sys
 import urllib.request
 import zipfile
@@ -60,6 +63,33 @@ def kenney(entry, credits):
     credits.append(f"| {entry['name']} | {entry['use']} | Kenney | {entry['page']} | CC0 | `{entry['folder']}/` ({len(wanted)} files) |")
 
 
+def freesound(entry, credits):
+    """One recorded bed, looped by the game. Refuses anything that is not CC0. The preview is kept in
+    .cache/; the game's copy is levelled to -24 LUFS and its end crossfaded into its start (3 s), so
+    the beds sit together and loop without a seam (needs ffmpeg)."""
+    target = ASSETS / entry["folder"] / entry["file"]
+    if not target.exists():
+        raw = ROOT / ".cache" / "freesound" / f"{entry['id']}.ogg"
+        if not raw.exists():
+            key = os.environ.get("FREESOUND_API_KEY")
+            url = f"https://freesound.org/apiv2/sounds/{entry['id']}/?fields=name,username,license,previews"
+            info = json.loads(get(url + (f"&token={key}" if key else "")))
+            if "publicdomain/zero" not in info["license"]:
+                sys.exit(f"Freesound {entry['id']}: not CC0 ({info['license']})")
+            raw.parent.mkdir(parents=True, exist_ok=True)
+            raw.write_bytes(get(info["previews"]["preview-hq-ogg"]))
+        fade = 3
+        target.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(raw), "-i", str(raw), "-filter_complex",
+                        f"[0:a]atrim=start={fade},asetpts=PTS-STARTPTS[body];"
+                        f"[1:a]atrim=end={fade},asetpts=PTS-STARTPTS[head];"
+                        f"[body][head]acrossfade=d={fade}:c1=tri:c2=tri,loudnorm=I=-24:TP=-2:LRA=20,aresample=44100",
+                        "-c:a", "libvorbis", "-q:a", "5", str(target)], check=True)
+        print("fetched", target.relative_to(ROOT))
+    credits.append(f"| {entry['name']} | {entry['use']} | {entry['author']} | "
+                   f"https://freesound.org/s/{entry['id']}/ | CC0 | `{entry['folder']}/{entry['file']}` |")
+
+
 def stack_arrays(manifest):
     """Stacks the scenery textures into one image per map, for a Texture2DArray: one material for
     plaster, stone and timber, so built scenery stays one draw call per chunk."""
@@ -81,15 +111,16 @@ def main():
     manifest = json.loads((ASSETS / "assets.json").read_text())
     credits = []
     for entry in manifest:
-        {"polyhaven": polyhaven, "kenney": kenney}[entry["source"]](entry, credits)
+        {"polyhaven": polyhaven, "kenney": kenney, "freesound": freesound}[entry["source"]](entry, credits)
 
     stack_arrays(manifest)
     (ASSETS / "CREDITS.md").write_text(
         "# Asset credits\n\n"
         "Every asset here is CC0 (public domain): no attribution is required, but it is given. Fetched by\n"
         "`tools/fetch_assets.py` from the list in `assets.json`; nothing here was generated or altered\n"
-        "except by the game's shaders at run time, and `Textures/scenery_array/`, which only stacks the\n"
-        "layered textures (plaster, stone, timber) into one image per map.\n\n"
+        "except by the game's shaders at run time; `Textures/scenery_array/`, which only stacks the\n"
+        "layered textures (plaster, stone, timber) into one image per map; and `Audio/ambience/`, Freesound\n"
+        "previews levelled to the same loudness with their ends crossfaded into their starts to loop.\n\n"
         "| Asset | Used for | Author | Source | Licence | Files |\n|---|---|---|---|---|---|\n"
         + "\n".join(credits) + "\n")
 

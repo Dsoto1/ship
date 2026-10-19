@@ -36,6 +36,7 @@ This file tracks status and breaks the next work into tickets.
 | VP-1 | Port visual pass, first block, Chandler's Quay: lighting, ground, clusters, kits, ship, depth, rain, sound (PORT_VISUAL_PASS §5–6) | Done (2026-10-19), awaiting the owner's review |
 | R2c | Tier C crowd, background ships, ship preparation states, visible cargo (steps 6, 9) | Done (2026-10-19) |
 | R2d | Sound zones, port weather and reactions, ambient micro-events (steps 10–12) | Done (2026-10-19) |
+| A-2 | Asset pass: recorded CC0 beds for surf, market crowd, tavern, wind and rain (Freesound) | In progress: rain still to fetch |
 | R2e | Recognition and the departure sequence (steps 13, 14) | Planned |
 | R3 | Visual validation: the four port scenes of PORT_EXPERIENCE §21, then Test B ship, with the hybrid pipeline (D-021) | Planned |
 | R4a | Wind, heading and sailing: wind direction, visibility, warning signs; why she is slow (VOYAGE §5, §20) | Planned |
@@ -866,8 +867,7 @@ The asset half of the hybrid pipeline (D-021), now that the CC0 hosts are reacha
 - the Garza's timbers creaking;
 - the chapel bell striking the hour by day (not at the faster speeds).
 
-The surf, crowd, wind and rain beds are still generated until Freesound is set up (needs
-`FREESOUND_API_KEY`).
+The surf, crowd, wind and rain beds were still generated here; A-2 replaces them with recordings.
 
 **Screenshots:** `docs/screenshots/a1-before-after-market.jpg`, `a1-rain-dusk-yard.jpg`,
 `a1-close.jpg`.
@@ -942,7 +942,6 @@ PORT_EXPERIENCE §12, §14; VISION_ALIGNMENT §5.2.
 **Screenshots:** `docs/screenshots/r2d-rain.jpg`, `r2d-fog.jpg`, `r2d-scenes.jpg`.
 
 **Limits:**
-- the surf, crowd and rain sound are still generated: Freesound needs the key in a new session;
 - wind moves no flags or canvas yet;
 - no approaching-storm sequence;
 - scenes have no lasting consequences if the player gets involved (the brief's "preferred");
@@ -955,3 +954,37 @@ PORT_EXPERIENCE §12, §14; VISION_ALIGNMENT §5.2.
    into doorways and the vault arches, and the stalls are covered.
 3. Back at Watch speed near the chapel, the square or the tavern, wait for a scene and its line.
 4. Start a new campaign and run to dawn on day 2 a few times with different seeds to catch the fog.
+
+## A-2 — Recorded beds for the port
+
+D-021; PORT_VISUAL_PASS §4 E.
+
+**The beds are recordings now** (`PortSound`), each a CC0 Freesound recording looped under the
+existing zones and volumes:
+- **surf:** waves and splashes against rocks at Málaga, with distant voices;
+- **market:** Spanish-speaking people talking and laughing outdoors;
+- **tavern:** a busy small-town bar;
+- **wind (street):** strong, steady wind with faint creaking, rising with the breeze;
+- **rain:** rain heard from under a stone bridge (Freesound 467169; not yet fetched, so the rain is
+  still generated).
+
+**How they are made** (`tools/fetch_assets.py`, entries in `assets.json`):
+- the script fetches each Freesound high-quality preview by ID and refuses anything that is not CC0;
+- each is levelled to −24 LUFS and its last 3 seconds are crossfaded into its start, so the beds sit
+  together and loop without a seam (needs ffmpeg);
+- `CREDITS.md` names each recording, its author and its page;
+- each loop starts at a random point;
+- if a file is missing, its bed falls back to the generated noise.
+
+**Limits:**
+- the beds were chosen from their descriptions and not yet heard in the game: the tavern recording is
+  a modern bar and may carry a word of English or a poker chip; the rain was recorded in Los Angeles;
+- one recording per bed, so a long listen at one spot hears the loop (40 s for the market, 1–6 min for
+  the others).
+
+**Manual test (macOS):**
+1. `git pull`, then open the project once in the Godot editor so it imports the new sounds; Build,
+   Cmd+B.
+2. Stand on the quay: the surf. Walk to the market by day: the crowd. The tavern at night: voices.
+3. `--weather=rain`: the rain. `--weather=breezy`: the wind rises.
+4. Say if any bed sounds wrong for 1519 (a modern noise, music, a language) and it will be swapped.
