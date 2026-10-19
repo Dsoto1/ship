@@ -118,12 +118,6 @@ public sealed class CampaignState
         }
     }
 
-    /// <summary>Hiring in port, or null when not hiring.</summary>
-    public Recruitment.RecruitmentState? Recruitment { get; private set; }
-
-    /// <summary>Opens or closes hiring. The runner checks the rules; the loader restores it.</summary>
-    internal void SetRecruitment(Recruitment.RecruitmentState? recruitment) => Recruitment = recruitment;
-
     /// <summary>The ship at sea, or null when the expedition is not on a voyage.</summary>
     public Voyage.VoyageState? Voyage { get; private set; }
 
@@ -174,6 +168,9 @@ public sealed class CampaignState
             _duties[id] = new DutyRoster(tasks);
         }
     }
+
+    /// <summary>The expedition's people, in ID order: everyone but the locals of a port.</summary>
+    public IEnumerable<Character> Crew => _characters.Values.Where(c => c.Membership == Membership.Crew).OrderBy(c => c.Id);
 
     /// <summary>Characters with waiting orders.</summary>
     public IEnumerable<CharacterId> CharactersWithQueues => _queues.Where(pair => pair.Value.Count > 0).Select(pair => pair.Key);
@@ -529,6 +526,15 @@ public sealed class CampaignState
 
     /// <summary>Puts a character at a cell, replacing any earlier placement. Callers validate the cell.</summary>
     internal void SetPlacement(CharacterId id, CharacterPlacement placement) => _placements[id] = placement;
+
+    /// <summary>Takes a character off every map, for example someone who leaves the port.</summary>
+    internal void RemovePlacement(CharacterId id) => _placements.Remove(id);
+
+    /// <summary>Preparations in port, or null when not in port.</summary>
+    public Port.PortState? Port { get; private set; }
+
+    /// <summary>Opens or closes port preparations. The runner checks the rules; the loader restores it.</summary>
+    internal void SetPort(Port.PortState? port) => Port = port;
 
     /// <summary>Ends any walk in progress, leaving the character on the cell reached so far.</summary>
     internal void StopMovement(CharacterId id)

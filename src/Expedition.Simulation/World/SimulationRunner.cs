@@ -305,7 +305,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
     }
 
     /// <summary>Makes <paramref name="order"/> the active task. Eligibility has been checked.</summary>
-    private void Start(Character character, TaskInstance order)
+    private void Start(Character character, TaskInstance order, string? preferredSpot = null)
     {
         var task = Content.Tasks[order.DefinitionId];
         if (!order.MaterialsConsumed)
@@ -320,7 +320,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
 
         if (task.NeedsWorkSpot)
         {
-            var (spot, path, _) = FindWorkSpot(character, task);
+            var (spot, path, _) = FindWorkSpot(character, task, preferredSpot);
             order.SpotId = spot!.Id;
             StartWalk(character.Id, path!);
         }
@@ -598,7 +598,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
     /// </summary>
     private void CheckCommand()
     {
-        var aboard = Campaign.Characters.Values.Where(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated).ToList();
+        var aboard = Campaign.Crew.Where(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated).ToList();
         if (aboard.Count == 0)
         {
             if (Campaign.Voyage is { Outcome: VoyageOutcome.UnderWay } lost)
@@ -634,7 +634,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
     /// </summary>
     public (double FoodDays, double WaterDays) SupplyForecast()
     {
-        var mouths = Campaign.Characters.Values.Count(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated);
+        var mouths = Campaign.Crew.Count(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated);
         if (mouths == 0)
         {
             return (0, 0);
@@ -759,6 +759,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             }
 
             StepVoyage();
+            StepPort();
             CheckCommand();
             ConsiderEvents();
         }
@@ -775,11 +776,31 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         }
 
         ResolveArrival(character.Id);
-        ReconsiderDuty(character);
-        StartNextQueued(character);
-        StartOnOwnAccord(character);
+        var local = character.Membership == Membership.Local;
+        if (local)
+        {
+            // Locals live by their schedule; their needs are not simulated (R1).
+            FollowSchedule(character);
+        }
+        else
+        {
+            ReconsiderDuty(character);
+            StartNextQueued(character);
+            StartOnOwnAccord(character);
+        }
+
         Campaign.ActiveTasks.TryGetValue(character.Id, out var task);
         var definition = task is null ? null : Content.Tasks[task.DefinitionId];
+        if (local)
+        {
+            if (task is not null && definition is not null && !(Campaign.Placements.TryGetValue(character.Id, out var walking) && walking.IsMoving))
+            {
+                Work(character, task, definition, outcomes);
+            }
+
+            return;
+        }
+
         character.Needs.Apply(Content.Rules.BaselineNeedsPerHour + (definition?.NeedsPerHour ?? NeedRates.None), HoursPerTick);
         RecordRates(character.Id, NeedLedger.Baseline, Content.Rules.BaselineNeedsPerHour);
         if (Campaign.Rationing)
@@ -812,6 +833,12 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             return;
         }
 
+        Work(character, task, definition, outcomes);
+    }
+
+    // Progress, ship effects, hazards and completion for someone at their work.
+    private void Work(Character character, TaskInstance task, TaskDefinition definition, List<TaskOutcome> outcomes)
+    {
         var rate = WorkRate(character, definition);
         task.Progress += rate * SimulationClock.MinutesPerTick;
         if (definition.ShipPerHour is { } effects && Campaign.Voyage is { Outcome: VoyageOutcome.UnderWay } voyage)
@@ -830,16 +857,22 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
 
         if (task.Progress >= definition.DurationMinutes)
         {
-            // Finished work shows what someone can really do. Anyone in the campaign is assumed to work
-            // in the captain's sight for now; distance and witnesses come with the port and ship scenes.
-            if (definition.Skill is not null)
+            // Finished work shows what someone can really do, if the captain saw it. A demonstration the
+            // captain asked for counts as a test.
+            if (CaptainSees(character.Id))
             {
-                Campaign.Learn(character.Id, definition.Skill, character.Skills.Get(definition.Skill), Knowledge.KnowledgeSource.Observation);
-            }
+                var source = task.Origin == TaskOrigin.Order && character.Membership == Membership.Local
+                    ? Knowledge.KnowledgeSource.Test
+                    : Knowledge.KnowledgeSource.Observation;
+                if (definition.Skill is not null)
+                {
+                    Campaign.Learn(character.Id, definition.Skill, character.Skills.Get(definition.Skill), source);
+                }
 
-            if (definition.Attribute is not null)
-            {
-                Campaign.Learn(character.Id, definition.Attribute, character.Attributes.Get(definition.Attribute), Knowledge.KnowledgeSource.Observation);
+                if (definition.Attribute is not null)
+                {
+                    Campaign.Learn(character.Id, definition.Attribute, character.Attributes.Get(definition.Attribute), source);
+                }
             }
 
             Campaign.EndTask(character.Id);
@@ -851,7 +884,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
 
             if (definition.CrewOnComplete is { } relief)
             {
-                foreach (var shipmate in Campaign.Characters.Values.Where(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated))
+                foreach (var shipmate in Campaign.Crew.Where(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated))
                 {
                     shipmate.Needs.Apply(relief, 1);
                 }
@@ -1003,7 +1036,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
     /// The nearest free work spot for <paramref name="task"/> in the character's location, with the path
     /// to it; or a reason why there is none. Ties go to the spot listed first.
     /// </summary>
-    private (WorkSpotDefinition? Spot, IReadOnlyList<GridPosition>? Path, string? Reason) FindWorkSpot(Character character, TaskDefinition task)
+    private (WorkSpotDefinition? Spot, IReadOnlyList<GridPosition>? Path, string? Reason) FindWorkSpot(Character character, TaskDefinition task, string? preferredSpot = null)
     {
         if (!Campaign.Placements.TryGetValue(character.Id, out var placement))
         {
@@ -1025,6 +1058,12 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         }
 
         var start = placement.CellAt(Campaign.Clock.Tick);
+        if (preferredSpot is not null && free.FirstOrDefault(s => s.Id == preferredSpot) is { } preferred
+            && Pathfinder.FindPath(location, start, preferred.Cell) is { } preferredPath)
+        {
+            return (preferred, preferredPath, null);
+        }
+
         var best = free
             .Select(spot => (Spot: spot, Path: Pathfinder.FindPath(location, start, spot.Cell)))
             .Where(candidate => candidate.Path is not null)

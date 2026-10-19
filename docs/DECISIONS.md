@@ -535,3 +535,30 @@ menus"). The review is in `docs/VISION_ALIGNMENT.md`.
 **Why.** Code-built shapes cannot reach the target. This gets the biggest quality jump at the
 lowest cost, and keeps hand-made art for what matters most.
 
+---
+
+## D-022 — The living port: everyone is a character; investigation happens in the world
+
+**Date:** 2026-10-19
+**Status:** Accepted (R1, following D-020)
+
+**Decision.**
+- **Everyone is a real character.** All port people are campaign characters, marked Local, with a
+  daily schedule. Hiring changes them to Crew. There is one roster, as GAME_VISION §2.1 asks.
+- **What the captain learns comes from the world:**
+  - work seen within sight range (observation);
+  - demonstrations watched (test);
+  - what the person says (claim);
+  - what particular people say about them (reference, or rumour);
+  - things seen happening (secrets).
+
+  Facts are only learned when the captain is close enough. Speaking needs the captain within two
+  cells.
+- **Time replaces inquiries:** people leave at set times, stock sells, and the convoy sails at
+  dawn on day 3. Lateness is allowed, at a price.
+- **The V4 hiring menu is removed.** Its candidates' truths, claims and references live on in
+  the people data.
+
+**Why.** GAME_VISION §5 and TECHNICAL_SPEC §15: a compact, active port, NPCs with schedules, and
+investigation by observing, conversing, references and demonstrations.
+

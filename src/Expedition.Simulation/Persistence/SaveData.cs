@@ -61,8 +61,8 @@ public sealed record SaveData
     /// <summary>Active tasks, in character ID order.</summary>
     public required IReadOnlyList<TaskData> ActiveTasks { get; init; }
 
-    /// <summary>Hiring in progress, or null. Added in format 14.</summary>
-    public RecruitmentData? Recruitment { get; init; }
+    /// <summary>Preparations in port, or null. Added in format 15 (format 14's hiring is dropped).</summary>
+    public PortData? Port { get; init; }
 
     /// <summary>An event waiting for the captain, or null. Added in format 12.</summary>
     public PendingEventData? PendingEvent { get; init; }
@@ -134,6 +134,12 @@ public sealed record CharacterData
 
     /// <summary>Social status ID, or null. Added in format 8.</summary>
     public string? StatusId { get; init; }
+
+    /// <summary>Crew or Local. Added in format 15.</summary>
+    public required string Membership { get; init; }
+
+    /// <summary>Person data ID, or null. Added in format 15.</summary>
+    public string? PersonId { get; init; }
 
     /// <summary>Appearance, or null if the character has none recorded. Added in format 7.</summary>
     public AppearanceData? Appearance { get; init; }
@@ -438,52 +444,30 @@ public sealed record EventRecordData
     public required long LastTick { get; init; }
 }
 
-/// <summary>Saved hiring in progress.</summary>
-public sealed record RecruitmentData
+/// <summary>Saved preparations in port. Added in format 15.</summary>
+public sealed record PortData
 {
     /// <summary>Sueldos left.</summary>
     public required int Funds { get; init; }
 
-    /// <summary>Inquiries left.</summary>
-    public required int InquiriesLeft { get; init; }
+    /// <summary>Chandler's lots left, by lot index.</summary>
+    public required IReadOnlyDictionary<int, int> Stock { get; init; }
 
-    /// <summary>What was learned about candidates.</summary>
-    public required IReadOnlyList<CandidateFactData> Facts { get; init; }
+    /// <summary>Character ID numbers spoken with.</summary>
+    public required IReadOnlyList<int> TalkedTo { get; init; }
 
-    /// <summary>Candidates talked to.</summary>
-    public required IReadOnlyList<string> TalkedTo { get; init; }
+    /// <summary>Pairs [informant, about] asked.</summary>
+    public required IReadOnlyList<int[]> Asked { get; init; }
 
-    /// <summary>Candidates asked about.</summary>
-    public required IReadOnlyList<string> AskedAbout { get; init; }
+    /// <summary>Character ID numbers hired here.</summary>
+    public required IReadOnlyList<int> Hired { get; init; }
 
-    /// <summary>Candidates who refused a test.</summary>
-    public required IReadOnlyList<string> RefusedTest { get; init; }
+    /// <summary>Character ID numbers who left.</summary>
+    public required IReadOnlyList<int> Gone { get; init; }
 
-    /// <summary>Candidates haggled with.</summary>
-    public required IReadOnlyList<string> Haggled { get; init; }
+    /// <summary>Half days of late fees charged.</summary>
+    public required int LateFeesCharged { get; init; }
 
-    /// <summary>Candidates who walked away.</summary>
-    public required IReadOnlyList<string> Gone { get; init; }
-
-    /// <summary>Prices changed by haggling.</summary>
-    public required IReadOnlyDictionary<string, int> Prices { get; init; }
-
-    /// <summary>Hired candidates and the character ID number each became.</summary>
-    public required IReadOnlyDictionary<string, int> Hired { get; init; }
-}
-
-/// <summary>A saved fact about a candidate.</summary>
-public sealed record CandidateFactData
-{
-    /// <summary>Candidate ID.</summary>
-    public required string Candidate { get; init; }
-
-    /// <summary>Topic.</summary>
-    public required string Topic { get; init; }
-
-    /// <summary>Level.</summary>
-    public required int Level { get; init; }
-
-    /// <summary>Source name.</summary>
-    public required string Source { get; init; }
+    /// <summary>Whether the eve-of-sailing warning was given.</summary>
+    public required bool Warned { get; init; }
 }

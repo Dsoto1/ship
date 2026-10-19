@@ -52,6 +52,10 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
             ChronicleEntryKind.WeatherChanged => WeatherChange(entry),
             ChronicleEntryKind.EventResolved => EventLine(entry),
             ChronicleEntryKind.AllHandsLost => $"No one is left alive aboard {Ship()}.",
+            ChronicleEntryKind.Noticed => $"You noticed something about {who}: {Secret(entry.Get(ChronicleParameters.To))}",
+            ChronicleEntryKind.LeftPort => $"{who} {entry.Get(ChronicleParameters.Reason)}.",
+            ChronicleEntryKind.ConvoyWarning => $"The Chamber's notice: the convoy sails at dawn, in {entry.Get(ChronicleParameters.Level)} hours.",
+            ChronicleEntryKind.LateFee => $"The convoy has gone without {Ship()}. Harbour fees and the Company's displeasure: {entry.Get(ChronicleParameters.Level)} sueldos.",
             ChronicleEntryKind.CrewHired => int.TryParse(entry.Get(ChronicleParameters.Level), out var paid) && paid < 0
                 ? $"{who} signed on, paying {-paid} sueldos for the passage."
                 : $"{who} signed on for an advance of {entry.Get(ChronicleParameters.Level)} sueldos.",
@@ -103,6 +107,9 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
             ? Fill(definition.Title)
             : $"{Fill(definition.Title)} {Fill(choice.Text)}: {Fill(outcome.Text)}";
     }
+
+    private string Secret(string? id) =>
+        content.Port?.People.SelectMany(p => p.Secrets).FirstOrDefault(s => s.Id == id)?.Text.ToLowerInvariant() ?? "something odd.";
 
     private string Ship() => campaign.Voyage?.ShipName ?? "the ship";
 

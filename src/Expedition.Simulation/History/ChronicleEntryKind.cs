@@ -62,4 +62,16 @@ public enum ChronicleEntryKind
 
     /// <summary>Someone signed on (parameter: level = advance paid; character: who).</summary>
     CrewHired,
+
+    /// <summary>The captain noticed something about someone (parameter: to = fact ID; character: who).</summary>
+    Noticed,
+
+    /// <summary>Someone stopped waiting for a berth and left (parameter: reason; character: who).</summary>
+    LeftPort,
+
+    /// <summary>The convoy sails soon (parameter: level = hours left).</summary>
+    ConvoyWarning,
+
+    /// <summary>The ship stayed after the convoy and paid for it (parameter: level = sueldos).</summary>
+    LateFee,
 }

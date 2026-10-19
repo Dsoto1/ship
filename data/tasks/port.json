@@ -1,0 +1,29 @@
+// What people do on the Bocana waterfront (R1). Townsfolk do these on their daily schedules; the skill
+// or attribute a task names is what the captain learns by watching someone finish it. People in port
+// have no needs simulated, so these carry no need rates.
+[
+  { "id": "task.sleep_at_home", "name": "Asleep at home", "durationMinutes": 120, "isRest": true, "needsWorkSpot": true },
+  { "id": "task.drink", "name": "Drinking at the Three Anchors", "durationMinutes": 60, "needsWorkSpot": true },
+  { "id": "task.gamble", "name": "Dicing at the Three Anchors", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.persuasion" },
+  { "id": "task.serve_drinks", "name": "Serving drinks", "durationMinutes": 60, "needsWorkSpot": true },
+  { "id": "task.port_cooking", "name": "Cooking at the tavern fire", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.cooking" },
+  { "id": "task.pray", "name": "At prayer", "durationMinutes": 60, "needsWorkSpot": true },
+  { "id": "task.office_work", "name": "Working in the Chamber office", "durationMinutes": 60, "needsWorkSpot": true },
+  { "id": "task.read_notices", "name": "Reading the Chamber's notices", "durationMinutes": 30, "needsWorkSpot": true },
+  { "id": "task.study_charts", "name": "Studying charts", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.navigation" },
+  { "id": "task.keep_accounts", "name": "Keeping accounts", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.negotiation" },
+  { "id": "task.trade_goods", "name": "Trading", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.negotiation" },
+  { "id": "task.sell_fish", "name": "Selling fish", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.fishing" },
+  { "id": "task.treat_patients", "name": "Treating patients", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.first_aid" },
+  { "id": "task.dun_debtor", "name": "Dunning a debtor", "durationMinutes": 30, "needsWorkSpot": true },
+  { "id": "task.port_carpentry", "name": "Carpentry in the yard", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.carpentry" },
+  { "id": "task.coopering", "name": "Making casks", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.crafting" },
+  { "id": "task.haul_cargo", "name": "Hauling cargo", "durationMinutes": 60, "needsWorkSpot": true, "attribute": "attribute.strength" },
+  { "id": "task.port_rigging", "name": "Working a boat's rigging", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.rigging" },
+  { "id": "task.mend_nets", "name": "Mending nets", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.seamanship" },
+  { "id": "task.wait_in_irons", "name": "Waiting in irons", "durationMinutes": 120, "needsWorkSpot": true },
+  { "id": "task.stand_guard", "name": "Standing guard", "durationMinutes": 120, "needsWorkSpot": true },
+  { "id": "task.play", "name": "Playing in the square", "durationMinutes": 60, "needsWorkSpot": true },
+  { "id": "task.meet_in_secret", "name": "Talking quietly in the alley", "durationMinutes": 60, "needsWorkSpot": true },
+  { "id": "task.board", "name": "Going aboard", "durationMinutes": 1, "needsWorkSpot": true }
+]

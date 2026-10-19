@@ -7,9 +7,10 @@ using Expedition.Simulation.World;
 namespace Expedition.Simulation.Scenarios;
 
 /// <summary>
-/// The start of a campaign (V4, D-019): Captain Álvaro aboard the <i>Garza</i> at La Bocana with the stores
-/// the Company provides, hiring open, and the convoy due to sail. The player hires a crew, buys what else
-/// the purse allows, and sets sail with <see cref="SimulationRunner.SetSail"/>.
+/// The start of a campaign (R1, D-022): Captain Álvaro on the quay at La Bocana on the morning of day 1,
+/// the <i>Garza</i> alongside with the stores the Company provides, and the waterfront's people about their
+/// business. The convoy sails at dawn on day 3. The player meets people, hires a crew, buys what else the
+/// purse allows, and sails with <see cref="SetSail"/>.
 /// </summary>
 public static class ExpeditionScenario
 {
@@ -24,9 +25,9 @@ public static class ExpeditionScenario
     /// <exception cref="InvalidOperationException">The content lacks something the scenario needs.</exception>
     public static SimulationRunner Create(GameContent content, ulong seed = CampaignState.DefaultSeed)
     {
-        if (content.Recruitment is null || !content.Locations.ContainsKey(TestDeckScenario.LocationId))
+        if (content.Port is not { } port || !content.Locations.ContainsKey(port.Location))
         {
-            throw new InvalidOperationException("The expedition scenario needs data/recruitment.json and the deck location.");
+            throw new InvalidOperationException("The expedition scenario needs data/port and the waterfront location.");
         }
 
         var campaign = new CampaignState(CampaignPhase.SponsorCommission, seed);
@@ -55,16 +56,35 @@ public static class ExpeditionScenario
         captain.AddTrait("trait.proud");
         captain.AddTrait("trait.cautious");
         captain.Appearance = AppearanceGenerator.Generate(captain, content.Appearance, campaign.Randomness.Characters);
-        Require(runner.PlaceCharacter(captain.Id, TestDeckScenario.LocationId, new GridPosition(4, 18)));
+        Require(runner.PlaceCharacter(captain.Id, port.Location, Quayside));
         Require(campaign.AppointCaptain(captain.Id, "named in the Company's charter"));
         Require(runner.SetDuties(captain.Id, ["task.stand_watch"]));
-        Require(runner.BeginRecruitment());
+        foreach (var person in port.People)
+        {
+            var local = campaign.CreateCharacter(person.Name, person.Age, person.Origin, content.Rules.PersonalCarryCapacity);
+            local.Membership = Membership.Local;
+            local.PersonId = person.Id;
+            local.Sex = person.Sex;
+            local.StatusId = person.Status;
+            foreach (var (skill, level) in person.Skills) local.Skills.Set(skill, level);
+            foreach (var (attribute, level) in person.Attributes) local.Attributes.Set(attribute, level);
+            foreach (var (language, level) in person.Languages) local.Languages.Set(language, level);
+            foreach (var trait in person.Traits) local.AddTrait(trait);
+            local.Appearance = AppearanceGenerator.Generate(local, content.Appearance, campaign.Randomness.Characters);
+            Require(runner.PlaceCharacter(local.Id, port.Location, content.Locations[port.Location].FindSpot(person.Home)!.Cell));
+        }
+
+        Require(runner.BeginPort());
+        runner.SettleLocals();
         return runner;
     }
 
     /// <summary>Sails with the convoy once the crew is hired.</summary>
     public static Core.CommandResult SetSail(SimulationRunner runner) =>
         runner.SetSail(TestDeckScenario.ShipName, TestDeckScenario.Destination, TestDeckScenario.VoyageLeagues);
+
+    /// <summary>Where the captain starts: on the quay by the gangway.</summary>
+    public static readonly GridPosition Quayside = new(31, 28);
 
     private static void Require(Core.CommandResult result)
     {

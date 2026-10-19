@@ -27,8 +27,8 @@ This file tracks status and breaks the next work into tickets.
 | V2 | The ship in danger: leaks, wear, supplies, distance, need-driven duties | Done (2026-10-19) |
 | V3 | Things happen: events with choices, crew who speak up | Done (2026-10-19) |
 | V4 | Choose who comes: simple pre-voyage hiring (the core of 5c) | Done (2026-10-19), **stopgap**: a menu, against GAME_VISION §5 (D-020) |
-| R1 | The living port, simulated: waterfront places, ~25 people on schedules, observation, real deadline, candidates who weigh you | Next |
-| R2 | The living port, playable: walk the waterfront, click anyone, talk and offer in the world, inspect the Garza, chandler and stowage | Planned |
+| R1 | The living port, simulated: waterfront places, ~25 people on schedules, observation, real deadline, candidates who weigh you | Done (2026-10-19) |
+| R2 | The living port, playable: walk the waterfront, click anyone, talk and offer in the world, inspect the Garza, chandler and stowage | Next |
 | R3 | Visual validation, Test A port then Test B ship, with the chosen art pipeline | Waiting on owner (art pipeline) |
 | R4 | Voyage gaps: chart and estimated position, cargo, medical crisis, chained storms, state-driven events | Planned |
 | R5 | Shipwreck continuation: survivors and salvage on a beach | Planned |
@@ -497,4 +497,46 @@ Balance (8 seeds, a sensible captain choosing events at random): a well-found sh
 crew and bought stores arrives 5–8 times; the same crew with only the Company's stores, never.
 363 tests pass. Developer options: `--testdeck` starts the old test scenario directly; `--hire=`
 hires, talks (`talk:id`), asks (`ask:id`) and sails (`sail`) for screenshots.
+
+## R1 — The living port, simulated
+
+D-022. Replaces V4's hiring menu underneath; the playable scene is R2.
+- **The Bocana waterfront** (`data/locations/bocana.json`, 60 × 36 m):
+  - the quay with the gangway;
+  - the square with stalls and a well;
+  - the Chamber office;
+  - the Company counting house;
+  - the *Three Anchors*;
+  - the chapel;
+  - the chandler;
+  - the carpenter's yard;
+  - the alley;
+  - homes on the back street.
+
+  Spots say what can be done where, and whether it is indoors (out of sight and reach).
+- **28 people** (`data/port/bocana.json`): the 12 candidates and 16 townsfolk. Each has a true
+  record, a home and a daily schedule (`data/tasks/port.json`).
+- **Everyone is a real campaign character.** Locals (`Membership.Local`) live by their schedule,
+  with no needs simulated. Hiring makes them crew. Only crew count for events, rations and command.
+- **Watching is investigating:**
+  - Work finished where the captain can see it (14 m, not indoors) shows the true skill or attribute.
+  - A demonstration the captain asks for and watches counts as a test.
+  - Secrets are seen, not told: Velho meeting the Brennish trader after dark; Pons cornered by the
+    moneylender.
+- **Who you ask matters:** each reference belongs to a person (the bosun knows Rodrigo, the gaoler
+  knows Tomé); the landlady knows gossip; others shrug. You must walk over to speak.
+- **Offers are weighed:**
+  - Below someone's hidden lowest they counter, and a lowball offer insults them.
+  - Rodrigo will not sail with the Brennish man.
+  - A captain they distrust is refused.
+  - The proud refuse demonstrations, and take offence.
+- **Time is the limit:** Velho takes another ship at 14:00 on day 2, Pons flees that night, and
+  Pascual's mother takes him home before dawn on day 3. The chandler's stock sells to others each day.
+  The convoy sails at dawn on day 3, with a warning 12 hours before; staying costs 300 sueldos per
+  half day.
+- **Sailing** takes the crew and captain aboard, leaves the locals behind unsimulated, and starts
+  the voyage.
+- **Save format 15** (port state, membership). Format 14 saves lose hiring in progress.
+
+366 tests pass, including every hour of a port day leaving at most one person without a place to be.
 

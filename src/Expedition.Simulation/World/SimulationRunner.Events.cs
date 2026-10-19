@@ -63,7 +63,7 @@ public sealed partial class SimulationRunner
             return true;
         }
 
-        var able = Campaign.Characters.Values
+        var able = Campaign.Crew
             .Where(c => c.SurvivalState == SurvivalState.Alive)
             .Where(c => rule.Origin is null || c.Origin == rule.Origin)
             .Where(c => rule.Trait is null || c.Traits.Contains(rule.Trait))
@@ -136,7 +136,7 @@ public sealed partial class SimulationRunner
         {
             "subject" when pending.Subject is { } id => Campaign.Characters[id].Skills.Get(check.Skill),
             "captain" when Campaign.CaptainId is { } id => Campaign.Characters[id].Skills.Get(check.Skill),
-            _ => Campaign.Characters.Values.Where(c => c.CanWork).Select(c => c.Skills.Get(check.Skill)).DefaultIfEmpty(0).Max(),
+            _ => Campaign.Crew.Where(c => c.CanWork).Select(c => c.Skills.Get(check.Skill)).DefaultIfEmpty(0).Max(),
         };
         return Math.Clamp(check.Base + check.PerLevel * level, 0.05, 0.95);
     }
@@ -185,7 +185,7 @@ public sealed partial class SimulationRunner
 
     private IEnumerable<Character> Resolve(string? who, PendingEvent pending)
     {
-        var aboard = Campaign.Characters.Values.Where(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated);
+        var aboard = Campaign.Crew.Where(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated);
         return who switch
         {
             "subject" when pending.Subject is { } id => [Campaign.Characters[id]],

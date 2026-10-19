@@ -25,6 +25,12 @@ public sealed record LocationDefinition
     /// <summary>Places where specific tasks are done. One worker per spot.</summary>
     public IReadOnlyList<WorkSpotDefinition> Spots { get; init; } = [];
 
+    /// <summary>
+    /// How far, in cells, the captain can see what people are doing here; null means everything (a ship's
+    /// deck, where the captain hears of all work). Used for observing work and secrets (R1).
+    /// </summary>
+    public int? SightRange { get; init; }
+
     /// <summary>Number of columns.</summary>
     public int Width => Rows.Count == 0 ? 0 : Rows[0].Length;
 
@@ -53,6 +59,9 @@ public sealed record WorkSpotDefinition
 
     /// <summary>Task definition IDs that are done here.</summary>
     public required IReadOnlyList<string> Tasks { get; init; }
+
+    /// <summary>True if the spot is inside a building: people there cannot be seen from outside.</summary>
+    public bool Indoors { get; init; }
 
     /// <summary>The spot's cell.</summary>
     public GridPosition Cell => new(X, Y);

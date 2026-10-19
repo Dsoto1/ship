@@ -26,7 +26,7 @@ public sealed class GameContent
         IEnumerable<StatusDefinition>? statuses = null,
         Voyage.VoyageRules? voyage = null,
         IEnumerable<Events.EventDefinition>? events = null,
-        Recruitment.RecruitmentRules? recruitment = null)
+        Port.PortRules? port = null)
     {
         var errors = new List<string>();
         Rules = rules;
@@ -69,7 +69,7 @@ public sealed class GameContent
         ContentValidator.ValidateRules(rules, errors);
         Voyage = voyage;
         Events = IndexById(events ?? [], e => e.Id, "event", errors);
-        Recruitment = recruitment;
+        Port = port;
         if (voyage is not null)
         {
             errors.AddRange(voyage.Validate());
@@ -109,9 +109,9 @@ public sealed class GameContent
             ValidateEvent(definition, errors);
         }
 
-        if (recruitment is not null)
+        if (port is not null)
         {
-            ValidateRecruitment(recruitment, errors);
+            ValidatePort(port, errors);
         }
 
         if (errors.Count > 0)
@@ -123,50 +123,87 @@ public sealed class GameContent
         Drinks = Items.Values.Where(i => i.ThirstRelief > 0).OrderBy(i => i.Id, StringComparer.Ordinal).ToList();
     }
 
-    /// <summary>Hiring rules and candidates, or null if the content has none.</summary>
-    public Recruitment.RecruitmentRules? Recruitment { get; }
+    /// <summary>The port and its people, or null if the content has none.</summary>
+    public Port.PortRules? Port { get; }
 
-    private void ValidateRecruitment(Recruitment.RecruitmentRules rules, List<string> errors)
+    private void ValidatePort(Port.PortRules rules, List<string> errors)
     {
-        if (rules.Funds < 0 || rules.Berths < 1 || rules.MinimumCrew < 1 || rules.MinimumCrew > rules.Berths || rules.Inquiries < 0)
+        if (!Locations.TryGetValue(rules.Location, out var waterfront) || !Locations.ContainsKey(rules.ShipLocation))
         {
-            errors.Add("Recruitment: needs funds >= 0, berths >= 1, 1 <= minimumCrew <= berths, inquiries >= 0.");
+            errors.Add($"Port: unknown location '{rules.Location}' or ship location '{rules.ShipLocation}'.");
+            return;
         }
 
-        foreach (var lot in rules.Goods.Where(g => !Items.ContainsKey(g.Item) || g.Quantity <= 0 || g.Price < 0))
+        if (waterfront.FindSpot(rules.Gangway) is null)
         {
-            errors.Add($"Recruitment: chandler lot '{lot.Item}' needs a known item, a positive quantity and a price.");
+            errors.Add($"Port: gangway '{rules.Gangway}' is not a spot on the waterfront.");
         }
 
-        if (rules.Candidates.Select(c => c.Id).Distinct().Count() != rules.Candidates.Count)
+        if (rules.Funds < 0 || rules.Berths < 1 || rules.MinimumCrew < 1 || rules.MinimumCrew > rules.Berths || rules.LateFeePerHalfDay < 0)
         {
-            errors.Add("Recruitment: candidate IDs must be unique.");
+            errors.Add("Port: needs funds >= 0, 1 <= minimumCrew <= berths, and a late fee >= 0.");
         }
 
-        foreach (var candidate in rules.Candidates)
+        foreach (var lot in rules.Goods.Where(g => !Items.ContainsKey(g.Item) || g.Quantity <= 0 || g.Price < 0 || g.Stock < 0 || g.SoldPerDay < 0))
         {
-            var where = $"Candidate '{candidate.Id}'";
-            bool KnownTopic(string topic) => Skills.ContainsKey(topic) || Languages.ContainsKey(topic) || Traits.ContainsKey(topic);
-            if (!Statuses.ContainsKey(candidate.Status))
+            errors.Add($"Port: chandler lot '{lot.Item}' needs a known item, a positive quantity, and non-negative price, stock and sales.");
+        }
+
+        var ids = rules.People.Select(p => p.Id).ToHashSet(StringComparer.Ordinal);
+        if (ids.Count != rules.People.Count)
+        {
+            errors.Add("Port: person IDs must be unique.");
+        }
+
+        bool KnownTopic(string topic) => Skills.ContainsKey(topic) || Languages.ContainsKey(topic) || Traits.ContainsKey(topic) || Attributes.ContainsKey(topic);
+        foreach (var person in rules.People)
+        {
+            var where = $"Person '{person.Id}'";
+            if (!Statuses.ContainsKey(person.Status))
             {
-                errors.Add($"{where}: unknown status '{candidate.Status}'.");
+                errors.Add($"{where}: unknown status '{person.Status}'.");
             }
 
-            var levels = candidate.Skills.Concat(candidate.Attributes).Concat(candidate.Languages).Concat(candidate.Claims).Concat(candidate.Reference.Levels);
-            if (levels.Any(pair => pair.Value is < 0 or > 5))
+            if (waterfront.FindSpot(person.Home) is not { } home || !home.Tasks.Contains("task.sleep_at_home"))
             {
-                errors.Add($"{where}: levels must be 0..5.");
+                errors.Add($"{where}: home '{person.Home}' must be a waterfront spot for task.sleep_at_home.");
             }
 
-            var unknown = candidate.Skills.Keys.Where(k => !Skills.ContainsKey(k))
-                .Concat(candidate.Attributes.Keys.Where(k => !Attributes.ContainsKey(k)))
-                .Concat(candidate.Languages.Keys.Where(k => !Languages.ContainsKey(k)))
-                .Concat(candidate.Traits.Where(t => !Traits.ContainsKey(t)))
-                .Concat(candidate.Claims.Keys.Concat(candidate.Reference.Levels.Keys).Where(k => !KnownTopic(k)))
+            foreach (var block in person.Schedule)
+            {
+                if (!Tasks.ContainsKey(block.Task) || block.From is < 0 or > 23 || block.To is < 0 or > 24 || block.From == block.To)
+                {
+                    errors.Add($"{where}: schedule block {block.From}-{block.To} '{block.Task}' needs a known task and valid hours.");
+                }
+                else if (block.Spot is { } spot && waterfront.FindSpot(spot)?.Tasks.Contains(block.Task) != true)
+                {
+                    errors.Add($"{where}: spot '{spot}' does not offer '{block.Task}'.");
+                }
+                else if (!waterfront.Spots.Any(s => s.Tasks.Contains(block.Task)))
+                {
+                    errors.Add($"{where}: nowhere on the waterfront offers '{block.Task}'.");
+                }
+            }
+
+            var unknown = person.Skills.Keys.Where(k => !Skills.ContainsKey(k))
+                .Concat(person.Attributes.Keys.Where(k => !Attributes.ContainsKey(k)))
+                .Concat(person.Languages.Keys.Where(k => !Languages.ContainsKey(k)))
+                .Concat(person.Traits.Where(t => !Traits.ContainsKey(t)))
+                .Concat((person.Seeking?.Claims.Keys ?? []).Concat(person.Knows.SelectMany(k => k.Levels.Keys)).Where(k => !KnownTopic(k)))
+                .Concat(person.Knows.Select(k => k.About).Concat(person.Secrets.Select(s => s.WithPerson).OfType<string>())
+                    .Concat(person.Seeking?.WontSailWith.Select(a => a.Person) ?? []).Where(p => !ids.Contains(p)))
+                .Concat(person.Secrets.Select(s => s.During).Where(t => !Tasks.ContainsKey(t)))
                 .ToList();
             if (unknown.Count > 0)
             {
                 errors.Add($"{where}: unknown {string.Join(", ", unknown)}.");
+            }
+
+            var levels = person.Skills.Concat(person.Attributes).Concat(person.Languages)
+                .Concat(person.Seeking?.Claims ?? new Dictionary<string, int>()).Concat(person.Knows.SelectMany(k => k.Levels));
+            if (levels.Any(pair => pair.Value is < 0 or > 5))
+            {
+                errors.Add($"{where}: levels must be 0..5.");
             }
         }
     }

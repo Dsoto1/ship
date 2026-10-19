@@ -1,0 +1,1593 @@
+// The people of the Bocana waterfront and the rules for preparing the Garza (R1, D-022). Each person's
+// skills, attributes, traits and languages are the truth. 'seeking' marks someone looking for a berth:
+// what they ask, the least they will take, what they claim, when they give up, and whom they will not
+// sail with. 'knows' is what a person says about others when asked; 'secrets' are seen, not told.
+// Schedules are hour blocks [from, to), wrapping past midnight. Numbers are placeholders to tune.
+{
+ "location": "location.bocana",
+ "shipLocation": "location.test_deck",
+ "gangway": "spot.gangway",
+ "funds": 7000,
+ "berths": 7,
+ "minimumCrew": 4,
+ "departure": {
+  "day": 3,
+  "hour": 6
+ },
+ "lateFeePerHalfDay": 300,
+ "goods": [
+  {
+   "item": "item.water",
+   "quantity": 20,
+   "price": 60,
+   "stock": 16,
+   "soldPerDay": 3
+  },
+  {
+   "item": "item.biscuit",
+   "quantity": 20,
+   "price": 60,
+   "stock": 12,
+   "soldPerDay": 2
+  },
+  {
+   "item": "item.salt_pork",
+   "quantity": 10,
+   "price": 70,
+   "stock": 8,
+   "soldPerDay": 2
+  },
+  {
+   "item": "item.wine",
+   "quantity": 10,
+   "price": 50,
+   "stock": 8,
+   "soldPerDay": 1
+  },
+  {
+   "item": "item.rope",
+   "quantity": 2,
+   "price": 80,
+   "stock": 5,
+   "soldPerDay": 1
+  },
+  {
+   "item": "item.oakum",
+   "quantity": 4,
+   "price": 40,
+   "stock": 6,
+   "soldPerDay": 1
+  },
+  {
+   "item": "item.plank",
+   "quantity": 2,
+   "price": 60,
+   "stock": 5,
+   "soldPerDay": 1
+  }
+ ],
+ "people": [
+  {
+   "id": "person.velho",
+   "name": "Duarte Velho",
+   "age": 47,
+   "sex": "Male",
+   "origin": "Lusara",
+   "status": "status.officer",
+   "occupation": "pilot, between ships",
+   "look": "A weathered Lusaran with a pilot's brass dividers on a cord round his neck.",
+   "home": "spot.home_01",
+   "schedule": [
+    {
+     "from": 23,
+     "to": 7,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 7,
+     "to": 11,
+     "task": "task.study_charts",
+     "spot": "spot.chart_table"
+    },
+    {
+     "from": 11,
+     "to": 12,
+     "task": "task.read_notices"
+    },
+    {
+     "from": 12,
+     "to": 14,
+     "task": "task.drink"
+    },
+    {
+     "from": 14,
+     "to": 18,
+     "task": "task.mend_nets"
+    },
+    {
+     "from": 18,
+     "to": 21,
+     "task": "task.drink"
+    },
+    {
+     "from": 21,
+     "to": 23,
+     "task": "task.meet_in_secret",
+     "spot": "spot.alley_1"
+    }
+   ],
+   "skills": {
+    "skill.navigation": 4,
+    "skill.seamanship": 3,
+    "skill.sailing": 3
+   },
+   "traits": [
+    "trait.proud"
+   ],
+   "languages": {
+    "language.lusaran": 5,
+    "language.castrenan": 3,
+    "language.ahuneri": 1
+   },
+   "secrets": [
+    {
+     "id": "fact.velho_brennish",
+     "text": "Seen meeting the Brennish trader in the alley after dark.",
+     "during": "task.meet_in_secret"
+    }
+   ],
+   "seeking": {
+    "asks": 1600,
+    "lowest": 1600,
+    "pitch": "\"I have taken ships to the Ember Coast three times. I know the shoals off the river mouths and the currents in the dry season. Why go back? That is my business, Captain.\"",
+    "claims": {
+     "skill.navigation": 5,
+     "skill.seamanship": 4,
+     "language.ahuneri": 2
+    },
+    "leaves": {
+     "day": 2,
+     "hour": 14,
+     "reason": "signed on as pilot of a Lusaran caravel bound for the islands"
+    }
+   }
+  },
+  {
+   "id": "person.pons",
+   "name": "Ilario Pons",
+   "age": 38,
+   "sex": "Male",
+   "origin": "Almara",
+   "status": "status.craftsman",
+   "occupation": "barber-surgeon",
+   "look": "A barber-surgeon with a good coat gone shiny at the elbows, watching the street behind you.",
+   "home": "spot.home_02",
+   "schedule": [
+    {
+     "from": 23,
+     "to": 8,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 8,
+     "to": 12,
+     "task": "task.treat_patients"
+    },
+    {
+     "from": 12,
+     "to": 13,
+     "task": "task.drink"
+    },
+    {
+     "from": 13,
+     "to": 16,
+     "task": "task.treat_patients"
+    },
+    {
+     "from": 16,
+     "to": 17,
+     "task": "task.treat_patients"
+    },
+    {
+     "from": 17,
+     "to": 19,
+     "task": "task.pray"
+    },
+    {
+     "from": 19,
+     "to": 23,
+     "task": "task.drink"
+    }
+   ],
+   "skills": {
+    "skill.first_aid": 4,
+    "skill.surgery": 3,
+    "skill.treatment": 3
+   },
+   "traits": [
+    "trait.resourceful"
+   ],
+   "languages": {
+    "language.castrenan": 5,
+    "language.ligurese": 2
+   },
+   "secrets": [
+    {
+     "id": "fact.pons_creditor",
+     "text": "Seen cornered by the moneylender Grilo, pleading for time.",
+     "during": "task.treat_patients",
+     "withPerson": "person.grilo"
+    }
+   ],
+   "seeking": {
+    "asks": 1300,
+    "lowest": 1100,
+    "pitch": "\"Bleeding, setting bones, drawing teeth, the flux and the fever: I have treated them all. I would like to be at sea before certain gentlemen find me.\"",
+    "claims": {
+     "skill.first_aid": 5,
+     "skill.surgery": 4
+    },
+    "leaves": {
+     "day": 2,
+     "hour": 20,
+     "reason": "fled the town by the night road, a step ahead of his creditors"
+    }
+   }
+  },
+  {
+   "id": "person.bartolo",
+   "name": "Bartolo Ruiz",
+   "age": 61,
+   "sex": "Male",
+   "origin": "La Bocana",
+   "status": "status.craftsman",
+   "occupation": "ship's carpenter",
+   "look": "An old ship's carpenter, bent, with hands like roots and a sea chest of tools.",
+   "home": "spot.home_03",
+   "schedule": [
+    {
+     "from": 21,
+     "to": 6,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 6,
+     "to": 12,
+     "task": "task.port_carpentry"
+    },
+    {
+     "from": 12,
+     "to": 13,
+     "task": "task.drink"
+    },
+    {
+     "from": 13,
+     "to": 17,
+     "task": "task.port_carpentry"
+    },
+    {
+     "from": 17,
+     "to": 19,
+     "task": "task.pray"
+    },
+    {
+     "from": 19,
+     "to": 21,
+     "task": "task.drink"
+    }
+   ],
+   "skills": {
+    "skill.ship_repair": 5,
+    "skill.carpentry": 4
+   },
+   "attributes": {
+    "attribute.strength": 1,
+    "attribute.endurance": 1
+   },
+   "traits": [
+    "trait.cautious"
+   ],
+   "languages": {
+    "language.castrenan": 5
+   },
+   "seeking": {
+    "asks": 1100,
+    "lowest": 1000,
+    "pitch": "\"Forty years in the yards and at sea. There is not a seam on a caravel I cannot find in the dark. I am slower than I was, I grant you.\"",
+    "claims": {
+     "skill.ship_repair": 5,
+     "skill.carpentry": 4
+    }
+   }
+  },
+  {
+   "id": "person.leonor",
+   "name": "Leonor Alarcón",
+   "age": 26,
+   "sex": "Female",
+   "origin": "Almara",
+   "status": "status.craftsman",
+   "occupation": "the Company's clerk",
+   "look": "A young widow in mourning black, with a Company ledger under her arm.",
+   "home": "spot.home_04",
+   "schedule": [
+    {
+     "from": 19,
+     "to": 8,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 8,
+     "to": 12,
+     "task": "task.keep_accounts",
+     "spot": "spot.counting_table"
+    },
+    {
+     "from": 12,
+     "to": 13,
+     "task": "task.pray"
+    },
+    {
+     "from": 13,
+     "to": 17,
+     "task": "task.keep_accounts",
+     "spot": "spot.counting_table"
+    },
+    {
+     "from": 17,
+     "to": 19,
+     "task": "task.read_notices"
+    }
+   ],
+   "skills": {
+    "skill.negotiation": 3,
+    "skill.persuasion": 2,
+    "skill.cooking": 1
+   },
+   "traits": [
+    "trait.resourceful",
+    "trait.loyal"
+   ],
+   "languages": {
+    "language.castrenan": 5,
+    "language.ligurese": 3
+   },
+   "seeking": {
+    "asks": 600,
+    "lowest": 600,
+    "pitch": "\"My husband was the factor's clerk at Punta Ceniza. He is owed a share, and I mean to collect it. I can read the factory's books, which is more than anyone else aboard will manage.\"",
+    "claims": {
+     "skill.negotiation": 3
+    }
+   }
+  },
+  {
+   "id": "person.tome",
+   "name": "Tomé Arcos",
+   "age": 30,
+   "sex": "Male",
+   "origin": "Almara",
+   "status": "status.convict",
+   "occupation": "convict, offered a pardon",
+   "look": "A big man in irons, offered a pardon if he sails; the guards keep their distance.",
+   "home": "spot.home_05",
+   "schedule": [
+    {
+     "from": 20,
+     "to": 6,
+     "task": "task.wait_in_irons"
+    },
+    {
+     "from": 6,
+     "to": 9,
+     "task": "task.wait_in_irons"
+    },
+    {
+     "from": 9,
+     "to": 11,
+     "task": "task.haul_cargo"
+    },
+    {
+     "from": 11,
+     "to": 14,
+     "task": "task.wait_in_irons"
+    },
+    {
+     "from": 14,
+     "to": 16,
+     "task": "task.haul_cargo"
+    },
+    {
+     "from": 16,
+     "to": 20,
+     "task": "task.wait_in_irons"
+    }
+   ],
+   "skills": {
+    "skill.seamanship": 3,
+    "skill.sailing": 3,
+    "skill.rigging": 2
+   },
+   "attributes": {
+    "attribute.strength": 5,
+    "attribute.endurance": 4
+   },
+   "traits": [
+    "trait.impulsive"
+   ],
+   "languages": {
+    "language.castrenan": 5
+   },
+   "seeking": {
+    "asks": 150,
+    "lowest": 150,
+    "pitch": "\"Never been to sea, Captain. But I can pull and lift, and I want that pardon more than I want anything.\"",
+    "claims": {
+     "skill.sailing": 0,
+     "skill.seamanship": 0
+    }
+   }
+  },
+  {
+   "id": "person.ximena",
+   "name": "Ximena Durán",
+   "age": 33,
+   "sex": "Female",
+   "origin": "La Bocana",
+   "status": "status.servant",
+   "occupation": "fish seller, once a castaway",
+   "look": "A lean woman with a tattooed wrist she keeps covered, and a lagoon shell on a thong.",
+   "home": "spot.home_06",
+   "schedule": [
+    {
+     "from": 22,
+     "to": 6,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 6,
+     "to": 12,
+     "task": "task.sell_fish"
+    },
+    {
+     "from": 12,
+     "to": 13,
+     "task": "task.drink"
+    },
+    {
+     "from": 13,
+     "to": 17,
+     "task": "task.sell_fish"
+    },
+    {
+     "from": 17,
+     "to": 18,
+     "task": "task.pray"
+    },
+    {
+     "from": 18,
+     "to": 22,
+     "task": "task.drink"
+    }
+   ],
+   "skills": {
+    "skill.languages": 2,
+    "skill.foraging": 2,
+    "skill.fishing": 2
+   },
+   "traits": [
+    "trait.cautious"
+   ],
+   "languages": {
+    "language.castrenan": 5,
+    "language.ahuneri": 2
+   },
+   "seeking": {
+    "asks": 1200,
+    "lowest": 1000,
+    "pitch": "\"I lived a year among the Ahuneri at Mahenu, after a wreck. I speak their tongue as well as my own. You will need me more than you need another pair of hands.\"",
+    "claims": {
+     "language.ahuneri": 4,
+     "skill.languages": 3
+    }
+   }
+  },
+  {
+   "id": "person.gil",
+   "name": "Gil Cordero",
+   "age": 40,
+   "sex": "Male",
+   "origin": "Almara",
+   "status": "status.craftsman",
+   "occupation": "cooper",
+   "look": "A cooper with forearms like hams, rolling a cask down the quay as he talks.",
+   "home": "spot.home_07",
+   "schedule": [
+    {
+     "from": 22,
+     "to": 6,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 6,
+     "to": 12,
+     "task": "task.coopering"
+    },
+    {
+     "from": 12,
+     "to": 13,
+     "task": "task.drink"
+    },
+    {
+     "from": 13,
+     "to": 18,
+     "task": "task.coopering"
+    },
+    {
+     "from": 18,
+     "to": 22,
+     "task": "task.drink"
+    }
+   ],
+   "skills": {
+    "skill.carpentry": 3,
+    "skill.crafting": 3,
+    "skill.ship_repair": 1,
+    "skill.cooking": 1
+   },
+   "traits": [
+    "trait.loyal"
+   ],
+   "languages": {
+    "language.castrenan": 5
+   },
+   "seeking": {
+    "asks": 900,
+    "lowest": 800,
+    "pitch": "\"I keep casks tight and water sweet. A ship that loses her water loses her crew.\"",
+    "claims": {
+     "skill.carpentry": 3,
+     "skill.ship_repair": 2
+    }
+   }
+  },
+  {
+   "id": "person.nuno",
+   "name": "Nuño Pardo",
+   "age": 50,
+   "sex": "Male",
+   "origin": "La Bocana",
+   "status": "status.servant",
+   "occupation": "cook at the Three Anchors",
+   "look": "A round cook in a stained apron, smelling of onions and smoke.",
+   "home": "spot.home_08",
+   "schedule": [
+    {
+     "from": 22,
+     "to": 9,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 9,
+     "to": 13,
+     "task": "task.port_cooking"
+    },
+    {
+     "from": 13,
+     "to": 15,
+     "task": "task.drink"
+    },
+    {
+     "from": 15,
+     "to": 20,
+     "task": "task.port_cooking"
+    },
+    {
+     "from": 20,
+     "to": 22,
+     "task": "task.drink"
+    }
+   ],
+   "skills": {
+    "skill.cooking": 3,
+    "skill.sanitation": 1
+   },
+   "traits": [
+    "trait.loyal"
+   ],
+   "languages": {
+    "language.castrenan": 5
+   },
+   "seeking": {
+    "asks": 500,
+    "lowest": 450,
+    "pitch": "\"Give me a fire box and a kettle and I will keep them fed in any weather. Fed men do not mutiny, Captain.\"",
+    "claims": {
+     "skill.cooking": 4
+    }
+   }
+  },
+  {
+   "id": "person.rodrigo",
+   "name": "Rodrigo Alba",
+   "age": 24,
+   "sex": "Male",
+   "origin": "La Bocana",
+   "status": "status.sailor",
+   "occupation": "topman, between ships",
+   "look": "A young topman with a swagger and tar under his nails.",
+   "home": "spot.home_09",
+   "schedule": [
+    {
+     "from": 1,
+     "to": 7,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 7,
+     "to": 10,
+     "task": "task.port_rigging"
+    },
+    {
+     "from": 10,
+     "to": 12,
+     "task": "task.haul_cargo"
+    },
+    {
+     "from": 12,
+     "to": 14,
+     "task": "task.drink"
+    },
+    {
+     "from": 14,
+     "to": 17,
+     "task": "task.port_rigging"
+    },
+    {
+     "from": 17,
+     "to": 1,
+     "task": "task.gamble"
+    }
+   ],
+   "skills": {
+    "skill.rigging": 2,
+    "skill.sailing": 3,
+    "skill.seamanship": 1
+   },
+   "attributes": {
+    "attribute.coordination": 4
+   },
+   "traits": [
+    "trait.impulsive"
+   ],
+   "languages": {
+    "language.castrenan": 5,
+    "language.lusaran": 1
+   },
+   "seeking": {
+    "asks": 850,
+    "lowest": 800,
+    "pitch": "\"Best man aloft on this waterfront. I have been round the Lusaran islands twice. Put me in the rigging and forget about it.\"",
+    "claims": {
+     "skill.rigging": 4,
+     "skill.seamanship": 3
+    },
+    "wontSailWith": [
+     {
+      "person": "person.wat",
+      "reason": "I'll not share a forecastle with a Brennish pirate."
+     }
+    ]
+   }
+  },
+  {
+   "id": "person.wat",
+   "name": "Wat Harrow",
+   "age": 35,
+   "sex": "Male",
+   "origin": "Brennmouth",
+   "status": "status.sailor",
+   "occupation": "Brennish seaman, out of work",
+   "look": "A fair-haired Brennish seaman, cheap because no Castrenan master will have him.",
+   "home": "spot.home_10",
+   "schedule": [
+    {
+     "from": 21,
+     "to": 6,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 6,
+     "to": 11,
+     "task": "task.mend_nets"
+    },
+    {
+     "from": 11,
+     "to": 12,
+     "task": "task.read_notices"
+    },
+    {
+     "from": 12,
+     "to": 14,
+     "task": "task.drink"
+    },
+    {
+     "from": 14,
+     "to": 18,
+     "task": "task.mend_nets"
+    },
+    {
+     "from": 18,
+     "to": 21,
+     "task": "task.drink"
+    }
+   ],
+   "skills": {
+    "skill.sailing": 3,
+    "skill.rigging": 2,
+    "skill.seamanship": 3,
+    "skill.navigation": 2
+   },
+   "traits": [
+    "trait.cautious"
+   ],
+   "languages": {
+    "language.brennish": 5,
+    "language.castrenan": 2,
+    "language.tesiwa": 1
+   },
+   "seeking": {
+    "asks": 700,
+    "lowest": 600,
+    "pitch": "\"I have sailed the Ember Coast with my own people, Captain, trading where your Chamber says we may not. I know the weather there. I would rather sail with you than starve here.\"",
+    "claims": {
+     "skill.seamanship": 3,
+     "skill.navigation": 2
+    }
+   }
+  },
+  {
+   "id": "person.pascual",
+   "name": "Pascual Mena",
+   "age": 19,
+   "sex": "Male",
+   "origin": "Almara",
+   "status": "status.sailor",
+   "occupation": "young man looking for a ship",
+   "look": "An eager young man in borrowed sea clothes, too clean for the quay.",
+   "home": "spot.home_11",
+   "schedule": [
+    {
+     "from": 21,
+     "to": 7,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 7,
+     "to": 12,
+     "task": "task.haul_cargo"
+    },
+    {
+     "from": 12,
+     "to": 13,
+     "task": "task.pray"
+    },
+    {
+     "from": 13,
+     "to": 18,
+     "task": "task.haul_cargo"
+    },
+    {
+     "from": 18,
+     "to": 21,
+     "task": "task.play"
+    }
+   ],
+   "skills": {
+    "skill.sailing": 1
+   },
+   "attributes": {
+    "attribute.strength": 3,
+    "attribute.endurance": 3
+   },
+   "traits": [
+    "trait.loyal"
+   ],
+   "languages": {
+    "language.castrenan": 5
+   },
+   "seeking": {
+    "asks": 500,
+    "lowest": 450,
+    "pitch": "\"Two years in the coasting trade, Captain, up and down to Lusara. Sailing, rigging, anything.\"",
+    "claims": {
+     "skill.sailing": 3,
+     "skill.rigging": 2
+    },
+    "leaves": {
+     "day": 3,
+     "hour": 5,
+     "reason": "was taken home by his mother"
+    }
+   }
+  },
+  {
+   "id": "person.ulloa",
+   "name": "Don Fernán de Ulloa",
+   "age": 44,
+   "sex": "Male",
+   "origin": "Almara",
+   "status": "status.gentleman",
+   "occupation": "gentleman of Almara",
+   "look": "A gentleman in a good cloak with no servant, and a sword he wears like a habit.",
+   "home": "spot.home_12",
+   "schedule": [
+    {
+     "from": 1,
+     "to": 10,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 10,
+     "to": 12,
+     "task": "task.read_notices"
+    },
+    {
+     "from": 12,
+     "to": 18,
+     "task": "task.gamble"
+    },
+    {
+     "from": 18,
+     "to": 1,
+     "task": "task.drink"
+    }
+   ],
+   "skills": {
+    "skill.leadership": 3,
+    "skill.navigation": 1,
+    "skill.persuasion": 3
+   },
+   "attributes": {
+    "attribute.endurance": 1
+   },
+   "traits": [
+    "trait.proud"
+   ],
+   "languages": {
+    "language.castrenan": 5,
+    "language.ligurese": 2,
+    "language.lusaran": 2
+   },
+   "seeking": {
+    "asks": -400,
+    "lowest": -400,
+    "pitch": "\"I will pay for my passage, Captain, and bring my own sword. I have commanded men before. That it ended badly is a matter between me and the King.\"",
+    "claims": {
+     "skill.leadership": 4,
+     "skill.navigation": 2
+    }
+   }
+  },
+  {
+   "id": "person.corbalan",
+   "name": "Maese Corbalán",
+   "age": 55,
+   "sex": "Male",
+   "origin": "La Bocana",
+   "status": "status.craftsman",
+   "occupation": "chandler",
+   "look": "A stout chandler in a leather apron, pencil behind his ear.",
+   "home": "spot.home_13",
+   "schedule": [
+    {
+     "from": 20,
+     "to": 7,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 7,
+     "to": 12,
+     "task": "task.trade_goods",
+     "spot": "spot.chandler_counter"
+    },
+    {
+     "from": 12,
+     "to": 13,
+     "task": "task.drink"
+    },
+    {
+     "from": 13,
+     "to": 20,
+     "task": "task.trade_goods",
+     "spot": "spot.chandler_counter"
+    }
+   ],
+   "skills": {
+    "skill.negotiation": 3
+   },
+   "knows": [
+    {
+     "about": "person.gil",
+     "text": "Steady man. Drinks on feast days and not otherwise.",
+     "levels": {
+      "skill.carpentry": 3
+     }
+    }
+   ]
+  },
+  {
+   "id": "person.ines",
+   "name": "Inés Rubio",
+   "age": 44,
+   "sex": "Female",
+   "origin": "La Bocana",
+   "status": "status.craftsman",
+   "occupation": "landlady of the Three Anchors",
+   "look": "A broad landlady with keys at her belt, who hears everything.",
+   "home": "spot.home_14",
+   "schedule": [
+    {
+     "from": 1,
+     "to": 9,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 9,
+     "to": 1,
+     "task": "task.serve_drinks"
+    }
+   ],
+   "skills": {
+    "skill.negotiation": 2
+   },
+   "knows": [
+    {
+     "about": "person.nuno",
+     "text": "Cooked for me five years. Good, not as good as he says.",
+     "levels": {
+      "skill.cooking": 3
+     }
+    },
+    {
+     "about": "person.velho",
+     "text": "They say Velho knows the Ember Coast better than any Castrenan alive.",
+     "levels": {},
+     "rumour": true
+    },
+    {
+     "about": "person.pons",
+     "text": "Pons? Owes money to half the Arenal.",
+     "levels": {},
+     "rumour": true
+    },
+    {
+     "about": "person.rodrigo",
+     "text": "Rodrigo talks big. He's quick aloft, mind.",
+     "levels": {
+      "skill.rigging": 3
+     },
+     "rumour": true
+    },
+    {
+     "about": "person.tome",
+     "text": "That Tomé was a sailor, they say, before the knifing.",
+     "levels": {
+      "skill.sailing": 3
+     },
+     "rumour": true
+    },
+    {
+     "about": "person.ximena",
+     "text": "Ximena came back from the coast with a shell and a tattoo, and won't talk about it.",
+     "levels": {},
+     "rumour": true
+    },
+    {
+     "about": "person.ulloa",
+     "text": "Don Fernán pays his tab. Mostly.",
+     "levels": {},
+     "rumour": true
+    },
+    {
+     "about": "person.wat",
+     "text": "The Brennish lad's no pirate, whatever Rodrigo says. Good seaman.",
+     "levels": {
+      "skill.seamanship": 3
+     },
+     "rumour": true
+    },
+    {
+     "about": "person.pascual",
+     "text": "Pascual? His mother's the candle-seller. He's never been past the bar.",
+     "levels": {
+      "skill.sailing": 0
+     },
+     "rumour": true
+    }
+   ]
+  },
+  {
+   "id": "person.catalina",
+   "name": "Catalina",
+   "age": 38,
+   "sex": "Female",
+   "origin": "La Bocana",
+   "status": "status.servant",
+   "occupation": "fishwife",
+   "look": "A loud fishwife with scales on her sleeves.",
+   "home": "spot.home_15",
+   "schedule": [
+    {
+     "from": 20,
+     "to": 5,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 5,
+     "to": 13,
+     "task": "task.sell_fish"
+    },
+    {
+     "from": 13,
+     "to": 15,
+     "task": "task.drink"
+    },
+    {
+     "from": 15,
+     "to": 20,
+     "task": "task.sell_fish"
+    }
+   ],
+   "skills": {
+    "skill.fishing": 3
+   }
+  },
+  {
+   "id": "person.anselmo",
+   "name": "Father Anselmo",
+   "age": 63,
+   "sex": "Male",
+   "origin": "Almara",
+   "status": "status.gentleman",
+   "occupation": "priest of the waterfront chapel",
+   "look": "An old priest in a patched cassock.",
+   "home": "spot.home_16",
+   "schedule": [
+    {
+     "from": 21,
+     "to": 6,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 6,
+     "to": 12,
+     "task": "task.pray",
+     "spot": "spot.chapel_steps_1"
+    },
+    {
+     "from": 12,
+     "to": 16,
+     "task": "task.read_notices"
+    },
+    {
+     "from": 16,
+     "to": 21,
+     "task": "task.pray",
+     "spot": "spot.chapel_steps_1"
+    }
+   ],
+   "knows": [
+    {
+     "about": "person.pascual",
+     "text": "He has never been further than the river mouth, God keep him. He works hard.",
+     "levels": {
+      "skill.sailing": 0
+     }
+    }
+   ]
+  },
+  {
+   "id": "person.varzi",
+   "name": "Micer Lorenzo Varzi",
+   "age": 36,
+   "sex": "Male",
+   "origin": "Liguria",
+   "status": "status.gentleman",
+   "occupation": "factor of the Ledra–Varzi Company",
+   "look": "A Ligurese factor in black velvet, counting under his breath.",
+   "home": "spot.home_17",
+   "schedule": [
+    {
+     "from": 20,
+     "to": 8,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 8,
+     "to": 12,
+     "task": "task.keep_accounts",
+     "spot": "spot.counting_door"
+    },
+    {
+     "from": 12,
+     "to": 14,
+     "task": "task.drink"
+    },
+    {
+     "from": 14,
+     "to": 20,
+     "task": "task.keep_accounts",
+     "spot": "spot.counting_door"
+    }
+   ],
+   "skills": {
+    "skill.negotiation": 4
+   },
+   "languages": {
+    "language.ligurese": 5,
+    "language.castrenan": 4
+   },
+   "knows": [
+    {
+     "about": "person.leonor",
+     "text": "Sharp, and honest to a fault. She will not be welcome among the sailors, and she does not care.",
+     "levels": {
+      "skill.negotiation": 3,
+      "trait.loyal": 1
+     }
+    },
+    {
+     "about": "person.ulloa",
+     "text": "He lost a company of soldiers at Corvera through pride. He has money, and he has never been sick at sea because he has never been to sea.",
+     "levels": {
+      "skill.leadership": 3
+     }
+    }
+   ]
+  },
+  {
+   "id": "person.clerk_chamber",
+   "name": "Señor Quintana",
+   "age": 48,
+   "sex": "Male",
+   "origin": "Almara",
+   "status": "status.officer",
+   "occupation": "clerk of the Chamber of the Ocean Sea",
+   "look": "A thin clerk with ink-black fingers and a ledger of licences.",
+   "home": "spot.home_18",
+   "schedule": [
+    {
+     "from": 19,
+     "to": 8,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 8,
+     "to": 13,
+     "task": "task.office_work"
+    },
+    {
+     "from": 13,
+     "to": 14,
+     "task": "task.read_notices"
+    },
+    {
+     "from": 14,
+     "to": 19,
+     "task": "task.office_work"
+    }
+   ],
+   "knows": [
+    {
+     "about": "person.velho",
+     "text": "Velho knows his trade. But he left the last Company ship at the coast and came home on a Brennish one, and no one knows why.",
+     "levels": {
+      "skill.navigation": 4
+     }
+    },
+    {
+     "about": "person.wat",
+     "text": "An interloper's man. The Chamber would not approve, and the crew may like him less.",
+     "levels": {
+      "skill.seamanship": 3
+     }
+    }
+   ]
+  },
+  {
+   "id": "person.hob",
+   "name": "Hob Tanner",
+   "age": 42,
+   "sex": "Male",
+   "origin": "Brennmouth",
+   "status": "status.sailor",
+   "occupation": "Brennish trader",
+   "look": "A red-bearded Brennish trader with too many rings.",
+   "home": "spot.home_19",
+   "schedule": [
+    {
+     "from": 23,
+     "to": 8,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 8,
+     "to": 12,
+     "task": "task.trade_goods",
+     "spot": "spot.chandler_yard"
+    },
+    {
+     "from": 12,
+     "to": 21,
+     "task": "task.drink"
+    },
+    {
+     "from": 21,
+     "to": 23,
+     "task": "task.meet_in_secret",
+     "spot": "spot.alley_2"
+    }
+   ],
+   "languages": {
+    "language.brennish": 5,
+    "language.castrenan": 3,
+    "language.tesiwa": 2
+   }
+  },
+  {
+   "id": "person.grilo",
+   "name": "Ser Bonifacio Grilo",
+   "age": 51,
+   "sex": "Male",
+   "origin": "Liguria",
+   "status": "status.gentleman",
+   "occupation": "moneylender",
+   "look": "A Ligurese moneylender in a fur collar, followed by a boy with a ledger.",
+   "home": "spot.home_20",
+   "schedule": [
+    {
+     "from": 20,
+     "to": 9,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 9,
+     "to": 15,
+     "task": "task.keep_accounts",
+     "spot": "spot.counting_table_2"
+    },
+    {
+     "from": 15,
+     "to": 16,
+     "task": "task.drink"
+    },
+    {
+     "from": 16,
+     "to": 17,
+     "task": "task.dun_debtor",
+     "spot": "spot.dun"
+    },
+    {
+     "from": 17,
+     "to": 20,
+     "task": "task.drink"
+    }
+   ],
+   "knows": [
+    {
+     "about": "person.pons",
+     "text": "The best surgeon in the Arenal and the worst payer. If he sails, I want my money from his wages.",
+     "levels": {
+      "skill.first_aid": 4,
+      "skill.surgery": 3
+     }
+    }
+   ]
+  },
+  {
+   "id": "person.mateo",
+   "name": "Mateo",
+   "age": 33,
+   "sex": "Male",
+   "origin": "La Bocana",
+   "status": "status.sailor",
+   "occupation": "town guard",
+   "look": "A guard with a halberd and a bored face.",
+   "home": "spot.home_21",
+   "schedule": [
+    {
+     "from": 18,
+     "to": 6,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 6,
+     "to": 18,
+     "task": "task.stand_guard"
+    }
+   ],
+   "knows": [
+    {
+     "about": "person.tome",
+     "text": "Took up for a knifing on the waterfront. Some say he was a sailor once, on a ship that came home without her master.",
+     "levels": {
+      "skill.sailing": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "person.lope",
+   "name": "Lope",
+   "age": 28,
+   "sex": "Male",
+   "origin": "La Bocana",
+   "status": "status.sailor",
+   "occupation": "town guard, night watch",
+   "look": "A night guard with a lantern and a cough.",
+   "home": "spot.home_22",
+   "schedule": [
+    {
+     "from": 6,
+     "to": 18,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 18,
+     "to": 6,
+     "task": "task.stand_guard"
+    }
+   ]
+  },
+  {
+   "id": "person.andres",
+   "name": "Andrés",
+   "age": 31,
+   "sex": "Male",
+   "origin": "La Bocana",
+   "status": "status.sailor",
+   "occupation": "docker, once a bosun",
+   "look": "A scarred docker who was a bosun until his knee went.",
+   "home": "spot.home_23",
+   "schedule": [
+    {
+     "from": 22,
+     "to": 6,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 6,
+     "to": 12,
+     "task": "task.haul_cargo"
+    },
+    {
+     "from": 12,
+     "to": 13,
+     "task": "task.drink"
+    },
+    {
+     "from": 13,
+     "to": 18,
+     "task": "task.haul_cargo"
+    },
+    {
+     "from": 18,
+     "to": 22,
+     "task": "task.drink"
+    }
+   ],
+   "skills": {
+    "skill.seamanship": 3
+   },
+   "attributes": {
+    "attribute.strength": 4
+   },
+   "knows": [
+    {
+     "about": "person.rodrigo",
+     "text": "Quick aloft, I'll give him that. Talks a good deal more than he knows.",
+     "levels": {
+      "skill.rigging": 3
+     }
+    }
+   ]
+  },
+  {
+   "id": "person.bastian",
+   "name": "Bastián",
+   "age": 26,
+   "sex": "Male",
+   "origin": "La Bocana",
+   "status": "status.sailor",
+   "occupation": "docker",
+   "look": "A young docker, all shoulders.",
+   "home": "spot.home_24",
+   "schedule": [
+    {
+     "from": 22,
+     "to": 6,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 6,
+     "to": 12,
+     "task": "task.haul_cargo"
+    },
+    {
+     "from": 12,
+     "to": 13,
+     "task": "task.drink"
+    },
+    {
+     "from": 13,
+     "to": 18,
+     "task": "task.haul_cargo"
+    },
+    {
+     "from": 18,
+     "to": 22,
+     "task": "task.drink"
+    }
+   ],
+   "attributes": {
+    "attribute.strength": 4
+   }
+  },
+  {
+   "id": "person.hernando",
+   "name": "Hernando",
+   "age": 40,
+   "sex": "Male",
+   "origin": "Almara",
+   "status": "status.sailor",
+   "occupation": "docker, back from the last Company ship",
+   "look": "A docker with a Company tattoo, back from the Ember Coast.",
+   "home": "spot.home_25",
+   "schedule": [
+    {
+     "from": 22,
+     "to": 6,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 6,
+     "to": 12,
+     "task": "task.haul_cargo"
+    },
+    {
+     "from": 12,
+     "to": 13,
+     "task": "task.drink"
+    },
+    {
+     "from": 13,
+     "to": 18,
+     "task": "task.mend_nets"
+    },
+    {
+     "from": 18,
+     "to": 22,
+     "task": "task.drink"
+    }
+   ],
+   "skills": {
+    "skill.seamanship": 2
+   },
+   "languages": {
+    "language.ahuneri": 1
+   },
+   "knows": [
+    {
+     "about": "person.ximena",
+     "text": "She was at Mahenu, true enough. A season, not a year, and she left in a hurry.",
+     "levels": {
+      "language.ahuneri": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "person.paco",
+   "name": "Paco",
+   "age": 45,
+   "sex": "Male",
+   "origin": "La Bocana",
+   "status": "status.servant",
+   "occupation": "carter",
+   "look": "A carter with a mule he talks to more than to people.",
+   "home": "spot.home_26",
+   "schedule": [
+    {
+     "from": 20,
+     "to": 6,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 6,
+     "to": 12,
+     "task": "task.haul_cargo"
+    },
+    {
+     "from": 12,
+     "to": 14,
+     "task": "task.drink"
+    },
+    {
+     "from": 14,
+     "to": 20,
+     "task": "task.haul_cargo"
+    }
+   ],
+   "attributes": {
+    "attribute.strength": 3
+   }
+  },
+  {
+   "id": "person.lucia",
+   "name": "Lucía",
+   "age": 9,
+   "sex": "Female",
+   "origin": "La Bocana",
+   "status": "status.servant",
+   "occupation": "child of the waterfront",
+   "look": "A barefoot girl who sees everything.",
+   "home": "spot.home_27",
+   "schedule": [
+    {
+     "from": 20,
+     "to": 8,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 8,
+     "to": 12,
+     "task": "task.play"
+    },
+    {
+     "from": 12,
+     "to": 14,
+     "task": "task.pray"
+    },
+    {
+     "from": 14,
+     "to": 20,
+     "task": "task.play"
+    }
+   ]
+  },
+  {
+   "id": "person.tito",
+   "name": "Tito",
+   "age": 11,
+   "sex": "Male",
+   "origin": "La Bocana",
+   "status": "status.servant",
+   "occupation": "child of the waterfront",
+   "look": "A boy with a stick and a scraped knee.",
+   "home": "spot.home_28",
+   "schedule": [
+    {
+     "from": 20,
+     "to": 8,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 8,
+     "to": 12,
+     "task": "task.play"
+    },
+    {
+     "from": 12,
+     "to": 14,
+     "task": "task.play"
+    },
+    {
+     "from": 14,
+     "to": 20,
+     "task": "task.play"
+    }
+   ]
+  }
+ ]
+}

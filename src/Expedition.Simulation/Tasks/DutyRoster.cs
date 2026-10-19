@@ -11,6 +11,9 @@ public enum TaskOrigin
 
     /// <summary>The character looked after themselves, for example resting when tired.</summary>
     SelfCare,
+
+    /// <summary>A local going about their day (R1).</summary>
+    Schedule,
 }
 
 /// <summary>

@@ -1,0 +1,961 @@
+// The Bocana waterfront at La Bocana (SETTING.md §7, R1): quay, square, the Chamber office, the Company
+// counting house, the Three Anchors, the chapel, the chandler and the carpenter's yard. 1 cell is about
+// 1 m; row 0 is the back street (north), the quay and the water are south. Generated layout; edit freely.
+[
+ {
+  "id": "location.bocana",
+  "name": "The Bocana waterfront",
+  "sightRange": 14,
+  "rows": [
+   "............................................................",
+   "............................................................",
+   "............................................................",
+   ".##########..########..############..########..#######.#####",
+   ".##########..########..############..########..#######.#...#",
+   ".##########..########..############..########..#######.#...#",
+   ".##########..########..############..########..#######.#...#",
+   ".##########..########..############..########..#######.#...#",
+   ".##########..########..############..########..#######.#...#",
+   ".##########..########..############..########..#######.#...#",
+   ".##########..########..############..########..#######.#...#",
+   ".##########..########..############..########..#######.#...#",
+   ".##########..########..############..########..#######.#...#",
+   ".##########..########..############..########..#######.....#",
+   ".##########..########..############..########..#######.....#",
+   ".##########..########..############..########..#######.....#",
+   "............................................................",
+   "............................................................",
+   "............................................................",
+   "............................................................",
+   "..........................................##...##...........",
+   "............##..............................................",
+   "............................##..............................",
+   "............................##..............................",
+   "............................................................",
+   "............................................................",
+   "............................................................",
+   "...##..........##..##........................##....##.......",
+   "...............##............................##.............",
+   "............................................................",
+   "......#.......#.......#.......#.......#.......#.......#.....",
+   "############################################################",
+   "############################################################",
+   "############################################################",
+   "############################################################",
+   "############################################################"
+  ],
+  "spots": [
+   {
+    "id": "spot.tavern_door",
+    "x": 28,
+    "y": 16,
+    "tasks": [
+     "task.drink"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.tavern_bench_1",
+    "x": 24,
+    "y": 18,
+    "tasks": [
+     "task.drink",
+     "task.gamble"
+    ]
+   },
+   {
+    "id": "spot.tavern_bench_2",
+    "x": 26,
+    "y": 18,
+    "tasks": [
+     "task.drink",
+     "task.gamble"
+    ]
+   },
+   {
+    "id": "spot.tavern_bench_3",
+    "x": 31,
+    "y": 18,
+    "tasks": [
+     "task.drink",
+     "task.gamble"
+    ]
+   },
+   {
+    "id": "spot.tavern_bench_4",
+    "x": 33,
+    "y": 18,
+    "tasks": [
+     "task.drink",
+     "task.gamble"
+    ]
+   },
+   {
+    "id": "spot.tavern_serving",
+    "x": 30,
+    "y": 17,
+    "tasks": [
+     "task.serve_drinks"
+    ]
+   },
+   {
+    "id": "spot.tavern_inside_1",
+    "x": 28,
+    "y": 16,
+    "tasks": [
+     "task.drink",
+     "task.gamble"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.tavern_inside_2",
+    "x": 28,
+    "y": 16,
+    "tasks": [
+     "task.drink",
+     "task.gamble"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.tavern_inside_3",
+    "x": 28,
+    "y": 16,
+    "tasks": [
+     "task.drink",
+     "task.gamble"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.tavern_inside_4",
+    "x": 28,
+    "y": 16,
+    "tasks": [
+     "task.drink",
+     "task.gamble"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.tavern_inside_5",
+    "x": 28,
+    "y": 16,
+    "tasks": [
+     "task.drink",
+     "task.gamble"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.tavern_inside_6",
+    "x": 28,
+    "y": 16,
+    "tasks": [
+     "task.drink",
+     "task.gamble"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.tavern_inside_7",
+    "x": 28,
+    "y": 16,
+    "tasks": [
+     "task.drink",
+     "task.gamble"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.tavern_inside_8",
+    "x": 28,
+    "y": 16,
+    "tasks": [
+     "task.drink",
+     "task.gamble"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.tavern_inside_9",
+    "x": 28,
+    "y": 16,
+    "tasks": [
+     "task.drink",
+     "task.gamble"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.tavern_inside_10",
+    "x": 28,
+    "y": 16,
+    "tasks": [
+     "task.drink",
+     "task.gamble"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.tavern_table_1",
+    "x": 25,
+    "y": 19,
+    "tasks": [
+     "task.drink",
+     "task.gamble"
+    ]
+   },
+   {
+    "id": "spot.tavern_table_2",
+    "x": 27,
+    "y": 19,
+    "tasks": [
+     "task.drink",
+     "task.gamble"
+    ]
+   },
+   {
+    "id": "spot.tavern_table_3",
+    "x": 31,
+    "y": 19,
+    "tasks": [
+     "task.drink",
+     "task.gamble"
+    ]
+   },
+   {
+    "id": "spot.tavern_table_4",
+    "x": 33,
+    "y": 19,
+    "tasks": [
+     "task.drink",
+     "task.gamble"
+    ]
+   },
+   {
+    "id": "spot.tavern_table_5",
+    "x": 23,
+    "y": 17,
+    "tasks": [
+     "task.drink",
+     "task.gamble"
+    ]
+   },
+   {
+    "id": "spot.tavern_table_6",
+    "x": 34,
+    "y": 17,
+    "tasks": [
+     "task.drink",
+     "task.gamble"
+    ]
+   },
+   {
+    "id": "spot.tavern_fire",
+    "x": 35,
+    "y": 19,
+    "tasks": [
+     "task.port_cooking"
+    ]
+   },
+   {
+    "id": "spot.chapel_door",
+    "x": 40,
+    "y": 16,
+    "tasks": [
+     "task.pray"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.chapel_steps_1",
+    "x": 38,
+    "y": 17,
+    "tasks": [
+     "task.pray"
+    ]
+   },
+   {
+    "id": "spot.chapel_steps_2",
+    "x": 42,
+    "y": 17,
+    "tasks": [
+     "task.pray"
+    ]
+   },
+   {
+    "id": "spot.chapel_inside_1",
+    "x": 40,
+    "y": 16,
+    "tasks": [
+     "task.pray"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.chapel_inside_2",
+    "x": 40,
+    "y": 16,
+    "tasks": [
+     "task.pray"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.chapel_inside_3",
+    "x": 40,
+    "y": 16,
+    "tasks": [
+     "task.pray"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.chapel_inside_4",
+    "x": 40,
+    "y": 16,
+    "tasks": [
+     "task.pray"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.chapel_inside_5",
+    "x": 40,
+    "y": 16,
+    "tasks": [
+     "task.pray"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.chapel_inside_6",
+    "x": 40,
+    "y": 16,
+    "tasks": [
+     "task.pray"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.chapel_inside_7",
+    "x": 40,
+    "y": 16,
+    "tasks": [
+     "task.pray"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.chapel_inside_8",
+    "x": 40,
+    "y": 16,
+    "tasks": [
+     "task.pray"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.chamber_door",
+    "x": 5,
+    "y": 16,
+    "tasks": [
+     "task.office_work"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.chamber_board",
+    "x": 8,
+    "y": 17,
+    "tasks": [
+     "task.read_notices"
+    ]
+   },
+   {
+    "id": "spot.chamber_board_2",
+    "x": 9,
+    "y": 17,
+    "tasks": [
+     "task.read_notices"
+    ]
+   },
+   {
+    "id": "spot.chamber_board_3",
+    "x": 7,
+    "y": 18,
+    "tasks": [
+     "task.read_notices"
+    ]
+   },
+   {
+    "id": "spot.chamber_board_4",
+    "x": 9,
+    "y": 18,
+    "tasks": [
+     "task.read_notices"
+    ]
+   },
+   {
+    "id": "spot.chart_table",
+    "x": 3,
+    "y": 18,
+    "tasks": [
+     "task.study_charts"
+    ]
+   },
+   {
+    "id": "spot.counting_door",
+    "x": 16,
+    "y": 16,
+    "tasks": [
+     "task.keep_accounts"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.counting_table",
+    "x": 18,
+    "y": 18,
+    "tasks": [
+     "task.keep_accounts"
+    ]
+   },
+   {
+    "id": "spot.counting_table_2",
+    "x": 19,
+    "y": 18,
+    "tasks": [
+     "task.keep_accounts"
+    ]
+   },
+   {
+    "id": "spot.chandler_counter",
+    "x": 50,
+    "y": 17,
+    "tasks": [
+     "task.trade_goods"
+    ]
+   },
+   {
+    "id": "spot.chandler_yard",
+    "x": 52,
+    "y": 18,
+    "tasks": [
+     "task.trade_goods"
+    ]
+   },
+   {
+    "id": "spot.fish_stall_1",
+    "x": 44,
+    "y": 21,
+    "tasks": [
+     "task.sell_fish"
+    ]
+   },
+   {
+    "id": "spot.fish_stall_2",
+    "x": 46,
+    "y": 21,
+    "tasks": [
+     "task.sell_fish"
+    ]
+   },
+   {
+    "id": "spot.surgeon_stool",
+    "x": 11,
+    "y": 22,
+    "tasks": [
+     "task.treat_patients"
+    ]
+   },
+   {
+    "id": "spot.dun",
+    "x": 10,
+    "y": 23,
+    "tasks": [
+     "task.dun_debtor"
+    ]
+   },
+   {
+    "id": "spot.yard_bench_1",
+    "x": 57,
+    "y": 8,
+    "tasks": [
+     "task.port_carpentry"
+    ]
+   },
+   {
+    "id": "spot.yard_bench_2",
+    "x": 57,
+    "y": 11,
+    "tasks": [
+     "task.port_carpentry"
+    ]
+   },
+   {
+    "id": "spot.cooper_bench",
+    "x": 57,
+    "y": 14,
+    "tasks": [
+     "task.coopering"
+    ]
+   },
+   {
+    "id": "spot.cargo_1",
+    "x": 14,
+    "y": 29,
+    "tasks": [
+     "task.haul_cargo"
+    ]
+   },
+   {
+    "id": "spot.cargo_2",
+    "x": 18,
+    "y": 29,
+    "tasks": [
+     "task.haul_cargo"
+    ]
+   },
+   {
+    "id": "spot.cargo_3",
+    "x": 44,
+    "y": 29,
+    "tasks": [
+     "task.haul_cargo"
+    ]
+   },
+   {
+    "id": "spot.cargo_4",
+    "x": 50,
+    "y": 29,
+    "tasks": [
+     "task.haul_cargo"
+    ]
+   },
+   {
+    "id": "spot.cargo_5",
+    "x": 22,
+    "y": 28,
+    "tasks": [
+     "task.haul_cargo"
+    ]
+   },
+   {
+    "id": "spot.cargo_6",
+    "x": 17,
+    "y": 26,
+    "tasks": [
+     "task.haul_cargo"
+    ]
+   },
+   {
+    "id": "spot.cargo_7",
+    "x": 21,
+    "y": 26,
+    "tasks": [
+     "task.haul_cargo"
+    ]
+   },
+   {
+    "id": "spot.cargo_8",
+    "x": 47,
+    "y": 26,
+    "tasks": [
+     "task.haul_cargo"
+    ]
+   },
+   {
+    "id": "spot.cargo_9",
+    "x": 53,
+    "y": 26,
+    "tasks": [
+     "task.haul_cargo"
+    ]
+   },
+   {
+    "id": "spot.boat_rigging_1",
+    "x": 25,
+    "y": 29,
+    "tasks": [
+     "task.port_rigging"
+    ]
+   },
+   {
+    "id": "spot.boat_rigging_2",
+    "x": 37,
+    "y": 29,
+    "tasks": [
+     "task.port_rigging"
+    ]
+   },
+   {
+    "id": "spot.nets_1",
+    "x": 8,
+    "y": 28,
+    "tasks": [
+     "task.mend_nets"
+    ]
+   },
+   {
+    "id": "spot.nets_2",
+    "x": 10,
+    "y": 28,
+    "tasks": [
+     "task.mend_nets"
+    ]
+   },
+   {
+    "id": "spot.nets_3",
+    "x": 8,
+    "y": 29,
+    "tasks": [
+     "task.mend_nets"
+    ]
+   },
+   {
+    "id": "spot.nets_4",
+    "x": 11,
+    "y": 29,
+    "tasks": [
+     "task.mend_nets"
+    ]
+   },
+   {
+    "id": "spot.gaol_cart",
+    "x": 55,
+    "y": 26,
+    "tasks": [
+     "task.wait_in_irons"
+    ]
+   },
+   {
+    "id": "spot.guard_post",
+    "x": 56,
+    "y": 25,
+    "tasks": [
+     "task.stand_guard"
+    ]
+   },
+   {
+    "id": "spot.square_1",
+    "x": 22,
+    "y": 22,
+    "tasks": [
+     "task.play"
+    ]
+   },
+   {
+    "id": "spot.square_2",
+    "x": 33,
+    "y": 24,
+    "tasks": [
+     "task.play"
+    ]
+   },
+   {
+    "id": "spot.square_3",
+    "x": 24,
+    "y": 24,
+    "tasks": [
+     "task.play"
+    ]
+   },
+   {
+    "id": "spot.square_4",
+    "x": 36,
+    "y": 22,
+    "tasks": [
+     "task.play"
+    ]
+   },
+   {
+    "id": "spot.alley_1",
+    "x": 35,
+    "y": 9,
+    "tasks": [
+     "task.meet_in_secret"
+    ]
+   },
+   {
+    "id": "spot.alley_2",
+    "x": 36,
+    "y": 9,
+    "tasks": [
+     "task.meet_in_secret"
+    ]
+   },
+   {
+    "id": "spot.home_01",
+    "x": 1,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_02",
+    "x": 3,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_03",
+    "x": 5,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_04",
+    "x": 7,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_05",
+    "x": 9,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_06",
+    "x": 11,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_07",
+    "x": 13,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_08",
+    "x": 15,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_09",
+    "x": 17,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_10",
+    "x": 19,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_11",
+    "x": 21,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_12",
+    "x": 23,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_13",
+    "x": 25,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_14",
+    "x": 27,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_15",
+    "x": 29,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_16",
+    "x": 31,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_17",
+    "x": 33,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_18",
+    "x": 35,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_19",
+    "x": 37,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_20",
+    "x": 39,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_21",
+    "x": 41,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_22",
+    "x": 43,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_23",
+    "x": 45,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_24",
+    "x": 47,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_25",
+    "x": 49,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_26",
+    "x": 51,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_27",
+    "x": 53,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_28",
+    "x": 55,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.home_29",
+    "x": 57,
+    "y": 1,
+    "tasks": [
+     "task.sleep_at_home"
+    ],
+    "indoors": true
+   },
+   {
+    "id": "spot.gangway",
+    "x": 31,
+    "y": 30,
+    "tasks": [
+     "task.board"
+    ]
+   }
+  ]
+ }
+]

@@ -73,6 +73,15 @@ public sealed class Character
     public string? StatusId { get; set; }
 
     /// <summary>
+    /// Crew (the expedition's people, whose needs are simulated) or a local (someone living their own
+    /// life in port). Hiring makes a local crew (R1).
+    /// </summary>
+    public Membership Membership { get; set; } = Membership.Crew;
+
+    /// <summary>The data ID of the person this character was created from (for example <c>person.velho</c>), or null.</summary>
+    public string? PersonId { get; set; }
+
+    /// <summary>
     /// How the character looks, or null for characters created without appearance data (for example in
     /// campaigns upgraded from saves older than format 7).
     /// </summary>
@@ -127,4 +136,14 @@ public sealed class Character
 
     /// <summary>Sets survival state directly while loading a save. Never use for gameplay.</summary>
     internal void RestoreSurvivalState(SurvivalState state) => SurvivalState = state;
+}
+
+/// <summary>Whether a character belongs to the expedition.</summary>
+public enum Membership
+{
+    /// <summary>One of the expedition's people.</summary>
+    Crew,
+
+    /// <summary>Someone living their own life in port.</summary>
+    Local,
 }

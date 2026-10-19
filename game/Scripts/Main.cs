@@ -33,8 +33,6 @@ public partial class Main : Node3D
     private Node3D _ship = null!;
     private Node3D _shipContents = null!;
     private ShipView _deck = null!;
-    private RecruitmentView _recruitment = null!;
-    private string? _recruitSelected;
     private SeaAndSky _world = null!;
     private readonly List<SeaBird> _birds = [];
     private float _seaState = 1f;
@@ -69,22 +67,6 @@ public partial class Main : Node3D
 
         _hud = new Hud();
         AddChild(_hud);
-        _recruitment = new RecruitmentView { Visible = false };
-        AddChild(_recruitment);
-        _recruitment.Selected += id =>
-        {
-            _recruitSelected = id;
-            _recruitment.ShowStatus("");
-            _recruitment.Refresh(_runner, id);
-        };
-        _recruitment.ActionRequested += OnRecruitmentAction;
-        _recruitment.Bought += lot =>
-        {
-            var result = _runner.Buy(lot);
-            _recruitment.ShowStatus(result.Succeeded ? "Bought and stowed." : result.Reason);
-            _recruitment.Refresh(_runner, _recruitSelected);
-        };
-        _recruitment.SailRequested += OnSail;
         _hud.SpeedChosen += SetSpeed;
         _hud.SaveRequested += Save;
         _hud.LoadRequested += Load;
@@ -136,36 +118,6 @@ public partial class Main : Node3D
         ReadDeveloperArguments(ref seed);
         StartCampaign(_testDeck ? TestDeckScenario.Create(_content, seed) : ExpeditionScenario.Create(_content, seed),
             "New voyage started. Left-click to select, right-click to walk.");
-        if (_developerHires.Length > 0 && _runner.Campaign.Recruitment is not null)
-        {
-            foreach (var id in _developerHires)
-            {
-                if (id == "sail")
-                {
-                    OnSail();
-                }
-                else if (id.StartsWith("talk:", StringComparison.Ordinal))
-                {
-                    _runner.TalkTo(id[5..]);
-                    _recruitSelected = id[5..];
-                }
-                else if (id.StartsWith("ask:", StringComparison.Ordinal))
-                {
-                    _runner.AskAbout(id[4..]);
-                }
-                else
-                {
-                    _runner.Hire(id);
-                }
-            }
-
-            SyncFigures();
-            if (_runner.Campaign.Recruitment is not null)
-            {
-                _recruitment.Refresh(_runner, _recruitSelected);
-            }
-        }
-
         if (_startZoom is { } size)
         {
             _camera.Size = size;
@@ -355,57 +307,11 @@ public partial class Main : Node3D
         }
     }
 
-    // In port the hiring screen covers the game, and time stands still until the ship sails (D-019).
+    // The port is played in the world (R2); until then, nothing extra is shown in port.
     private void ShowRecruitmentIfHiring()
     {
-        var hiring = _runner.Campaign.Recruitment is not null;
-        _recruitment.Visible = hiring;
-        _hud.Visible = !hiring;
-        if (hiring)
-        {
-            SetSpeed(0);
-            _recruitment.ShowStatus("");
-            _recruitment.Refresh(_runner, _recruitSelected);
-        }
     }
 
-    private void OnRecruitmentAction(string action, string candidate, string? topic)
-    {
-        var result = action switch
-        {
-            "talk" => _runner.TalkTo(candidate),
-            "ask" => _runner.AskAbout(candidate),
-            "test" => _runner.TestCandidate(candidate, topic!),
-            "haggle" => _runner.Haggle(candidate),
-            _ => _runner.Hire(candidate),
-        };
-        var name = _content.Recruitment!.Candidates.First(c => c.Id == candidate).Name;
-        _recruitment.ShowStatus(result.Succeeded
-            ? action switch
-            {
-                "haggle" => $"{name} grumbles, and comes down to {_runner.AskingPrice(_content.Recruitment.Candidates.First(c => c.Id == candidate))} sueldos.",
-                "hire" => $"{name} signs the articles and goes aboard.",
-                _ => "",
-            }
-            : result.Reason);
-        SyncFigures();
-        _recruitment.Refresh(_runner, _recruitSelected);
-    }
-
-    private void OnSail()
-    {
-        var result = ExpeditionScenario.SetSail(_runner);
-        if (!result.Succeeded)
-        {
-            _recruitment.ShowStatus(result.Reason);
-            return;
-        }
-
-        _hud.Bind(_runner);
-        _chronicleSeen = _runner.Campaign.Chronicle.Entries.Count;
-        ShowRecruitmentIfHiring();
-        _hud.ShowStatus("The Garza sails with the convoy. Press 1–6 to let time run.");
-    }
 
     // How much sail shows: hove to, nearly everything is furled; pressing on, the topsails stay up longer.
     private float SailSetting(Expedition.Simulation.Voyage.VoyageState? voyage) => voyage?.SailPlan switch
@@ -536,10 +442,6 @@ public partial class Main : Node3D
 
     private void SetSpeed(int index)
     {
-        if (index > 0 && _runner?.Campaign.Recruitment is not null)
-        {
-            return;
-        }
 
         if (index > 0 && _runner?.Campaign.PendingEvent is not null)
         {
@@ -658,7 +560,6 @@ public partial class Main : Node3D
     private string? _forceWeather;
     private bool _idleCrew;
     private bool _testDeck;
-    private string[] _developerHires = [];
     private string? _developerChoice;
     private Expedition.Simulation.Voyage.SailPlan? _developerSail;
     private double? _forceBilge;
@@ -678,7 +579,6 @@ public partial class Main : Node3D
                 case "weather": _forceWeather = value; break;
                 case "idle": _idleCrew = true; break;
                 case "testdeck": _testDeck = true; break;
-                case "hire": _developerHires = value.Split(','); break;
                 case "choose": _developerChoice = value; break;
                 case "sail" when Enum.TryParse<Expedition.Simulation.Voyage.SailPlan>(value, out var plan): _developerSail = plan; break;
                 case "bilge" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var bilge): _forceBilge = bilge; break;
