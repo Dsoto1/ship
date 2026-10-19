@@ -334,3 +334,27 @@ The setting outline is approved:
 
 It is now the content source for Ticket 5 onward. Names remain changeable, since content IDs are
 neutral.
+
+---
+
+## D-014 — Standing duties and self-care: crew act on their own when idle
+
+**Date:** 2026-10-19
+**Status:** Accepted (owner: "the crew needs automating")
+
+**Decision.** What a character does each minute is chosen in this order (TECHNICAL_SPEC.md §19.1):
+1. **Player orders** (the queue, D-010), urgent before normal.
+2. **Self-care:** idle and fatigue at or above `restAtFatigue` (70) → rest.
+3. **Standing duties:** idle with no orders → the next duty in their list that can start, in turn.
+
+Each task records its origin (Order, Duty, SelfCare). Any player order takes over from duty or
+self-care work at once; that work is paused behind the orders and resumes later. Work the character
+took up themselves never delays an order.
+
+**Why.** It removes clicking for routine work while keeping the player's word final, and it is the
+base for watch rotations and roles (bosun, cook) once ship systems exist (Ticket 6).
+
+**Not yet:** time-of-day watches (the dog watches, night watch), duties assigned by role rather than
+per person, and duties that respond to need (pump only when the bilge is high). These need ship
+systems.
+

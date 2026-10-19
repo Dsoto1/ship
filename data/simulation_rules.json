@@ -6,6 +6,8 @@
   // Multiplies the skill rate for tasks that name an attribute. Level 2 (ordinary) is normal speed.
   "workRateByAttributeLevel": [0.6, 0.8, 1.0, 1.1, 1.2, 1.3],
   "maxFatigueToStartWork": 90,
+  // An idle character this tired rests of their own accord. Remove to make crew wait for orders.
+  "restAtFatigue": 70,
   "exhaustionFatigue": 100,
   "tiredFatigue": 75,
   "tiredWorkRateMultiplier": 0.75,

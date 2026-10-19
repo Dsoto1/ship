@@ -271,7 +271,7 @@ public class TaskQueueTests
     [Fact]
     public void QueuesAndPausedWorkSurviveSaveAndContinueIdentically()
     {
-        var original = TestDeckScenario.Create(Content.ContentLoader.LoadFromDirectory(Path.Combine(AppContext.BaseDirectory, "data")));
+        var original = TestDeckScenario.Create(Content.ContentLoader.LoadFromDirectory(Path.Combine(AppContext.BaseDirectory, "data")), withDuties: false);
         var crew = original.Campaign.Characters.Keys.Order().ToList();
         original.QueueTask(crew[1], "task.repair_rigging");
         original.QueueTask(crew[1], "task.stand_watch");

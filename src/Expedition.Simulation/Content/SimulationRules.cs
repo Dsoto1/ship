@@ -18,6 +18,12 @@ public sealed record SimulationRules
     /// <summary>A character at or above this fatigue cannot start work (rest is still allowed).</summary>
     public required double MaxFatigueToStartWork { get; init; }
 
+    /// <summary>
+    /// An idle character at or above this fatigue rests of their own accord (self-care). Null turns
+    /// self-care off, so characters wait for orders.
+    /// </summary>
+    public double? RestAtFatigue { get; init; }
+
     /// <summary>Work is interrupted when fatigue reaches this value.</summary>
     public required double ExhaustionFatigue { get; init; }
 

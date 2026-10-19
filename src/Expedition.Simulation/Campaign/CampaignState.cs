@@ -25,6 +25,7 @@ public sealed class CampaignState
     private readonly Dictionary<CharacterId, Character> _characters = [];
     private readonly Dictionary<CharacterId, TaskInstance> _activeTasks = [];
     private readonly Dictionary<CharacterId, List<TaskInstance>> _queues = [];
+    private readonly Dictionary<CharacterId, DutyRoster> _duties = [];
     private readonly Dictionary<InventoryId, Inventory> _inventories = [];
     private readonly Dictionary<CharacterId, CharacterPlacement> _placements = [];
     private readonly Dictionary<(CharacterId From, CharacterId To), Relationship> _relationships = [];
@@ -106,7 +107,26 @@ public sealed class CampaignState
     /// </summary>
     public IReadOnlyList<TaskInstance> QueueOf(CharacterId id) => _queues.TryGetValue(id, out var queue) ? queue : [];
 
-    /// <summary>Characters who have at least one waiting order.</summary>
+    /// <summary>A character's standing duties, in the order they are taken up; empty if none.</summary>
+    public IReadOnlyList<string> DutiesOf(CharacterId id) => _duties.TryGetValue(id, out var roster) ? roster.Tasks : [];
+
+    /// <summary>Every character's standing duties, by character.</summary>
+    public IReadOnlyDictionary<CharacterId, DutyRoster> Duties => _duties;
+
+    /// <summary>Replaces a character's standing duties. The runner validates the task IDs.</summary>
+    internal void SetDuties(CharacterId id, IReadOnlyList<string> tasks, int next = 0)
+    {
+        if (tasks.Count == 0)
+        {
+            _duties.Remove(id);
+        }
+        else
+        {
+            _duties[id] = new DutyRoster(tasks, next % tasks.Count);
+        }
+    }
+
+    /// <summary>Characters with waiting orders.</summary>
     public IEnumerable<CharacterId> CharactersWithQueues => _queues.Where(pair => pair.Value.Count > 0).Select(pair => pair.Key);
 
     /// <summary>Every directed relationship that has ever changed from neutral, keyed by (from, to).</summary>
@@ -350,6 +370,7 @@ public sealed class CampaignState
         if (newState is SurvivalState.Dead or SurvivalState.Missing)
         {
             _queues.Remove(id);
+            _duties.Remove(id);
         }
 
         return result;
@@ -367,8 +388,9 @@ public sealed class CampaignState
     }
 
     /// <summary>
-    /// Adds a waiting order. With <paramref name="aheadOfSamePriority"/> it goes before others of its priority
-    /// (a paused task resuming first); otherwise after them. Urgent orders always come before normal ones.
+    /// Adds a waiting order. Urgent orders come before normal ones, and within a priority the player's
+    /// orders come before paused duty or self-care work. With <paramref name="aheadOfSamePriority"/> it goes
+    /// before others of the same kind (a paused task resuming first); otherwise after them.
     /// </summary>
     internal void Enqueue(TaskInstance task, bool aheadOfSamePriority)
     {
@@ -378,11 +400,15 @@ public sealed class CampaignState
             _queues[task.CharacterId] = queue;
         }
 
+        var rank = QueueRank(task);
         var index = aheadOfSamePriority
-            ? queue.FindIndex(waiting => waiting.Priority <= task.Priority)
-            : queue.FindIndex(waiting => waiting.Priority < task.Priority);
+            ? queue.FindIndex(waiting => QueueRank(waiting) <= rank)
+            : queue.FindIndex(waiting => QueueRank(waiting) < rank);
         queue.Insert(index < 0 ? queue.Count : index, task);
     }
+
+    // Higher goes first: priority, then the player's orders ahead of work the character took up themselves.
+    private static int QueueRank(TaskInstance task) => (int)task.Priority * 2 + (task.Origin == TaskOrigin.Order ? 1 : 0);
 
     /// <summary>Removes and returns the next waiting order, or null.</summary>
     internal TaskInstance? Dequeue(CharacterId id)

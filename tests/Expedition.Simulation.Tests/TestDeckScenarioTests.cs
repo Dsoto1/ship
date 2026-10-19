@@ -26,7 +26,7 @@ public class TestDeckScenarioTests
     [Fact]
     public void EveryShipboardTaskCanBeAssignedSomewhereOnTheDeck()
     {
-        var runner = TestDeckScenario.Create(Shipped());
+        var runner = TestDeckScenario.Create(Shipped(), withDuties: false);
         var crew = runner.Campaign.Characters.Values.OrderBy(c => c.Id).ToList();
 
         Assert.True(runner.AssignTask(crew[1].Id, "task.repair_rigging").Succeeded);

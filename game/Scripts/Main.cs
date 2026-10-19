@@ -61,6 +61,13 @@ public partial class Main : Node3D
         _hud.CharacterChosen += id => _selected = id;
         _hud.TaskOrdered += OrderTask;
         _hud.StopOrdered += () => { if (_selected is { } id) _hud.ShowResult(_runner.CancelTask(id)); };
+        _hud.DutyToggled += (taskId, on) =>
+        {
+            if (_selected is not { } id) return;
+            var duties = _runner.Campaign.DutiesOf(id).Where(d => d != taskId).ToList();
+            if (on) duties.Add(taskId);
+            _hud.ShowResult(_runner.SetDuties(id, duties));
+        };
         _hud.QueueCleared += () => { if (_selected is { } id) _hud.ShowResult(_runner.ClearQueue(id), "Queued orders cleared."); };
 
         // Each new voyage gets its own seed; the seed is saved, so a reported problem can be replayed.

@@ -15,7 +15,7 @@ public class KnowledgeTests
 
     private static (CampaignState Campaign, CharacterId Subject, CharacterId Informant) Setup()
     {
-        var campaign = TestDeckScenario.Create(Shipped).Campaign;
+        var campaign = TestDeckScenario.Create(Shipped, withDuties: false).Campaign;
         var crew = campaign.Characters.Keys.Order().ToList();
         return (campaign, crew[1], crew[2]);
     }

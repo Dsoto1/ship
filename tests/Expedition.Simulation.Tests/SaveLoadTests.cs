@@ -185,7 +185,7 @@ public class SaveLoadTests
     [Fact]
     public void OlderVersionIsUpgradedThroughMigrations()
     {
-        // Pretend this build reads format 10, and format 9 called the phase field "stage".
+        // Pretend this build reads format 11, and format 10 called the phase field "stage".
         var current = SaveSerializer.Serialize(StormDamagedVoyage().Campaign);
         var formatOne = Edit(current, root =>
         {
@@ -194,7 +194,7 @@ public class SaveLoadTests
         });
         var migrations = new Dictionary<int, Func<JsonObject, JsonObject>>
         {
-            [9] = root =>
+            [10] = root =>
             {
                 root["phase"] = root["stage"]!.DeepClone();
                 root.Remove("stage");
@@ -202,7 +202,7 @@ public class SaveLoadTests
             },
         };
 
-        var loaded = SaveSerializer.Deserialize(formatOne, TestContent.Create(), migrations, currentVersion: 10);
+        var loaded = SaveSerializer.Deserialize(formatOne, TestContent.Create(), migrations, currentVersion: 11);
 
         Assert.Equal(CampaignPhase.Voyage, loaded.Phase);
         Assert.Equal(current, SaveSerializer.Serialize(loaded));
@@ -214,9 +214,9 @@ public class SaveLoadTests
         var json = SaveSerializer.Serialize(StormDamagedVoyage().Campaign);
 
         var ex = Assert.Throws<SaveLoadException>(() =>
-            SaveSerializer.Deserialize(json, TestContent.Create(), new Dictionary<int, Func<JsonObject, JsonObject>>(), currentVersion: 10));
+            SaveSerializer.Deserialize(json, TestContent.Create(), new Dictionary<int, Func<JsonObject, JsonObject>>(), currentVersion: 11));
 
-        Assert.Contains("no upgrade from format 9", ex.Message);
+        Assert.Contains("no upgrade from format 10", ex.Message);
     }
 
     [Fact]
@@ -267,7 +267,7 @@ public class SaveLoadTests
     {
         root["schemaVersion"] = 3;
         root["random"] = root["randomStreams"]!["tasks"]!.DeepClone();
-        foreach (var field in new[] { "randomStreams", "seed", "campaignId", "captainId", "relationships", "lastTaskId", "queuedTasks", "knowledge" })
+        foreach (var field in new[] { "randomStreams", "seed", "campaignId", "captainId", "relationships", "lastTaskId", "queuedTasks", "knowledge", "duties" })
         {
             root.Remove(field);
         }
@@ -284,7 +284,7 @@ public class SaveLoadTests
 
         foreach (var task in root["activeTasks"]!.AsArray())
         {
-            foreach (var field in new[] { "id", "priority", "materialsConsumed" })
+            foreach (var field in new[] { "id", "priority", "materialsConsumed", "origin" })
             {
                 task!.AsObject().Remove(field);
             }
@@ -334,7 +334,7 @@ public class SaveLoadTests
             root["lastTaskId"] = id;
             root["activeTasks"]!.AsArray().Add(new JsonObject
             {
-                ["id"] = id, ["characterId"] = 6, ["definitionId"] = "task.rest", ["priority"] = "Normal",
+                ["id"] = id, ["characterId"] = 6, ["definitionId"] = "task.rest", ["priority"] = "Normal", ["origin"] = "Order",
                 ["startedAtTick"] = 0, ["materialsConsumed"] = true, ["progress"] = 0,
             });
         });

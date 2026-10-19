@@ -44,9 +44,23 @@ public static class TestDeckScenario
         (4, 0, Characters.RelationshipDimension.Trust, -10, "a Portuguese stranger to this captain"),
     ];
 
+    // Standing duties, by index into Crew: what each does when idle with no orders (in turn).
+    private static readonly string[][] Duties =
+    [
+        ["task.stand_watch"],
+        ["task.repair_rigging", "task.stand_watch"],
+        ["task.cook"],
+        ["task.pump_bilge", "task.stand_watch"],
+        ["task.patch_hull", "task.pump_bilge"],
+        ["task.stand_watch", "task.pump_bilge"],
+    ];
+
     /// <summary>Creates the scenario. Requires the shipped content (<c>data/</c>).</summary>
     /// <exception cref="InvalidOperationException">The content lacks something the scenario needs.</exception>
-    public static SimulationRunner Create(GameContent content, ulong seed = CampaignState.DefaultSeed)
+    /// <param name="content">The shipped content.</param>
+    /// <param name="seed">Campaign seed.</param>
+    /// <param name="withDuties">False leaves the crew without standing duties, so they only do what they are told.</param>
+    public static SimulationRunner Create(GameContent content, ulong seed = CampaignState.DefaultSeed, bool withDuties = true)
     {
         if (!content.Locations.ContainsKey(LocationId))
         {
@@ -110,6 +124,11 @@ public static class TestDeckScenario
         foreach (var (from, to, dimension, delta, cause) in History)
         {
             Require(campaign.ChangeRelationship(ids[from], ids[to], dimension, delta, cause));
+        }
+
+        for (var i = 0; i < Duties.Length && withDuties; i++)
+        {
+            Require(runner.SetDuties(ids[i], Duties[i]));
         }
 
         return runner;

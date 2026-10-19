@@ -19,6 +19,7 @@ public partial class Hud : CanvasLayer
     private readonly List<(Button Button, int Speed)> _speedButtons = [];
     private readonly List<(Button Button, CharacterId Id)> _crewButtons = [];
     private readonly List<(Button Button, string TaskId)> _taskButtons = [];
+    private readonly List<(CheckBox Box, string TaskId)> _dutyBoxes = [];
     private readonly Dictionary<string, ProgressBar> _needBars = [];
 
     private Label _time = null!;
@@ -32,6 +33,8 @@ public partial class Hud : CanvasLayer
     private VBoxContainer _taskList = null!;
     private Label _why = null!;
     private Label _queue = null!;
+    private Label _dutyNote = null!;
+    private VBoxContainer _dutyList = null!;
     private CheckBox _urgent = null!;
     private RichTextLabel _chronicle = null!;
     private ChronicleFormatter _formatter = null!;
@@ -51,6 +54,9 @@ public partial class Hud : CanvasLayer
 
     /// <summary>The player gave the selected character an order: task ID and priority.</summary>
     public event Action<string, TaskPriority>? TaskOrdered;
+
+    /// <summary>The player turned one of the selected character's standing duties on or off.</summary>
+    public event Action<string, bool>? DutyToggled;
 
     /// <summary>The player cleared the selected character's waiting orders.</summary>
     public event Action? QueueCleared;
@@ -75,8 +81,10 @@ public partial class Hud : CanvasLayer
     {
         foreach (var (button, _) in _crewButtons) button.QueueFree();
         foreach (var (button, _) in _taskButtons) button.QueueFree();
+        foreach (var (box, _) in _dutyBoxes) box.QueueFree();
         _crewButtons.Clear();
         _taskButtons.Clear();
+        _dutyBoxes.Clear();
         _chronicleCount = -1;
         _formatter = new ChronicleFormatter(runner.Campaign, runner.Content);
 
@@ -100,6 +108,17 @@ public partial class Hud : CanvasLayer
             button.Pressed += () => TaskOrdered?.Invoke(taskId, CurrentPriority);
             _taskList.AddChild(button);
             _taskButtons.Add((button, taskId));
+
+            // Rest is not a duty: everyone rests of their own accord when tired.
+            if (task.IsRest)
+            {
+                continue;
+            }
+
+            var box = new CheckBox { Text = task.Name, FocusMode = Control.FocusModeEnum.None };
+            box.Toggled += on => DutyToggled?.Invoke(taskId, on);
+            _dutyList.AddChild(box);
+            _dutyBoxes.Add((box, taskId));
         }
     }
 
@@ -157,7 +176,13 @@ public partial class Hud : CanvasLayer
         if (runner.Campaign.ActiveTasks.TryGetValue(character.Id, out var task))
         {
             var name = runner.Content.Tasks[task.DefinitionId].Name;
-            return walking ? $"going to {name.ToLowerInvariant()}" : name;
+            var why = task.Origin switch
+            {
+                TaskOrigin.Duty => " (duty)",
+                TaskOrigin.SelfCare => " (tired)",
+                _ => "",
+            };
+            return (walking ? $"going to {name.ToLowerInvariant()}" : name) + why;
         }
 
         return walking ? "walking" : "idle";
@@ -180,6 +205,7 @@ public partial class Hud : CanvasLayer
             _doing.Text = "Click a crew member on deck or in the crew list.";
             _details.Text = "";
             _queue.Text = "";
+            _dutyNote.Text = "";
             _why.Text = "";
             _pack.Text = "";
             return;
@@ -233,10 +259,21 @@ public partial class Hud : CanvasLayer
             : "Next:\n" + string.Join("\n", queue.Select((task, i) =>
             {
                 var name = runner.Content.Tasks[task.DefinitionId].Name;
-                var urgent = task.Priority == TaskPriority.Urgent ? " (urgent)" : "";
+                var urgent = task.Priority == TaskPriority.Urgent ? " (urgent)" : task.Origin == TaskOrigin.Duty ? " (duty)" : "";
                 var paused = task.Progress > 0 ? $" (paused at {task.Progress / runner.Content.Tasks[task.DefinitionId].DurationMinutes:P0})" : "";
                 return $"  {i + 1}. {name}{urgent}{paused}";
             }));
+
+        var duties = runner.Campaign.DutiesOf(id);
+        foreach (var (box, taskId) in _dutyBoxes)
+        {
+            box.SetPressedNoSignal(duties.Contains(taskId));
+        }
+
+        var idle = !runner.Campaign.ActiveTasks.ContainsKey(id) && character.CanWork;
+        _dutyNote.Text = duties.Count == 0
+            ? "No duties: idle until ordered."
+            : idle && runner.WhyNoDuty(id) is { } blocked ? $"Idle: {blocked}" : "";
 
         // Orders stay clickable so the player can see why one is refused; unavailable ones are dimmed.
         foreach (var (button, taskId) in _taskButtons)
@@ -375,6 +412,17 @@ public partial class Hud : CanvasLayer
         var clear = new Button { Text = "Clear queued orders", Alignment = HorizontalAlignment.Left, FocusMode = Control.FocusModeEnum.None };
         clear.Pressed += () => QueueCleared?.Invoke();
         orders.AddChild(clear);
+
+        var duties = AddTab(tabs, "Duties");
+        duties.AddChild(new Label
+        {
+            Text = "When idle with no orders, this crew member takes up these duties in turn. Everyone rests on their own when tired, and your orders always come first.",
+            AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(320, 0),
+        });
+        _dutyList = new VBoxContainer();
+        duties.AddChild(_dutyList);
+        _dutyNote = Wrapped();
+        duties.AddChild(_dutyNote);
 
         var record = AddTab(tabs, "Record");
         _details = Wrapped();

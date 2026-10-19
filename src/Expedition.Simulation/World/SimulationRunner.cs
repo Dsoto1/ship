@@ -141,16 +141,83 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
         }
 
         Campaign.ActiveTasks.TryGetValue(characterId, out var current);
-        var idle = current is null && Campaign.QueueOf(characterId).Count == 0;
+        var idle = current is null && !Campaign.QueueOf(characterId).Any(waiting => waiting.Origin == TaskOrigin.Order);
         var preempts = current is not null && priority > current.Priority;
-        if (!character.CanWork || !(idle || preempts))
+
+        // Work the character took up themselves (a duty, or resting) gives way to any order of theirs.
+        var overridesOwnWork = current is not null && current.Origin != TaskOrigin.Order && priority >= current.Priority;
+        if (!character.CanWork || !(idle || preempts || overridesOwnWork))
         {
             return (CommandResult.Ok(), false);
         }
 
         // Starting now: every rule applies, as for AssignTask.
         var eligibility = Check(character, task, materialsAlreadyUsed: false);
-        return (eligibility, eligibility.Succeeded);
+
+        // If it cannot start yet over their own work, it waits instead of being refused.
+        return !eligibility.Succeeded && !preempts && overridesOwnWork
+            ? (CommandResult.Ok(), false)
+            : (eligibility, eligibility.Succeeded);
+    }
+
+    /// <summary>
+    /// Sets a character's standing duties: tasks they take up in turn whenever they are idle with no
+    /// orders. An empty list clears them. Refused for unknown or repeated tasks, rest (which characters
+    /// take of their own accord), tasks the character lacks the skill for, and the dead or missing.
+    /// </summary>
+    public CommandResult SetDuties(CharacterId characterId, IEnumerable<string> taskIds)
+    {
+        if (!Campaign.Characters.TryGetValue(characterId, out var character))
+        {
+            return CommandResult.Rejected($"No character with ID {characterId} in the campaign.");
+        }
+
+        if (character.SurvivalState is SurvivalState.Dead or SurvivalState.Missing)
+        {
+            return CommandResult.Rejected($"{character.Name} is {character.SurvivalState} and cannot take duties.");
+        }
+
+        var duties = taskIds.ToList();
+        foreach (var taskId in duties)
+        {
+            if (!Content.Tasks.TryGetValue(taskId, out var task))
+            {
+                return CommandResult.Rejected($"Unknown task '{taskId}'.");
+            }
+
+            if (task.IsRest)
+            {
+                return CommandResult.Rejected($"{task.Name} is not a duty: everyone rests when they are tired.");
+            }
+
+            if (task.Skill is not null && character.Skills.Get(task.Skill) < task.MinSkill)
+            {
+                return CommandResult.Rejected($"{character.Name} lacks the skill: {task.Name} needs {task.Skill} {task.MinSkill}.");
+            }
+        }
+
+        if (duties.Distinct().Count() != duties.Count)
+        {
+            return CommandResult.Rejected("A duty is listed twice.");
+        }
+
+        Campaign.SetDuties(characterId, duties);
+        return CommandResult.Ok();
+    }
+
+    /// <summary>
+    /// Why an idle character is not taking up any of their duties, or null if they would (or have none).
+    /// For the interface, so an idle crew member never stands about without explanation.
+    /// </summary>
+    public string? WhyNoDuty(CharacterId characterId)
+    {
+        if (!Campaign.Characters.TryGetValue(characterId, out var character) || Campaign.DutiesOf(characterId) is not { Count: > 0 } duties)
+        {
+            return null;
+        }
+
+        var reasons = duties.Select(id => Check(character, Content.Tasks[id], materialsAlreadyUsed: false)).ToList();
+        return reasons.Any(r => r.Succeeded) ? null : string.Join(" ", reasons.Select(r => r.Reason).Distinct());
     }
 
     /// <summary>Removes one waiting order. Used materials of a paused task are not refunded.</summary>
@@ -281,6 +348,46 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
         }
     }
 
+    /// <summary>
+    /// What an idle character does with no orders waiting (TECHNICAL_SPEC.md §19.1): rest if tired
+    /// (self-care, when the rules turn it on), otherwise take up the next standing duty that can start,
+    /// in turn. Duties that cannot start (no rope, no free spot) are skipped silently; the interface
+    /// asks <see cref="WhyNoDuty"/>.
+    /// </summary>
+    private void StartOnOwnAccord(Character character)
+    {
+        if (!character.CanWork || Campaign.ActiveTasks.ContainsKey(character.Id)
+            || (Campaign.Placements.TryGetValue(character.Id, out var placement) && placement.IsMoving))
+        {
+            return;
+        }
+
+        if (Content.Rules.RestAtFatigue is { } restAt && character.Needs.Fatigue >= restAt
+            && Content.Tasks.Values.Where(t => t.IsRest).OrderBy(t => t.Id, StringComparer.Ordinal).FirstOrDefault() is { } rest
+            && Check(character, rest, materialsAlreadyUsed: false).Succeeded)
+        {
+            Start(character, new TaskInstance(Campaign.Ids.NextTaskId(), character.Id, rest.Id, TaskPriority.Normal) { Origin = TaskOrigin.SelfCare });
+            return;
+        }
+
+        if (Campaign.QueueOf(character.Id).Count > 0 || !Campaign.Duties.TryGetValue(character.Id, out var roster))
+        {
+            return;
+        }
+
+        for (var i = 0; i < roster.Tasks.Count; i++)
+        {
+            var index = (roster.Next + i) % roster.Tasks.Count;
+            var task = Content.Tasks[roster.Tasks[index]];
+            if (Check(character, task, materialsAlreadyUsed: false).Succeeded)
+            {
+                roster.Next = (index + 1) % roster.Tasks.Count;
+                Start(character, new TaskInstance(Campaign.Ids.NextTaskId(), character.Id, task.Id, TaskPriority.Normal) { Origin = TaskOrigin.Duty });
+                return;
+            }
+        }
+    }
+
     /// <summary>Puts a character on a location's grid, for example when a scenario starts. Ends any walk.</summary>
     public CommandResult PlaceCharacter(CharacterId characterId, string locationId, GridPosition cell)
     {
@@ -405,6 +512,7 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
 
         ResolveArrival(character.Id);
         StartNextQueued(character);
+        StartOnOwnAccord(character);
         Campaign.ActiveTasks.TryGetValue(character.Id, out var task);
         var definition = task is null ? null : Content.Tasks[task.DefinitionId];
         character.Needs.Apply(Content.Rules.BaselineNeedsPerHour + (definition?.NeedsPerHour ?? NeedRates.None), HoursPerTick);

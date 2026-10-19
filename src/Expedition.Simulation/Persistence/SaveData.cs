@@ -61,6 +61,9 @@ public sealed record SaveData
     /// <summary>Active tasks, in character ID order.</summary>
     public required IReadOnlyList<TaskData> ActiveTasks { get; init; }
 
+    /// <summary>Standing duties, by character ID. Added in format 10.</summary>
+    public required IReadOnlyList<DutyData> Duties { get; init; }
+
     /// <summary>The captain's knowledge, oldest first. Added in format 9.</summary>
     public required IReadOnlyList<KnowledgeData> Knowledge { get; init; }
 
@@ -176,6 +179,9 @@ public sealed record TaskData
 
     /// <summary>Priority name. Added in format 6.</summary>
     public required string Priority { get; init; }
+
+    /// <summary>Origin name: Order, Duty or SelfCare. Added in format 10.</summary>
+    public required string Origin { get; init; }
 
     /// <summary>Tick work first started, or null for an order that has not started.</summary>
     public long? StartedAtTick { get; init; }
@@ -330,4 +336,17 @@ public sealed record KnowledgeData
 
     /// <summary>Informant character ID number, or null.</summary>
     public int? Informant { get; init; }
+}
+
+/// <summary>A character's saved standing duties.</summary>
+public sealed record DutyData
+{
+    /// <summary>Character ID number.</summary>
+    public required int CharacterId { get; init; }
+
+    /// <summary>Task definition IDs, in turn order.</summary>
+    public required IReadOnlyList<string> Tasks { get; init; }
+
+    /// <summary>Index of the duty to try next.</summary>
+    public required int Next { get; init; }
 }

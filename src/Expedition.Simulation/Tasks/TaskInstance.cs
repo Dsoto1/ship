@@ -49,6 +49,9 @@ public sealed class TaskInstance
     /// <summary>How urgent the order is.</summary>
     public TaskPriority Priority { get; }
 
+    /// <summary>Why the character is doing it: a player order, a standing duty or self-care.</summary>
+    public TaskOrigin Origin { get; init; } = TaskOrigin.Order;
+
     /// <summary>Tick at which work first started, or null if it has not started yet.</summary>
     public long? StartedAtTick { get; internal set; }
 

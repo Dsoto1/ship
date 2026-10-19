@@ -22,6 +22,7 @@ This file tracks status and breaks the next work into tickets.
 | 4c | Appearance record | Done (2026-10-18) |
 | 5a | Identity: sex, languages, social status | Done (2026-10-19) |
 | 5b | Captain's knowledge: truth vs what is known | Done (2026-10-19) |
+| 5b+ | Standing duties and self-care (owner: "the crew needs automating") | Done (2026-10-19) |
 | 5c | Recruitment rules: candidates, investigation, offers, deadline | Proposed |
 | 5d | Godot waterfront recruitment scene | Proposed |
 | 6 | Voyage-to-crisis vertical slice | Not started |
@@ -342,4 +343,24 @@ Closes audit gap G12.
 - **Mac shortcuts:** Cmd+S / Cmd+L save and load. A controls reminder sits under the hold.
 - **Opens maximized:** a 1280×720-pixel window looked tiny on a Retina screen, so the game now opens
   maximized and the interface scales up to fill it.
+
+## Standing duties and self-care (owner feedback "the crew needs automating")
+
+D-014. Crew now keep themselves busy without clicking.
+- **Standing duties:** each crew member has a list of tasks they take up in turn whenever they are
+  idle with no orders. A duty that cannot start (no rope, spot taken) is skipped for the next one.
+  The test deck crew start with sensible duties (watch, rigging, cooking, pumping, hull).
+- **Self-care:** an idle crew member at fatigue 70 or more rests on their own (`restAtFatigue` in
+  `data/simulation_rules.json`; remove it to turn self-care off). Eating and drinking were already
+  automatic.
+- **Orders come first:** an order takes over from duty work or resting at once; the interrupted
+  work waits behind the player's orders and resumes later with its progress kept. If an order cannot
+  start yet (too tired to work), it waits instead of being refused.
+- **Explained:** activities read "Stand watch (duty)" or "Rest (tired)", and an idle crew member with
+  duties says why none can start.
+- **Godot:** a new **Duties** tab with a checkbox per task.
+- **Save format 10:** each task records why it is being done; duties are saved. Older saves load
+  with all work counted as ordered and no duties.
+
+296 tests pass, including three days of the crew running on duties alone with nobody exhausted.
 

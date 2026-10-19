@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 9;
+    public const int CurrentSchemaVersion = 10;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -106,6 +106,21 @@ public static class SaveSerializer
             [8] = root =>
             {
                 root["knowledge"] = new JsonArray();
+                return root;
+            },
+
+            // Format 10 added standing duties and why each task is being done. All earlier work was ordered.
+            [9] = root =>
+            {
+                foreach (var list in new[] { "activeTasks", "queuedTasks" })
+                {
+                    foreach (var task in root[list]?.AsArray() ?? [])
+                    {
+                        task!["origin"] = nameof(TaskOrigin.Order);
+                    }
+                }
+
+                root["duties"] = new JsonArray();
                 return root;
             },
         };
@@ -355,6 +370,10 @@ public static class SaveSerializer
                 .SelectMany(id => campaign.QueueOf(id))
                 .Select(ToData)
                 .ToList(),
+            Duties = campaign.Duties.OrderBy(pair => pair.Key).Select(pair => new DutyData
+            {
+                CharacterId = pair.Key.Value, Tasks = pair.Value.Tasks.ToList(), Next = pair.Value.Next,
+            }).ToList(),
             Knowledge = campaign.Knowledge.Entries.Select(k => new KnowledgeData
             {
                 Tick = k.Tick, Subject = k.Subject.Value, Topic = k.Topic, Level = k.Level,
@@ -377,6 +396,7 @@ public static class SaveSerializer
         CharacterId = task.CharacterId.Value,
         DefinitionId = task.DefinitionId,
         Priority = task.Priority.ToString(),
+        Origin = task.Origin.ToString(),
         StartedAtTick = task.StartedAtTick,
         MaterialsConsumed = task.MaterialsConsumed,
         Progress = task.Progress,
@@ -409,6 +429,7 @@ public static class SaveSerializer
 
         return new TaskInstance(new TaskId(saved.Id), id, saved.DefinitionId, ParseEnum<TaskPriority>(saved.Priority, "task priority"))
         {
+            Origin = ParseEnum<TaskOrigin>(saved.Origin, "task origin"),
             StartedAtTick = saved.StartedAtTick,
             MaterialsConsumed = saved.MaterialsConsumed,
             Progress = saved.Progress,
@@ -583,6 +604,24 @@ public static class SaveSerializer
             {
                 throw new SaveLoadException($"{worker.Name}'s waiting orders are out of priority order.");
             }
+        }
+
+        foreach (var saved in data.Duties)
+        {
+            var id = new CharacterId(saved.CharacterId);
+            if (!campaign.Characters.TryGetValue(id, out var worker) || worker.SurvivalState is SurvivalState.Dead or SurvivalState.Missing)
+            {
+                throw new SaveLoadException($"Duties are saved for {id}, who is not in the save or cannot work.");
+            }
+
+            if (campaign.Duties.ContainsKey(id) || saved.Tasks.Count == 0 || saved.Tasks.Distinct().Count() != saved.Tasks.Count
+                || saved.Next < 0 || saved.Next >= saved.Tasks.Count
+                || saved.Tasks.Any(task => !content.Tasks.TryGetValue(task, out var definition) || definition.IsRest))
+            {
+                throw new SaveLoadException($"{worker.Name}'s duties are invalid or refer to tasks that no longer exist.");
+            }
+
+            campaign.SetDuties(id, saved.Tasks.ToList(), saved.Next);
         }
 
         foreach (var saved in data.Knowledge)

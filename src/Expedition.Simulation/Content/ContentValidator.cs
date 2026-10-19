@@ -34,6 +34,11 @@ internal static class ContentValidator
             errors.Add("Rules: maxFatigueToStartWork must not exceed exhaustionFatigue.");
         }
 
+        if (rules.RestAtFatigue is { } restAt && (restAt <= Needs.Min || restAt > rules.MaxFatigueToStartWork))
+        {
+            errors.Add("Rules: restAtFatigue must be above 0 and no higher than maxFatigueToStartWork.");
+        }
+
         if (rules.IncapacitatedAtHealth is < Health.Min or >= Health.Max)
         {
             errors.Add($"Rules: incapacitatedAtHealth must be in {Health.Min}..{Health.Max - 1}.");
