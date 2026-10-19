@@ -582,3 +582,27 @@ investigation by observing, conversing, references and demonstrations.
 
 **Why.** The brief's north star is a port that is crowded, purposeful and watchable (§1, §7), with
 the ship always in view (§5).
+
+---
+
+## D-024 — The voyage, navigation and settlement briefs are authorities
+
+**Date:** 2026-10-19
+**Status:** Accepted (owner supplied the three briefs)
+
+**Decision.**
+- `VOYAGE_EXPERIENCE.md`, `NAVIGATION.md` and `SETTLEMENT_EXPERIENCE.md` govern their phases, with
+  the main documents.
+- Their historical rules apply to the fictional analogue (D-013). The settlement's region and peoples
+  are the approved Ember Coast, Ahuneri and Tesiwa.
+- The old R4 ("voyage gaps") becomes R4a–R4h, following the briefs' implementation orders. The old R5
+  stays the shipwreck transition. The old R6 becomes R6–R8: camp, establishment, and the world
+  around it (`VISION_ALIGNMENT.md` §6).
+- **Navigation reuses the knowledge model:** true position is simulation truth; the chart is
+  belief, with sources (charted, reported, observed, estimated).
+- The briefs' approval items run on proposed defaults until the owner decides
+  (`VISION_ALIGNMENT.md` §6.5).
+
+**Why.** The briefs ask for a voyage driven by interacting systems rather than event cards (VOYAGE
+§1, §42), a chart of belief rather than truth (NAV §1), and a settlement that is the expedition
+continuing (SETTLEMENT §0). The current build is measured against them in `VISION_ALIGNMENT.md` §6.

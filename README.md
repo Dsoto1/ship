@@ -72,6 +72,9 @@ Saves go to `~/Library/Application Support/The Expedition/saves/` on macOS.
 - [`docs/SETTING.md`](docs/SETTING.md) — the fictional setting (approved, D-013)
 - [`docs/VISION_ALIGNMENT.md`](docs/VISION_ALIGNMENT.md) — where the build stands against the vision, and the re-plan (D-020)
 - [`docs/PORT_EXPERIENCE.md`](docs/PORT_EXPERIENCE.md) — the port brief: authority for the port (D-023)
+- [`docs/VOYAGE_EXPERIENCE.md`](docs/VOYAGE_EXPERIENCE.md) — the voyage and ship brief (D-024)
+- [`docs/NAVIGATION.md`](docs/NAVIGATION.md) — the navigation and chart brief (D-024)
+- [`docs/SETTLEMENT_EXPERIENCE.md`](docs/SETTLEMENT_EXPERIENCE.md) — the landfall and settlement brief (D-024)
 - [`docs/P1_OPTIONS_BRIEF.md`](docs/P1_OPTIONS_BRIEF.md) — historical situations to draw inspiration from (setting is fictional: D-012)
 
 ## Tech

@@ -34,9 +34,18 @@ This file tracks status and breaks the next work into tickets.
 | R2d | Sound zones, port weather and reactions, ambient micro-events (steps 10–12) | Planned |
 | R2e | Recognition and the departure sequence (steps 13, 14) | Planned |
 | R3 | Visual validation: the four port scenes of PORT_EXPERIENCE §21, then Test B ship, with the hybrid pipeline (D-021) | Planned |
-| R4 | Voyage gaps: chart and estimated position, cargo, medical crisis, chained storms, state-driven events | Planned |
-| R5 | Shipwreck continuation: survivors and salvage on a beach | Planned |
-| R6 | Landfall camp at Punta Ceniza | Planned |
+| R4a | Wind, heading and sailing: wind direction, visibility, warning signs; why she is slow (VOYAGE §5, §20) | Planned |
+| R4b | True vs estimated position; the chart: dead reckoning, a latitude sight, uncertainty region, route legs, annotations (NAVIGATION) | Planned |
+| R4c | Standing navigation orders and configurable interrupts; alerts by severity (VOYAGE §8, §35; NAV §7–9) | Planned |
+| R4d | Watch rotation and the assignment board (VOYAGE §9, §17) | Planned |
+| R4e | Localized damage, repair quality and history, cargo zones, the storm with preparation (VOYAGE §4, §21–23) | Planned |
+| R4f | Medical crisis, grievances by stages, skill growth and mentorship; events become state-caused (VOYAGE §15, §18–19, §25–26, §42) | Planned |
+| R4g | Landfall approach: soundings, sighting, identifying the coast, wrong landfall (NAV §30–31) | Planned |
+| R4h | Voyage validation: calm morning, fog, storm, aftermath; sound; the ship's visible history (VOYAGE §46) | Planned |
+| R5 | Shipwreck transition: casualties, location, salvage by accessibility, survivors' state kept (VOYAGE §39–40) | Planned |
+| R6 | Landfall camp, the first 72 hours: assessment, water, shelter, fire, stores, sanitation (SETTLEMENT §3–6) | Planned |
+| R7 | Establishment: construction projects, storage and spoilage, the first garden, seasons (SETTLEMENT §7–19) | Planned |
+| R8 | The world around: exploration, the Ahuneri and Tesiwa, trade, the charter (SETTLEMENT §26–33) | Planned |
 | 5c | Recruitment rules in full: investigation, references, counteroffers | Later (core moves into V4) |
 | 5d | Godot waterfront recruitment scene | Later, once the voyage is fun |
 | 6 | Voyage-to-crisis vertical slice | Becomes V2–V3 |

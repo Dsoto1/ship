@@ -262,3 +262,107 @@ R2 is split so each step is playable and testable:
   It stays a first draft; nothing about it is canon.
 - **Sound assets.** No CC0 audio host is reachable from the build environment, so R2d starts with
   generated sound.
+
+---
+
+## 6. The voyage, navigation and settlement briefs (added 2026-10-19)
+
+The owner supplied three more briefs, now the authorities for their phases (D-024):
+- `VOYAGE_EXPERIENCE.md`: the voyage and the ship;
+- `NAVIGATION.md`: the chart, position and time compression;
+- `SETTLEMENT_EXPERIENCE.md`: landfall, camp and settlement.
+
+Like the port brief, their historical rules apply to the fictional analogue (SETTING.md, D-013).
+The settlement's region and peoples are already the approved Ember Coast, Punta Ceniza, the Ahuneri
+and the Tesiwa. Each culture still needs its plausibility pass before content (SETTING.md §5).
+
+### 6.1 Voyage acceptance criteria (VOYAGE §49) against what exists
+
+| Criterion | Now | Verdict |
+|---|---|---|
+| Ship moves by a simplified wind and heading model | Speed from a weather state's wind and the sail plan; no wind direction or heading | Partly |
+| Route and estimated position distinct from true position | A leagues counter | Missing |
+| Standing and urgent tasks | Duties with conditions, urgent orders | Aligned |
+| Watches and rest affect fatigue | Self-care rest at fatigue 70, a watch duty; no watch rotation | Partly |
+| Food and water consumed | Yes, with rationing | Aligned |
+| Health conditions persist | Conditions are saved and carried | Aligned |
+| Multiple damageable systems | Hull, bilge, rigging | Partly: no sails vs lines, steering, pumps or cargo damage |
+| Leaks create pumping pressure | Leaks from hull wear; a pump duty | Aligned |
+| Repair consumes time and materials | Oakum, plank and rope | Aligned; no repair quality or history |
+| Storm preparation affects outcomes | Heave to; nothing to secure beforehand | Partly |
+| Severe weather changes visuals, audio and gameplay | Visuals and gameplay; no audio | Partly |
+| Accelerated time stops and alerts appropriately | Auto-pause on danger and events | Aligned; thresholds not configurable |
+| Social concerns emerge causally | Stress, quarrels, "a word with the captain"; no escalation stages | Partly |
+| Chronicle records meaningful events | Yes | Aligned |
+| Save and load in travel and crisis | Format 15 | Aligned |
+| Port recruits remain the same characters | Yes | Aligned |
+| Landfall preserves state | An end screen | Missing |
+| Shipwreck preserves survivors, injuries, relationships, salvage | An end screen | Missing |
+| Dead stay dead | Yes | Aligned |
+| The player can understand major failure causes | Need explanations and end-screen advice; no causal storm story | Partly |
+
+**Also missing:**
+- the voyage's emotional phases (departure, adjustment, open ocean and so on) as distinct pacing;
+- cargo zones and securing;
+- skill growth and mentorship;
+- encounters with independent ships;
+- fishing that feeds food;
+- visible damage history;
+- sound.
+
+**At risk:** the 13 authored events are partly choice cards, which the brief forbids as the main
+source of drama (§42, §51). They become state-caused in R4.
+
+### 6.2 Navigation acceptance criteria (NAVIGATION §41)
+
+None of the 16 exists yet: there is no chart, position, heading, observation or landfall approach.
+What exists and will be reused:
+- time compression (Pause to 720×);
+- auto-pause on danger;
+- seeded random streams;
+- the chronicle;
+- versioned saves;
+- the knowledge model (truth against belief, with sources). This carries over to charts: charted,
+  reported and observed are knowledge sources.
+
+### 6.3 Settlement acceptance criteria (SETTLEMENT §53)
+
+None exists yet; landfall is an end screen. What carries over:
+- **Already ready:** persistent people with health, relationships and skills; inventories and the
+  hold; the task system with duties and work spots; knowledge and provenance; the chronicle.
+- **To build:** construction projects, water sources, storage and spoilage, sanitation, seasons,
+  exploration, and external communities.
+
+### 6.4 Revised plan
+
+Port work stays first (R2b–R2e, then R3). The voyage brief's order (§50) and the navigation brief's
+order (§42) are merged into R4, and the settlement brief's order (§54) into R5–R7.
+
+| Milestone | Briefs | Work |
+|---|---|---|
+| **R4a** Wind, heading and sailing | VOYAGE §5, §20; NAV §29 | Wind direction and strength, visibility, rain and cloud as weather variables with warning signs. Heading and point of sail set the speed, and the ship says why she is slow. |
+| **R4b** True and estimated position, the chart | NAV §3–7, §12, §16, §39 | A 2D Ocean Sea. True position against dead reckoning, with the error growing by weather, time and the navigator's skill. A latitude sight that cloud blocks. A parchment chart showing the estimate, an uncertainty region, the believed track, and charted, reported and observed marks. Route legs and annotations. |
+| **R4c** Standing orders and interrupts | VOYAGE §8, §35; NAV §7–9 | "Wake me if…" orders with configurable thresholds. Alerts by severity that focus the person or place they concern. |
+| **R4d** Watches, rest and assignment | VOYAGE §9, §17 | Watch rotation. An assignment board showing competence, fatigue, conflicts and substitutes. |
+| **R4e** Damage, repair and the storm | VOYAGE §4, §21–23 | Sails and lines, steering, pumps, and cargo zones (secured, loose, wet). Emergency, temporary and proper repairs, whose history persists. A storm with warning, preparation, impact, cascade and recovery, where preparation changes the outcome. |
+| **R4f** Health and social pressure | VOYAGE §15, §18–19, §25–26 | A medical crisis with treatment and medicine. Grievances that escalate by stages. Slow skill growth and mentorship. The authored events become state-caused. |
+| **R4g** Landfall approach | NAV §30–31 | Approach, soundings, sighting, identifying the coast, the chance of a wrong landfall, and the transition with all state kept. |
+| **R4h** Voyage validation | VOYAGE §46; NAV §40 | Calm morning, fog and uncertainty, full storm, aftermath at dawn; sound; the ship's visible history. |
+| **R5** Shipwreck transition | VOYAGE §39–40 | Casualties, location, escape, and salvage by accessibility, keeping the survivors' state, onto a shore. |
+| **R6** Landfall camp: the first 72 hours | SETTLEMENT §3–6, §13 | The landfall assessment, water sources that must be found and carried, temporary shelter, fire, protected stores, sanitation, and the canvas-or-repair trade-offs. |
+| **R7** Establishment | SETTLEMENT §7–19 | Construction projects in phases (labour, materials, tools, quality), storage and spoilage, the first garden, and seasons. |
+| **R8** The world around the camp | SETTLEMENT §26–33 | Exploration on a regional chart (reusing R4b), the Ahuneri and Tesiwa as independent communities, language and trade, and the charter's conditions. |
+
+### 6.5 Needing the owner's approval
+
+These are listed in the briefs. Each has a proposed default, used until the owner says otherwise.
+
+| Item | Brief | Proposed default |
+|---|---|---|
+| Time-compression multipliers | NAV §8, §43 | Keep Pause, 1×, 10×, 60×, 240×, 720× at sea |
+| How much manual plotting | NAV §43 | The captain places waypoints and legs; the navigator does the arithmetic |
+| Navigation abstraction | VOYAGE §51 | A flat chart in leagues. Latitude can be observed by sun or pole star; east–west position only by dead reckoning, with no longitude fixes |
+| Hero ship type | VOYAGE §51 | The *Garza*, a caravel of about 60 tons (SETTING §4), pending the plausibility pass |
+| Full naval physics, combat-heavy play | VOYAGE §51 | Not planned |
+| Spreading fire, deep politics | SETTLEMENT §25, §42 | Not planned for the first settlement slice |
+| Succession rules | TECHNICAL_SPEC §18.1 | The placeholder stays |
