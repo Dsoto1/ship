@@ -53,6 +53,7 @@ public partial class PortSound : Node
         public AudioStreamPlayer Player = null!;
         public AudioStreamGeneratorPlayback? Playback;
         public float Volume;
+        public float Gain = 1f;
         public float Target;
         public float Filter;
         public float Filter2;
@@ -119,7 +120,8 @@ public partial class PortSound : Node
                 var looped = new AudioStreamPlayer { Stream = recording, VolumeDb = -80 };
                 AddChild(looped);
                 looped.Play((float)(recording.GetLength() * _random.Randf()));
-                _layers[name] = new Layer { Player = looped };
+                // Recordings are levelled to -24 LUFS: lift them to sit with the work sounds (the tavern less, it is loud at night).
+                _layers[name] = new Layer { Player = looped, Gain = name == "tavern" ? 1.1f : 2f };
                 continue;
             }
 
@@ -156,7 +158,7 @@ public partial class PortSound : Node
         foreach (var (name, layer) in _layers)
         {
             layer.Volume = Mathf.MoveToward(layer.Volume, layer.Target, delta * 0.8f);
-            layer.Player.VolumeDb = layer.Volume < 0.01f ? -80 : Mathf.LinearToDb(layer.Volume);
+            layer.Player.VolumeDb = layer.Volume < 0.01f ? -80 : Mathf.LinearToDb(layer.Volume * layer.Gain);
             Fill(name, layer);
         }
 

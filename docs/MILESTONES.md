@@ -36,7 +36,7 @@ This file tracks status and breaks the next work into tickets.
 | VP-1 | Port visual pass, first block, Chandler's Quay: lighting, ground, clusters, kits, ship, depth, rain, sound (PORT_VISUAL_PASS §5–6) | Done (2026-10-19), awaiting the owner's review |
 | R2c | Tier C crowd, background ships, ship preparation states, visible cargo (steps 6, 9) | Done (2026-10-19) |
 | R2d | Sound zones, port weather and reactions, ambient micro-events (steps 10–12) | Done (2026-10-19) |
-| A-2 | Asset pass: recorded CC0 beds for surf, market crowd, tavern, wind and rain (Freesound) | In progress: rain still to fetch |
+| A-2 | Asset pass: recorded CC0 beds for surf, market crowd, tavern, wind and rain (Freesound) | Done (2026-10-19), awaiting the owner's listen |
 | R2e | Recognition and the departure sequence (steps 13, 14) | Planned |
 | R3 | Visual validation: the four port scenes of PORT_EXPERIENCE §21, then Test B ship, with the hybrid pipeline (D-021) | Planned |
 | R4a | Wind, heading and sailing: wind direction, visibility, warning signs; why she is slow (VOYAGE §5, §20) | Planned |
@@ -965,8 +965,11 @@ existing zones and volumes:
 - **market:** Spanish-speaking people talking and laughing outdoors;
 - **tavern:** a busy small-town bar;
 - **wind (street):** strong, steady wind with faint creaking, rising with the breeze;
-- **rain:** rain heard from under a stone bridge (Freesound 467169; not yet fetched, so the rain is
-  still generated).
+- **rain:** rain heard from under a stone bridge (Freesound 467169).
+
+**Levels, measured in the game** (recorded with Godot's movie writer): rain on the quay RMS 0.05, the
+market by day 0.04, the tavern at night 0.08 with cups peaking at 0.66. The recordings are lifted 6 dB
+(the tavern 1 dB) to sit with the work sounds.
 
 **How they are made** (`tools/fetch_assets.py`, entries in `assets.json`):
 - the script fetches each Freesound high-quality preview by ID and refuses anything that is not CC0;
@@ -977,8 +980,9 @@ existing zones and volumes:
 - if a file is missing, its bed falls back to the generated noise.
 
 **Limits:**
-- the beds were chosen from their descriptions and not yet heard in the game: the tavern recording is
-  a modern bar and may carry a word of English or a poker chip; the rain was recorded in Los Angeles;
+- the beds were chosen from their descriptions; their levels are checked, but nobody has listened for
+  anything out of period: the tavern recording is a modern bar and may carry a word of English or a
+  poker chip; the rain was recorded in Los Angeles;
 - one recording per bed, so a long listen at one spot hears the loop (40 s for the market, 1–6 min for
   the others).
 

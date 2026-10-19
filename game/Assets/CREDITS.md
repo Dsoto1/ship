@@ -20,3 +20,4 @@ previews levelled to the same loudness with their ends crossfaded into their sta
 | Outdoors Walla | The crowd at the market | IENBA | https://freesound.org/s/834339/ | CC0 | `Audio/ambience/market.ogg` |
 | Small Town Bar 007 | Voices in the tavern | conleec | https://freesound.org/s/212094/ | CC0 | `Audio/ambience/tavern.ogg` |
 | Strong Steady Wind | Wind in the streets | craigsmith | https://freesound.org/s/438878/ | CC0 | `Audio/ambience/wind.ogg` |
+| Rain under a stone bridge | Rain | WilliamJMeyer | https://freesound.org/s/467169/ | CC0 | `Audio/ambience/rain.ogg` |
