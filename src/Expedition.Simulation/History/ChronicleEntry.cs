@@ -68,6 +68,15 @@ public static class ChronicleParameters
     /// <summary>A level or amount, such as the bilge or hull after a change.</summary>
     public const string Level = "level";
 
+    /// <summary>Event definition ID.</summary>
+    public const string Event = "event";
+
+    /// <summary>Event choice ID.</summary>
+    public const string Choice = "choice";
+
+    /// <summary>Event outcome: success or failure.</summary>
+    public const string Outcome = "outcome";
+
     /// <summary>Text of an entry written before the chronicle was structured (save format 2 or older).</summary>
     public const string LegacyText = "legacyText";
 }

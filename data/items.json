@@ -2,6 +2,7 @@
 // Weights and volumes are placeholders to tune; see docs/MILESTONES.md.
 [
   { "id": "item.biscuit", "name": "Ship's biscuit (ration)", "category": "food", "weightKg": 0.25, "volumeLitres": 0.4, "hungerRelief": 10 },
+  { "id": "item.fish", "name": "Fresh fish (ration)", "category": "food", "weightKg": 0.3, "volumeLitres": 0.3, "hungerRelief": 12 },
   { "id": "item.salt_pork", "name": "Salt pork (ration)", "category": "food", "weightKg": 0.25, "volumeLitres": 0.3, "hungerRelief": 14 },
   { "id": "item.water", "name": "Fresh water (litre)", "category": "water", "weightKg": 1.0, "volumeLitres": 1.0, "thirstRelief": 12 },
   { "id": "item.wine", "name": "Wine (half litre)", "category": "drink", "weightKg": 0.5, "volumeLitres": 0.5, "thirstRelief": 8 },

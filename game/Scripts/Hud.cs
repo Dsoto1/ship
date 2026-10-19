@@ -41,6 +41,11 @@ public partial class Hud : CanvasLayer
     private PanelContainer _alert = null!;
     private Label _alertText = null!;
     private Control _ending = null!;
+    private PanelContainer _event = null!;
+    private Label _eventTitle = null!;
+    private Label _eventText = null!;
+    private VBoxContainer _eventChoices = null!;
+    private Button _rations = null!;
     private Label _endingTitle = null!;
     private Label _endingText = null!;
     private ChronicleFormatter _formatter = null!;
@@ -67,6 +72,15 @@ public partial class Hud : CanvasLayer
     /// <summary>The player dismissed an alert to carry on.</summary>
     public event Action? ContinueRequested;
 
+    /// <summary>The player chose an option in an event (choice ID).</summary>
+    public event Action<string>? EventChoiceMade;
+
+    /// <summary>The player closed an event's outcome to carry on.</summary>
+    public event Action? EventClosed;
+
+    /// <summary>The player switched short rations on or off.</summary>
+    public event Action<bool>? RationingToggled;
+
     /// <summary>The player asked for a new voyage from the end screen.</summary>
     public event Action? NewVoyageRequested;
 
@@ -89,6 +103,91 @@ public partial class Hud : CanvasLayer
         BuildVoyageBar(root);
         BuildAlert(root);
         BuildEnding(root);
+        BuildEvent(root);
+    }
+
+    /// <summary>Whether an event window is open.</summary>
+    public bool EventShowing => _event.Visible;
+
+    /// <summary>Opens an event: its story and the captain's choices, with their odds.</summary>
+    public void ShowEvent(string title, string text, IReadOnlyList<(string Id, string Text, bool Available, string? Note)> choices)
+    {
+        _eventTitle.Text = title;
+        _eventText.Text = text;
+        foreach (var child in _eventChoices.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        foreach (var (id, label, available, note) in choices)
+        {
+            var button = new Button
+            {
+                Text = note is null ? label : $"{label}   ({note})",
+                Disabled = !available,
+                FocusMode = Control.FocusModeEnum.None,
+                Alignment = HorizontalAlignment.Left,
+                AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            };
+            button.Pressed += () => EventChoiceMade?.Invoke(id);
+            _eventChoices.AddChild(button);
+        }
+
+        _event.Visible = true;
+    }
+
+    /// <summary>Shows what came of the choice, with a button to carry on.</summary>
+    public void ShowEventOutcome(string choice, bool succeeded, string text)
+    {
+        _eventText.Text = $"{_eventText.Text}\n\n» {choice}{(succeeded ? "" : " (it went badly)")}\n\n{text}";
+        foreach (var child in _eventChoices.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        var carryOn = new Button { Text = "Carry on", FocusMode = Control.FocusModeEnum.None, SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter };
+        carryOn.Pressed += () => EventClosed?.Invoke();
+        _eventChoices.AddChild(carryOn);
+    }
+
+    /// <summary>Developer tool: presses a choice as if clicked.</summary>
+    public void DeveloperChoose(string id) => EventChoiceMade?.Invoke(id);
+
+    /// <summary>Closes the event window.</summary>
+    public void HideEvent() => _event.Visible = false;
+
+    private void BuildEvent(Control root)
+    {
+        _event = new PanelContainer
+        {
+            AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 0.5f, AnchorBottom = 0.5f,
+            OffsetLeft = -290, OffsetRight = 290, OffsetTop = -220, OffsetBottom = -60,
+            GrowVertical = Control.GrowDirection.End,
+            Visible = false,
+        };
+        var style = new StyleBoxFlat
+        {
+            BgColor = new Color(0.12f, 0.09f, 0.06f, 0.95f),
+            BorderColor = new Color(0.78f, 0.62f, 0.38f),
+            BorderWidthTop = 2, BorderWidthBottom = 2, BorderWidthLeft = 2, BorderWidthRight = 2,
+            ContentMarginLeft = 18, ContentMarginRight = 18, ContentMarginTop = 14, ContentMarginBottom = 14,
+            CornerRadiusTopLeft = 4, CornerRadiusTopRight = 4, CornerRadiusBottomLeft = 4, CornerRadiusBottomRight = 4,
+        };
+        _event.AddThemeStyleboxOverride("panel", style);
+        root.AddChild(_event);
+        var column = new VBoxContainer();
+        column.AddThemeConstantOverride("separation", 10);
+        _event.AddChild(column);
+        _eventTitle = new Label { HorizontalAlignment = HorizontalAlignment.Center };
+        _eventTitle.AddThemeFontSizeOverride("font_size", 22);
+        column.AddChild(_eventTitle);
+        _eventText = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(540, 0) };
+        _eventText.AddThemeFontSizeOverride("font_size", 15);
+        column.AddChild(_eventText);
+        column.AddChild(new HSeparator());
+        _eventChoices = new VBoxContainer();
+        _eventChoices.AddThemeConstantOverride("separation", 6);
+        column.AddChild(_eventChoices);
     }
 
     // Smaller text and see-through dark panels, so the interface frames the scene instead of covering it.
@@ -419,6 +518,9 @@ public partial class Hud : CanvasLayer
         Set("water", $"Water ~{water:0} days", water < 5 ? bad : water < 10 ? warn : good);
         Set("food", $"Food ~{food:0} days", food < 5 ? bad : food < 10 ? warn : good);
         Set("watch", ship.WatchKept ? "Watch kept" : "No one on watch!", ship.WatchKept ? good : bad);
+        _rations.Text = runner.Campaign.Rationing ? "Short rations (restore full)" : "Full rations (cut)";
+        _rations.Modulate = runner.Campaign.Rationing ? warn : good;
+        _rationsOn = runner.Campaign.Rationing;
     }
 
     private static string Capital(string text) => text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];
@@ -440,8 +542,13 @@ public partial class Hud : CanvasLayer
             _gauges[key] = label;
         }
 
+        _rations = new Button { FocusMode = Control.FocusModeEnum.None, TooltipText = "Short rations: water once a day at dawn, food once at noon. The stores last longer, but the crew grow hungry, thirsty and strained." };
+        _rations.Pressed += () => RationingToggled?.Invoke(!_rationsOn);
+        flow.AddChild(_rations);
         _voyageBarPanel = panel;
     }
+
+    private bool _rationsOn;
 
     private PanelContainer _voyageBarPanel = null!;
 

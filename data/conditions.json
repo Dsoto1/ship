@@ -3,5 +3,8 @@
   { "id": "condition.rope_burn", "name": "Rope burn", "kind": "injury" },
   { "id": "condition.bruised", "name": "Bruising", "kind": "injury" },
   { "id": "condition.sprain", "name": "Sprain", "kind": "injury" },
-  { "id": "condition.fever", "name": "Fever", "kind": "illness" }
+  { "id": "condition.fever", "name": "Fever", "kind": "illness" },
+  { "id": "condition.flux", "name": "The flux", "kind": "illness" },
+  { "id": "condition.lashed", "name": "Lash wounds", "kind": "injury" },
+  { "id": "condition.near_drowned", "name": "Half drowned", "kind": "injury" }
 ]

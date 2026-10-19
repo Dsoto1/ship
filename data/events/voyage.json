@@ -1,0 +1,304 @@
+// Things that happen at sea (V3, D-017). Each event fires at most every few days, never within
+// 8 hours of another, and waits for the captain. Text may use {subject}, {other}, {captain}, {ship},
+// {Ship} and {destination}. Numbers are placeholders to tune.
+[
+  {
+    "id": "event.man_overboard",
+    "title": "Man overboard!",
+    "text": "A sea comes green over the rail and takes {subject} with it. You see a head in the foam astern, lose it, then see it again.",
+    "trigger": { "chancePerDay": 0.1, "weather": ["weather.fresh", "weather.gale", "weather.storm"], "cooldownDays": 9, "subject": { "pick": "crew" } },
+    "choices": [
+      {
+        "id": "boat", "text": "Heave to and put the boat over",
+        "check": { "skill": "skill.seamanship", "base": 0.35, "perLevel": 0.12 },
+        "success": {
+          "text": "The boat pulls {subject} out of the water, blue and half drowned. Hours are lost, but nobody aboard will forget that you came back.",
+          "effects": [
+            { "leagues": -6 },
+            { "who": "subject", "needs": { "stress": 20, "fatigue": 30 }, "condition": "condition.near_drowned", "health": -10 },
+            { "relationship": { "from": "all", "to": "captain", "dimension": "Trust", "amount": 8 } }
+          ]
+        },
+        "failure": {
+          "text": "The boat searches until the light goes. {subject} is not found.",
+          "effects": [ { "leagues": -6 }, { "who": "subject", "becomes": "Missing" }, { "who": "all", "needs": { "stress": 15 } } ]
+        }
+      },
+      {
+        "id": "line", "text": "Throw a line and keep on",
+        "check": { "skill": "skill.seamanship", "who": "subject", "base": 0.25, "perLevel": 0.1 },
+        "success": {
+          "text": "{subject} catches the line at the last moment and is hauled in, coughing up the sea.",
+          "effects": [ { "who": "subject", "needs": { "stress": 15 }, "condition": "condition.near_drowned", "health": -5 } ]
+        },
+        "failure": {
+          "text": "The line falls short. {Ship} runs on, and {subject} is lost astern.",
+          "effects": [
+            { "who": "subject", "becomes": "Missing" },
+            { "relationship": { "from": "crew", "to": "captain", "dimension": "Trust", "amount": -12 } },
+            { "who": "all", "needs": { "stress": 12 } }
+          ]
+        }
+      },
+      {
+        "id": "on", "text": "There is no saving a man in this sea. Hold your course.",
+        "success": {
+          "text": "{Ship} holds her course. Nobody speaks of {subject} at supper, and nobody looks at you.",
+          "effects": [
+            { "who": "subject", "becomes": "Missing" },
+            { "relationship": { "from": "crew", "to": "captain", "dimension": "Trust", "amount": -18 } },
+            { "who": "all", "needs": { "stress": 10 } }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "event.foul_water",
+    "title": "Foul water",
+    "text": "{subject} broaches a new cask and recoils: the water is green and stinks. Two more in the same tier smell no better.",
+    "trigger": { "chancePerDay": 0.06, "minDay": 4, "cooldownDays": 9, "subject": { "pick": "crew" } },
+    "choices": [
+      { "id": "dump", "text": "Pour it over the side", "success": { "text": "Forty litres go into the sea. The rest of the tier is sound.", "effects": [ { "item": "item.water", "amount": -40 } ] } },
+      {
+        "id": "boil", "text": "Boil it in the galley, a little at a time",
+        "success": { "text": "It takes a long day at the fire, and it tastes of the cask, but it is water.", "effects": [ { "item": "item.water", "amount": -12 }, { "who": "subject", "needs": { "fatigue": 20 } } ] }
+      },
+      {
+        "id": "drink", "text": "Cut it with wine and drink it", "requiresItem": "item.wine", "requiresAmount": 6,
+        "check": { "base": 0.5 },
+        "success": { "text": "The crew grumble and drink it. Nobody sickens.", "effects": [ { "item": "item.wine", "amount": -6 } ] },
+        "failure": {
+          "text": "By morning {subject} is doubled over with the flux, and half the crew are not far behind.",
+          "effects": [ { "item": "item.wine", "amount": -6 }, { "who": "subject", "condition": "condition.flux", "health": -20 }, { "who": "crew", "health": -6, "needs": { "stress": 8 } } ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "event.fever",
+    "title": "Fever",
+    "text": "{subject} has not touched a biscuit in two days, and is hot to the touch and shivering in the sun.",
+    "trigger": { "chancePerDay": 0.06, "minDay": 6, "cooldownDays": 8, "subject": { "pick": "crew" } },
+    "choices": [
+      {
+        "id": "rest", "text": "Rest them below, with wine and broth", "requiresItem": "item.wine", "requiresAmount": 6,
+        "success": { "text": "Two days in a hammock and {subject} is back on deck, thin but standing.", "effects": [ { "item": "item.wine", "amount": -6 }, { "who": "subject", "health": 5, "needs": { "fatigue": -40 } } ] }
+      },
+      {
+        "id": "bleed", "text": "Bleed them, as the barber-surgeons do",
+        "check": { "skill": "skill.first_aid", "base": 0.3, "perLevel": 0.12 },
+        "success": { "text": "Whether it is the bleeding or {subject}'s own strength, the fever breaks by morning.", "effects": [ { "who": "subject", "health": 5 } ] },
+        "failure": { "text": "The bleeding leaves {subject} weaker than the fever did.", "effects": [ { "who": "subject", "health": -20, "condition": "condition.fever" } ] }
+      },
+      {
+        "id": "work", "text": "Nobody lies idle on this ship. Back to work.",
+        "success": {
+          "text": "{subject} goes back to the post and works slowly. The others watch you while they do.",
+          "effects": [ { "who": "subject", "health": -15, "condition": "condition.fever", "needs": { "stress": 15 } }, { "relationship": { "from": "crew", "to": "captain", "dimension": "Affection", "amount": -8 } } ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "event.quarrel",
+    "title": "A knife drawn",
+    "text": "Shouting by the mainmast: {subject} and {other} are at each other over a missing ration, and a knife has come out.",
+    "trigger": { "chancePerDay": 0.14, "minDay": 3, "cooldownDays": 10, "subject": { "pick": "feud" } },
+    "choices": [
+      {
+        "id": "flog", "text": "Have {subject} flogged for drawing steel",
+        "success": {
+          "text": "The lash is laid on before the whole crew. There is no more trouble, for now.",
+          "effects": [
+            { "who": "subject", "health": -12, "condition": "condition.lashed", "needs": { "stress": 15 } },
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Trust", "amount": -20 } },
+            { "relationship": { "from": "crew", "to": "captain", "dimension": "Respect", "amount": 6 } },
+            { "who": "all", "needs": { "stress": 5 } }
+          ]
+        }
+      },
+      {
+        "id": "hear", "text": "Hear them both out, there and then",
+        "check": { "skill": "skill.leadership", "who": "captain", "base": 0.3, "perLevel": 0.12 },
+        "success": {
+          "text": "You find the truth of it, a ration miscounted, and make them shake hands. They do not like each other, but they respect you.",
+          "effects": [
+            { "relationship": { "from": "subject", "to": "other", "dimension": "Affection", "amount": 15 } },
+            { "relationship": { "from": "other", "to": "subject", "dimension": "Affection", "amount": 15 } },
+            { "relationship": { "from": "all", "to": "captain", "dimension": "Respect", "amount": 6 } },
+            { "who": "subject", "needs": { "stress": -10 } }, { "who": "other", "needs": { "stress": -10 } }
+          ]
+        },
+        "failure": {
+          "text": "Neither will give way, and you are seen to take a side. The other side remembers.",
+          "effects": [ { "relationship": { "from": "other", "to": "captain", "dimension": "Trust", "amount": -12 } }, { "relationship": { "from": "subject", "to": "other", "dimension": "Affection", "amount": -10 } } ]
+        }
+      },
+      {
+        "id": "fists", "text": "Let them settle it with fists, away from the knife",
+        "success": {
+          "text": "They fight it out on the forecastle until both are bloody. Afterwards, oddly, there is peace between them.",
+          "effects": [
+            { "who": "subject", "health": -8, "condition": "condition.bruised" }, { "who": "other", "health": -8, "condition": "condition.bruised" },
+            { "relationship": { "from": "subject", "to": "other", "dimension": "Respect", "amount": 12 } },
+            { "relationship": { "from": "other", "to": "subject", "dimension": "Respect", "amount": 12 } }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "event.strange_sail",
+    "title": "A sail to windward",
+    "text": "A sail on the horizon, closing. Through the glass: a Brennish cut to her canvas, and no colours flying.",
+    "trigger": { "chancePerDay": 0.07, "minDay": 5, "cooldownDays": 12 },
+    "choices": [
+      {
+        "id": "run", "text": "Crowd on sail and run",
+        "check": { "skill": "skill.seamanship", "base": 0.35, "perLevel": 0.12 },
+        "success": { "text": "{Ship} shows her heels. By dusk the stranger is hull-down astern.", "effects": [ { "ship": { "rigging": -8 } }, { "leagues": 4 }, { "who": "all", "needs": { "stress": 5 } } ] },
+        "failure": {
+          "text": "She is faster. By noon she is alongside, and armed men take what they please from the hold.",
+          "effects": [ { "item": "item.biscuit", "amount": -30 }, { "item": "item.wine", "amount": -20 }, { "item": "item.rope", "amount": -2 }, { "who": "all", "needs": { "stress": 15 } }, { "relationship": { "from": "crew", "to": "captain", "dimension": "Trust", "amount": -6 } } ]
+        }
+      },
+      {
+        "id": "speak", "text": "Heave to and speak her, wine in hand", "requiresItem": "item.wine", "requiresAmount": 10,
+        "check": { "skill": "skill.leadership", "who": "captain", "base": 0.35, "perLevel": 0.1 },
+        "success": {
+          "text": "Her master is a trader, glad of news. He swaps water and biscuit for your wine, and leaves a warning: the Tesiwa have been buying Brennish iron.",
+          "effects": [ { "item": "item.wine", "amount": -10 }, { "item": "item.water", "amount": 40 }, { "item": "item.biscuit", "amount": 25 }, { "leagues": -2 } ]
+        },
+        "failure": {
+          "text": "They are no traders. They take your wine and half your rope, and laugh as they go.",
+          "effects": [ { "item": "item.wine", "amount": -20 }, { "item": "item.rope", "amount": -3 }, { "who": "all", "needs": { "stress": 12 } }, { "leagues": -2 } ]
+        }
+      },
+      {
+        "id": "hold", "text": "Hold your course and run out the guns",
+        "success": { "text": "Whether it is the guns or something else, the stranger sheers off at dusk.", "effects": [ { "who": "all", "needs": { "stress": 8 } } ] }
+      }
+    ]
+  },
+  {
+    "id": "event.pilot_doubts",
+    "title": "A question of reckoning",
+    "text": "{subject} comes aft with a reckoning scratched on a board, and says you are steering too far south: the Lusaran pilots know these waters better than any Castrenan chart.",
+    "trigger": { "chancePerDay": 0.25, "minDay": 7, "once": true, "subject": { "pick": "crew", "origin": "Lusara" } },
+    "choices": [
+      {
+        "id": "own", "text": "Keep to your own reckoning",
+        "check": { "skill": "skill.navigation", "who": "captain", "base": 0.3, "perLevel": 0.12 },
+        "success": { "text": "Your reckoning holds. {subject} says nothing, but looks at the chart differently now.", "effects": [ { "leagues": 6 }, { "relationship": { "from": "subject", "to": "captain", "dimension": "Respect", "amount": 12 } } ] },
+        "failure": {
+          "text": "Two days on, the noon sun says you are well south. You alter course and lose the best part of a day.",
+          "effects": [ { "leagues": -18 }, { "relationship": { "from": "subject", "to": "captain", "dimension": "Respect", "amount": -10 } }, { "relationship": { "from": "crew", "to": "captain", "dimension": "Trust", "amount": -5 } } ]
+        }
+      },
+      {
+        "id": "his", "text": "Take the advice and alter course",
+        "check": { "skill": "skill.navigation", "who": "subject", "base": 0.4, "perLevel": 0.1 },
+        "success": { "text": "{subject} was right: a fair current carries {ship} west.", "effects": [ { "leagues": 15 }, { "relationship": { "from": "subject", "to": "captain", "dimension": "Trust", "amount": 12 } } ] },
+        "failure": { "text": "The new course leads into a day of calm and contrary current.", "effects": [ { "leagues": -10 }, { "relationship": { "from": "subject", "to": "captain", "dimension": "Trust", "amount": 8 } }, { "relationship": { "from": "crew", "to": "captain", "dimension": "Respect", "amount": -6 } } ] }
+      },
+      {
+        "id": "silence", "text": "Tell {subject} to keep to their place",
+        "success": { "text": "{subject} goes forward without a word. The Castrenans grin. {subject} does not forget it.", "effects": [ { "relationship": { "from": "subject", "to": "captain", "dimension": "Trust", "amount": -15 } }, { "who": "subject", "needs": { "stress": 10 } } ] }
+      }
+    ]
+  },
+  {
+    "id": "event.water_running_low",
+    "title": "The casks are going down",
+    "text": "{subject} has sounded the casks: at this rate the water will be gone in a little over a week, and {destination} is not yet in sight.",
+    "trigger": { "chancePerDay": 6, "waterDaysBelow": 9, "rationing": false, "cooldownDays": 5, "subject": { "pick": "crew" } },
+    "choices": [
+      { "id": "short", "text": "Put everyone on short rations", "success": { "text": "The order goes round. There is muttering, but the casks will last longer.", "effects": [ { "rationing": true }, { "who": "all", "needs": { "stress": 5 } } ] } },
+      {
+        "id": "search", "text": "Turn out the hold for anything drinkable",
+        "check": { "base": 0.45 },
+        "success": { "text": "Behind the cable tier, {subject} finds two small casks that nobody had listed.", "effects": [ { "item": "item.water", "amount": 24 } ] },
+        "failure": { "text": "A day of shifting cargo turns up nothing but rats.", "effects": [ { "who": "crew", "needs": { "fatigue": 15, "stress": 4 } } ] }
+      },
+      { "id": "full", "text": "Keep full rations and trust to rain", "success": { "text": "The men are grateful, and the casks go down.", "effects": [ { "relationship": { "from": "crew", "to": "captain", "dimension": "Affection", "amount": 5 } } ] } }
+    ]
+  },
+  {
+    "id": "event.rain_squall",
+    "title": "A squall",
+    "text": "A squall comes marching across the sea, grey and heavy with rain.",
+    "trigger": { "chancePerDay": 0.08, "minDay": 2, "weather": ["weather.fair", "weather.fresh"], "cooldownDays": 4 },
+    "choices": [
+      { "id": "catch", "text": "Spread old canvas to catch the rain", "success": { "text": "Every bucket and cask is filled. It costs an hour's sailing.", "effects": [ { "item": "item.water", "amount": 30 }, { "leagues": -1.5 }, { "who": "all", "needs": { "stress": -4 } } ] } },
+      { "id": "pass", "text": "Let it pass", "success": { "text": "The squall passes over and is gone.", "effects": [] } }
+    ]
+  },
+  {
+    "id": "event.dolphins",
+    "title": "Dolphins at the bow",
+    "text": "Dolphins race the cutwater, leaping in the bow wave, while the watch below hangs over the rail.",
+    "trigger": { "chancePerDay": 0.08, "minDay": 2, "weather": ["weather.calm", "weather.fair", "weather.fresh"], "cooldownDays": 7 },
+    "choices": [
+      { "id": "watch", "text": "Let the men watch", "success": { "text": "There is laughter on deck for the first time in days.", "effects": [ { "who": "all", "needs": { "stress": -10 } } ] } },
+      {
+        "id": "fish", "text": "Get lines out for fish instead",
+        "check": { "skill": "skill.seamanship", "base": 0.4, "perLevel": 0.08 },
+        "success": { "text": "Not dolphins, but bonito, and enough for two good meals.", "effects": [ { "item": "item.fish", "amount": 14 } ] },
+        "failure": { "text": "Nothing bites, and the dolphins are gone.", "effects": [] }
+      }
+    ]
+  },
+  {
+    "id": "event.word_with_captain",
+    "title": "A word with the captain",
+    "text": "{subject} asks for a word, cap in hand. The men are worn out, they have had no rest worth the name, and they are frightened of the next storm.",
+    "trigger": { "chancePerDay": 0.6, "minDay": 3, "cooldownDays": 3, "subject": { "pick": "stressed", "minStress": 55 } },
+    "choices": [
+      { "id": "wine", "text": "Double wine ration tonight", "requiresItem": "item.wine", "requiresAmount": 12, "success": { "text": "The wine goes round, someone finds a pipe, and there is singing.", "effects": [ { "item": "item.wine", "amount": -12 }, { "who": "all", "needs": { "stress": -12 } } ] } },
+      { "id": "listen", "text": "Listen, and promise easier watches", "success": { "text": "{subject} goes forward easier in mind. Whether you can keep the promise is another matter.", "effects": [ { "who": "subject", "needs": { "stress": -15 } }, { "relationship": { "from": "subject", "to": "captain", "dimension": "Trust", "amount": 8 } } ] } },
+      { "id": "dismiss", "text": "Tell them the sea does not care how tired they are", "success": { "text": "{subject} goes. The whole crew has heard about it within the hour.", "effects": [ { "relationship": { "from": "subject", "to": "captain", "dimension": "Affection", "amount": -12 } }, { "who": "crew", "needs": { "stress": 5 } } ] } }
+    ]
+  },
+  {
+    "id": "event.saints_day",
+    "title": "The feast of Saint Brendo",
+    "text": "The calendar says it is the feast of Saint Brendo, patron of those who go to sea. The men look to you.",
+    "trigger": { "chancePerDay": 1, "minDay": 9, "once": true },
+    "choices": [
+      { "id": "feast", "text": "Hold a service and serve an extra ration", "requiresItem": "item.biscuit", "requiresAmount": 12, "success": { "text": "The service is short, the extra ration welcome, and for one evening the ship feels like home.", "effects": [ { "item": "item.biscuit", "amount": -12 }, { "item": "item.wine", "amount": -6 }, { "who": "all", "needs": { "stress": -15 } }, { "relationship": { "from": "crew", "to": "captain", "dimension": "Affection", "amount": 6 } } ] } },
+      { "id": "service", "text": "A short service, and no more", "success": { "text": "The prayers are said. Some had hoped for more.", "effects": [ { "who": "all", "needs": { "stress": -5 } } ] } },
+      { "id": "nothing", "text": "There is no time for feasts", "success": { "text": "The day passes like any other. The men notice.", "effects": [ { "who": "all", "needs": { "stress": 5 } }, { "relationship": { "from": "crew", "to": "captain", "dimension": "Affection", "amount": -8 } } ] } }
+    ]
+  },
+  {
+    "id": "event.st_elmo",
+    "title": "Saint Elmo's fire",
+    "text": "Blue fire plays along the yards and crackles at the masthead. Some of the men are on their knees; others say it means {ship} is doomed.",
+    "trigger": { "chancePerDay": 0.6, "weather": ["weather.gale", "weather.storm"], "once": true },
+    "choices": [
+      {
+        "id": "speech", "text": "Tell them it is the saint's blessing",
+        "check": { "skill": "skill.leadership", "who": "captain", "base": 0.35, "perLevel": 0.12 },
+        "success": { "text": "Your voice carries over the wind. By the time the fire fades, the men are back at their work.", "effects": [ { "who": "all", "needs": { "stress": -10 } }, { "relationship": { "from": "crew", "to": "captain", "dimension": "Respect", "amount": 8 } } ] },
+        "failure": { "text": "Nobody believes you, least of all yourself.", "effects": [ { "who": "all", "needs": { "stress": 12 } } ] }
+      },
+      { "id": "pumps", "text": "Keep every hand busy at the pumps", "success": { "text": "Nobody has time to be afraid, and the bilge has never been so dry.", "effects": [ { "ship": { "bilge": -15 } }, { "who": "all", "needs": { "fatigue": 12 } } ] } }
+    ]
+  },
+  {
+    "id": "event.pump_choked",
+    "title": "The pump has choked",
+    "text": "The forward pump coughs and dies: ballast gravel in the works, with the water rising.",
+    "trigger": { "chancePerDay": 0.5, "bilgeAbove": 30, "cooldownDays": 4, "subject": { "pick": "crew" } },
+    "choices": [
+      {
+        "id": "strip", "text": "Have {subject} strip it and clear it",
+        "check": { "skill": "skill.ship_repair", "who": "best", "base": 0.4, "perLevel": 0.12 },
+        "success": { "text": "Within the hour the pump is clear and sucking again.", "effects": [ { "ship": { "bilge": 3 } } ] },
+        "failure": { "text": "It takes all afternoon, and the water gains on you while it does.", "effects": [ { "ship": { "bilge": 15 } }, { "who": "subject", "needs": { "fatigue": 20 } } ] }
+      },
+      { "id": "buckets", "text": "Form a bucket chain while it is cleared", "success": { "text": "Every hand passes buckets until their arms burn. The water is held.", "effects": [ { "ship": { "bilge": 2 } }, { "who": "all", "needs": { "fatigue": 18 } } ] } }
+    ]
+  }
+]

@@ -61,6 +61,18 @@ public sealed record SaveData
     /// <summary>Active tasks, in character ID order.</summary>
     public required IReadOnlyList<TaskData> ActiveTasks { get; init; }
 
+    /// <summary>An event waiting for the captain, or null. Added in format 12.</summary>
+    public PendingEventData? PendingEvent { get; init; }
+
+    /// <summary>How often each event has fired. Added in format 12.</summary>
+    public required IReadOnlyList<EventRecordData> EventHistory { get; init; }
+
+    /// <summary>When the last event fired. Added in format 12.</summary>
+    public required long LastEventTick { get; init; }
+
+    /// <summary>Whether the crew are on short rations. Added in format 12.</summary>
+    public required bool Rationing { get; init; }
+
     /// <summary>The voyage, or null when not at sea. Added in format 11.</summary>
     public VoyageData? Voyage { get; init; }
 
@@ -389,4 +401,33 @@ public sealed record VoyageData
 
     /// <summary>Outcome name.</summary>
     public required string Outcome { get; init; }
+}
+
+/// <summary>A saved waiting event.</summary>
+public sealed record PendingEventData
+{
+    /// <summary>Event definition ID.</summary>
+    public required string Event { get; init; }
+
+    /// <summary>Subject character ID number, or null.</summary>
+    public int? Subject { get; init; }
+
+    /// <summary>Other character ID number, or null.</summary>
+    public int? Other { get; init; }
+
+    /// <summary>Tick it happened.</summary>
+    public required long Tick { get; init; }
+}
+
+/// <summary>How often a saved event has fired.</summary>
+public sealed record EventRecordData
+{
+    /// <summary>Event definition ID.</summary>
+    public required string Event { get; init; }
+
+    /// <summary>Times fired.</summary>
+    public required int Count { get; init; }
+
+    /// <summary>When it last fired.</summary>
+    public required long LastTick { get; init; }
 }

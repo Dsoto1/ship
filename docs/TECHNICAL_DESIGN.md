@@ -1,6 +1,6 @@
 # Technical Design
 
-Status: P0 complete in graybox (Tickets 1–4c, 3a–3e); Building the playable voyage (D-015): V1 and V2 done. Save format 11. Update this file when architecture or behavior changes.
+Status: P0 complete in graybox (Tickets 1–4c, 3a–3e); Building the playable voyage (D-015): V1–V3 done. Save format 12. Update this file when architecture or behavior changes.
 See `DECISIONS.md` for why each choice was made, and `GAME_VISION.md` for the product vision.
 
 ## 1. Solution layout (proposed)
@@ -100,6 +100,11 @@ is added only when a ticket needs it.
   `data/voyage.json` (`GameContent.Voyage`). Tasks change the ship through `shipPerHour`,
   `shipOnComplete` and `keepsWatch`, and duties carry a `dutyWhen` condition. Landfall and foundering
   are phase transitions with chronicle entries. `SupplyForecast` estimates days of food and water.
+- **Events (D-017).** `GameContent.Events` from `data/events`; `SimulationRunner.Events.cs` checks
+  triggers hourly at sea, sets `CampaignState.PendingEvent`, offers choices with odds
+  (`OfferedChoices`), and `ResolveEvent` applies the outcome's effects and records it. Text is filled
+  by `History/EventText`. Short rations (`SetRationing`) and slower work at high stress live in the
+  runner.
 - **Identity (Ticket 5a).** `Character.Sex` (Male, Female, Unrecorded), `Character.Languages`
   (0–5 per language from `data/languages.json`) and `Character.StatusId` (from `data/statuses.json`,
   with a typical monthly wage in sueldos). Appearance options can be limited to one sex.

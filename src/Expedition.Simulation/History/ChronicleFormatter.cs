@@ -50,6 +50,10 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
             ChronicleEntryKind.RelationshipChanged => Relationship(entry, who, cause),
             ChronicleEntryKind.CaptainAppointed => $"{who} took command of the expedition ({cause}).",
             ChronicleEntryKind.WeatherChanged => WeatherChange(entry),
+            ChronicleEntryKind.EventResolved => EventLine(entry),
+            ChronicleEntryKind.RationingChanged => entry.Get(ChronicleParameters.To) == "short"
+                ? "The captain put the crew on short rations."
+                : "The crew are back on full rations.",
             ChronicleEntryKind.HullStruck =>
                 $"A heavy sea struck {Ship()} and opened a seam (hull down {entry.Get(ChronicleParameters.Damage)}, now {entry.Get(ChronicleParameters.Level)}%).",
             ChronicleEntryKind.BilgeAlarm => $"The bilge is {entry.Get(ChronicleParameters.Level)}% full and rising. Man the pumps!",
@@ -70,6 +74,24 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
         var from = content.Voyage?.Weathers.FirstOrDefault(w => w.Id == entry.Get(ChronicleParameters.From))?.WindLeaguesPerHour ?? 1;
         var verb = to is "weather.gale" or "weather.storm" ? "The weather worsened" : wind > from ? "The wind rose" : "The wind eased";
         return $"{verb}: {WeatherName(to)}.";
+    }
+
+    // "Man overboard! Heave to and lower the boat: Pedro was hauled back aboard, half drowned."
+    private string EventLine(ChronicleEntry entry)
+    {
+        if (!content.Events.TryGetValue(entry.Get(ChronicleParameters.Event) ?? "", out var definition))
+        {
+            return $"An event ({entry.Get(ChronicleParameters.Event)}) was decided.";
+        }
+
+        var choice = definition.Choices.FirstOrDefault(c => c.Id == entry.Get(ChronicleParameters.Choice));
+        var outcome = choice is null ? null : entry.Get(ChronicleParameters.Outcome) == "failure" && choice.Failure is not null ? choice.Failure : choice.Success;
+        CharacterId? subject = entry.Characters.Count > 0 ? entry.Characters[0] : null;
+        CharacterId? other = entry.Characters.Count > 1 ? entry.Characters[1] : null;
+        string Fill(string text) => EventText.Fill(text, campaign, subject, other);
+        return choice is null || outcome is null
+            ? Fill(definition.Title)
+            : $"{Fill(definition.Title)} {Fill(choice.Text)}: {Fill(outcome.Text)}";
     }
 
     private string Ship() => campaign.Voyage?.ShipName ?? "the ship";

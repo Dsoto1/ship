@@ -41,4 +41,7 @@ public sealed class Health
 
     /// <summary>Reduces health by <paramref name="amount"/>, stopping at <see cref="Min"/>.</summary>
     public void Lose(double amount) => _value = Math.Max(Min, _value - amount);
+
+    /// <summary>Recovers health, never above <see cref="Max"/>.</summary>
+    public void Gain(double amount) => _value = Math.Min(Max, _value + amount);
 }

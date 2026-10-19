@@ -81,6 +81,25 @@ public partial class Main : Node3D
             _hud.ShowResult(_runner.SetDuties(id, duties));
         };
         _hud.ContinueRequested += CarryOn;
+        _hud.EventChoiceMade += choice =>
+        {
+            var (result, resolution) = _runner.ResolveEvent(choice);
+            if (resolution is null)
+            {
+                _hud.ShowResult(result);
+                return;
+            }
+
+            // The decision's own consequences are in the outcome text; do not repeat them as alerts.
+            _chronicleSeen = _runner.Campaign.Chronicle.Entries.Count;
+            _hud.ShowEventOutcome(resolution.Choice, resolution.Succeeded, resolution.Text);
+        };
+        _hud.EventClosed += () =>
+        {
+            _hud.HideEvent();
+            CarryOn();
+        };
+        _hud.RationingToggled += on => _hud.ShowResult(_runner.SetRationing(on), on ? "Short rations ordered." : "Full rations restored.");
         _hud.NewVoyageRequested += () =>
         {
             _hud.HideEnding();
@@ -131,6 +150,7 @@ public partial class Main : Node3D
         }
 
         CheckAlerts();
+        CheckEvent();
 
         // Weather sets the sea and sky; a filling bilge makes her ride lower (ART_BIBLE.md 6.3, 7.2).
         var voyage = _runner.Campaign.Voyage;
@@ -215,6 +235,7 @@ public partial class Main : Node3D
 
             switch (key.Keycode)
             {
+                case Key.Space when _hud.EventShowing: break;
                 case Key.Space when _hud.AlertShowing: CarryOn(); break;
                 case Key.Space: SetSpeed(_speedIndex == 0 ? _lastRunningSpeed : 0); break;
                 case Key.Key1: SetSpeed(0); break;
@@ -264,8 +285,39 @@ public partial class Main : Node3D
         _sink = 0;
         _hud.HideAlert();
         _hud.HideEnding();
+        _hud.HideEvent();
         _hud.Bind(runner);
         _hud.ShowStatus(message);
+    }
+
+    // An event stops the clock until the captain decides.
+    private void CheckEvent()
+    {
+        if (_runner.Campaign.PendingEvent is null || _hud.EventShowing)
+        {
+            return;
+        }
+
+        if (_runner.DescribePendingEvent() is not { } description)
+        {
+            return;
+        }
+
+        SetSpeed(0);
+        _hud.HideAlert();
+        var choices = _runner.OfferedChoices().Select(offered =>
+        {
+            var text = EventText.Fill(offered.Choice.Text, _runner.Campaign, _runner.Campaign.PendingEvent!);
+            var note = !offered.Available ? $"needs {offered.Choice.RequiresAmount} {_content.Items[offered.Choice.RequiresItem!].Name}"
+                : offered.Chance is { } chance ? SimulationRunner.ChanceInWords(chance) : null;
+            return (offered.Choice.Id, text, offered.Available, note);
+        }).ToList();
+        _hud.ShowEvent(description.Title, description.Text, choices);
+        if (_developerChoice is { } developerChoice)
+        {
+            _developerChoice = null;
+            _hud.DeveloperChoose(developerChoice);
+        }
     }
 
     // Danger stops the clock so the player can act: a storm breaking, the bilge rising, someone hurt.
@@ -352,6 +404,12 @@ public partial class Main : Node3D
 
     private void SetSpeed(int index)
     {
+        if (index > 0 && _runner?.Campaign.PendingEvent is not null)
+        {
+            _hud.ShowStatus("The captain must decide first.");
+            return;
+        }
+
         _speedIndex = index;
         if (index > 0)
         {
@@ -462,6 +520,7 @@ public partial class Main : Node3D
     private float? _startZoom;
     private string? _forceWeather;
     private bool _idleCrew;
+    private string? _developerChoice;
     private double? _forceBilge;
 
     private void ReadDeveloperArguments(ref ulong seed)
@@ -478,6 +537,7 @@ public partial class Main : Node3D
                 case "screenshot": _screenshotPath = value; break;
                 case "weather": _forceWeather = value; break;
                 case "idle": _idleCrew = true; break;
+                case "choose": _developerChoice = value; break;
                 case "bilge" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var bilge): _forceBilge = bilge; break;
                 case "zoom" when float.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var zoom): _startZoom = zoom; break;
             }

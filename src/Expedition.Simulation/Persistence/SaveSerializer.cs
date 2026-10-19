@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 11;
+    public const int CurrentSchemaVersion = 12;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -133,6 +133,16 @@ public static class SaveSerializer
                 }
 
                 root["voyage"] = null;
+                return root;
+            },
+
+            // Format 12 added events and short rations. Nothing had happened yet.
+            [11] = root =>
+            {
+                root["pendingEvent"] = null;
+                root["eventHistory"] = new JsonArray();
+                root["lastEventTick"] = long.MinValue / 2;
+                root["rationing"] = false;
                 return root;
             },
         };
@@ -386,6 +396,13 @@ public static class SaveSerializer
             {
                 CharacterId = pair.Key.Value, Tasks = pair.Value.Tasks.ToList(),
             }).ToList(),
+            PendingEvent = campaign.PendingEvent is { } pending
+                ? new PendingEventData { Event = pending.DefinitionId, Subject = pending.Subject?.Value, Other = pending.Other?.Value, Tick = pending.Tick }
+                : null,
+            EventHistory = campaign.EventHistory.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+                .Select(pair => new EventRecordData { Event = pair.Key, Count = pair.Value.Count, LastTick = pair.Value.LastTick }).ToList(),
+            LastEventTick = campaign.LastEventTick,
+            Rationing = campaign.Rationing,
             Voyage = campaign.Voyage is { } voyage
                 ? new VoyageData
                 {
@@ -643,6 +660,30 @@ public static class SaveSerializer
 
             campaign.SetDuties(id, saved.Tasks.ToList());
         }
+
+        Events.PendingEvent? pendingEvent = null;
+        if (data.PendingEvent is { } savedEvent)
+        {
+            CharacterId? Person(int? number) => number is { } n ? new CharacterId(n) : null;
+            var involved = new[] { Person(savedEvent.Subject), Person(savedEvent.Other) };
+            if (!content.Events.ContainsKey(savedEvent.Event) || savedEvent.Tick < 0 || savedEvent.Tick > data.Tick
+                || involved.Any(id => id is { } who && !campaign.Characters.ContainsKey(who)))
+            {
+                throw new SaveLoadException($"The waiting event '{savedEvent.Event}' is unknown or refers to someone not in the save.");
+            }
+
+            pendingEvent = new Events.PendingEvent(savedEvent.Event, involved[0], involved[1], savedEvent.Tick);
+        }
+
+        if (data.EventHistory.Any(e => e.Count <= 0 || e.LastTick > data.Tick) || data.EventHistory.Select(e => e.Event).Distinct().Count() != data.EventHistory.Count)
+        {
+            throw new SaveLoadException("The event history has an invalid or repeated entry.");
+        }
+
+        campaign.RestoreEvents(pendingEvent,
+            data.EventHistory.Select(e => new KeyValuePair<string, Events.EventRecord>(e.Event, new Events.EventRecord(e.Count, e.LastTick))),
+            data.LastEventTick);
+        campaign.Rationing = data.Rationing;
 
         if (data.Voyage is { } savedVoyage)
         {

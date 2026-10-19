@@ -81,6 +81,43 @@ public sealed class CampaignState
     /// <summary>History of important events.</summary>
     public Chronicle Chronicle { get; } = new();
 
+    private readonly Dictionary<string, Events.EventRecord> _eventHistory = new(StringComparer.Ordinal);
+
+    /// <summary>An event waiting for the captain's decision, or null.</summary>
+    public Events.PendingEvent? PendingEvent { get; private set; }
+
+    /// <summary>How often each event has happened.</summary>
+    public IReadOnlyDictionary<string, Events.EventRecord> EventHistory => _eventHistory;
+
+    /// <summary>When the last event fired (long.MinValue / 2 if none has).</summary>
+    public long LastEventTick { get; internal set; } = long.MinValue / 2;
+
+    /// <summary>True while the crew are on short rations.</summary>
+    public bool Rationing { get; internal set; }
+
+    /// <summary>Makes an event wait for the captain and counts it.</summary>
+    internal void RaiseEvent(Events.PendingEvent pending)
+    {
+        PendingEvent = pending;
+        LastEventTick = pending.Tick;
+        _eventHistory[pending.DefinitionId] = new Events.EventRecord(
+            (_eventHistory.TryGetValue(pending.DefinitionId, out var record) ? record.Count : 0) + 1, pending.Tick);
+    }
+
+    /// <summary>Clears the waiting event once decided.</summary>
+    internal void ResolveEvent() => PendingEvent = null;
+
+    /// <summary>Restores event state while loading a save.</summary>
+    internal void RestoreEvents(Events.PendingEvent? pending, IEnumerable<KeyValuePair<string, Events.EventRecord>> history, long lastEventTick)
+    {
+        PendingEvent = pending;
+        LastEventTick = lastEventTick;
+        foreach (var (id, record) in history)
+        {
+            _eventHistory[id] = record;
+        }
+    }
+
     /// <summary>The ship at sea, or null when the expedition is not on a voyage.</summary>
     public Voyage.VoyageState? Voyage { get; private set; }
 

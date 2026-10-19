@@ -405,3 +405,27 @@ is worth playing.
 **Why.** It gives the routine work real consequences and gives the player things to watch and
 decide: how many hands on the pumps, when to spend planks, whether the stores will last.
 
+---
+
+## D-017 — Events: authored situations with choices, decided by the captain
+
+**Date:** 2026-10-19
+**Status:** Accepted (V3; content and numbers are a first pass)
+
+**Decision.**
+- **Content:** events are data (`data/events`), each with a trigger, the people involved, text, and
+  choices.
+- **Rolls:** a choice may depend on a skill check, rolled on the events random stream. The odds are
+  shown to the player in words.
+- **Waiting:** an event waits in the campaign (saved) until the captain decides, and the decision is
+  recorded in the chronicle.
+- **Effects** are a fixed set: items, ship, distance, needs, health, conditions, relationships,
+  survival state, and rations. They are applied through the same rules as the rest of the
+  simulation.
+- **Short rations** serve water and food once a day each.
+- **Stress:** at 70 or more, people work more slowly.
+
+**Why.** It gives the player decisions with consequences that the simulation carries forward:
+trust, health, stores and distance. That is what makes the crew and the voyage worth caring about
+(GAME_VISION.md §8).
+

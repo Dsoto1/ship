@@ -47,4 +47,10 @@ public enum ChronicleEntryKind
 
     /// <summary>The destination was sighted (parameter: to = destination).</summary>
     Landfall,
+
+    /// <summary>The captain decided an event (parameters: event, choice, outcome; characters involved).</summary>
+    EventResolved,
+
+    /// <summary>Rations were cut or restored (parameter: to = short or full).</summary>
+    RationingChanged,
 }

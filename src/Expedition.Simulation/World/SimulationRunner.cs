@@ -23,7 +23,7 @@ namespace Expedition.Simulation.World;
 /// rolled, and the task completes once its work is done.
 /// Characters take supplies from their own inventory first, then from the shared store.
 /// </remarks>
-public sealed class SimulationRunner(CampaignState campaign, GameContent content)
+public sealed partial class SimulationRunner(CampaignState campaign, GameContent content)
 {
     private const double HoursPerTick = SimulationClock.MinutesPerTick / 60.0;
 
@@ -237,6 +237,20 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
 
         return CommandResult.Ok();
     }
+
+    /// <summary>On short rations, the hour water is served.</summary>
+    public const int RationWaterHour = 7;
+
+    /// <summary>On short rations, the hour food is served.</summary>
+    public const int RationFoodHour = 12;
+
+    /// <summary>Stress at or above which people work more slowly.</summary>
+    public const double DisheartenedStress = 70;
+
+    /// <summary>Need-ledger source for the strain of short rations.</summary>
+    public const string RationingSource = "short rations";
+
+    private static readonly NeedRates RationingStress = new() { Stress = 0.6 };
 
     private string ItemName(string id) => Content.Items.TryGetValue(id, out var item) ? item.Name : id;
 
@@ -665,6 +679,7 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
             }
 
             StepVoyage();
+            ConsiderEvents();
         }
 
         return outcomes;
@@ -686,6 +701,11 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
         var definition = task is null ? null : Content.Tasks[task.DefinitionId];
         character.Needs.Apply(Content.Rules.BaselineNeedsPerHour + (definition?.NeedsPerHour ?? NeedRates.None), HoursPerTick);
         RecordRates(character.Id, NeedLedger.Baseline, Content.Rules.BaselineNeedsPerHour);
+        if (Campaign.Rationing)
+        {
+            character.Needs.Apply(RationingStress, HoursPerTick);
+            RecordRates(character.Id, RationingSource, RationingStress);
+        }
         if (definition is not null)
         {
             RecordRates(character.Id, definition.Id, definition.NeedsPerHour);
@@ -765,7 +785,15 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
     private void EatAndDrink(Character character)
     {
         var rules = Content.Rules;
-        if (character.Needs.Hunger >= rules.EatAtHunger)
+
+        // On short rations food and water are served once a day each (water at dawn, food at noon), about
+        // half the usual. The stores last longer, but hunger and thirst climb day by day.
+        var minuteOfDay = Campaign.Clock.Tick % SimulationClock.TicksPerDay;
+        var mayEat = !Campaign.Rationing ? character.Needs.Hunger >= rules.EatAtHunger
+            : minuteOfDay == RationFoodHour * SimulationClock.TicksPerHour && character.Needs.Hunger > 0;
+        var mayDrink = !Campaign.Rationing ? character.Needs.Thirst >= rules.DrinkAtThirst
+            : minuteOfDay == RationWaterHour * SimulationClock.TicksPerHour && character.Needs.Thirst > 0;
+        if (mayEat)
         {
             var food = TakeFirstAvailable(character, Content.Foods);
             if (food is not null)
@@ -782,7 +810,7 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
             }
         }
 
-        if (character.Needs.Thirst >= rules.DrinkAtThirst)
+        if (mayDrink)
         {
             var drink = TakeFirstAvailable(character, Content.Drinks);
             if (drink is not null)
@@ -848,6 +876,12 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
         if (task.Attribute is not null)
         {
             rate *= rules.WorkRateByAttributeLevel[character.Attributes.Get(task.Attribute)];
+        }
+
+        // Disheartened people work more slowly.
+        if (character.Needs.Stress >= DisheartenedStress)
+        {
+            rate *= 0.85;
         }
 
         return character.Needs.Fatigue >= rules.TiredFatigue ? rate * rules.TiredWorkRateMultiplier : rate;

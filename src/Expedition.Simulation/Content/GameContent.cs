@@ -24,7 +24,8 @@ public sealed class GameContent
         AppearanceOptions? appearance = null,
         IEnumerable<LanguageDefinition>? languages = null,
         IEnumerable<StatusDefinition>? statuses = null,
-        Voyage.VoyageRules? voyage = null)
+        Voyage.VoyageRules? voyage = null,
+        IEnumerable<Events.EventDefinition>? events = null)
     {
         var errors = new List<string>();
         Rules = rules;
@@ -66,6 +67,7 @@ public sealed class GameContent
 
         ContentValidator.ValidateRules(rules, errors);
         Voyage = voyage;
+        Events = IndexById(events ?? [], e => e.Id, "event", errors);
         if (voyage is not null)
         {
             errors.AddRange(voyage.Validate());
@@ -100,6 +102,11 @@ public sealed class GameContent
             ContentValidator.ValidateLocation(location, Tasks, errors);
         }
 
+        foreach (var definition in Events.Values)
+        {
+            ValidateEvent(definition, errors);
+        }
+
         if (errors.Count > 0)
         {
             throw new ContentValidationException(errors);
@@ -107,6 +114,78 @@ public sealed class GameContent
 
         Foods = Items.Values.Where(i => i.HungerRelief > 0).OrderBy(i => i.Id, StringComparer.Ordinal).ToList();
         Drinks = Items.Values.Where(i => i.ThirstRelief > 0).OrderBy(i => i.Id, StringComparer.Ordinal).ToList();
+    }
+
+    /// <summary>Event definitions by ID.</summary>
+    public IReadOnlyDictionary<string, Events.EventDefinition> Events { get; }
+
+    private static readonly string[] EffectTargets = ["subject", "other", "captain", "crew", "all"];
+
+    private void ValidateEvent(Events.EventDefinition definition, List<string> errors)
+    {
+        var where = $"Event '{definition.Id}'";
+        if (definition.Choices.Count == 0 || definition.Choices.Select(c => c.Id).Distinct().Count() != definition.Choices.Count)
+        {
+            errors.Add($"{where}: needs at least one choice, with unique IDs.");
+        }
+
+        if (definition.Trigger.ChancePerDay is < 0 or > 24)
+        {
+            errors.Add($"{where}: chancePerDay must be 0..24.");
+        }
+
+        if (definition.Trigger.Weather?.Any(w => Voyage?.Weathers.All(known => known.Id != w) ?? true) == true)
+        {
+            errors.Add($"{where}: unknown weather in trigger.");
+        }
+
+        if (definition.Trigger.Subject is { Pick: not ("crew" or "anyone" or "stressed" or "feud") })
+        {
+            errors.Add($"{where}: subject pick must be crew, anyone, stressed or feud.");
+        }
+
+        if (definition.Trigger.Subject?.Trait is { } trait && !Traits.ContainsKey(trait))
+        {
+            errors.Add($"{where}: unknown trait '{trait}'.");
+        }
+
+        foreach (var choice in definition.Choices)
+        {
+            var at = $"{where}, choice '{choice.Id}'";
+            if (choice.RequiresItem is { } required && !Items.ContainsKey(required))
+            {
+                errors.Add($"{at}: unknown item '{required}'.");
+            }
+
+            if (choice.Check is { } check && ((check.Skill is { } skill && !Skills.ContainsKey(skill)) || check.Who is not ("best" or "subject" or "captain")))
+            {
+                errors.Add($"{at}: check needs a known skill and who = best, subject or captain.");
+            }
+
+            if (choice.Check is not null && choice.Failure is null)
+            {
+                errors.Add($"{at}: a choice with a check needs a failure outcome.");
+            }
+
+            foreach (var effect in new[] { choice.Success, choice.Failure }.Where(o => o is not null).SelectMany(o => o!.Effects))
+            {
+                if (effect.Item is { } item && !Items.ContainsKey(item))
+                {
+                    errors.Add($"{at}: unknown item '{item}'.");
+                }
+
+                if (effect.Condition is { } condition && !Conditions.ContainsKey(condition))
+                {
+                    errors.Add($"{at}: unknown condition '{condition}'.");
+                }
+
+                if ((effect.Who is { } who && !EffectTargets.Contains(who))
+                    || (effect.Relationship is { } change && (!EffectTargets.Contains(change.From) || change.To is not ("subject" or "other" or "captain"))))
+                {
+                    errors.Add($"{at}: who, from and to must be subject, other, captain, crew or all (to: subject, other or captain).");
+                }
+            }
+        }
     }
 
     /// <summary>Rules for sea passages, or null if the content has none.</summary>

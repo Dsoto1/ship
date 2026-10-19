@@ -25,8 +25,8 @@ This file tracks status and breaks the next work into tickets.
 | 5b+ | Standing duties and self-care (owner: "the crew needs automating") | Done (2026-10-19) |
 | V1 | The world around you: sea, sky, day and night, a real ship, people (D-015) | Done (2026-10-19) |
 | V2 | The ship in danger: leaks, wear, supplies, distance, need-driven duties | Done (2026-10-19) |
-| V3 | Things happen: events with choices, crew who speak up | Next |
-| V4 | Choose who comes: simple pre-voyage hiring (the core of 5c) | Planned |
+| V3 | Things happen: events with choices, crew who speak up | Done (2026-10-19) |
+| V4 | Choose who comes: simple pre-voyage hiring (the core of 5c) | Next |
 | 5c | Recruitment rules in full: investigation, references, counteroffers | Later (core moves into V4) |
 | 5d | Godot waterfront recruitment scene | Later, once the voyage is fun |
 | 6 | Voyage-to-crisis vertical slice | Becomes V2–V3 |
@@ -426,4 +426,30 @@ Balance (30 seeds, crew left on their default duties): 24 arrive in 20–32 days
 nearly gone, and 6 founder after a run of storms uses up the planks and oakum. A captain who puts
 more hands on the pumps in a storm and saves materials should do better. 319 tests pass, including
 a ten-seed balance check.
+
+## V3 — Things happen
+
+D-017. The voyage now throws situations at the captain, and the choices last.
+- **Events as data** (`data/events/voyage.json`, `Events/EventDefinition`): 13 to start. Man
+  overboard, foul water, fever, a knife drawn between two crew who dislike each other, a Brennish
+  sail to windward, the Lusaran questioning your reckoning, the casks running low, a rain squall,
+  dolphins, a crewman asking for a word when the strain is high, the feast of Saint Brendo, Saint
+  Elmo's fire in a storm, and a choked pump. Each has a trigger (chance per day, weather, day,
+  water, bilge, rationing, once or with a cool-down) and picks who it is about (anyone, the
+  strained, people from one place, or two who think badly of each other).
+- **Choices** may need something from the hold (wine, biscuit), and may hang on a skill roll by the
+  best person for it, the subject, or the captain; the odds are shown in words ("likely", "a long
+  shot"). Outcomes change supplies, the ship, distance, health and conditions, stress and fatigue,
+  relationships, and who is still aboard (a man lost overboard is Missing).
+- **Pacing:** checked hourly at sea on the events stream; at most one waiting at a time and none
+  within 8 hours of another. About 8–12 per crossing.
+- **Short rations** (from an event or the voyage bar): water once a day at dawn, food once at
+  noon. The stores last longer, but hunger and thirst climb and stress rises.
+- **Stress matters:** at 70 or more people work 15% slower; strained people quarrel and speak up.
+- **Godot:** an event window pauses the game with the story and the choices; after choosing it shows
+  what happened, then carries on. The chronicle records every decision.
+- **Save format 12:** the waiting event, event history and rations are saved.
+
+Balance (30 seeds, a captain choosing at random): 22 arrive; fewer than one person lost per
+voyage. 339 tests pass.
 
