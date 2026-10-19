@@ -296,6 +296,61 @@ public class VoyageTests
     }
 
     [Fact]
+    public void HeavingToRidesOutAStormAtTheCostOfDistance()
+    {
+        // Rigging wear has no dice in it, unlike seas striking the hull, so it compares cleanly.
+        (double Rigging, double Sailed) RideOut(SailPlan plan)
+        {
+            var (runner, ship, crew) = Setup(seed: 21);
+            HoldWeather(ship, "weather.storm");
+            runner.AssignTask(crew[0], "task.stand_watch");
+            Assert.True(runner.SetSailPlan(plan).Succeeded);
+            for (var hour = 0; hour < 8; hour++)
+            {
+                // Nobody is pumping in this test; keep her afloat so the whole storm is ridden out.
+                ship.DeveloperSetBilge(0);
+                runner.Advance(60);
+            }
+
+            Assert.Equal(VoyageOutcome.UnderWay, ship.Outcome);
+            return (ship.Rigging, ship.LeaguesSailed);
+        }
+
+        var hoveTo = RideOut(SailPlan.HoveTo);
+        var normal = RideOut(SailPlan.Normal);
+        var pressOn = RideOut(SailPlan.PressOn);
+
+        Assert.True(hoveTo.Rigging > normal.Rigging && normal.Rigging > pressOn.Rigging, $"{hoveTo.Rigging} {normal.Rigging} {pressOn.Rigging}");
+        Assert.True(hoveTo.Sailed < normal.Sailed * 0.2 && pressOn.Sailed > normal.Sailed);
+    }
+
+    [Fact]
+    public void TheSailPlanIsSavedAndRecorded()
+    {
+        var (runner, _, _) = Setup();
+        runner.SetSailPlan(SailPlan.PressOn);
+
+        var loaded = SaveSerializer.Deserialize(SaveSerializer.Serialize(runner.Campaign), Shipped);
+
+        Assert.Equal(SailPlan.PressOn, loaded.Voyage!.SailPlan);
+        var entry = runner.Campaign.Chronicle.Entries.Last();
+        Assert.Equal("The captain ordered every sail set: press on.", new ChronicleFormatter(runner.Campaign, Shipped).Format(entry));
+    }
+
+    [Fact]
+    public void RepairsLeftCountWhatTheHoldCanStillMend()
+    {
+        var (runner, _, _) = Setup();
+
+        // 10 oakum and 6 planks at 2 + 1 a patch; 8 coils of rope at 1 a repair.
+        Assert.Equal(5, runner.RepairsLeft()[ShipPart.Hull]);
+        Assert.Equal(8, runner.RepairsLeft()[ShipPart.Rigging]);
+
+        runner.Campaign.SharedStore.TryRemove("item.oakum", 9);
+        Assert.Equal(0, runner.RepairsLeft()[ShipPart.Hull]);
+    }
+
+    [Fact]
     public void BadVoyageRulesAreRejected()
     {
         var rules = Shipped.Voyage! with { StartingWeather = "weather.sunshine" };

@@ -150,6 +150,8 @@ scene and remain open until the Art Bible's Test A.
 | 1× | 1 | about 16 hours |
 | 10× | 10 | about 1.6 hours |
 | 60× | 60 (1 hour per second) | about 16 minutes |
+| 240× | 240 (4 hours per second) | about 4 minutes (added after V3, owner: "need faster sim speed") |
+| 720× | 720 (12 hours per second) | about 80 seconds |
 
 1× is for direct control and crises, and 60× is for routine sailing. A frame never simulates more
 than 600 ticks, so a slow frame cannot snowball. Automatic slowdown on critical events
@@ -428,4 +430,34 @@ decide: how many hands on the pumps, when to spend planks, whether the stores wi
 **Why.** It gives the player decisions with consequences that the simulation carries forward:
 trust, health, stores and distance. That is what makes the crew and the voyage worth caring about
 (GAME_VISION.md §8).
+
+---
+
+## D-018 — Sail orders, and repairs the player can see
+
+**Date:** 2026-10-19
+**Status:** Accepted (owner feedback after V3: "I did not manage the hull properly and just repaired
+it whenever and eventually we ran out of supplies to repair, storms took the ship out")
+
+**Decision.**
+- **Sail plan.** The captain orders one of three plans, which is saved and recorded:
+
+  | Plan | Speed | Hull and rigging wear, sea strikes | Leaks |
+  |---|---|---|---|
+  | Press on | ×1.2 | ×1.5 | ×1.25 |
+  | Normal | ×1 | ×1 | ×1 |
+  | Heave to | ×0.08 | ×0.35 | ×0.55 |
+
+- **Repairs left.** The voyage bar shows how many hull and rigging repairs the stores can still make.
+- **Later repairs.** Duty repairs wait for real damage: hull below 75%, rigging below 75% (they were
+  85% and 88%).
+
+**Why.** Running out of materials was the right kind of failure, but the player could neither see it
+coming nor do anything about storms except patch. Simulated over 30 seeds:
+
+| Captain | Arrived (of 30) |
+|---|---|
+| Never touches the sails | about 17 |
+| Heaves to in storms | 24–25 |
+| Heaves to in storms and presses on in fair weather | 25–28, about two days sooner |
 

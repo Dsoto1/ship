@@ -509,9 +509,10 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         }
 
         var bilgeBefore = ship.Bilge;
-        var leak = (rules.BaseLeakPerHour + (100 - ship.Hull) * rules.LeakPerHullPointLost) * weather.LeakMultiplier;
-        ship.Apply(new ShipEffects { Bilge = leak, Hull = -weather.HullWearPerHour, Rigging = -weather.RiggingWearPerHour }, HoursPerTick);
-        if (weather.HullStrikeChancePerHour > 0 && Campaign.Randomness.Weather.Chance(weather.HullStrikeChancePerHour * HoursPerTick))
+        var plan = rules.Plan(ship.SailPlan);
+        var leak = (rules.BaseLeakPerHour + (100 - ship.Hull) * rules.LeakPerHullPointLost) * weather.LeakMultiplier * plan.Leak;
+        ship.Apply(new ShipEffects { Bilge = leak, Hull = -weather.HullWearPerHour * plan.Wear, Rigging = -weather.RiggingWearPerHour * plan.Wear }, HoursPerTick);
+        if (weather.HullStrikeChancePerHour > 0 && Campaign.Randomness.Weather.Chance(weather.HullStrikeChancePerHour * plan.Wear * HoursPerTick))
         {
             ship.Apply(new ShipEffects { Hull = -weather.HullStrikeDamage }, 1);
             Campaign.Record(ChronicleEntryKind.HullStruck, [
@@ -524,7 +525,8 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             && !(Campaign.Placements.TryGetValue(task.CharacterId, out var placement) && placement.IsMoving));
         ship.SpeedLeaguesPerHour = weather.WindLeaguesPerHour
             * (rules.RiggingSpeedFloor + (1 - rules.RiggingSpeedFloor) * ship.Rigging / 100)
-            * (ship.WatchKept ? 1 : rules.NoWatchSpeedMultiplier);
+            * (ship.WatchKept ? 1 : rules.NoWatchSpeedMultiplier)
+            * plan.Speed;
         ship.LeaguesSailed += ship.SpeedLeaguesPerHour * HoursPerTick;
 
         foreach (var level in rules.BilgeAlarms.Where(level => bilgeBefore < level && ship.Bilge >= level))
@@ -544,6 +546,48 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             Campaign.Record(ChronicleEntryKind.Landfall, [new(ChronicleParameters.To, ship.Destination)]);
             Campaign.TryTransitionTo(CampaignPhase.Landfall, $"sighted {ship.Destination}");
         }
+    }
+
+    /// <summary>
+    /// The captain orders how much sail to carry: press on for speed at the cost of wear, or heave to and
+    /// ride out heavy weather (D-018). Recorded in the chronicle.
+    /// </summary>
+    public CommandResult SetSailPlan(SailPlan plan)
+    {
+        if (Campaign.Voyage is not { Outcome: VoyageOutcome.UnderWay } ship)
+        {
+            return CommandResult.Rejected("The ship is not under way.");
+        }
+
+        if (ship.SailPlan != plan)
+        {
+            ship.SailPlan = plan;
+            Campaign.Record(ChronicleEntryKind.SailPlanChanged, [new(ChronicleParameters.To, plan.ToString())]);
+        }
+
+        return CommandResult.Ok();
+    }
+
+    /// <summary>
+    /// How many more times each part of the ship can be repaired with what is in the shared store, from
+    /// the repair tasks' materials: for example hull patches left from the oakum and planks aboard.
+    /// </summary>
+    public IReadOnlyDictionary<ShipPart, int> RepairsLeft()
+    {
+        var result = new Dictionary<ShipPart, int>();
+        foreach (var task in Content.Tasks.Values.Where(t => t.ShipOnComplete is not null).OrderBy(t => t.Id, StringComparer.Ordinal))
+        {
+            var part = task.ShipOnComplete!.Hull > 0 ? ShipPart.Hull : task.ShipOnComplete.Rigging > 0 ? ShipPart.Rigging : (ShipPart?)null;
+            if (part is null)
+            {
+                continue;
+            }
+
+            var times = task.Consumes.Count == 0 ? int.MaxValue : task.Consumes.Min(pair => Campaign.SharedStore.Count(pair.Key) / pair.Value);
+            result[part.Value] = result.TryGetValue(part.Value, out var existing) ? Math.Max(existing, times) : times;
+        }
+
+        return result;
     }
 
     private static string Number(double value) => Math.Round(value).ToString(System.Globalization.CultureInfo.InvariantCulture);

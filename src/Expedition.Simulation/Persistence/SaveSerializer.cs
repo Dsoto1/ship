@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 12;
+    public const int CurrentSchemaVersion = 13;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -143,6 +143,17 @@ public static class SaveSerializer
                 root["eventHistory"] = new JsonArray();
                 root["lastEventTick"] = long.MinValue / 2;
                 root["rationing"] = false;
+                return root;
+            },
+
+            // Format 13 added the sail plan. Earlier voyages carried sail for the weather.
+            [12] = root =>
+            {
+                if (root["voyage"] is JsonObject voyage)
+                {
+                    voyage["sailPlan"] = nameof(Voyage.SailPlan.Normal);
+                }
+
                 return root;
             },
         };
@@ -409,7 +420,7 @@ public static class SaveSerializer
                     ShipName = voyage.ShipName, Destination = voyage.Destination, TotalLeagues = voyage.TotalLeagues,
                     LeaguesSailed = voyage.LeaguesSailed, Hull = voyage.Hull, Bilge = voyage.Bilge, Rigging = voyage.Rigging,
                     Weather = voyage.WeatherId, WeatherUntilTick = voyage.WeatherUntilTick, Speed = voyage.SpeedLeaguesPerHour,
-                    WatchKept = voyage.WatchKept, Outcome = voyage.Outcome.ToString(),
+                    WatchKept = voyage.WatchKept, Outcome = voyage.Outcome.ToString(), SailPlan = voyage.SailPlan.ToString(),
                 }
                 : null,
             Knowledge = campaign.Knowledge.Entries.Select(k => new KnowledgeData
@@ -702,6 +713,7 @@ public static class SaveSerializer
             var voyage = new Voyage.VoyageState(savedVoyage.ShipName, savedVoyage.Destination, savedVoyage.TotalLeagues, savedVoyage.Weather, savedVoyage.WeatherUntilTick);
             voyage.Restore(savedVoyage.LeaguesSailed, savedVoyage.Hull, savedVoyage.Bilge, savedVoyage.Rigging, savedVoyage.Speed,
                 savedVoyage.WatchKept, ParseEnum<Voyage.VoyageOutcome>(savedVoyage.Outcome, "voyage outcome"));
+            voyage.SailPlan = ParseEnum<Voyage.SailPlan>(savedVoyage.SailPlan, "sail plan");
             campaign.SetVoyage(voyage);
         }
 

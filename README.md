@@ -39,7 +39,8 @@ Controls:
 | Right-click | Walk the selected crew member there |
 | Right-hand panel, Orders tab | Order a task (dimmed tasks say why they are refused) |
 | Right-hand panel, Duties tab | Choose what this crew member does on their own when idle |
-| Space, 1–4 | Pause and time speed |
+| Space, 1–6 | Pause and time speed (up to 720×: a day in 2 seconds) |
+| Voyage bar | Sail orders (press on, normal, heave to), short rations, repairs left |
 | WASD / arrow keys, wheel, Q/E | Pan, zoom (zoom out to see the sails), turn the camera |
 | Cmd+S / Cmd+L (Ctrl elsewhere), or F5 / F9 | Quick save / quick load |
 | New voyage (top bar) | Start a fresh voyage; every launch also starts one |

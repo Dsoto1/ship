@@ -453,3 +453,13 @@ D-017. The voyage now throws situations at the captain, and the choices last.
 Balance (30 seeds, a captain choosing at random): 22 arrive; fewer than one person lost per
 voyage. 339 tests pass.
 
+## After V3 — Faster time, sail orders, repairs you can see
+
+Owner playtest: "need faster sim speed", and storms sank the ship after the repair stores ran out.
+- **Speeds 240× and 720×** (keys 5 and 6): a day in 6 or 2 seconds. Events and danger still pause.
+- **Sail orders** on the voyage bar (D-018): Press on, Normal sail, Heave to. The sails on screen
+  follow: everything set when pressing on, bare yards when hove to.
+- **Repairs left** on the voyage bar: hull patches and rigging repairs the hold can still pay for.
+- **Repair duties wait for real damage** (75%), so materials last.
+- **Save format 13** (sail plan). 342 tests pass.
+

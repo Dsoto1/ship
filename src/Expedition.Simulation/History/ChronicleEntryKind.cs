@@ -53,4 +53,7 @@ public enum ChronicleEntryKind
 
     /// <summary>Rations were cut or restored (parameter: to = short or full).</summary>
     RationingChanged,
+
+    /// <summary>The captain changed how much sail is carried (parameter: to = plan name).</summary>
+    SailPlanChanged,
 }

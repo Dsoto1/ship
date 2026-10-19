@@ -51,6 +51,12 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
             ChronicleEntryKind.CaptainAppointed => $"{who} took command of the expedition ({cause}).",
             ChronicleEntryKind.WeatherChanged => WeatherChange(entry),
             ChronicleEntryKind.EventResolved => EventLine(entry),
+            ChronicleEntryKind.SailPlanChanged => entry.Get(ChronicleParameters.To) switch
+            {
+                "PressOn" => "The captain ordered every sail set: press on.",
+                "HoveTo" => "The captain ordered the ship hove to, to ride it out.",
+                _ => "The captain ordered sail set for the weather.",
+            },
             ChronicleEntryKind.RationingChanged => entry.Get(ChronicleParameters.To) == "short"
                 ? "The captain put the crew on short rations."
                 : "The crew are back on full rations.",

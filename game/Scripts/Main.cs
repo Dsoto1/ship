@@ -19,7 +19,7 @@ namespace Expedition.Game;
 public partial class Main : Node3D
 {
     /// <summary>Simulation ticks (in-game minutes) per real second for each speed; index 0 is paused (D-007).</summary>
-    private static readonly int[] TicksPerSecond = [0, 1, 10, 60];
+    private static readonly int[] TicksPerSecond = [0, 1, 10, 60, 240, 720];
 
     // Never simulate more than this many ticks in one frame, so a slow frame cannot snowball.
     private const int MaxTicksPerFrame = 600;
@@ -99,6 +99,12 @@ public partial class Main : Node3D
             _hud.HideEvent();
             CarryOn();
         };
+        _hud.SailPlanChosen += plan => _hud.ShowResult(_runner.SetSailPlan(plan), plan switch
+        {
+            Expedition.Simulation.Voyage.SailPlan.PressOn => "Every sail set: press on.",
+            Expedition.Simulation.Voyage.SailPlan.HoveTo => "Hove to: riding it out.",
+            _ => "Sail set for the weather.",
+        });
         _hud.RationingToggled += on => _hud.ShowResult(_runner.SetRationing(on), on ? "Short rations ordered." : "Full rations restored.");
         _hud.NewVoyageRequested += () =>
         {
@@ -178,7 +184,7 @@ public partial class Main : Node3D
         _world.UpdateWorld(hour, _seaState, making, (float)delta, _camera.Target, hull, _gloom);
         var cooking = _runner.Campaign.ActiveTasks.Values.Any(task => task.DefinitionId == "task.cook");
         // Sails turn see-through at working zoom so they never hide the crew (ART_BIBLE.md 3); zoom out to see them whole.
-        _deck.UpdateLook(_world.Darkness, Mathf.Lerp(0.38f, 1f, Mathf.SmoothStep(18f, 32f, _camera.Size)), t, cooking, _seaState, (float)delta);
+        _deck.UpdateLook(_world.Darkness, Mathf.Lerp(0.38f, 1f, Mathf.SmoothStep(18f, 32f, _camera.Size)), t, cooking, SailSetting(voyage), (float)delta);
         foreach (var bird in _birds)
         {
             bird.Centre = _shipCentre + new Vector3(0, 0, -2f);
@@ -242,6 +248,8 @@ public partial class Main : Node3D
                 case Key.Key2: SetSpeed(1); break;
                 case Key.Key3: SetSpeed(2); break;
                 case Key.Key4: SetSpeed(3); break;
+                case Key.Key5: SetSpeed(4); break;
+                case Key.Key6: SetSpeed(5); break;
                 case Key.F5: Save(); break;
                 case Key.F9: Load(); break;
                 case Key.Tab: SelectNext(); break;
@@ -289,6 +297,14 @@ public partial class Main : Node3D
         _hud.Bind(runner);
         _hud.ShowStatus(message);
     }
+
+    // How much sail shows: hove to, nearly everything is furled; pressing on, the topsails stay up longer.
+    private float SailSetting(Expedition.Simulation.Voyage.VoyageState? voyage) => voyage?.SailPlan switch
+    {
+        Expedition.Simulation.Voyage.SailPlan.HoveTo => 3.2f,
+        Expedition.Simulation.Voyage.SailPlan.PressOn => Mathf.Max(0.2f, _seaState - 0.9f),
+        _ => _seaState,
+    };
 
     // An event stops the clock until the captain decides.
     private void CheckEvent()
@@ -521,6 +537,7 @@ public partial class Main : Node3D
     private string? _forceWeather;
     private bool _idleCrew;
     private string? _developerChoice;
+    private Expedition.Simulation.Voyage.SailPlan? _developerSail;
     private double? _forceBilge;
 
     private void ReadDeveloperArguments(ref ulong seed)
@@ -538,6 +555,7 @@ public partial class Main : Node3D
                 case "weather": _forceWeather = value; break;
                 case "idle": _idleCrew = true; break;
                 case "choose": _developerChoice = value; break;
+                case "sail" when Enum.TryParse<Expedition.Simulation.Voyage.SailPlan>(value, out var plan): _developerSail = plan; break;
                 case "bilge" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var bilge): _forceBilge = bilge; break;
                 case "zoom" when float.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var zoom): _startZoom = zoom; break;
             }
@@ -557,6 +575,11 @@ public partial class Main : Node3D
             ship.DeveloperSetWeather(_forceWeather);
             _seaState = (float)(_content.Voyage?.Weathers.FirstOrDefault(w => w.Id == _forceWeather)?.SeaState ?? 1);
             _gloom = (float)(_content.Voyage?.Weathers.FirstOrDefault(w => w.Id == _forceWeather)?.Gloom ?? 0);
+        }
+
+        if (_developerSail is { } sail)
+        {
+            _runner.SetSailPlan(sail);
         }
 
         if (_idleCrew)

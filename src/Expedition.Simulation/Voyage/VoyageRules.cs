@@ -18,6 +18,17 @@ public sealed record VoyageRules
     /// <summary>Speed multiplier when nobody is standing watch (no one at the helm or on lookout).</summary>
     public required double NoWatchSpeedMultiplier { get; init; }
 
+    /// <summary>Effect of each sail plan on speed, wear and leaks, by plan name.</summary>
+    public IReadOnlyDictionary<SailPlan, SailPlanEffect> SailPlans { get; init; } = new Dictionary<SailPlan, SailPlanEffect>
+    {
+        [SailPlan.PressOn] = new() { Speed = 1.2, Wear = 1.5, Leak = 1.25 },
+        [SailPlan.Normal] = new(),
+        [SailPlan.HoveTo] = new() { Speed = 0.08, Wear = 0.35, Leak = 0.55 },
+    };
+
+    /// <summary>The effect of a plan, or no change if the rules do not list it.</summary>
+    public SailPlanEffect Plan(SailPlan plan) => SailPlans.TryGetValue(plan, out var effect) ? effect : new SailPlanEffect();
+
     /// <summary>Bilge levels that raise an alarm when crossed, rising.</summary>
     public IReadOnlyList<double> BilgeAlarms { get; init; } = [50, 80];
 
@@ -70,6 +81,19 @@ public sealed record VoyageRules
 
         return errors;
     }
+}
+
+/// <summary>Multipliers a sail plan applies to speed, wear (hull and rigging, and sea strikes) and leaks.</summary>
+public sealed record SailPlanEffect
+{
+    /// <summary>Speed multiplier.</summary>
+    public double Speed { get; init; } = 1;
+
+    /// <summary>Hull and rigging wear multiplier, also applied to the chance of a sea striking.</summary>
+    public double Wear { get; init; } = 1;
+
+    /// <summary>Leak multiplier.</summary>
+    public double Leak { get; init; } = 1;
 }
 
 /// <summary>One kind of weather at sea (ART_BIBLE.md 7.2, 10).</summary>

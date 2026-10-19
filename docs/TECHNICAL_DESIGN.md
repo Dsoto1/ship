@@ -1,6 +1,6 @@
 # Technical Design
 
-Status: P0 complete in graybox (Tickets 1–4c, 3a–3e); Building the playable voyage (D-015): V1–V3 done. Save format 12. Update this file when architecture or behavior changes.
+Status: P0 complete in graybox (Tickets 1–4c, 3a–3e); Building the playable voyage (D-015): V1–V3 done. Save format 13. Update this file when architecture or behavior changes.
 See `DECISIONS.md` for why each choice was made, and `GAME_VISION.md` for the product vision.
 
 ## 1. Solution layout (proposed)

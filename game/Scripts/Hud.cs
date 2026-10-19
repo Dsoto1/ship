@@ -14,7 +14,7 @@ namespace Expedition.Game;
 /// </summary>
 public partial class Hud : CanvasLayer
 {
-    private static readonly string[] SpeedNames = ["Pause", "1×", "10×", "60×"];
+    private static readonly string[] SpeedNames = ["Pause", "1×", "10×", "60×", "240×", "720×"];
 
     private readonly List<(Button Button, int Speed)> _speedButtons = [];
     private readonly List<(Button Button, CharacterId Id)> _crewButtons = [];
@@ -46,6 +46,7 @@ public partial class Hud : CanvasLayer
     private Label _eventText = null!;
     private VBoxContainer _eventChoices = null!;
     private Button _rations = null!;
+    private readonly List<(Button Button, Expedition.Simulation.Voyage.SailPlan Plan)> _sailButtons = [];
     private Label _endingTitle = null!;
     private Label _endingText = null!;
     private ChronicleFormatter _formatter = null!;
@@ -77,6 +78,9 @@ public partial class Hud : CanvasLayer
 
     /// <summary>The player closed an event's outcome to carry on.</summary>
     public event Action? EventClosed;
+
+    /// <summary>The player ordered a sail plan.</summary>
+    public event Action<Expedition.Simulation.Voyage.SailPlan>? SailPlanChosen;
 
     /// <summary>The player switched short rations on or off.</summary>
     public event Action<bool>? RationingToggled;
@@ -518,6 +522,14 @@ public partial class Hud : CanvasLayer
         Set("water", $"Water ~{water:0} days", water < 5 ? bad : water < 10 ? warn : good);
         Set("food", $"Food ~{food:0} days", food < 5 ? bad : food < 10 ? warn : good);
         Set("watch", ship.WatchKept ? "Watch kept" : "No one on watch!", ship.WatchKept ? good : bad);
+        var repairs = runner.RepairsLeft();
+        var hullRepairs = repairs.GetValueOrDefault(Expedition.Simulation.Voyage.ShipPart.Hull);
+        var riggingRepairs = repairs.GetValueOrDefault(Expedition.Simulation.Voyage.ShipPart.Rigging);
+        Set("repairs", $"Repairs left: hull {hullRepairs}, rigging {riggingRepairs}", Math.Min(hullRepairs, riggingRepairs) == 0 ? bad : Math.Min(hullRepairs, riggingRepairs) <= 1 ? warn : good);
+        foreach (var (button, plan) in _sailButtons)
+        {
+            button.ButtonPressed = ship.SailPlan == plan;
+        }
         _rations.Text = runner.Campaign.Rationing ? "Short rations (restore full)" : "Full rations (cut)";
         _rations.Modulate = runner.Campaign.Rationing ? warn : good;
         _rationsOn = runner.Campaign.Rationing;
@@ -535,11 +547,25 @@ public partial class Hud : CanvasLayer
         var flow = new HFlowContainer { Alignment = FlowContainer.AlignmentMode.Center };
         flow.AddThemeConstantOverride("h_separation", 14);
         panel.AddChild(flow);
-        foreach (var key in new[] { "distance", "wind", "watch", "hull", "bilge", "rigging", "water", "food" })
+        foreach (var key in new[] { "distance", "wind", "watch", "hull", "bilge", "rigging", "repairs", "water", "food" })
         {
             var label = new Label();
             flow.AddChild(label);
             _gauges[key] = label;
+        }
+
+        // Sail orders: speed against strain (D-018).
+        foreach (var (plan, label, tip) in new[]
+                 {
+                     (Expedition.Simulation.Voyage.SailPlan.PressOn, "Press on", "Every sail set: about a fifth faster, but the hull and rigging wear half as fast again and she leaks more."),
+                     (Expedition.Simulation.Voyage.SailPlan.Normal, "Normal sail", "Sail set for the weather."),
+                     (Expedition.Simulation.Voyage.SailPlan.HoveTo, "Heave to", "Ride out heavy weather: almost no headway, but a third of the wear and about half the leaking."),
+                 })
+        {
+            var button = new Button { Text = label, ToggleMode = true, TooltipText = tip, FocusMode = Control.FocusModeEnum.None };
+            button.Pressed += () => SailPlanChosen?.Invoke(plan);
+            flow.AddChild(button);
+            _sailButtons.Add((button, plan));
         }
 
         _rations = new Button { FocusMode = Control.FocusModeEnum.None, TooltipText = "Short rations: water once a day at dawn, food once at noon. The stores last longer, but the crew grow hungry, thirsty and strained." };

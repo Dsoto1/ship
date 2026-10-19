@@ -401,6 +401,9 @@ public sealed record VoyageData
 
     /// <summary>Outcome name.</summary>
     public required string Outcome { get; init; }
+
+    /// <summary>Sail plan name. Added in format 13.</summary>
+    public required string SailPlan { get; init; }
 }
 
 /// <summary>A saved waiting event.</summary>

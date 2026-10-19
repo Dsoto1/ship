@@ -13,6 +13,19 @@ public enum VoyageOutcome
     Foundered,
 }
 
+/// <summary>How much sail the captain orders carried (D-018).</summary>
+public enum SailPlan
+{
+    /// <summary>Every sail she can carry: faster, but the ship is driven hard and wears and leaks more.</summary>
+    PressOn,
+
+    /// <summary>Sail shortened as the weather requires.</summary>
+    Normal,
+
+    /// <summary>Hove to: almost no headway, but she rides out heavy weather with far less strain.</summary>
+    HoveTo,
+}
+
 /// <summary>A part of the ship whose condition the crew look after.</summary>
 public enum ShipPart
 {
@@ -93,6 +106,9 @@ public sealed class VoyageState
 
     /// <summary>At sea, arrived or foundered.</summary>
     public VoyageOutcome Outcome { get; internal set; }
+
+    /// <summary>How much sail is carried.</summary>
+    public SailPlan SailPlan { get; internal set; } = SailPlan.Normal;
 
     /// <summary>Reads one part's condition.</summary>
     public double Get(ShipPart part) => part switch
