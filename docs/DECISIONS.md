@@ -606,3 +606,23 @@ the ship always in view (§5).
 **Why.** The briefs ask for a voyage driven by interacting systems rather than event cards (VOYAGE
 §1, §42), a chart of belief rather than truth (NAV §1), and a settlement that is the expedition
 continuing (SETTLEMENT §0). The current build is measured against them in `VISION_ALIGNMENT.md` §6.
+
+---
+
+## D-025 — Navigation choices, and port first
+
+**Date:** 2026-10-19
+**Status:** Accepted (owner's answers to the briefs' approval items)
+
+**Decision.**
+- **Order:** finish the port (R2b–R2e) before the voyage work.
+- **Plotting:** the captain places waypoints and route legs and orders observations; the navigator
+  works out heading, distance and the estimate, and their skill shapes the error.
+- **Model:**
+  - a flat chart in leagues;
+  - a clear-sky sun or pole-star sight fixes the latitude;
+  - east–west position comes only from dead reckoning, so its error grows until land is sighted.
+- **Time compression at sea** stays Pause, 1×, 10×, 60×, 240×, 720×. Alerts and standing orders
+  drop back to pause.
+
+**Why.** The owner chose the recommended options under NAVIGATION §8 and §43 and VOYAGE §51.

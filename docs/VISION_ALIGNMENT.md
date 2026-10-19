@@ -359,9 +359,9 @@ These are listed in the briefs. Each has a proposed default, used until the owne
 
 | Item | Brief | Proposed default |
 |---|---|---|
-| Time-compression multipliers | NAV §8, §43 | Keep Pause, 1×, 10×, 60×, 240×, 720× at sea |
-| How much manual plotting | NAV §43 | The captain places waypoints and legs; the navigator does the arithmetic |
-| Navigation abstraction | VOYAGE §51 | A flat chart in leagues. Latitude can be observed by sun or pole star; east–west position only by dead reckoning, with no longitude fixes |
+| Time-compression multipliers | NAV §8, §43 | **Approved (D-025):** Pause, 1×, 10×, 60×, 240×, 720× at sea |
+| How much manual plotting | NAV §43 | **Approved (D-025):** the captain places waypoints and legs; the navigator does the arithmetic |
+| Navigation abstraction | VOYAGE §51 | **Approved (D-025):** a flat chart in leagues. Latitude can be observed by sun or pole star; east–west position only by dead reckoning, with no longitude fixes |
 | Hero ship type | VOYAGE §51 | The *Garza*, a caravel of about 60 tons (SETTING §4), pending the plausibility pass |
 | Full naval physics, combat-heavy play | VOYAGE §51 | Not planned |
 | Spreading fire, deep politics | SETTLEMENT §25, §42 | Not planned for the first settlement slice |
