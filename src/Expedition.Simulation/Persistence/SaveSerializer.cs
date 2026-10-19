@@ -20,7 +20,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 7;
+    public const int CurrentSchemaVersion = 8;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -85,6 +85,21 @@ public static class SaveSerializer
 
             // Format 7 added optional appearance. Older characters have none; the game draws a fallback.
             [6] = root => root,
+
+            // Format 8 added sex, languages and social status. Older characters have none recorded.
+            [7] = root =>
+            {
+                foreach (var character in root["characters"]?.AsArray() ?? [])
+                {
+                    if (character is JsonObject fields)
+                    {
+                        fields["sex"] = nameof(Sex.Unrecorded);
+                        fields["languages"] = new JsonObject();
+                    }
+                }
+
+                return root;
+            },
         };
 
     private static readonly JsonSerializerOptions Options = new()
@@ -273,6 +288,9 @@ public static class SaveSerializer
                 SurvivalState = c.SurvivalState.ToString(),
                 Skills = new SortedDictionary<string, int>(c.Skills.Levels.ToDictionary(), StringComparer.Ordinal),
                 Attributes = new SortedDictionary<string, int>(c.Attributes.Levels.ToDictionary(), StringComparer.Ordinal),
+                Sex = c.Sex.ToString(),
+                Languages = new SortedDictionary<string, int>(c.Languages.Levels.ToDictionary(), StringComparer.Ordinal),
+                StatusId = c.StatusId,
                 Traits = c.Traits.Order(StringComparer.Ordinal).ToList(),
                 Needs = new NeedsData { Hunger = c.Needs.Hunger, Thirst = c.Needs.Thirst, Fatigue = c.Needs.Fatigue, Stress = c.Needs.Stress },
                 Health = c.Health.Value,
@@ -667,6 +685,24 @@ public static class SaveSerializer
 
             character.Health.AddCondition(condition);
         }
+
+        character.Sex = ParseEnum<Sex>(saved.Sex, "sex");
+        foreach (var (languageId, level) in saved.Languages)
+        {
+            if (!content.Languages.ContainsKey(languageId))
+            {
+                throw new SaveLoadException($"{saved.Name} speaks unknown language '{languageId}'. The game content may have changed since this save was made.");
+            }
+
+            character.Languages.Set(languageId, level);
+        }
+
+        if (saved.StatusId is not null && !content.Statuses.ContainsKey(saved.StatusId))
+        {
+            throw new SaveLoadException($"{saved.Name} has unknown status '{saved.StatusId}'.");
+        }
+
+        character.StatusId = saved.StatusId;
 
         if (saved.Appearance is { } looks)
         {

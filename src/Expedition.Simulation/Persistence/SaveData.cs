@@ -102,6 +102,15 @@ public sealed record CharacterData
     /// <summary>Trait IDs.</summary>
     public required IReadOnlyList<string> Traits { get; init; }
 
+    /// <summary>Sex name. Added in format 8.</summary>
+    public required string Sex { get; init; }
+
+    /// <summary>Language levels above zero, by language ID. Added in format 8.</summary>
+    public required IReadOnlyDictionary<string, int> Languages { get; init; }
+
+    /// <summary>Social status ID, or null. Added in format 8.</summary>
+    public string? StatusId { get; init; }
+
     /// <summary>Appearance, or null if the character has none recorded. Added in format 7.</summary>
     public AppearanceData? Appearance { get; init; }
 

@@ -20,17 +20,17 @@ public static class TestDeckScenario
 
     private static readonly (string Name, int Age, string Origin, int X, int Y, (string Id, int Level)[] Skills, (string Id, int Level)[] Attributes, string[] Traits)[] Crew =
     [
-        ("Captain Álvaro", 41, "Seville", 4, 18,
+        ("Captain Álvaro", 41, "Almara", 4, 18,
             [("skill.navigation", 3), ("skill.leadership", 3), ("skill.sailing", 2)], [("attribute.perception", 3)], ["trait.proud", "trait.cautious"]),
-        ("Diego", 29, "Palos", 3, 5,
+        ("Diego", 29, "La Bocana", 3, 5,
             [("skill.rigging", 3), ("skill.sailing", 3)], [("attribute.coordination", 4)], ["trait.loyal"]),
-        ("Juan the cooper", 52, "Moguer", 5, 15,
+        ("Juan the cooper", 52, "Almara", 5, 15,
             [("skill.cooking", 2), ("skill.carpentry", 3)], [("attribute.endurance", 1)], ["trait.resourceful", "trait.cautious"]),
-        ("Pedro", 19, "Huelva", 2, 8,
+        ("Pedro", 19, "La Bocana", 2, 8,
             [("skill.sailing", 1)], [("attribute.strength", 4), ("attribute.endurance", 3)], ["trait.impulsive"]),
-        ("Gonçalo", 34, "Lisbon", 6, 12,
+        ("Gonçalo", 34, "Lusara", 6, 12,
             [("skill.ship_repair", 3), ("skill.carpentry", 2)], [("attribute.strength", 3)], ["trait.proud"]),
-        ("Martín", 45, "Triana", 2, 17,
+        ("Martín", 45, "Almara", 2, 17,
             [("skill.first_aid", 2), ("skill.seamanship", 3)], [], ["trait.loyal", "trait.resourceful"]),
     ];
 
@@ -73,6 +73,14 @@ public static class TestDeckScenario
         foreach (var (name, age, origin, x, y, skills, attributes, traits) in Crew)
         {
             var character = campaign.CreateCharacter(name, age, origin, content.Rules.PersonalCarryCapacity);
+            character.Sex = Characters.Sex.Male;
+            character.StatusId = name.StartsWith("Captain", StringComparison.Ordinal) ? "status.officer" : "status.sailor";
+            character.Languages.Set(origin == "Lusara" ? "language.lusaran" : "language.castrenan", 5);
+            if (origin == "Lusara")
+            {
+                character.Languages.Set("language.castrenan", 3);
+            }
+
             foreach (var (skill, level) in skills)
             {
                 character.Skills.Set(skill, level);

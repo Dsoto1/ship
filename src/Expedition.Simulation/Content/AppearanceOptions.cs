@@ -59,6 +59,9 @@ public sealed partial record AppearanceOption
     /// <summary>Youngest age this option can appear at (greying hair, baldness). Older people are likelier to have it.</summary>
     public int MinAge { get; init; }
 
+    /// <summary>If set, only characters of this sex can have the option (for example beards).</summary>
+    public Characters.Sex? OnlyFor { get; init; }
+
     /// <summary>Relative likelihood; 1 is ordinary.</summary>
     public double Weight { get; init; } = 1;
 

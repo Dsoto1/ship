@@ -150,7 +150,10 @@ public class AppearanceTests
         root["schemaVersion"] = 6;
         foreach (var character in root["characters"]!.AsArray())
         {
-            character!.AsObject().Remove("appearance");
+            foreach (var field in new[] { "appearance", "sex", "languages", "statusId" })
+            {
+                character!.AsObject().Remove(field);
+            }
         }
 
         var loaded = SaveSerializer.Deserialize(root.ToJsonString(), Shipped);

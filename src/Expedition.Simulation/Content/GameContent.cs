@@ -21,7 +21,9 @@ public sealed class GameContent
         IEnumerable<AttributeDefinition>? attributes = null,
         IEnumerable<TraitDefinition>? traits = null,
         IEnumerable<ConditionDefinition>? conditions = null,
-        AppearanceOptions? appearance = null)
+        AppearanceOptions? appearance = null,
+        IEnumerable<LanguageDefinition>? languages = null,
+        IEnumerable<StatusDefinition>? statuses = null)
     {
         var errors = new List<string>();
         Rules = rules;
@@ -33,6 +35,12 @@ public sealed class GameContent
         Traits = IndexById(traits ?? [], t => t.Id, "trait", errors);
         Conditions = IndexById(conditions ?? [], c => c.Id, "condition", errors);
         Appearance = appearance ?? AppearanceOptions.Empty;
+        Languages = IndexById(languages ?? [], l => l.Id, "language", errors);
+        Statuses = IndexById(statuses ?? [], st => st.Id, "status", errors);
+        foreach (var status in Statuses.Values.Where(st => st.TypicalMonthlyWage < 0))
+        {
+            errors.Add($"Status '{status.Id}': typicalMonthlyWage must not be negative.");
+        }
         var appearanceIds = new HashSet<string>(StringComparer.Ordinal);
         foreach (var (listName, options) in Appearance.AllLists)
         {
@@ -103,6 +111,12 @@ public sealed class GameContent
 
     /// <summary>Condition (injury and illness) definitions by ID.</summary>
     public IReadOnlyDictionary<string, ConditionDefinition> Conditions { get; }
+
+    /// <summary>Language definitions by ID.</summary>
+    public IReadOnlyDictionary<string, LanguageDefinition> Languages { get; }
+
+    /// <summary>Social status definitions by ID.</summary>
+    public IReadOnlyDictionary<string, StatusDefinition> Statuses { get; }
 
     /// <summary>Options characters' appearance is generated from.</summary>
     public AppearanceOptions Appearance { get; }

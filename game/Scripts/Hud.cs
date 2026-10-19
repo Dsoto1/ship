@@ -179,8 +179,13 @@ public partial class Hud : CanvasLayer
             : "";
         var attributes = runner.Content.Attributes.Values
             .Select(a => $"{a.Name} {character.Attributes.Get(a.Id)}");
+        var status = character.StatusId is not null && runner.Content.Statuses.TryGetValue(character.StatusId, out var standing) ? standing.Name.ToLowerInvariant() : "standing unknown";
+        var sex = character.Sex == Sex.Unrecorded ? "" : $"{character.Sex.ToString().ToLowerInvariant()}, ";
+        var tongues = string.Join(", ", character.Languages.Levels.OrderByDescending(l => l.Value)
+            .Select(l => $"{(runner.Content.Languages.TryGetValue(l.Key, out var language) ? language.Name : l.Key)} {l.Value}"));
         _details.Text =
-            $"{character.Age}, from {character.Origin}\n" +
+            $"{sex}{character.Age}, {status}, from {character.Origin}\n" +
+            (tongues.Length > 0 ? $"Speaks: {tongues}\n" : "") +
             $"{character.SurvivalState} · health {character.Health.Value:0}\n" +
             $"Doing: {Activity(runner, character)}{progress}\n" +
             (character.Appearance is { } looks ? $"Looks: {AppearanceText.Describe(looks, runner.Content.Appearance)}\n" : "") +

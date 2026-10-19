@@ -20,7 +20,7 @@ This file tracks status and breaks the next work into tickets.
 | 4a | Positions, work spots and movement in the simulation | Done (2026-10-18) |
 | 4b | Godot graybox interaction scene | Done (2026-10-18) — owner ran the manual test on macOS, all 8 steps passed |
 | 4c | Appearance record | Done (2026-10-18) |
-| 5a | Identity: sex, languages, social status | In progress |
+| 5a | Identity: sex, languages, social status | Done (2026-10-19) |
 | 5b | Captain's knowledge: truth vs what is known | Proposed |
 | 5c | Recruitment rules: candidates, investigation, offers, deadline | Proposed |
 | 5d | Godot waterfront recruitment scene | Proposed |
@@ -297,3 +297,20 @@ but specific Indigenous peoples. Before Ticket 5, the owner approves a short set
 - the destination coast and its peoples;
 - the identity fields candidates need (sex, languages with levels, status).
 
+
+## Ticket 5a — Identity: sex, languages, social status
+
+- **Sex:** `Character.Sex` is Male, Female, or Unrecorded for older saves.
+- **Languages:** `Character.Languages` on a 0–5 scale, from `data/languages.json`: Castrenan, Lusaran,
+  Brennish, Ligurese, Ahuneri and Tesiwa.
+- **Status:** `Character.StatusId` from `data/statuses.json`, each with a typical monthly wage in
+  sueldos as the starting point for negotiation.
+- **Beards:** appearance options can be limited to one sex (`onlyFor`), so women are never generated
+  with beards.
+- **Content loader:** now reads enum names such as "Male" in data files.
+- **Test deck crew:** use the setting's origins (Almara, La Bocana, Lusara), and have sex, status and
+  languages.
+- **Godot record:** shows sex, standing and languages.
+- **Save format 8:** older characters load with identity unrecorded.
+
+256 tests pass.

@@ -1,0 +1,9 @@
+// Languages of the setting (docs/SETTING.md section 6). Levels 0-5: 2 gets by, 3 fluent, 5 native and eloquent.
+[
+  { "id": "language.castrenan", "name": "Castrenan" },
+  { "id": "language.lusaran", "name": "Lusaran" },
+  { "id": "language.brennish", "name": "Brennish" },
+  { "id": "language.ligurese", "name": "Ligurese" },
+  { "id": "language.ahuneri", "name": "Ahuneri" },
+  { "id": "language.tesiwa", "name": "Tesiwa" }
+]

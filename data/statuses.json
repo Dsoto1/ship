@@ -1,0 +1,10 @@
+// Social standing, with what someone of that standing usually expects per month at sea, in sueldos.
+// Wages are placeholders to tune with funds and the charter.
+[
+  { "id": "status.gentleman", "name": "Gentleman", "typicalMonthlyWage": 0 },
+  { "id": "status.officer", "name": "Ship's officer", "typicalMonthlyWage": 1500 },
+  { "id": "status.craftsman", "name": "Craftsman", "typicalMonthlyWage": 1000 },
+  { "id": "status.sailor", "name": "Sailor", "typicalMonthlyWage": 800 },
+  { "id": "status.servant", "name": "Servant", "typicalMonthlyWage": 400 },
+  { "id": "status.convict", "name": "Convict", "typicalMonthlyWage": 0 }
+]

@@ -1,7 +1,8 @@
 // Appearance options for generated characters. PLACEHOLDER palette for the graybox: names and colours
 // are plausible but not yet researched. ART_BIBLE.md 4.6 marks period clothing and dyes as [RESEARCH];
 // replace this file once the departure region is chosen and sources are recorded.
-// Colours are for drawing only; the simulation stores option IDs. minAge gates age-related options
+// Colours are for drawing only; the simulation stores option IDs. minAge gates age-related options and onlyFor
+// restricts an option to one sex;
 // (older people are likelier to have them); weight is relative likelihood (default 1).
 {
   "skinTones": [
@@ -29,10 +30,10 @@
   ],
   "facialHair": [
     { "id": "beard.none", "name": "clean-shaven" },
-    { "id": "beard.stubble", "name": "stubble" },
-    { "id": "beard.short", "name": "short beard" },
-    { "id": "beard.full", "name": "full beard" },
-    { "id": "beard.moustache", "name": "moustache" }
+    { "id": "beard.stubble", "name": "stubble", "onlyFor": "Male" },
+    { "id": "beard.short", "name": "short beard", "onlyFor": "Male" },
+    { "id": "beard.full", "name": "full beard", "onlyFor": "Male" },
+    { "id": "beard.moustache", "name": "moustache", "onlyFor": "Male" }
   ],
   "dyes": [
     { "id": "dye.undyed", "name": "undyed wool", "colour": "#B8AD96" },

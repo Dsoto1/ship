@@ -63,6 +63,15 @@ public sealed class Character
     /// <summary>Physical capabilities: what the character's body can do.</summary>
     public Attributes Attributes { get; } = new();
 
+    /// <summary>Sex, recorded as a fact.</summary>
+    public Sex Sex { get; set; }
+
+    /// <summary>Languages spoken and how well.</summary>
+    public Languages Languages { get; } = new();
+
+    /// <summary>Social standing (a <see cref="Content.StatusDefinition"/> ID), or null if not recorded.</summary>
+    public string? StatusId { get; set; }
+
     /// <summary>
     /// How the character looks, or null for characters created without appearance data (for example in
     /// campaigns upgraded from saves older than format 7).

@@ -31,29 +31,32 @@ public static class AppearanceGenerator
             (Build.Heavy, strength >= 4 ? 1.5 : 0.5),
         });
 
-        var clothing = PickOption(random, options.Dyes, character.Age);
+        var clothing = PickOption(random, options.Dyes, character);
         return new Appearance
         {
             HeightCm = height,
             Build = build,
-            SkinTone = PickOption(random, options.SkinTones, character.Age),
-            HairColour = PickOption(random, options.HairColours, character.Age),
-            HairStyle = PickOption(random, options.HairStyles, character.Age),
-            FacialHair = PickOption(random, options.FacialHair, character.Age),
+            SkinTone = PickOption(random, options.SkinTones, character),
+            HairColour = PickOption(random, options.HairColours, character),
+            HairStyle = PickOption(random, options.HairStyles, character),
+            FacialHair = PickOption(random, options.FacialHair, character),
             ClothingDye = clothing,
-            AccentDye = PickOption(random, options.Dyes.Where(d => d.Id != clothing).DefaultIfEmpty(options.Dyes[0]).ToList(), character.Age),
-            Mark = PickOption(random, options.Marks, character.Age),
+            AccentDye = PickOption(random, options.Dyes.Where(d => d.Id != clothing).DefaultIfEmpty(options.Dyes[0]).ToList(), character),
+            Mark = PickOption(random, options.Marks, character),
         };
     }
 
     /// <summary>
-    /// Weighted choice among options old enough for this age. Age-gated options (greying hair, baldness)
-    /// grow likelier for every decade past their minimum age.
+    /// Weighted choice among options this character can have: old enough for age-gated options, which
+    /// grow likelier for every decade past their minimum age, and matching any sex restriction.
+    /// Characters whose sex is unrecorded can have any option.
     /// </summary>
-    private static string PickOption(SimulationRandom random, IReadOnlyList<AppearanceOption> options, int age)
+    private static string PickOption(SimulationRandom random, IReadOnlyList<AppearanceOption> options, Character character)
     {
+        var age = character.Age;
         var eligible = options
             .Where(o => o.MinAge <= age)
+            .Where(o => o.OnlyFor is null || character.Sex == Sex.Unrecorded || o.OnlyFor == character.Sex)
             .Select(o => (o.Id, o.MinAge > 0 ? o.Weight * (1 + (age - o.MinAge) / 10.0) : o.Weight))
             .ToArray();
         return eligible.Length == 0 ? options[0].Id : Pick(random, eligible);
