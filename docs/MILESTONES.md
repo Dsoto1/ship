@@ -340,4 +340,6 @@ Closes audit gap G12.
   even after clicking a button (before, Space re-clicked the last button).
 - **Refusals are visible:** a dimmed order says why on the button itself, not only in a tooltip.
 - **Mac shortcuts:** Cmd+S / Cmd+L save and load. A controls reminder sits under the hold.
+- **Opens maximized:** a 1280×720-pixel window looked tiny on a Retina screen, so the game now opens
+  maximized and the interface scales up to fill it.
 
