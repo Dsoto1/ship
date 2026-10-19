@@ -72,6 +72,7 @@ public partial class Main : Node3D
     private Hud _hud = null!;
     private PortHud _portHud = null!;
     private PortView _port = null!;
+    private PortSound _portSound = null!;
     private Node3D _portFigures = null!;
     private bool _portBuilt;
     private bool _follow = true;
@@ -302,6 +303,7 @@ public partial class Main : Node3D
             FollowCaptain((float)delta);
             _port.UpdateLook(_world.Darkness, t, _portWet);
             FadeForeground((float)delta);
+            ListenToThePort(hour, (float)delta);
         }
         var making = voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } ? 0.3f + (float)voyage.SpeedLeaguesPerHour * 1.3f : 0f;
         _world.UpdateWorld(hour, _seaState, making, (float)delta, _camera.Target, hull, _gloom);
@@ -397,6 +399,27 @@ public partial class Main : Node3D
             _ => Pose.Working,
         },
     };
+
+    // The port's sound follows where the camera looks and how busy each place is (PORT_VISUAL_PASS §3.14).
+    private void ListenToThePort(float hour, float delta)
+    {
+        var market = 0;
+        var workers = 0;
+        foreach (var (id, task) in _runner.Campaign.ActiveTasks)
+        {
+            if (task.DefinitionId is "task.sell_fish" or "task.buy_at_market" or "task.trade_goods" or "task.gossip" or "task.play")
+            {
+                market++;
+            }
+            else if (_content.Tasks[task.DefinitionId].Skill is "skill.carpentry" or "skill.crafting")
+            {
+                workers++;
+            }
+        }
+
+        _portSound.Activity = (market, workers);
+        _portSound.Update(new Vector2(_camera.Target.X, _camera.Target.Z), hour, _portWet, delta);
+    }
 
     // Foreground pieces (the hoist, a moored ship's rig) thin out while they stand between the camera and
     // the captain or the person selected, so they add depth without hiding people (PORT_VISUAL_PASS §3.12).
@@ -652,6 +675,7 @@ public partial class Main : Node3D
         if (_content.Port is { } rules && !_portBuilt)
         {
             _port.Build(_content.Locations[rules.Location], _content.Tasks);
+            _portSound.Build(_content.Locations[rules.Location]);
             _portBuilt = true;
         }
 
@@ -698,6 +722,11 @@ public partial class Main : Node3D
     {
         var inPort = _runner.Campaign.Port is not null;
         _port.Visible = inPort;
+        _portSound.ProcessMode = inPort ? ProcessModeEnum.Inherit : ProcessModeEnum.Disabled;
+        foreach (var player in _portSound.GetChildren().OfType<AudioStreamPlayer>())
+        {
+            player.StreamPaused = !inPort;
+        }
         _portFigures.Visible = inPort;
         if (!inPort)
         {
@@ -1013,6 +1042,8 @@ public partial class Main : Node3D
 
         _port = new PortView { Name = "PortView" };
         AddChild(_port);
+        _portSound = new PortSound { Name = "PortSound" };
+        AddChild(_portSound);
         _portFigures = new Node3D { Name = "PortFigures" };
         AddChild(_portFigures);
 
