@@ -13,6 +13,33 @@ public enum Pose
     Working,
     Resting,
     Lying,
+
+    /// <summary>Walking or standing with a load held up: a crate on the shoulder, a basket, a plank.</summary>
+    Carrying,
+
+    /// <summary>Striking down with one arm: the cooper, the smith, the shipwright.</summary>
+    Hammering,
+
+    /// <summary>Both arms pushing and pulling: sawing at the bench.</summary>
+    Sawing,
+
+    /// <summary>Sitting on a bench or at a table.</summary>
+    Sitting,
+
+    /// <summary>Kneeling, head bowed.</summary>
+    Praying,
+
+    /// <summary>Standing, cup raised now and then.</summary>
+    Drinking,
+
+    /// <summary>Standing and gesturing: selling, talking, arguing.</summary>
+    Talking,
+
+    /// <summary>Hands working rope or net at chest height.</summary>
+    Roping,
+
+    /// <summary>Standing still, a hand shading the eyes, looking out.</summary>
+    Watching,
 }
 
 /// <summary>
@@ -43,6 +70,8 @@ public partial class CrewFigure : Node3D
     private float _heading;
     private Vector3 _lastPosition;
     private float _phase;
+    private Node3D _load = null!;
+    private string? _carrying;
 
     /// <summary>Builds the figure for a character.</summary>
     /// <param name="looks">Their appearance, or null for a plain figure.</param>
@@ -150,6 +179,10 @@ public partial class CrewFigure : Node3D
             Position = new Vector3(0, h + 0.3f, 0),
         };
         figure.AddChild(figure._label);
+
+        // What they carry hangs in front of the chest; built when the load changes.
+        figure._load = new Node3D { Position = new Vector3(0, torso * 0.75f, 0.24f) };
+        figure._body.AddChild(figure._load);
         return figure;
     }
 
@@ -164,10 +197,15 @@ public partial class CrewFigure : Node3D
     /// <param name="delta">Seconds since the last frame, for animation.</param>
     /// <param name="animationRate">How fast to animate: faster at higher game speeds, zero when paused.</param>
     public void Refresh(Character character, CharacterPlacement placement, double drawTick, bool selected, string activity,
-        bool isCaptain, Pose pose, float delta, float animationRate)
+        bool isCaptain, Pose pose, float delta, float animationRate, Func<float, float, float>? ground = null, string? carrying = null,
+        bool showLabel = true, string? shownName = null)
     {
         var (x, y) = placement.Movement?.PositionAt(drawTick) ?? (placement.Cell.X, placement.Cell.Y);
-        Position = new Vector3((float)x, 0, (float)y);
+        Position = new Vector3((float)x, ground?.Invoke((float)x, (float)y) ?? 0, (float)y);
+        if (carrying != _carrying)
+        {
+            Carry(carrying);
+        }
 
         // Turn towards the direction of travel.
         var moved = Position - _lastPosition;
@@ -189,7 +227,8 @@ public partial class CrewFigure : Node3D
         }
 
         _ring.Visible = selected;
-        var name = isCaptain ? $"{character.Name} (captain)" : character.Name;
+        var name = isCaptain ? $"{character.Name} (captain)" : shownName ?? character.Name;
+        _label.Visible = showLabel || selected;
         _label.Text = selected && !string.IsNullOrEmpty(activity) ? $"{name}\n{activity}" : name;
         _label.Modulate = selected ? new Color(1f, 0.93f, 0.7f) : new Color(0.95f, 0.95f, 0.95f, 0.8f);
         _label.Position = new Vector3(0, pose is Pose.Resting or Pose.Lying ? 1.2f : _height + 0.3f, 0);
@@ -229,6 +268,69 @@ public partial class CrewFigure : Node3D
                 _leftArm.RotationDegrees = new Vector3(35f, 0, 14f);
                 _rightArm.RotationDegrees = new Vector3(35f, 0, -14f);
                 break;
+            case Pose.Carrying:
+                // Arms up and forward around the load; legs walk if moving (the phase advances).
+                _leftArm.RotationDegrees = new Vector3(-70f, 0, 18f);
+                _rightArm.RotationDegrees = new Vector3(-70f, 0, -18f);
+                _leftLeg.RotationDegrees = new Vector3(swing * 24f, 0, 0);
+                _rightLeg.RotationDegrees = new Vector3(-swing * 24f, 0, 0);
+                _body.RotationDegrees = new Vector3(-4f, 0, 0);
+                _body.Position += new Vector3(0, Mathf.Abs(swing) * 0.02f, 0);
+                break;
+            case Pose.Hammering:
+                var blow = Mathf.Pow(Mathf.Abs(Mathf.Sin(_phase * 3.2f)), 3f);
+                _leftArm.RotationDegrees = new Vector3(-50f, 0, 10f);
+                _rightArm.RotationDegrees = new Vector3(-150f + blow * 110f, 0, -6f);
+                _body.RotationDegrees = new Vector3(14f + blow * 6f, 0, 0);
+                _leftLeg.RotationDegrees = new Vector3(-10f, 0, 0);
+                _rightLeg.RotationDegrees = new Vector3(10f, 0, 0);
+                break;
+            case Pose.Sawing:
+                var saw = Mathf.Sin(_phase * 5f);
+                _leftArm.RotationDegrees = new Vector3(-60f + saw * 18f, 0, 10f);
+                _rightArm.RotationDegrees = new Vector3(-60f + saw * 18f, 0, -10f);
+                _body.RotationDegrees = new Vector3(22f + saw * 5f, 0, 0);
+                _leftLeg.RotationDegrees = new Vector3(-14f, 0, 0);
+                _rightLeg.RotationDegrees = new Vector3(14f, 0, 0);
+                break;
+            case Pose.Sitting:
+                _body.Position = new Vector3(0, _legLength * 0.95f, 0);
+                _leftLeg.RotationDegrees = new Vector3(-88f, 0, 3f);
+                _rightLeg.RotationDegrees = new Vector3(-88f, 0, -3f);
+                _leftArm.RotationDegrees = new Vector3(-40f, 0, 10f);
+                _rightArm.RotationDegrees = new Vector3(-30f + Mathf.Sin(_phase * 0.9f) * 12f, 0, -10f);
+                break;
+            case Pose.Praying:
+                _body.Position = new Vector3(0, _legLength * 0.55f, 0);
+                _body.RotationDegrees = new Vector3(14f, 0, 0);
+                _leftLeg.RotationDegrees = new Vector3(-95f, 0, 0);
+                _rightLeg.RotationDegrees = new Vector3(-95f, 0, 0);
+                _leftArm.RotationDegrees = new Vector3(-70f, 0, 22f);
+                _rightArm.RotationDegrees = new Vector3(-70f, 0, -22f);
+                break;
+            case Pose.Drinking:
+                var sip = Mathf.SmoothStep(0.7f, 1f, Mathf.Sin(_phase * 0.8f));
+                _leftArm.RotationDegrees = new Vector3(4f, 0, 5f);
+                _rightArm.RotationDegrees = new Vector3(-40f - sip * 95f, 0, -18f);
+                _body.RotationDegrees = new Vector3(-sip * 8f, 0, Mathf.Sin(_phase * 1.1f) * 3f);
+                break;
+            case Pose.Talking:
+                var gesture = Mathf.Sin(_phase * 2.3f);
+                _leftArm.RotationDegrees = new Vector3(-30f + gesture * 25f, 0, 14f);
+                _rightArm.RotationDegrees = new Vector3(-45f - gesture * 30f, 0, -20f);
+                _body.RotationDegrees = new Vector3(gesture * 4f, 0, Mathf.Sin(_phase * 0.7f) * 4f);
+                break;
+            case Pose.Roping:
+                var pull = Mathf.Sin(_phase * 3.6f);
+                _leftArm.RotationDegrees = new Vector3(-62f + pull * 14f, 0, 16f);
+                _rightArm.RotationDegrees = new Vector3(-62f - pull * 14f, 0, -16f);
+                _body.RotationDegrees = new Vector3(8f, 0, 0);
+                break;
+            case Pose.Watching:
+                _leftArm.RotationDegrees = new Vector3(4f, 0, 5f);
+                _rightArm.RotationDegrees = new Vector3(-150f, 0, -40f);
+                _body.RotationDegrees = new Vector3(-3f, 0, 0);
+                break;
             case Pose.Lying:
                 _model.RotationDegrees = new Vector3(-90f, _model.RotationDegrees.Y, 0);
                 _model.Position = new Vector3(0, 0.15f, 0);
@@ -245,6 +347,49 @@ public partial class CrewFigure : Node3D
                 _leftArm.RotationDegrees = new Vector3(4f, 0, 5f);
                 _rightArm.RotationDegrees = new Vector3(4f, 0, -5f);
                 _body.RotationDegrees = new Vector3(0, 0, sway);
+                break;
+        }
+    }
+
+    // Builds the load in their arms: a crate, a fish basket, a plank on the shoulder, a coil of yarn.
+    private void Carry(string? load)
+    {
+        _carrying = load;
+        foreach (var child in _load.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        var wood = new StandardMaterial3D { AlbedoColor = new Color(0.55f, 0.4f, 0.24f), Roughness = 0.9f };
+        switch (load)
+        {
+            case "crate":
+                _load.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(0.5f, 0.4f, 0.42f) }, MaterialOverride = wood, Position = new Vector3(0, 0.12f, 0.08f) });
+                break;
+            case "basket":
+                _load.AddChild(new MeshInstance3D
+                {
+                    Mesh = new CylinderMesh { TopRadius = 0.26f, BottomRadius = 0.2f, Height = 0.24f },
+                    MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.68f, 0.56f, 0.34f), Roughness = 1f },
+                    Position = new Vector3(0, 0.02f, 0.06f),
+                });
+                _load.AddChild(new MeshInstance3D
+                {
+                    Mesh = new SphereMesh { Radius = 0.22f, Height = 0.12f },
+                    MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.6f, 0.66f, 0.68f), Metallic = 0.4f, Roughness = 0.4f },
+                    Position = new Vector3(0, 0.15f, 0.06f),
+                });
+                break;
+            case "plank":
+                _load.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(0.22f, 0.06f, 2.6f) }, MaterialOverride = wood, Position = new Vector3(0.18f, 0.32f, -0.2f) });
+                break;
+            case "yarn":
+                _load.AddChild(new MeshInstance3D
+                {
+                    Mesh = new TorusMesh { InnerRadius = 0.08f, OuterRadius = 0.2f },
+                    MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.78f, 0.7f, 0.5f), Roughness = 1f },
+                    RotationDegrees = new Vector3(90, 0, 0),
+                });
                 break;
         }
     }

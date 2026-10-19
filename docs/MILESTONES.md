@@ -28,7 +28,7 @@ This file tracks status and breaks the next work into tickets.
 | V3 | Things happen: events with choices, crew who speak up | Done (2026-10-19) |
 | V4 | Choose who comes: simple pre-voyage hiring (the core of 5c) | Done (2026-10-19), **stopgap**: a menu, against GAME_VISION §5 (D-020) |
 | R1 | The living port, simulated: waterfront places, ~25 people on schedules, observation, real deadline, candidates who weigh you | Done (2026-10-19) |
-| R2a | Port greybox and play: five districts, the Garza moored, walk, click anyone, talk, ask, offer, demonstrate, chandler, set sail (PORT_EXPERIENCE §23 steps 1, 2, 7, 8) | In progress |
+| R2a | Port greybox and play: five districts, the Garza moored, walk, click anyone, talk, ask, offer, demonstrate, chandler, set sail (PORT_EXPERIENCE §23 steps 1, 2, 7, 8) | Done (2026-10-19), awaiting the owner's manual test |
 | R2b | Activity nodes and work loops; leads journal (steps 3–5) | Planned |
 | R2c | Tier C crowd, background ships, ship preparation states, visible cargo (steps 6, 9) | Planned |
 | R2d | Sound zones, port weather and reactions, ambient micro-events (steps 10–12) | Planned |
@@ -544,3 +544,68 @@ D-022. Replaces V4's hiring menu underneath; the playable scene is R2.
 
 366 tests pass, including every hour of a port day leaving at most one person without a place to be.
 
+
+## R2a — The port, greybox and playable
+
+D-023, following `PORT_EXPERIENCE.md` §23 steps 1, 2, 7 and 8, with steps 3–5 started.
+- **Five districts** (`tools/gen_bocana_map.py` → `data/locations/bocana.json`, 80 × 46 m):
+  - **customs:** the Chamber and the Company house on a terrace over the harbour, with a
+    balustrade and two flights of steps;
+  - **tavern and chapel** on the square, the alley between;
+  - **market:** stalls, the well, the chandler's warehouse;
+  - **workshops:** ropewalk, cooperage, smithy, sail loft, and the shipwright's yard with a hull on
+    the stocks;
+  - **quayside:** vaults under the terrace, two piers, boats, a merchantman at anchor.
+- **The *Garza* lies alongside** as the landmark, sails furled. Hired crew go aboard and are seen on
+  her deck.
+- **Watchable time:** walking in port is 2.5 m per game minute; port speeds are Pause, Watch (half a
+  game minute a second), 2×, 10×, 60× and 240×.
+- **Work loops** (tasks chain with `then`; `carries` names the load):
+  - dockers shoulder crates at the vaults and carry them down the pier to the lighter;
+  - the fishwife lands the catch, carries the basket to the stalls and sells;
+  - the shipwright saws at the bench, fetches timber, and fits planks to the hull;
+  - the ropemaker spins yarn and walks it down the ropewalk.
+
+  Spots have semantic kinds (`SitPoint`, `CarryPickup`, `HammerStation`, …) that choose the pose.
+  New poses: carrying, hammering, sawing, sitting, praying, drinking, talking, roping, watching.
+- **Three craftspeople join:** Benito the smith, Marta the ropemaker and Old Simón the sailmaker
+  (31 people).
+- **The person card** shows only what the captain knows, in words, with its source and how far to
+  trust it: for example "Navigation: a master — their own claim — unverified", or "Rigging: skilled —
+  vouched for by Andrés — fairly sure". Strangers are "a docker" until you speak or hear of them.
+  Whether someone wants work is learned by talking.
+- **Acting in the world:** Talk, Ask about (people you know by name), Ask to show (what they claim)
+  and Offer a berth. The captain walks over first, following someone who moves, and gives up after
+  three game hours or if they go indoors.
+- **The port bar:** time to the convoy, purse, berths, a stores forecast, the chandler's list, and
+  Set sail. Sailing takes the crew to sea and hides the port.
+- **Card text:** the chronicle no longer lower-cases names in things noticed.
+
+373 tests pass. New: four work loops, carried loads, loops giving way to the schedule, and the
+card's words and provenance.
+
+Screenshots: `docs/screenshots/r2a-waterfront.jpg`, `r2a-person-card.jpg`, `r2a-dockers.jpg`,
+`r2a-dusk.jpg`, `r2a-hired-aboard.jpg`.
+
+**Not yet** (later R2 steps):
+- leads and a journal;
+- Tier C crowd;
+- the ship changing as she is prepared, and cargo shown;
+- sound, port weather and ambient events;
+- recognition, and the departure sequence.
+
+Roof occlusion is not handled: the captain's name shows through roofs.
+
+**Manual test (macOS):**
+1. `git pull`, open the project in Godot, Build, then Cmd+B. The game opens on the quay beside the
+   *Garza*, at Watch speed.
+2. Watch for a minute: dockers carry crates from the vaults down the pier; people walk to their work.
+3. Right-click up the steps onto the terrace; the camera follows. Velho is at the chart table in the
+   morning.
+4. Left-click Velho. The card says "A pilot" until you talk. Click **Talk**: the captain walks over,
+   and Velho's pitch appears. The card lists his claims as unverified.
+5. Right-click to the docks and click Andrés (a docker, after 13:00). **Ask about** Rodrigo: it
+   becomes "vouched for by Andrés".
+6. Open **Chandler's list** and buy water; the stores forecast rises.
+7. Offer berths until four are signed (try Gil, Wat, Tomé and Pascual), then **Set sail**. The port
+   disappears and the voyage starts.

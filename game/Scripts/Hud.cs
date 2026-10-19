@@ -16,6 +16,17 @@ public partial class Hud : CanvasLayer
 {
     private static readonly string[] SpeedNames = ["Pause", "1×", "10×", "60×", "240×", "720×"];
 
+    /// <summary>Renames the speed buttons, for example for the slower speeds in port (D-023).</summary>
+    public void SetSpeedNames(IReadOnlyList<string> names)
+    {
+        foreach (var (button, speed) in _speedButtons)
+        {
+            button.Text = names[speed];
+        }
+    }
+
+    private PanelContainer _rightPanel = null!;
+
     private readonly List<(Button Button, int Speed)> _speedButtons = [];
     private readonly List<(Button Button, CharacterId Id)> _crewButtons = [];
     private readonly List<(Button Button, string TaskId)> _taskButtons = [];
@@ -195,7 +206,7 @@ public partial class Hud : CanvasLayer
     }
 
     // Smaller text and see-through dark panels, so the interface frames the scene instead of covering it.
-    private static Theme BuildTheme()
+    internal static Theme BuildTheme()
     {
         var theme = new Theme { DefaultFontSize = 13 };
         var panel = new StyleBoxFlat
@@ -238,7 +249,8 @@ public partial class Hud : CanvasLayer
         _chronicleCount = -1;
         _formatter = new ChronicleFormatter(runner.Campaign, runner.Content);
 
-        foreach (var character in runner.Campaign.Characters.Values.OrderBy(c => c.Id))
+        // Only the expedition's own people are listed; the port's people are met in the world.
+        foreach (var character in runner.Campaign.Characters.Values.Where(c => c.Membership == Membership.Crew).OrderBy(c => c.Id))
         {
             var id = character.Id;
             var button = new Button { Alignment = HorizontalAlignment.Left, ClipText = true, FocusMode = Control.FocusModeEnum.None };
@@ -247,7 +259,9 @@ public partial class Hud : CanvasLayer
             _crewButtons.Add((button, id));
         }
 
-        foreach (var task in runner.Content.Tasks.Values.OrderBy(t => t.Name))
+        // Work that is only done ashore (at the forge, in the tavern) is not ordered aboard.
+        var aboard = runner.Content.Locations.Values.Where(l => l.Id != runner.Content.Port?.Location).SelectMany(l => l.Spots).SelectMany(s => s.Tasks).ToHashSet();
+        foreach (var task in runner.Content.Tasks.Values.Where(t => !t.NeedsWorkSpot || aboard.Contains(t.Id)).OrderBy(t => t.Name))
         {
             var taskId = task.Id;
             var button = new Button
@@ -340,6 +354,9 @@ public partial class Hud : CanvasLayer
         _hold.Text = "Hold: " + string.Join(" · ", campaign.SharedStore.Quantities
             .Select(pair => $"{runner.Content.Items[pair.Key].Name} {pair.Value}"));
 
+        // In port, someone of the waterfront is shown on the port card instead; nobody chosen, no panel.
+        _rightPanel.Visible = campaign.Port is null
+            || selected is { } who && who != campaign.CaptainId && campaign.Characters.TryGetValue(who, out var chosen) && chosen.Membership == Membership.Crew;
         RefreshSelected(runner, selected);
 
         if (campaign.Chronicle.Entries.Count != _chronicleCount)
@@ -716,6 +733,7 @@ public partial class Hud : CanvasLayer
             OffsetLeft = -318, OffsetRight = -8, OffsetTop = 40, OffsetBottom = -8,
         };
         root.AddChild(panel);
+        _rightPanel = panel;
         var column = new VBoxContainer();
         panel.AddChild(column);
 

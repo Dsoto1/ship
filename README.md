@@ -32,7 +32,18 @@ Step-by-step guide for macOS: [`docs/TESTING_ON_MAC.md`](docs/TESTING_ON_MAC.md)
 1. Open Godot 4.7.2 (.NET), choose **Import**, and select `game/project.godot`.
 2. Click **Build** (the hammer, top right) once, then **Run Project** (▶, or Cmd + B on macOS / F5 elsewhere). The editor's own 3D view is empty by design; the scene is built when the game runs.
 
-Controls:
+A new game opens in port, on the Bocana waterfront. **In port:**
+
+| Input | Action |
+|---|---|
+| Right-click | Walk the captain there; the camera follows (F to follow again after panning) |
+| Left-click anyone | Their card: what you know of them, who told you, how sure you can be |
+| Card buttons | Talk, ask about someone, ask to see a skill, offer a berth; the captain walks over first |
+| Port bar | Time to the convoy's departure, purse, berths signed, stores; Chandler's list; Set sail |
+| Space, 1–6 | Pause, Watch (half a game minute a second), 2×, 10×, 60×, 240× |
+| Esc | Close the card |
+
+**At sea:**
 
 | Input | Action |
 |---|---|
@@ -60,6 +71,7 @@ Saves go to `~/Library/Application Support/The Expedition/saves/` on macOS.
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — decision log
 - [`docs/SETTING.md`](docs/SETTING.md) — the fictional setting (approved, D-013)
 - [`docs/VISION_ALIGNMENT.md`](docs/VISION_ALIGNMENT.md) — where the build stands against the vision, and the re-plan (D-020)
+- [`docs/PORT_EXPERIENCE.md`](docs/PORT_EXPERIENCE.md) — the port brief: authority for the port (D-023)
 - [`docs/P1_OPTIONS_BRIEF.md`](docs/P1_OPTIONS_BRIEF.md) — historical situations to draw inspiration from (setting is fictional: D-012)
 
 ## Tech

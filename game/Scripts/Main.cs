@@ -11,15 +11,25 @@ using Godot;
 namespace Expedition.Game;
 
 /// <summary>
-/// Entry point of the graybox scene. Loads content, starts the test deck scenario, steps simulated
-/// time, draws the state and turns player input into simulation commands.
+/// Entry point of the game scene. Loads content, starts a campaign in port (or the test deck), steps
+/// simulated time, draws the state and turns player input into simulation commands. In port the
+/// waterfront and the moored Garza are drawn together and the captain walks the town (R2a); at sea the
+/// Garza is drawn alone on the ocean.
 /// The simulation is the only source of truth: this node holds view state only (selection, speed,
 /// camera), so saving never needs anything from the scene.
 /// </summary>
 public partial class Main : Node3D
 {
     /// <summary>Simulation ticks (in-game minutes) per real second for each speed; index 0 is paused (D-007).</summary>
-    private static readonly int[] TicksPerSecond = [0, 1, 10, 60, 240, 720];
+    private static readonly double[] VoyageSpeeds = [0, 1, 10, 60, 240, 720];
+
+    /// <summary>Slower in port, so people can be watched going about their day (D-023).</summary>
+    private static readonly double[] PortSpeeds = [0, 0.5, 2, 10, 60, 240];
+
+    private static readonly string[] VoyageSpeedNames = ["Pause", "1×", "10×", "60×", "240×", "720×"];
+    private static readonly string[] PortSpeedNames = ["Pause", "Watch", "2×", "10×", "60×", "240×"];
+
+    private double[] TicksPerSecond => _runner?.Campaign.Port is not null ? PortSpeeds : VoyageSpeeds;
 
     // Never simulate more than this many ticks in one frame, so a slow frame cannot snowball.
     private const int MaxTicksPerFrame = 600;
@@ -43,8 +53,22 @@ public partial class Main : Node3D
     private ChronicleFormatter _formatter = null!;
     private readonly System.Random _flicker = new();
     private Hud _hud = null!;
+    private PortHud _portHud = null!;
+    private PortView _port = null!;
+    private Node3D _portFigures = null!;
+    private bool _portBuilt;
+    private bool _follow = true;
+    private CharacterId? _hovered;
+    private PendingAction? _pending;
+    private int _crewSeen;
+
+    // Something the captain walks over to do: talk, ask, test or offer.
+    private sealed record PendingAction(CharacterId Target, string Description, Action Act, long GiveUpTick)
+    {
+        public GridPosition? Heading { get; set; }
+    }
     private CharacterId? _selected;
-    private int _speedIndex;
+    private int _speedIndex = 1;
     private int _lastRunningSpeed = 1;
     private double _tickFraction;
     private double _elapsed;
@@ -113,11 +137,51 @@ public partial class Main : Node3D
         };
         _hud.QueueCleared += () => { if (_selected is { } id) _hud.ShowResult(_runner.ClearQueue(id), "Queued orders cleared."); };
 
+        _portHud = new PortHud();
+        AddChild(_portHud);
+        _portHud.CardClosed += () => _selected = _runner.Campaign.CaptainId;
+        _portHud.TalkRequested += id => WalkOverTo(id, "talk", () =>
+        {
+            var (result, said) = _runner.TalkTo(id);
+            _portHud.Say(result.Succeeded ? said : result.Reason);
+        });
+        _portHud.AskRequested += (informant, about) => WalkOverTo(informant, $"ask about {_runner.Campaign.Characters[about].Name}", () =>
+        {
+            var (result, said) = _runner.AskAbout(informant, about);
+            _portHud.Say(result.Succeeded ? said : result.Reason);
+        });
+        _portHud.DemonstrationRequested += (id, skill) => WalkOverTo(id, $"ask for a show of {_content.Skills[skill].Name.ToLowerInvariant()}", () =>
+        {
+            var result = _runner.RequestDemonstration(id, skill);
+            _portHud.Say(result.Succeeded ? $"{_runner.Campaign.Characters[id].Name} nods and goes to show you. Stay and watch it done." : result.Reason);
+        });
+        _portHud.OfferRequested += (id, advance) => WalkOverTo(id, $"offer a berth for {advance} sueldos", () =>
+        {
+            var name = _runner.Campaign.Characters[id].Name;
+            var result = _runner.Offer(id, advance);
+            _portHud.Say(result.Succeeded ? $"{name} spits in a palm and shakes on it, and goes to stow a sea chest aboard the Garza." : result.Reason);
+        });
+        _portHud.BuyRequested += lot => _hud.ShowResult(_runner.Buy(lot), "Bought. The chandler's boy will carry it aboard.");
+        _portHud.SetSailRequested += () =>
+        {
+            var result = ExpeditionScenario.SetSail(_runner);
+            if (!result.Succeeded)
+            {
+                _portHud.Say(result.Reason);
+                return;
+            }
+
+            ShowWorld();
+            _hud.Bind(_runner);
+            _hud.SetSpeedNames(VoyageSpeedNames);
+            _hud.ShowStatus("Lines cast off. La Bocana falls astern.");
+        };
+
         // Each new voyage gets its own seed; the seed is saved, so a reported problem can be replayed.
         var seed = (ulong)System.Random.Shared.NextInt64();
         ReadDeveloperArguments(ref seed);
         StartCampaign(_testDeck ? TestDeckScenario.Create(_content, seed) : ExpeditionScenario.Create(_content, seed),
-            "New voyage started. Left-click to select, right-click to walk.");
+            "La Bocana. Right-click to walk; click anyone to look at them.");
         if (_startZoom is { } size)
         {
             _camera.Size = size;
@@ -127,6 +191,8 @@ public partial class Main : Node3D
         {
             _runner.Advance(_advanceOnStart);
         }
+
+        DeveloperPort();
 
         DeveloperForceVoyage();
 
@@ -158,7 +224,15 @@ public partial class Main : Node3D
 
         CheckAlerts();
         CheckEvent();
+        CarryOutPending();
+        if (_runner.Campaign.Crew.Count() != _crewSeen)
+        {
+            _crewSeen = _runner.Campaign.Crew.Count();
+            _hud.Bind(_runner);
+        }
 
+        SyncFigures();
+        var inPort = _runner.Campaign.Port is not null;
         // Weather sets the sea and sky; a filling bilge makes her ride lower (ART_BIBLE.md 6.3, 7.2).
         var voyage = _runner.Campaign.Voyage;
         var weather = voyage is null ? null : _content.Voyage?.Weathers.FirstOrDefault(w => w.Id == voyage.WeatherId);
@@ -174,25 +248,33 @@ public partial class Main : Node3D
 
         // The ship rolls, pitches and heaves with the sea (ART_BIBLE.md 12). Visual only.
         var t = (float)_elapsed;
-        var swell = 0.35f + _seaState * 0.65f;
-        _ship.RotationDegrees = new Vector3(Mathf.Sin(t * 0.45f) * 0.8f * swell, 0, Mathf.Sin(t * 0.6f) * 1.6f * swell);
-        _ship.Position = _shipCentre + new Vector3(0, Mathf.Sin(t * 0.7f) * 0.08f * swell - _sink, 0);
+        var swell = inPort ? 0.15f : 0.35f + _seaState * 0.65f;
+        _ship.RotationDegrees = new Vector3(Mathf.Sin(t * 0.45f) * 0.8f * swell, inPort ? -90f : 0, Mathf.Sin(t * 0.6f) * 1.6f * swell);
+        _ship.Position = (inPort ? _port.Berth : _shipCentre) + new Vector3(0, Mathf.Sin(t * 0.7f) * 0.08f * swell - _sink, 0);
 
         var clock = _runner.Campaign.Clock;
         var hour = (float)((clock.Tick + (speed > 0 ? _tickFraction : 0)) % SimulationClock.TicksPerDay / SimulationClock.TicksPerHour);
-        var hull = new Vector4(_deck.CentreX, (_deck.Length.Bow + _deck.Length.Stern) / 2f, _deck.HalfBeam, (_deck.Length.Stern - _deck.Length.Bow) / 2f);
+        var hull = inPort
+            ? new Vector4(9999, 9999, 0.1f, 0.1f)
+            : new Vector4(_deck.CentreX, (_deck.Length.Bow + _deck.Length.Stern) / 2f, _deck.HalfBeam, (_deck.Length.Stern - _deck.Length.Bow) / 2f);
+        if (inPort)
+        {
+            _seaState = 0.35f;
+            FollowCaptain((float)delta);
+            _port.UpdateLook(_world.Darkness, t);
+        }
         var making = voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } ? 0.3f + (float)voyage.SpeedLeaguesPerHour * 1.3f : 0f;
         _world.UpdateWorld(hour, _seaState, making, (float)delta, _camera.Target, hull, _gloom);
         var cooking = _runner.Campaign.ActiveTasks.Values.Any(task => task.DefinitionId == "task.cook");
         // Sails turn see-through at working zoom so they never hide the crew (ART_BIBLE.md 3); zoom out to see them whole.
-        _deck.UpdateLook(_world.Darkness, Mathf.Lerp(0.38f, 1f, Mathf.SmoothStep(18f, 32f, _camera.Size)), t, cooking, SailSetting(voyage), (float)delta);
+        _deck.UpdateLook(_world.Darkness, Mathf.Lerp(0.38f, 1f, Mathf.SmoothStep(18f, 32f, _camera.Size)), t, cooking, inPort ? 3.2f : SailSetting(voyage), (float)delta);
         foreach (var bird in _birds)
         {
-            bird.Centre = _shipCentre + new Vector3(0, 0, -2f);
+            bird.Centre = inPort ? _port.Berth + new Vector3(0, 4f, -4f) : _shipCentre + new Vector3(0, 0, -2f);
         }
 
         var drawTick = _runner.Campaign.Clock.Tick + (speed > 0 ? _tickFraction : 0);
-        var animationRate = speed == 0 ? 0f : 1f + Mathf.Log(speed) * 0.25f;
+        var animationRate = speed == 0 ? 0f : Mathf.Max(0.8f, 1f + Mathf.Log((float)speed) * 0.25f);
         foreach (var (id, figure) in _figures)
         {
             var character = _runner.Campaign.Characters[id];
@@ -200,18 +282,136 @@ public partial class Main : Node3D
             {
                 _runner.Campaign.ActiveTasks.TryGetValue(id, out var task);
                 var definition = task is null ? null : _content.Tasks[task.DefinitionId];
+                var location = _content.Locations[placement.LocationId];
+                var spot = task?.SpotId is { } spotId ? location.FindSpot(spotId) : null;
+                var carrying = definition?.Carries;
                 var pose = character.SurvivalState is SurvivalState.Incapacitated or SurvivalState.Dead ? Pose.Lying
+                    : carrying is not null ? Pose.Carrying
                     : placement.IsMoving ? Pose.Walking
                     : definition is { IsRest: true } ? Pose.Resting
-                    : definition is not null ? Pose.Working
+                    : definition is not null ? WorkPose(definition.Id, spot?.Kind)
                     : Pose.Standing;
-                figure.Visible = character.SurvivalState != SurvivalState.Missing;
+                var inside = character.Membership == Membership.Local && _runner.IsIndoors(id);
+                figure.Visible = character.SurvivalState != SurvivalState.Missing && !inside;
+                var onPort = placement.LocationId == _runner.Content.Port?.Location;
+                var isCaptain = id == _runner.Campaign.CaptainId;
                 figure.Refresh(character, placement, drawTick, id == _selected, Hud.Activity(_runner, character),
-                    id == _runner.Campaign.CaptainId, pose, (float)delta, animationRate);
+                    isCaptain, pose, (float)delta, animationRate,
+                    onPort ? _port.HeightAt : null, carrying,
+                    showLabel: !inPort || isCaptain || id == _hovered, shownName: inPort ? PortHud.KnownName(_runner, id) : null);
             }
         }
 
         _hud.Refresh(_runner, _selected, _speedIndex);
+        _portHud.Refresh(_runner, _selected);
+    }
+
+    // How someone looks while working, from the kind of place and the work (PORT_EXPERIENCE §8).
+    private static Pose WorkPose(string task, string? kind) => task switch
+    {
+        "task.drink" or "task.gamble" => kind == "SitPoint" ? Pose.Sitting : Pose.Drinking,
+        "task.pray" => Pose.Praying,
+        "task.sell_fish" or "task.trade_goods" or "task.dun_debtor" or "task.serve_drinks" or "task.play" or "task.meet_in_secret" => Pose.Talking,
+        "task.watch_water" or "task.stand_guard" => Pose.Watching,
+        "task.read_notices" => Pose.Standing,
+        "task.wait_in_irons" or "task.treat_patients" or "task.keep_accounts" or "task.study_charts" => kind == "SitPoint" ? Pose.Sitting : Pose.Working,
+        _ => kind switch
+        {
+            "HammerStation" => Pose.Hammering,
+            "SawStation" => Pose.Sawing,
+            "RopeWork" => Pose.Roping,
+            "SitPoint" => Pose.Sitting,
+            "LeanPoint" or "WatchWater" => Pose.Watching,
+            _ => Pose.Working,
+        },
+    };
+
+    // The camera keeps the captain in view in port until the player pans away; F brings it back.
+    private void FollowCaptain(float delta)
+    {
+        if (_camera.Panned)
+        {
+            _camera.Panned = false;
+            _follow = false;
+        }
+
+        if (!_follow || _runner.Campaign.CaptainId is not { } captain || !_figures.TryGetValue(captain, out var figure))
+        {
+            return;
+        }
+
+        _camera.Target = _camera.Target.Lerp(figure.GlobalPosition, Mathf.Clamp(delta * 2.5f, 0, 1));
+    }
+
+    // Walks the captain over to someone, then does what was asked once within speaking distance.
+    private void WalkOverTo(CharacterId target, string description, Action act)
+    {
+        var name = PortHud.KnownName(_runner, target);
+        if (_runner.IsIndoors(target))
+        {
+            _portHud.Say($"{name} is indoors, out of reach. Try later.");
+            return;
+        }
+
+        _pending = new PendingAction(target, description, act, _runner.Campaign.Clock.Tick + 3 * SimulationClock.TicksPerHour);
+        _portHud.Say("");
+        CarryOutPending();
+    }
+
+    private void CarryOutPending()
+    {
+        if (_pending is not { } pending || _runner.Campaign.CaptainId is not { } captain)
+        {
+            _portHud.ShowPending(null);
+            return;
+        }
+
+        var name = PortHud.KnownName(_runner, pending.Target);
+        if (_runner.WhyCannotSpeak(pending.Target) is null)
+        {
+            _pending = null;
+            _portHud.ShowPending(null);
+            pending.Act();
+            return;
+        }
+
+        if (!_runner.Campaign.Placements.TryGetValue(pending.Target, out var there) || _runner.IsIndoors(pending.Target)
+            || _runner.Campaign.Clock.Tick > pending.GiveUpTick)
+        {
+            _pending = null;
+            _portHud.ShowPending(null);
+            _portHud.Say($"You lose sight of {name}.");
+            return;
+        }
+
+        // Head for a free cell beside them, and re-plan if they have moved on (a docker with a crate).
+        var tick = _runner.Campaign.Clock.Tick;
+        var cell = there.CellAt(tick);
+        var here = _runner.Campaign.Placements[captain];
+        if (pending.Heading is { } heading && here.IsMoving && Math.Max(Math.Abs(heading.X - cell.X), Math.Abs(heading.Y - cell.Y)) <= 1)
+        {
+            _portHud.ShowPending($"Walking over to {pending.Description}…");
+            return;
+        }
+
+        var location = _content.Locations[there.LocationId];
+        var taken = _runner.Campaign.Placements.Where(p => p.Key != captain && p.Value.LocationId == there.LocationId)
+            .Select(p => p.Value.CellAt(tick)).ToHashSet();
+        var here0 = here.CellAt(tick);
+        var beside = new[] { (0, 1), (1, 0), (-1, 0), (0, -1), (1, 1), (-1, 1), (1, -1), (-1, -1) }
+            .Select(d => new GridPosition(cell.X + d.Item1, cell.Y + d.Item2))
+            .Where(c => location.IsWalkable(c) && !taken.Contains(c))
+            .OrderBy(c => Math.Abs(c.X - here0.X) + Math.Abs(c.Y - here0.Y));
+        foreach (var next in beside)
+        {
+            if (_runner.MoveCharacter(captain, next).Succeeded)
+            {
+                break;
+            }
+        }
+
+        pending.Heading = cell;
+        _portHud.ShowPending($"Walking over to {pending.Description}…");
     }
 
     public override void _UnhandledInput(InputEvent @event)
@@ -227,10 +427,22 @@ public partial class Main : Node3D
             {
                 _selected = FigureUnder(click.Position) ?? _selected;
             }
+            else if (click.ButtonIndex == MouseButton.Right && _runner.Campaign.Port is not null && _runner.Campaign.CaptainId is { } captain
+                     && CellUnder(click.Position) is { } portCell)
+            {
+                // In port, right-click always walks the captain; it also cancels walking over to someone.
+                _pending = null;
+                _follow = true;
+                _hud.ShowResult(_runner.MoveCharacter(captain, portCell));
+            }
             else if (click.ButtonIndex == MouseButton.Right && _selected is { } id && CellUnder(click.Position) is { } cell)
             {
                 _hud.ShowResult(_runner.MoveCharacter(id, cell));
             }
+        }
+        else if (@event is InputEventMouseMotion motion)
+        {
+            _hovered = FigureUnder(motion.Position);
         }
         else if (@event is InputEventKey { Pressed: true, Echo: false } key)
         {
@@ -255,6 +467,8 @@ public partial class Main : Node3D
                 case Key.F5: Save(); break;
                 case Key.F9: Load(); break;
                 case Key.Tab: SelectNext(); break;
+                case Key.F: _follow = true; break;
+                case Key.Escape: _selected = _runner.Campaign.CaptainId; _pending = null; break;
             }
         }
     }
@@ -269,8 +483,14 @@ public partial class Main : Node3D
         }
 
         _figures.Clear();
+        _pending = null;
         var location = _content.Locations[TestDeckScenario.LocationId];
         _deck.Build(location);
+        if (_content.Port is { } rules && !_portBuilt)
+        {
+            _port.Build(_content.Locations[rules.Location]);
+            _portBuilt = true;
+        }
 
         // Roll around the middle of the deck rather than its corner.
         var centre = new Vector3((location.Width - 1) / 2f, 0, (location.Height - 1) / 2f);
@@ -278,7 +498,15 @@ public partial class Main : Node3D
         _ship.Position = centre;
         _shipContents.Position = -centre;
         _camera.Target = centre;
+        ShowWorld();
+        _follow = true;
+        if (runner.Campaign.Port is not null && runner.Campaign.CaptainId is { } captain && runner.Campaign.Placements.TryGetValue(captain, out var start))
+        {
+            _camera.Target = new Vector3(start.Cell.X, 0, start.Cell.Y);
+            _camera.Size = 24f;
+        }
 
+        _crewSeen = runner.Campaign.Crew.Count();
         SyncFigures();
 
         _selected = runner.Campaign.CaptainId ?? runner.Campaign.Characters.Keys.Order().FirstOrDefault();
@@ -290,26 +518,53 @@ public partial class Main : Node3D
         _hud.HideEnding();
         _hud.HideEvent();
         _hud.Bind(runner);
+        _portHud.Bind(runner);
+        _hud.SetSpeedNames(runner.Campaign.Port is not null ? PortSpeedNames : VoyageSpeedNames);
         _hud.ShowStatus(message);
-        ShowRecruitmentIfHiring();
     }
 
-    // A figure for everyone placed aboard who does not have one yet, for example someone just hired.
-    private void SyncFigures()
+    // The waterfront is drawn while in port, and the sea alone once she has sailed.
+    private void ShowWorld()
     {
-        foreach (var id in _runner.Campaign.Placements.Keys.Order().Where(id => !_figures.ContainsKey(id)))
+        var inPort = _runner.Campaign.Port is not null;
+        _port.Visible = inPort;
+        _portFigures.Visible = inPort;
+        if (!inPort)
         {
-            var character = _runner.Campaign.Characters[id];
-            var officer = id == _runner.Campaign.CaptainId || character.StatusId is "status.officer" or "status.gentleman";
-            var figure = CrewFigure.Create(character.Appearance, _content.Appearance, officer);
-            _shipContents.AddChild(figure);
-            _figures[id] = figure;
+            _ship.RotationDegrees = Vector3.Zero;
+            _ship.Position = _shipCentre;
+            _camera.Target = _shipCentre;
+            _follow = false;
         }
     }
 
-    // The port is played in the world (R2); until then, nothing extra is shown in port.
-    private void ShowRecruitmentIfHiring()
+    // A figure for everyone placed somewhere, drawn where they are: on the waterfront or aboard. Someone
+    // hired moves from the quay to the Garza's deck; someone who left the port is no longer drawn.
+    private void SyncFigures()
     {
+        foreach (var id in _figures.Keys.Where(id => !_runner.Campaign.Placements.ContainsKey(id)).ToList())
+        {
+            _figures[id].QueueFree();
+            _figures.Remove(id);
+        }
+
+        foreach (var (id, placement) in _runner.Campaign.Placements.OrderBy(p => p.Key))
+        {
+            if (!_figures.TryGetValue(id, out var figure))
+            {
+                var character = _runner.Campaign.Characters[id];
+                var officer = id == _runner.Campaign.CaptainId || character.StatusId is "status.officer" or "status.gentleman";
+                figure = CrewFigure.Create(character.Appearance, _content.Appearance, officer);
+                _figures[id] = figure;
+            }
+
+            var parent = placement.LocationId == _content.Port?.Location ? _portFigures : _shipContents;
+            if (figure.GetParent() != parent)
+            {
+                figure.GetParent()?.RemoveChild(figure);
+                parent.AddChild(figure);
+            }
+        }
     }
 
 
@@ -487,7 +742,7 @@ public partial class Main : Node3D
 
     private void SelectNext()
     {
-        var ids = _runner.Campaign.Characters.Keys.Order().ToList();
+        var ids = _runner.Campaign.Crew.Select(c => c.Id).Order().ToList();
         if (ids.Count > 0)
         {
             var index = _selected is { } current ? ids.IndexOf(current) : -1;
@@ -510,7 +765,12 @@ public partial class Main : Node3D
 
             foreach (var (id, figure) in _figures)
             {
-                var offset = figure.GlobalPosition - point;
+                if (!figure.IsVisibleInTree())
+                {
+                    continue;
+                }
+
+                var offset = figure.GlobalPosition - new Vector3(0, figure.GlobalPosition.Y - height, 0) - point;
                 var distance = new Vector2(offset.X, offset.Z).Length();
                 if (distance < bestDistance)
                 {
@@ -523,10 +783,22 @@ public partial class Main : Node3D
         return best;
     }
 
-    private GridPosition? CellUnder(Vector2 screenPosition) =>
-        _camera.GroundPointUnder(screenPosition) is { } point
-            ? new GridPosition(Mathf.RoundToInt(point.X), Mathf.RoundToInt(point.Z))
-            : null;
+    private GridPosition? CellUnder(Vector2 screenPosition)
+    {
+        if (_camera.GroundPointUnder(screenPosition) is not { } point)
+        {
+            return null;
+        }
+
+        // On the raised terrace, look again at its height.
+        if (_runner.Campaign.Port is not null && _camera.GroundPointUnder(screenPosition, 2.6f) is { } high
+            && _port.HeightAt(high.X, high.Z) > 2.5f)
+        {
+            point = high;
+        }
+
+        return new GridPosition(Mathf.RoundToInt(point.X), Mathf.RoundToInt(point.Z));
+    }
 
     private void BuildWorld()
     {
@@ -539,6 +811,11 @@ public partial class Main : Node3D
         _ship.AddChild(_shipContents);
         _deck = new ShipView { Name = "ShipView" };
         _shipContents.AddChild(_deck);
+
+        _port = new PortView { Name = "PortView" };
+        AddChild(_port);
+        _portFigures = new Node3D { Name = "PortFigures" };
+        AddChild(_portFigures);
 
         for (var i = 0; i < 3; i++)
         {
@@ -563,6 +840,60 @@ public partial class Main : Node3D
     private string? _developerChoice;
     private Expedition.Simulation.Voyage.SailPlan? _developerSail;
     private double? _forceBilge;
+    private string? _developerSelect;
+    private string? _developerLook;
+    private bool _developerTalk;
+    private int? _developerOffer;
+    private float? _developerYaw;
+
+    // For screenshots of the port: --select=person.velho opens their card (and --talk walks the captain
+    // over and talks, at once; --offer=N then offers that advance); --look=x,z points the camera; --yaw=degrees turns it.
+    private void DeveloperPort()
+    {
+        if (_developerSelect is { } person && _runner.CharacterFor(person) is { } character)
+        {
+            _selected = character.Id;
+            if (_developerTalk && _runner.Campaign.CaptainId is { } captain && _runner.Campaign.Placements.TryGetValue(character.Id, out var there))
+            {
+                var cell = there.CellAt(_runner.Campaign.Clock.Tick);
+                var location = _content.Locations[there.LocationId];
+                foreach (var d in new[] { (0, 1), (1, 0), (-1, 0), (0, -1) })
+                {
+                    var next = new GridPosition(cell.X + d.Item1, cell.Y + d.Item2);
+                    if (location.IsWalkable(next) && _runner.MoveCharacter(captain, next).Succeeded)
+                    {
+                        break;
+                    }
+                }
+
+                for (var i = 0; i < 60 && _runner.WhyCannotSpeak(character.Id) is not null; i++)
+                {
+                    _runner.Advance(1);
+                }
+
+                var (_, said) = _runner.TalkTo(character.Id);
+                _portHud.Say(said);
+                if (_developerOffer is { } advance)
+                {
+                    var offered = _runner.Offer(character.Id, advance);
+                    _portHud.Say(offered.Succeeded ? $"{character.Name} signs on." : offered.Reason);
+                    _runner.Advance(5);
+                }
+            }
+        }
+
+        if (_developerLook?.Split(',') is [var x, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var lookX)
+            && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var lookZ))
+        {
+            _camera.Target = new Vector3(lookX, 0, lookZ);
+            _follow = false;
+        }
+
+        if (_developerYaw is { } yaw)
+        {
+            _camera.SetYaw(yaw);
+        }
+    }
 
     private void ReadDeveloperArguments(ref ulong seed)
     {
@@ -583,6 +914,11 @@ public partial class Main : Node3D
                 case "sail" when Enum.TryParse<Expedition.Simulation.Voyage.SailPlan>(value, out var plan): _developerSail = plan; break;
                 case "bilge" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var bilge): _forceBilge = bilge; break;
                 case "zoom" when float.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var zoom): _startZoom = zoom; break;
+                case "select": _developerSelect = value; break;
+                case "look": _developerLook = value; break;
+                case "talk": _developerTalk = true; break;
+                case "offer" when int.TryParse(value, out var advance): _developerOffer = advance; break;
+                case "yaw" when float.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var yaw): _developerYaw = yaw; break;
             }
         }
     }

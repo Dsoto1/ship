@@ -155,7 +155,7 @@ public class PortTests
         var velho = Id(runner, "person.velho");
         Assert.NotNull(runner.Campaign.Knowledge.Assess(velho, "fact.velho_brennish"));
         var noticed = runner.Campaign.Chronicle.Entries.Single(e => e.Kind == ChronicleEntryKind.Noticed && e.Characters[0] == velho);
-        Assert.Equal("You noticed something about Duarte Velho: seen meeting the brennish trader in the alley after dark.",
+        Assert.Equal("You noticed something about Duarte Velho: seen meeting the Brennish trader in the alley after dark.",
             new ChronicleFormatter(runner.Campaign, Shipped).Format(noticed));
     }
 
@@ -422,5 +422,19 @@ public class PortTests
         AdvanceTo(runner, 1, 12, 5);
 
         Assert.Equal("task.drink", Doing(runner, "person.bartolo"));
+    }
+
+    [Fact]
+    public void TheRecordSaysWhoToldYouAndHowSureYouCanBe()
+    {
+        var runner = Port();
+        var rodrigo = Id(runner, "person.rodrigo");
+        AdvanceTo(runner, 1, 13, 15);
+        ApproachPerson(runner, "person.andres");
+        runner.AskAbout(Id(runner, "person.andres"), rodrigo);
+
+        var line = KnowledgeText.Lines(runner.Campaign.Knowledge, rodrigo, Shipped, runner.Campaign.Characters).Single(l => l.Topic == "skill.rigging");
+
+        Assert.Equal(("Rigging", "skilled", "Vouched for by Andrés", "Fairly sure"), (line.Name, line.Value, line.Source, line.Confidence));
     }
 }

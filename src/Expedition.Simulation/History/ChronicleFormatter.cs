@@ -109,7 +109,9 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
     }
 
     private string Secret(string? id) =>
-        content.Port?.People.SelectMany(p => p.Secrets).FirstOrDefault(s => s.Id == id)?.Text.ToLowerInvariant() ?? "something odd.";
+        content.Port?.People.SelectMany(p => p.Secrets).FirstOrDefault(s => s.Id == id)?.Text is { Length: > 0 } text
+            ? char.ToLowerInvariant(text[0]) + text[1..]
+            : "something odd.";
 
     private string Ship() => campaign.Voyage?.ShipName ?? "the ship";
 

@@ -18,6 +18,9 @@ public partial class CameraRig : Camera3D
     /// <summary>World point the camera looks at.</summary>
     public Vector3 Target { get; set; }
 
+    /// <summary>True once the player has panned by hand since this was last cleared.</summary>
+    public bool Panned { get; set; }
+
     public override void _Ready()
     {
         Projection = ProjectionType.Orthogonal;
@@ -40,6 +43,7 @@ public partial class CameraRig : Camera3D
             var forward = new Vector3(-Basis.Z.X, 0, -Basis.Z.Z).Normalized();
             var right = new Vector3(Basis.X.X, 0, Basis.X.Z).Normalized();
             Target += (right * input.X - forward * input.Y) * Size * 0.6f * (float)delta;
+            Panned = true;
         }
 
         Apply();
@@ -57,6 +61,13 @@ public partial class CameraRig : Camera3D
             if (key.Keycode == Key.Q) _yaw += 90f;
             if (key.Keycode == Key.E) _yaw -= 90f;
         }
+    }
+
+    /// <summary>Turns the camera to look from this compass direction, in degrees.</summary>
+    public void SetYaw(float degrees)
+    {
+        _yaw = degrees;
+        Apply();
     }
 
     /// <summary>The point on the horizontal plane at height <paramref name="y"/> under the given screen position.</summary>
