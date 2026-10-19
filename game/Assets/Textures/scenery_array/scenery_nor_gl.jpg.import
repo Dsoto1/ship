@@ -1,0 +1,29 @@
+[remap]
+
+importer="2d_array_texture"
+type="CompressedTexture2DArray"
+uid="uid://pkjk2u7geo6n"
+path.s3tc="res://.godot/imported/scenery_nor_gl.jpg-35938b2785bfb4b47fcf76507347bc58.s3tc.ctexarray"
+metadata={
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
+}
+
+[deps]
+
+source_file="res://Assets/Textures/scenery_array/scenery_nor_gl.jpg"
+dest_files=["res://.godot/imported/scenery_nor_gl.jpg-35938b2785bfb4b47fcf76507347bc58.s3tc.ctexarray"]
+
+[params]
+
+compress/mode=2
+compress/high_quality=false
+compress/lossy_quality=0.7
+compress/uastc_level=0
+compress/rdo_quality_loss=0.0
+compress/hdr_compression=1
+compress/channel_pack=0
+mipmaps/generate=true
+mipmaps/limit=-1
+slices/horizontal=1
+slices/vertical=3

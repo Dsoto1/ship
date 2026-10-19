@@ -32,6 +32,7 @@ This file tracks status and breaks the next work into tickets.
 | R2b | Leads journal and the Chamber's notices; more work loops (steps 3–5) | Done (2026-10-19), awaiting the owner's manual test |
 | UI-1 | UI/UX design system, first pass: tokens, HUD shell, management drawer, alerts, uncertainty vocabulary (UI_UX §68 steps 1–11) | Done (2026-10-19), awaiting the owner's manual test |
 | VP-0 | Port visual pass, step 0: batching and lighter figures (PORT_VISUAL_PASS §5) | Done (2026-10-19) |
+| A-1 | Asset pass: CC0 materials for stone, plaster, timber, roofs, deck and ground; recorded sounds of work (D-021) | Done (2026-10-19) |
 | VP-1 | Port visual pass, first block, Chandler's Quay: lighting, ground, clusters, kits, ship, depth, rain, sound (PORT_VISUAL_PASS §5–6) | Done (2026-10-19), awaiting the owner's review |
 | R2c | Tier C crowd, background ships, ship preparation states, visible cargo (steps 6, 9) | Done (2026-10-19) |
 | R2d | Sound zones, port weather and reactions, ambient micro-events (steps 10–12) | Planned |
@@ -825,3 +826,63 @@ lots; `--after=MINUTES` then lets time pass.
 4. Sign on hands: sea chests appear forward.
 5. Run to day 3 at dawn: people on the quay to see her off.
 6. Pan south to see the ships at anchor and the boats rowing.
+
+## A-1 — First asset pass: real materials and recorded sounds
+
+The asset half of the hybrid pipeline (D-021), now that the CC0 hosts are reachable.
+
+**Where the assets come from:**
+- `tools/fetch_assets.py` fetches everything listed in `game/Assets/assets.json` and writes
+  `game/Assets/CREDITS.md`, giving each file's author, source page and licence.
+- All of it is CC0: six Poly Haven textures at 1K and 38 Kenney sound files.
+- `game/Assets` is about 11 MB.
+- Textures are imported VRAM-compressed with mipmaps; the `.import` settings are committed.
+
+**One scenery material** (`SceneryMaterial`, `scenery.gdshader`):
+- Every built box keeps its palette colour. Plaster, stone and timber add photographed detail:
+  variation, relief and roughness.
+- Each photograph is divided by its own average colour, so the art direction keeps the colour.
+- Textures are mapped in world space from the three axes, at their true size in metres; nothing
+  needs UVs.
+- The surface follows from the colour: pale and warm is plaster, grey is stone, brown is timber, and
+  cloth stays flat. The choice rides in the vertex alpha, so draw calls are unchanged (about 560 at
+  gameplay zoom, as before).
+- The Garza's hull and the ships at anchor use it too.
+
+**Ground, roofs and deck:**
+- **Ground:** photographed cobbles in the streets and sea-worn blocks on the quay. About half the
+  photograph's contrast is kept, and a turned second sample hides the repeat. The worn routes, grime,
+  damp, litter and gutter from VP-1 sit on top.
+- **Roofs:** photographed clay tiles with light lichen.
+- **Deck:** photographed planks running fore and aft.
+- **Rain:** wets all of them.
+
+**Recorded sounds of work** (`PortSound`), each played when and where the work is:
+- mallets, planks and the adze for each carpenter or cooper at work;
+- the anvil while the smith works;
+- cups set down in the tavern;
+- coins at the market;
+- the fishwife's knife;
+- the Garza's timbers creaking;
+- the chapel bell striking the hour by day (not at the faster speeds).
+
+The surf, crowd, wind and rain beds are still generated until Freesound is set up (needs
+`FREESOUND_API_KEY`).
+
+**Screenshots:** `docs/screenshots/a1-before-after-market.jpg`, `a1-rain-dusk-yard.jpg`,
+`a1-close.jpg`.
+
+**Limits:**
+- figures are still primitive: the rigged human base needs Quaternius, through itch.io, which is
+  not yet allowed;
+- props are still built from code;
+- ambientCG needs `acg-download.struffelproductions.com` allowed;
+- the ground at far zoom is a little paler and greyer than the old procedural stone.
+
+**Manual test (macOS):**
+1. `git pull`. If it refuses because of untracked `.uid` files, delete those files and pull again.
+2. Open the project once in the Godot editor so it imports the new textures, then Build and Cmd+B.
+3. Zoom in on the market: the cobbles, plaster, cask staves and roof tiles are photographed.
+4. Walk to the yard and listen: mallets and the anvil.
+5. At the top of an hour by day, the chapel bell.
+6. Report the frame rate.

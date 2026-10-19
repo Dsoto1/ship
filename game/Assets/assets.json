@@ -1,0 +1,93 @@
+[
+ {
+  "source": "polyhaven",
+  "id": "cobblestone_floor_08",
+  "use": "Cobbled streets and the quay"
+ },
+ {
+  "source": "polyhaven",
+  "id": "seaworn_sandstone_brick",
+  "use": "Quay wall, terrace, vaults, stone buildings",
+  "layer": 1
+ },
+ {
+  "source": "polyhaven",
+  "id": "white_rough_plaster",
+  "use": "Limewashed and ochre plaster walls",
+  "layer": 0
+ },
+ {
+  "source": "polyhaven",
+  "id": "weathered_brown_planks",
+  "use": "Timber framing, stalls, fences, crates, piers",
+  "layer": 2
+ },
+ {
+  "source": "polyhaven",
+  "id": "clay_roof_tiles_02",
+  "use": "Roof tiles"
+ },
+ {
+  "source": "polyhaven",
+  "id": "wood_floor_deck",
+  "use": "The Garza's deck"
+ },
+ {
+  "source": "kenney",
+  "name": "Impact Sounds",
+  "page": "https://kenney.nl/assets/impact-sounds",
+  "folder": "Audio/impact",
+  "url": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip",
+  "use": "Mallets, planks, the anvil, the chapel bell, cups set down",
+  "keep": [
+   "impactWood_heavy_000.ogg",
+   "impactWood_heavy_001.ogg",
+   "impactWood_heavy_002.ogg",
+   "impactWood_heavy_003.ogg",
+   "impactWood_heavy_004.ogg",
+   "impactWood_medium_000.ogg",
+   "impactWood_medium_001.ogg",
+   "impactWood_medium_002.ogg",
+   "impactWood_medium_003.ogg",
+   "impactWood_medium_004.ogg",
+   "impactPlank_medium_000.ogg",
+   "impactPlank_medium_001.ogg",
+   "impactPlank_medium_002.ogg",
+   "impactPlank_medium_003.ogg",
+   "impactPlank_medium_004.ogg",
+   "impactMetal_heavy_000.ogg",
+   "impactMetal_heavy_001.ogg",
+   "impactMetal_heavy_002.ogg",
+   "impactMetal_heavy_003.ogg",
+   "impactMetal_heavy_004.ogg",
+   "impactBell_heavy_000.ogg",
+   "impactBell_heavy_001.ogg",
+   "impactBell_heavy_002.ogg",
+   "impactBell_heavy_003.ogg",
+   "impactBell_heavy_004.ogg",
+   "impactPlate_light_000.ogg",
+   "impactPlate_light_001.ogg",
+   "impactPlate_light_002.ogg",
+   "impactPlate_light_003.ogg",
+   "impactPlate_light_004.ogg"
+  ]
+ },
+ {
+  "source": "kenney",
+  "name": "RPG Audio",
+  "page": "https://kenney.nl/assets/rpg-audio",
+  "folder": "Audio/rpg",
+  "url": "https://kenney.nl/media/pages/assets/rpg-audio/8e99002d76-1677590336/kenney_rpg-audio.zip",
+  "use": "Coins at the stalls, the fishwife's knife, the adze, ship's timbers creaking",
+  "keep": [
+   "handleCoins.ogg",
+   "handleCoins2.ogg",
+   "knifeSlice.ogg",
+   "knifeSlice2.ogg",
+   "chop.ogg",
+   "creak1.ogg",
+   "creak2.ogg",
+   "creak3.ogg"
+  ]
+ }
+]

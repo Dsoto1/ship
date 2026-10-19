@@ -14,6 +14,7 @@ public sealed class MeshBatcher
 
     private readonly Dictionary<(Material Material, int X, int Z), SurfaceTool> _indexed = [];
     private readonly Dictionary<(Material Material, int X, int Z), SurfaceTool> _loose = [];
+    private readonly HashSet<SurfaceTool> _mapped = [];
 
     /// <summary>Adds a primitive mesh (a box, a cylinder) placed by <paramref name="transform"/>.</summary>
     public void Add(Mesh mesh, Transform3D transform, Material material)
@@ -29,6 +30,11 @@ public sealed class MeshBatcher
     public void AddColoured(Mesh mesh, Transform3D transform, Color colour)
     {
         var tool = Tool(_loose, Coloured, transform.Origin, indexed: false);
+        if (Coloured == SceneryMaterial.Shared)
+        {
+            colour.A = SceneryMaterial.SurfaceOf(colour);
+        }
+
         var arrays = mesh.SurfaceGetArrays(0);
         var vertices = arrays[(int)Mesh.ArrayType.Vertex].AsVector3Array();
         var normals = arrays[(int)Mesh.ArrayType.Normal].AsVector3Array();
@@ -42,22 +48,50 @@ public sealed class MeshBatcher
         }
     }
 
-    /// <summary>The shared material for <see cref="AddColoured"/>: matte, colour from the vertices.</summary>
-    public StandardMaterial3D Coloured { get; } = new() { VertexColorUseAsAlbedo = true, VertexColorIsSrgb = true, Roughness = 0.9f };
+    /// <summary>
+    /// The shared material for <see cref="AddColoured"/>: colour from the vertices, with plaster, stone
+    /// and timber detail where the colour calls for it (<see cref="SceneryMaterial"/>).
+    /// </summary>
+    public Material Coloured { get; }
+
+    /// <summary>
+    /// A batcher for scenery; or, with <paramref name="ownMaterial"/>, one with a plain vertex-coloured
+    /// material of its own, for pieces that fade or change on their own (foreground rigging).
+    /// </summary>
+    public MeshBatcher(bool ownMaterial = false)
+    {
+        Coloured = ownMaterial
+            ? new StandardMaterial3D { VertexColorUseAsAlbedo = true, VertexColorIsSrgb = true, Roughness = 0.9f }
+            : SceneryMaterial.Shared;
+    }
 
     /// <summary>
     /// Adds loose triangles (roof slopes, gables, ground) with UVs and an optional vertex colour.
-    /// Normals are generated on commit.
+    /// Normals are generated on commit, or, in the shared scenery material, made flat here.
     /// </summary>
     public void AddTriangles(Material material, IReadOnlyList<Vector3> vertices, IReadOnlyList<Vector2>? uvs = null, Color? colour = null)
     {
         var centre = Vector3.Zero;
         foreach (var v in vertices) centre += v;
         var tool = Tool(_loose, material, centre / vertices.Count, indexed: false);
+        var coloured = material == SceneryMaterial.Shared;
         for (var i = 0; i < vertices.Count; i++)
         {
-            if (colour is { } c) tool.SetColor(c);
-            if (uvs is not null) tool.SetUV(uvs[i]);
+            if (colour is { } c) tool.SetColor(coloured ? c with { A = SceneryMaterial.SurfaceOf(c) } : c);
+            if (uvs is not null)
+            {
+                tool.SetUV(uvs[i]);
+                _mapped.Add(tool);
+            }
+
+
+            // The scenery material's other parts bring their own normals, so these get flat ones here.
+            if (coloured && i % 3 == 0 && i + 2 < vertices.Count)
+            {
+                var normal = (vertices[i + 2] - vertices[i]).Cross(vertices[i + 1] - vertices[i]).Normalized();
+                tool.SetNormal(normal);
+            }
+
             tool.AddVertex(vertices[i]);
         }
     }
@@ -73,9 +107,15 @@ public sealed class MeshBatcher
 
         foreach (var ((material, _, _), tool) in _loose)
         {
-            if (material != Coloured)
+            if (material != Coloured && material != SceneryMaterial.Shared)
             {
                 tool.GenerateNormals();
+
+                // Surfaces with UVs (ground, roofs) get tangents for their normal maps.
+                if (_mapped.Contains(tool))
+                {
+                    tool.GenerateTangents();
+                }
             }
 
             made.Add(new MeshInstance3D { Mesh = tool.Commit(), MaterialOverride = material });
@@ -88,6 +128,7 @@ public sealed class MeshBatcher
 
         _indexed.Clear();
         _loose.Clear();
+        _mapped.Clear();
         return made;
     }
 

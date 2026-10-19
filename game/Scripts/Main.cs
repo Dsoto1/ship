@@ -425,11 +425,18 @@ public partial class Main : Node3D
     {
         var market = 0;
         var workers = 0;
+        var smiths = 0;
+        var fish = 0;
         foreach (var (id, task) in _runner.Campaign.ActiveTasks)
         {
             if (task.DefinitionId is "task.sell_fish" or "task.buy_at_market" or "task.trade_goods" or "task.gossip" or "task.play")
             {
                 market++;
+                fish += task.DefinitionId == "task.sell_fish" ? 1 : 0;
+            }
+            else if (task.DefinitionId == "task.smithing")
+            {
+                smiths++;
             }
             else if (_content.Tasks[task.DefinitionId].Skill is "skill.carpentry" or "skill.crafting")
             {
@@ -437,8 +444,8 @@ public partial class Main : Node3D
             }
         }
 
-        _portSound.Activity = (market, workers);
-        _portSound.Update(new Vector2(_camera.Target.X, _camera.Target.Z), hour, _portWet, delta);
+        _portSound.Activity = (market, workers, smiths, fish);
+        _portSound.Update(new Vector2(_camera.Target.X, _camera.Target.Z), hour, _portWet, delta, (float)TicksPerSecond[_speedIndex]);
     }
 
     // Foreground pieces (the hoist, a moored ship's rig) thin out while they stand between the camera and

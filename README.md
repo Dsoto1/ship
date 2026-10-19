@@ -60,6 +60,13 @@ A new game opens in port, on the Bocana waterfront. **In port:**
 
 Saves go to `~/Library/Application Support/The Expedition/saves/` on macOS.
 
+## Assets
+
+CC0 textures and sounds live in `game/Assets`, listed in `game/Assets/assets.json` with their sources
+and authors in `game/Assets/CREDITS.md`. They are committed; `python3 tools/fetch_assets.py` fetches them
+again or adds new ones from the list. Open the project in the Godot editor once after pulling new
+assets so it imports them.
+
 ## Docs
 
 - [`docs/GAME_VISION.md`](docs/GAME_VISION.md) — vision, design pillars, roadmap; gameplay authority (the Agent Handoff)

@@ -29,10 +29,8 @@ public partial class PortView : Node3D
     private readonly Dictionary<Color, StandardMaterial3D> _materials = [];
     private readonly List<OmniLight3D> _lanterns = [];
     private MeshBatcher _batch = new();
-    private StandardMaterial3D _scenery = null!;
     private readonly List<(Node3D Node, StandardMaterial3D Material, Aabb Bounds)> _foreground = [];
     private StandardMaterial3D _glass = null!;
-    private StandardMaterial3D _gableMaterial = null!;
     private readonly List<OmniLight3D> _fires = [];
     private ShaderMaterial _roof = null!;
     private ShaderMaterial _ground = null!;
@@ -82,8 +80,12 @@ public partial class PortView : Node3D
         _ground.SetShaderParameter("quay_from", 29.5f);
         _ground.SetShaderParameter("detail", GroundDetail.Build(location, _tasks));
         _ground.SetShaderParameter("map_size", new Vector2(location.Width, location.Height));
+        Textures(_ground, "cobble", "cobblestone_floor_08");
+        _ground.SetShaderParameter("scenery_tex", GD.Load<TextureLayered>("res://Assets/Textures/scenery_array/scenery_diff.jpg"));
+        _ground.SetShaderParameter("scenery_normal", GD.Load<TextureLayered>("res://Assets/Textures/scenery_array/scenery_nor_gl.jpg"));
+        _ground.SetShaderParameter("scenery_rough", GD.Load<TextureLayered>("res://Assets/Textures/scenery_array/scenery_rough.jpg"));
+        Textures(_roof, "tiles", "clay_roof_tiles_02");
         _glass = new StandardMaterial3D { AlbedoColor = new Color(1f, 0.8f, 0.45f), EmissionEnabled = true, Emission = new Color(1f, 0.7f, 0.35f), EmissionEnergyMultiplier = 0.2f };
-        _gableMaterial = new StandardMaterial3D { VertexColorUseAsAlbedo = true, VertexColorIsSrgb = true, Roughness = 0.95f, CullMode = BaseMaterial3D.CullModeEnum.Disabled };
 
         var ship = location.Features.FirstOrDefault(f => f.Kind == "ship");
         Berth = ship is null ? new Vector3(31, 0, 39.3f) : new Vector3((ship.X0 + ship.X1) / 2f, 0, 39.3f);
@@ -96,8 +98,16 @@ public partial class PortView : Node3D
 
         BuildTownBehind();
         BuildLights();
-        _scenery = _batch.Coloured;
         _batch.Commit(this);
+    }
+
+    // Hands a shader the colour, normal and roughness maps of a CC0 texture (Assets/CREDITS.md).
+    private static void Textures(ShaderMaterial material, string name, string asset)
+    {
+        var folder = $"res://Assets/Textures/{asset}/{asset}";
+        material.SetShaderParameter(name == "cobble" ? "cobble_tex" : name, GD.Load<Texture2D>($"{folder}_diff_1k.jpg"));
+        material.SetShaderParameter($"{name}_normal", GD.Load<Texture2D>($"{folder}_nor_gl_1k.jpg"));
+        material.SetShaderParameter($"{name}_rough", GD.Load<Texture2D>($"{folder}_rough_1k.jpg"));
     }
 
     /// <summary>Lanterns, forge and cook fire by the light of day; wet stone in rain.</summary>
@@ -119,8 +129,8 @@ public partial class PortView : Node3D
         _ground.SetShaderParameter("wetness", wetness);
 
         // Rain darkens and glosses everything that stands out in it, not only the ground.
-        _scenery.Roughness = Mathf.Lerp(0.9f, 0.45f, wetness);
-        _scenery.AlbedoColor = Colors.White.Lerp(new Color(0.8f, 0.8f, 0.82f), wetness);
+        SceneryMaterial.Wetness = wetness;
+        _roof.SetShaderParameter("wetness", wetness);
     }
 
     // ---- ground, terrace, steps, quay edge
@@ -271,8 +281,8 @@ public partial class PortView : Node3D
                 break;
             case "canvas":
                 // Sailcloth spread on the ground for mending.
-                AddBox(middle + new Vector3(0, 0.02f, 0), new Vector3(right - left, 0.03f, front - back), Canvas);
-                AddBox(middle + new Vector3(0.6f, 0.04f, 0.2f), new Vector3(0.9f, 0.02f, 0.5f), Canvas.Darkened(0.12f));
+                AddBox(middle + new Vector3(0, 0.02f, 0), new Vector3(right - left, 0.03f, front - back), SceneryMaterial.Cloth(Canvas));
+                AddBox(middle + new Vector3(0.6f, 0.04f, 0.2f), new Vector3(0.9f, 0.02f, 0.5f), SceneryMaterial.Cloth(Canvas.Darkened(0.12f)));
                 break;
             case "fence":
                 Fence(left, right, back, front);
@@ -413,7 +423,7 @@ public partial class PortView : Node3D
     private void ForegroundPiece(Action draw)
     {
         var scenery = _batch;
-        _batch = new MeshBatcher();
+        _batch = new MeshBatcher(ownMaterial: true);
         draw();
         var root = new Node3D();
         AddChild(root);
@@ -478,7 +488,7 @@ public partial class PortView : Node3D
         Trestle(at + new Vector3(2.4f, 0, 1.3f), 1.6f, 0.5f);
         for (var i = 0; i < 3; i++)
         {
-            AddCylinder(at + new Vector3(2.4f, 0.86f + (i == 2 ? 0.2f : 0f), 1.16f + (i == 2 ? 0.14f : i * 0.28f)), 0.13f, 1.4f, Canvas.Darkened(0.04f * i), rotation: new Vector3(0, 0, 90));
+            AddCylinder(at + new Vector3(2.4f, 0.86f + (i == 2 ? 0.2f : 0f), 1.16f + (i == 2 ? 0.14f : i * 0.28f)), 0.13f, 1.4f, SceneryMaterial.Cloth(Canvas.Darkened(0.04f * i)), rotation: new Vector3(0, 0, 90));
         }
 
         // The steelyard: a post, a beam, a pan.
@@ -618,7 +628,7 @@ public partial class PortView : Node3D
 
     private void Gable(float x, float eave, float ridge, float back, float front, float ridgeZ, Color wall)
     {
-        _batch.AddTriangles(_gableMaterial, [new Vector3(x, eave, back), new Vector3(x, ridge, ridgeZ), new Vector3(x, eave, front)], colour: wall);
+        _batch.AddTriangles(_batch.Coloured, [new Vector3(x, eave, back), new Vector3(x, ridge, ridgeZ), new Vector3(x, eave, front)], colour: wall);
     }
 
     // A dark arched opening on a south face: a door, a vault mouth.
@@ -656,7 +666,7 @@ public partial class PortView : Node3D
         {
             AddBox(at + new Vector3(-0.3f, 2.7f, 0), new Vector3(0.12f, 5f, 0.12f), Timber);
             AddBox(at + new Vector3(-0.3f, 4.1f, 0), new Vector3(0.08f, 0.08f, 3.2f), Timber);
-            AddBox(at + new Vector3(-0.3f, 3.3f, 0), new Vector3(0.04f, 1.4f, 2.6f), Canvas.Darkened(0.15f), rotation: new Vector3(0, 0, 4));
+            AddBox(at + new Vector3(-0.3f, 3.3f, 0), new Vector3(0.04f, 1.4f, 2.6f), SceneryMaterial.Cloth(Canvas.Darkened(0.15f)), rotation: new Vector3(0, 0, 4));
         }
     }
 
@@ -865,7 +875,7 @@ public partial class PortView : Node3D
     {
         var length = (to - from).Length();
         var tilt = Mathf.Atan2(to.Y - from.Y, to.Z - from.Z) * 180f / Mathf.Pi;
-        AddBox((from + to) / 2f, new Vector3(width + 0.1f, 0.03f, length), colour, rotation: new Vector3(-tilt, 0, 0));
+        AddBox((from + to) / 2f, new Vector3(width + 0.1f, 0.03f, length), SceneryMaterial.Cloth(colour), rotation: new Vector3(-tilt, 0, 0));
     }
 
     private void Well(Vector3 at)

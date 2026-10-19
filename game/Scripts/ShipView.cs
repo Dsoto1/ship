@@ -223,10 +223,16 @@ public partial class ShipView : Node3D
         }
 
         // Close the stern below the transom.
-        AddMesh(Finish(hull), VertexColoured(0.8f));
-        AddMesh(Finish(walls), VertexColoured(0.85f));
+        // Hull and bulwarks in the shared scenery material: palette colours with photographed timber.
+        AddMesh(Finish(hull), SceneryMaterial.Shared);
+        AddMesh(Finish(walls), SceneryMaterial.Shared);
         _deckMaterial = new ShaderMaterial { Shader = GD.Load<Shader>("res://Shaders/deck.gdshader") };
-        AddMesh(Finish(deck), _deckMaterial);
+        _deckMaterial.SetShaderParameter("planks", GD.Load<Texture2D>("res://Assets/Textures/wood_floor_deck/wood_floor_deck_diff_1k.jpg"));
+        _deckMaterial.SetShaderParameter("planks_normal", GD.Load<Texture2D>("res://Assets/Textures/wood_floor_deck/wood_floor_deck_nor_gl_1k.jpg"));
+        _deckMaterial.SetShaderParameter("planks_rough", GD.Load<Texture2D>("res://Assets/Textures/wood_floor_deck/wood_floor_deck_rough_1k.jpg"));
+        deck.GenerateNormals();
+        deck.GenerateTangents();
+        AddMesh(deck.Commit(), _deckMaterial);
 
         // Stem post and bowsprit.
         AddSpar(new Vector3(CentreX, -1.6f, Length.Bow + 0.2f), new Vector3(CentreX, BulwarkTop(Length.Bow) + 0.15f, Length.Bow - 0.15f), 0.1f, HullWood);
@@ -637,7 +643,7 @@ public partial class ShipView : Node3D
     // Two triangles; <paramref name="flip"/> reverses the winding so both sides of the hull face outwards.
     private static void Quad(SurfaceTool tool, Vector3 a, Vector3 b, Vector3 c, Vector3 d, Color colour, bool flip)
     {
-        tool.SetColor(colour);
+        tool.SetColor(colour with { A = SceneryMaterial.SurfaceOf(colour) });
         if (flip)
         {
             tool.AddVertex(a); tool.AddVertex(c); tool.AddVertex(b);

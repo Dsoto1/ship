@@ -4,14 +4,17 @@ using Godot;
 namespace Expedition.Game;
 
 /// <summary>
-/// The port's sound zones (PORT_VISUAL_PASS §3.14, PORT_EXPERIENCE §15), with generated placeholder
-/// sound until CC0 recordings can be fetched (D-026). Each zone is a layer whose loudness follows how
-/// close the camera's focus is to it and how much is happening there:
+/// The port's sound zones (PORT_VISUAL_PASS §3.14, PORT_EXPERIENCE §15). Each zone's loudness follows how
+/// close the camera's focus is to it and how much is happening there. The beds are still generated
+/// (surf, crowd murmur, wind, rain) until recordings are reachable (D-026); the sounds of work are
+/// recorded CC0 samples (Kenney, <c>Assets/CREDITS.md</c>), played when and where the work is done:
 /// <list type="bullet">
-/// <item>waterfront: surf against the quay;</item>
-/// <item>market: crowd murmur, rising with the number of people at the stalls;</item>
-/// <item>workshop: knocks of mallet and saw, timed to the people hammering and sawing;</item>
-/// <item>tavern: voices and the clink of cups, busier at night;</item>
+/// <item>waterfront: surf against the quay, and the Garza's timbers creaking at her lines;</item>
+/// <item>market: crowd murmur rising with the people at the stalls, coins, the fishwife's knife;</item>
+/// <item>workshop: mallets, planks and the adze for each carpenter and cooper at work, the anvil
+/// while the smith works;</item>
+/// <item>tavern: voices and cups set down, busier at night;</item>
+/// <item>the chapel bell on the hour, by day;</item>
 /// <item>street: a quiet bed of wind.</item>
 /// </list>
 /// Rain adds its own hiss. Purely presentation: it reads the scene, never the other way.
@@ -26,9 +29,21 @@ public partial class PortSound : Node
     private Rect2 _workshop;
     private Rect2 _tavern;
     private float _waterline;
+    private Rect2 _smithy;
+    private Rect2 _fish;
+    private Vector2 _chapel;
+    private readonly Dictionary<string, AudioStream[]> _samples = [];
+    private readonly List<AudioStreamPlayer> _voices = [];
+    private readonly Dictionary<string, float> _next = [];
+    private int _lastHour = -1;
+    private int _bellStrikes;
+    private float _bellNext;
 
-    /// <summary>Activity the scene reports each frame: people at the stalls, people hammering or sawing.</summary>
-    public (int Market, int Workers) Activity { get; set; }
+    /// <summary>
+    /// Activity the scene reports each frame: people at the stalls, carpenters and coopers at work,
+    /// smiths at the anvil, fish being sold.
+    /// </summary>
+    public (int Market, int Workers, int Smiths, int Fish) Activity { get; set; }
 
     private sealed class Layer
     {
@@ -39,8 +54,6 @@ public partial class PortSound : Node
         public float Filter;
         public float Filter2;
         public float Phase;
-        public float Phase2;
-        public float Next;
     }
 
     /// <summary>Lays out the zones from the place's features.</summary>
@@ -64,11 +77,36 @@ public partial class PortSound : Node
         }
 
         _market = Of(f => f.Kind is "stall" or "well");
-        _workshop = Of(f => f.Style is "cooperage" or "smithy" or "sailloft" || f.Kind is "hull_on_stocks" or "timber" or "sawpit" or "ropewalk");
+        _workshop = Of(f => f.Style is "cooperage" or "smithy" or "sailloft" || f.Kind is "hull_on_stocks" or "timber" or "sawpit" or "ropewalk" or "planks" or "sawhorse");
         _tavern = Of(f => f.Style == "tavern");
         _waterline = location.Spots.Where(s => s.Kind == "BoardShip").Select(s => (float)s.Y).DefaultIfEmpty(34).Max();
+        _smithy = Of(f => f.Style == "smithy" || f.Kind == "anvil");
+        _fish = Of(f => f.Kind == "stall" && f.Style == "fish");
+        var chapel = Of(f => f.Style == "chapel");
+        _chapel = chapel.GetCenter();
 
-        foreach (var name in new[] { "surf", "market", "workshop", "tavern", "street", "rain" })
+        // Recorded sounds of work (CC0, Kenney): every take of each kind, picked at random each time.
+        AudioStream[] Load(string folder, string prefix) => DirAccess.GetFilesAt($"res://Assets/Audio/{folder}")
+            .Where(f => f.StartsWith(prefix, StringComparison.Ordinal) && (f.EndsWith(".ogg", StringComparison.Ordinal) || f.EndsWith(".ogg.import", StringComparison.Ordinal)))
+            .Select(f => f.Replace(".import", ""))
+            .Distinct()
+            .Select(f => GD.Load<AudioStream>($"res://Assets/Audio/{folder}/{f}"))
+            .ToArray();
+        _samples["mallet"] = [.. Load("impact", "impactWood_heavy"), .. Load("impact", "impactWood_medium"), .. Load("impact", "impactPlank_medium"), .. Load("rpg", "chop")];
+        _samples["anvil"] = Load("impact", "impactMetal_heavy");
+        _samples["cup"] = Load("impact", "impactPlate_light");
+        _samples["coins"] = Load("rpg", "handleCoins");
+        _samples["knife"] = Load("rpg", "knifeSlice");
+        _samples["creak"] = Load("rpg", "creak");
+        _samples["bell"] = Load("impact", "impactBell_heavy");
+        for (var i = 0; i < 10; i++)
+        {
+            var voice = new AudioStreamPlayer();
+            AddChild(voice);
+            _voices.Add(voice);
+        }
+
+        foreach (var name in new[] { "surf", "market", "tavern", "street", "rain" })
         {
             var player = new AudioStreamPlayer { Stream = new AudioStreamGenerator { MixRate = MixRate, BufferLength = 0.25f }, VolumeDb = -80 };
             AddChild(player);
@@ -81,7 +119,8 @@ public partial class PortSound : Node
     /// Sets each layer's loudness from where the camera is looking, the hour, and the rain, then feeds the
     /// generators. <paramref name="listener"/> is in map cells (x, row).
     /// </summary>
-    public void Update(Vector2 listener, float hour, float rain, float delta)
+    /// <param name="pace">Game minutes per real second: no work is heard while paused, no bell at high speed.</param>
+    public void Update(Vector2 listener, float hour, float rain, float delta, float pace = 1f)
     {
         if (_layers.Count == 0)
         {
@@ -91,11 +130,10 @@ public partial class PortSound : Node
         float Near(Rect2 zone, float reach) => Mathf.Clamp(1f - Distance(zone, listener) / reach, 0, 1);
         var day = hour is > 6.5f and < 20.5f ? 1f : 0.25f;
         var night = hour is > 19f or < 2f ? 1f : 0.35f;
-        var (market, workers) = Activity;
+        var (market, workers, smiths, fish) = Activity;
 
         _layers["surf"].Target = 0.35f + 0.45f * Mathf.Clamp(1f - Mathf.Abs(listener.Y - _waterline) / 18f, 0, 1);
         _layers["market"].Target = Near(_market, 18) * Mathf.Clamp(market / 6f, 0.15f, 1f) * day * 0.6f;
-        _layers["workshop"].Target = Near(_workshop, 20) * Mathf.Clamp(workers / 3f, 0f, 1f) * 0.7f;
         _layers["tavern"].Target = Near(_tavern, 14) * (0.25f + 0.6f * night);
         _layers["street"].Target = 0.12f;
         _layers["rain"].Target = rain * 0.55f;
@@ -104,8 +142,84 @@ public partial class PortSound : Node
         {
             layer.Volume = Mathf.MoveToward(layer.Volume, layer.Target, delta * 0.8f);
             layer.Player.VolumeDb = layer.Volume < 0.01f ? -80 : Mathf.LinearToDb(layer.Volume);
-            Fill(name, layer, workers);
+            Fill(name, layer);
         }
+
+        if (pace <= 0)
+        {
+            return;
+        }
+
+        // The sounds of work, each at its own rhythm and as loud as the listener is near it.
+        Now("mallet", delta, workers > 0 ? Mathf.Max(0.6f, 2.2f / workers) : -1, 0.8f, Near(_workshop, 20) * 0.6f);
+        Now("anvil", delta, smiths > 0 ? 1.1f : -1, 0.5f, Near(_smithy, 16) * 0.7f);
+        Now("cup", delta, 3.5f, 2f, Near(_tavern, 14) * (0.25f + 0.5f * night) * 0.8f);
+        Now("coins", delta, market > 0 ? 18f / market : -1, 4f, Near(_market, 14) * day * 0.6f);
+        Now("knife", delta, fish > 0 ? 3f : -1, 2f, Near(_fish, 10) * day * 0.55f);
+        Now("creak", delta, 6f, 5f, Mathf.Clamp(1f - Mathf.Abs(listener.Y - _waterline) / 10f, 0, 1) * 0.45f);
+
+        // The chapel bell tells the hour by day: one stroke for each hour of the clock, while time runs gently.
+        var whole = (int)hour;
+        if (whole != _lastHour)
+        {
+            if (_lastHour >= 0 && whole is >= 6 and <= 21 && pace <= 10f)
+            {
+                _bellStrikes = Math.Min((whole + 11) % 12 + 1, 6);
+                _bellNext = 0;
+            }
+
+            _lastHour = whole;
+        }
+
+        if (_bellStrikes > 0 && (_bellNext -= delta) <= 0)
+        {
+            Play("bell", 0.25f + 0.5f * Mathf.Clamp(1f - _chapel.DistanceTo(listener) / 40f, 0, 1), 1f);
+            _bellStrikes--;
+            _bellNext = 1.8f;
+        }
+    }
+
+    // Plays a take of <paramref name="kind"/> when its time comes: every <paramref name="every"/> seconds
+    // give or take <paramref name="spread"/>, or never while <paramref name="every"/> is negative.
+    private void Now(string kind, float delta, float every, float spread, float volume)
+    {
+        if (every < 0)
+        {
+            _next.Remove(kind);
+            return;
+        }
+
+        if (!_next.TryGetValue(kind, out var wait))
+        {
+            _next[kind] = every * _random.Randf();
+            return;
+        }
+
+        wait -= delta;
+        if (wait <= 0)
+        {
+            if (volume > 0.02f)
+            {
+                Play(kind, volume, _random.RandfRange(0.9f, 1.1f));
+            }
+
+            wait = Mathf.Max(0.15f, every + _random.RandfRange(-spread, spread) * 0.5f);
+        }
+
+        _next[kind] = wait;
+    }
+
+    private void Play(string kind, float volume, float pitch)
+    {
+        if (!_samples.TryGetValue(kind, out var takes) || takes.Length == 0 || _voices.FirstOrDefault(v => !v.Playing) is not { } voice)
+        {
+            return;
+        }
+
+        voice.Stream = takes[_random.RandiRange(0, takes.Length - 1)];
+        voice.VolumeDb = Mathf.LinearToDb(volume);
+        voice.PitchScale = pitch;
+        voice.Play();
     }
 
     private static float Distance(Rect2 zone, Vector2 point)
@@ -116,7 +230,7 @@ public partial class PortSound : Node
     }
 
     // Generated placeholders: filtered noise shaped for each kind of place.
-    private void Fill(string name, Layer layer, int workers)
+    private void Fill(string name, Layer layer)
     {
         if (layer.Playback is not { } playback)
         {
@@ -144,33 +258,6 @@ public partial class PortSound : Node
                     layer.Phase += 1f / MixRate;
                     var flutter = 0.6f + 0.4f * Mathf.Sin(layer.Phase * 21f + Mathf.Sin(layer.Phase * 3.1f) * 4f);
                     sample = (layer.Filter - layer.Filter2) * flutter * 2.2f;
-                    if (name == "tavern")
-                    {
-                        // Now and then a cup set down.
-                        layer.Next -= 1f / MixRate;
-                        if (layer.Next <= 0)
-                        {
-                            layer.Next = 0.6f + _random.Randf() * 2.5f;
-                            layer.Phase2 = 1f;
-                        }
-
-                        layer.Phase2 *= 0.9985f;
-                        sample += Mathf.Sin(layer.Phase * 2600f * Mathf.Tau) * layer.Phase2 * 0.25f;
-                    }
-
-                    break;
-                case "workshop":
-                    // Knocks of mallet on wood, faster with more hands at work.
-                    layer.Next -= 1f / MixRate;
-                    if (layer.Next <= 0 && workers > 0)
-                    {
-                        layer.Next = (0.5f + _random.Randf() * 0.7f) / Mathf.Max(1, workers * 0.6f);
-                        layer.Phase2 = 1f;
-                    }
-
-                    layer.Phase2 *= 0.9965f;
-                    layer.Phase += 1f / MixRate;
-                    sample = (Mathf.Sin(layer.Phase * 180f * Mathf.Tau) * 0.7f + white * 0.3f) * layer.Phase2;
                     break;
                 case "rain":
                     layer.Filter = layer.Filter * 0.4f + white * 0.6f;

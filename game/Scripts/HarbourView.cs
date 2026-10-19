@@ -21,7 +21,6 @@ public partial class HarbourView : Node3D
 
     private readonly List<Anchored> _ships = [];
     private readonly List<Boat> _boats = [];
-    private StandardMaterial3D _hull = null!;
     private StandardMaterial3D _lamp = null!;
     private float _time;
 
@@ -58,7 +57,6 @@ public partial class HarbourView : Node3D
 
         _ships.Clear();
         _boats.Clear();
-        _hull = new StandardMaterial3D { VertexColorUseAsAlbedo = true, VertexColorIsSrgb = true, Roughness = 0.85f, CullMode = BaseMaterial3D.CullModeEnum.Disabled };
         _lamp = new StandardMaterial3D { AlbedoColor = new Color(1f, 0.8f, 0.45f), EmissionEnabled = true, Emission = new Color(1f, 0.7f, 0.35f), EmissionEnergyMultiplier = 0f };
 
         // A nao further out, a caravel off the west pier, a fishing caravel off the yard.
@@ -270,7 +268,7 @@ public partial class HarbourView : Node3D
     }
 
     private void Quad(MeshBatcher batch, Vector3 a, Vector3 b, Vector3 c, Vector3 d, Color colour) =>
-        batch.AddTriangles(_hull, [a, b, c, a, c, d], null, colour);
+        batch.AddTriangles(batch.Coloured, [a, b, c, a, c, d], null, colour);
 
     private static void Castle(MeshBatcher batch, float x, float length, float width, float deck, float height)
     {
