@@ -520,6 +520,9 @@ public partial class Hud : CanvasLayer
             _speedButtons.Add((button, speed));
         }
 
+        var fresh = new Button { Text = "New voyage", TooltipText = "Start again with a new crew and new weather", FocusMode = Control.FocusModeEnum.None };
+        fresh.Pressed += () => NewVoyageRequested?.Invoke();
+        row.AddChild(fresh);
         var save = new Button { Text = "Save", TooltipText = "Cmd+S or F5", FocusMode = Control.FocusModeEnum.None };
         save.Pressed += () => SaveRequested?.Invoke();
         row.AddChild(save);

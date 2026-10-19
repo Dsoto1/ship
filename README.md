@@ -41,6 +41,7 @@ Controls:
 | Space, 1–4 | Pause and time speed |
 | WASD / arrow keys, wheel, Q/E | Pan, zoom (zoom out to see the sails), turn the camera |
 | Cmd+S / Cmd+L (Ctrl elsewhere), or F5 / F9 | Quick save / quick load |
+| New voyage (top bar) | Start a fresh voyage; every launch also starts one |
 | Tab | Select the next crew member |
 
 Saves go to `~/Library/Application Support/The Expedition/saves/` on macOS.
