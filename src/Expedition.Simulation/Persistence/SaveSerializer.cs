@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 16;
+    public const int CurrentSchemaVersion = 17;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -143,6 +143,18 @@ public static class SaveSerializer
                 root["eventHistory"] = new JsonArray();
                 root["lastEventTick"] = long.MinValue / 2;
                 root["rationing"] = false;
+                return root;
+            },
+
+            // Format 17 recorded purchases, for the stores waiting on the quay. Older saves count
+            // everything bought as already aboard.
+            [16] = root =>
+            {
+                if (root["port"] is JsonObject port)
+                {
+                    port["purchases"] = new JsonArray();
+                }
+
                 return root;
             },
 
@@ -453,6 +465,7 @@ public static class SaveSerializer
                     LateFeesCharged = port.LateFeesCharged,
                     Warned = port.Warned,
                     Leads = port.Leads.Select(l => new HeardLeadData { Lead = l.LeadId, Tick = l.Tick }).ToList(),
+                    Purchases = port.Purchases.Select(p => new PurchaseData { Lot = p.Lot, Tick = p.Tick }).ToList(),
                 }
                 : null,
             PendingEvent = campaign.PendingEvent is { } pending
@@ -745,6 +758,16 @@ public static class SaveSerializer
                     throw new SaveLoadException($"The save's journal names a lead '{lead.Lead}' this game does not have, or twice.");
                 }
             }
+            foreach (var purchase in savedPort.Purchases)
+            {
+                if (purchase.Lot < 0 || purchase.Lot >= portRules.Goods.Count || purchase.Tick < 0 || purchase.Tick > data.Tick)
+                {
+                    throw new SaveLoadException($"The save records a purchase of lot {purchase.Lot} this chandler does not sell, or at an impossible time.");
+                }
+
+                port.AddPurchase(purchase.Lot, purchase.Tick);
+            }
+
             campaign.SetPort(port);
         }
 

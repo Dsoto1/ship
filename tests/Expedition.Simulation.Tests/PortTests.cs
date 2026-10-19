@@ -6,6 +6,7 @@ using Expedition.Simulation.Core;
 using Expedition.Simulation.History;
 using Expedition.Simulation.Knowledge;
 using Expedition.Simulation.Persistence;
+using Expedition.Simulation.Port;
 using Expedition.Simulation.Scenarios;
 using Expedition.Simulation.World;
 
@@ -565,5 +566,104 @@ public class PortTests
         ContentValidator.ValidateLocation(bad, Shipped.Tasks, errors);
 
         Assert.Contains(errors, e => e.Contains("faces 'up'"));
+    }
+
+    private static int Packages(IReadOnlyList<CargoPackages> stacks, string item) =>
+        stacks.Where(s => s.Item == item).Sum(s => s.Count);
+
+    [Fact]
+    public void TheGarzaWaitsWithTheCompanysStoresAboard()
+    {
+        var ready = ShipPreparation.Of(Port().Campaign, Shipped)!;
+
+        Assert.Equal(PreparationStage.AwaitingExpedition, ready.Stage);
+        Assert.Empty(ready.OnQuay);
+        Assert.Equal(4, Packages(ready.Aboard, "item.water"));
+        Assert.Equal(4, Packages(ready.Aboard, "item.biscuit"));
+        Assert.Equal("cask", ready.Aboard.Single(s => s.Item == "item.water").Package);
+        Assert.Equal(0, ready.Belongings);
+    }
+
+    [Fact]
+    public void BoughtStoresWaitOnTheQuayAndGoAboardOverTheNextHours()
+    {
+        var runner = Port();
+        Assert.True(runner.Buy(4).Succeeded);
+        Assert.True(runner.Buy(0).Succeeded);
+
+        var bought = ShipPreparation.Of(runner.Campaign, Shipped)!;
+        Assert.Equal(PreparationStage.InitialLoading, bought.Stage);
+        Assert.Equal(2, Packages(bought.OnQuay, "item.rope"));
+        Assert.Equal(1, Packages(bought.OnQuay, "item.water"));
+        Assert.Equal(4, Packages(bought.Aboard, "item.water"));
+        Assert.Equal(180, runner.Campaign.SharedStore.Count("item.water"));
+
+        runner.Advance(100);
+        var halfway = ShipPreparation.Of(runner.Campaign, Shipped)!;
+        Assert.Equal(1, Packages(halfway.OnQuay, "item.rope"));
+        Assert.Equal(5, Packages(halfway.Aboard, "item.rope"));
+
+        runner.Advance(90);
+        var loaded = ShipPreparation.Of(runner.Campaign, Shipped)!;
+        Assert.Empty(loaded.OnQuay);
+        Assert.Equal(6, Packages(loaded.Aboard, "item.rope"));
+        Assert.Equal(5, Packages(loaded.Aboard, "item.water"));
+    }
+
+    [Fact]
+    public void ThePreparationStageFollowsCrewStoresAndTheHour()
+    {
+        var runner = Port();
+        var port = runner.Campaign.Port!;
+        var rules = Shipped.Port!;
+        PreparationStage Stage() => ShipPreparation.StageOf(runner.Campaign, rules);
+        var seekers = rules.People.Where(p => p.Seeking is not null).Select(p => Id(runner, p.Id)).ToList();
+
+        Assert.Equal(PreparationStage.AwaitingExpedition, Stage());
+        port.MarkHired(seekers[0]);
+        Assert.Equal(PreparationStage.InspectionUnderway, Stage());
+        runner.Buy(0);
+        Assert.Equal(PreparationStage.InitialLoading, Stage());
+        port.MarkHired(seekers[1]);
+        runner.Buy(1);
+        runner.Buy(2);
+        Assert.Equal(PreparationStage.TakingShape, Stage());
+        port.MarkHired(seekers[2]);
+        port.MarkHired(seekers[3]);
+        runner.Buy(3);
+        runner.Buy(5);
+        Assert.Equal(PreparationStage.TakingShape, Stage());
+        runner.Buy(0);
+        Assert.Equal(PreparationStage.DepartureReady, Stage());
+
+        AdvanceTo(runner, 3, 3);
+        Assert.Equal(PreparationStage.DepartureMorning, Stage());
+        Assert.Equal(4, ShipPreparation.Of(runner.Campaign, Shipped)!.Belongings);
+    }
+
+    [Fact]
+    public void PurchasesAreSavedAndOldPortsLoadWithEverythingAboard()
+    {
+        var runner = Port();
+        runner.Buy(0);
+        runner.Advance(30);
+        var json = SaveSerializer.Serialize(runner.Campaign);
+        var restored = SaveSerializer.Deserialize(json, Shipped);
+
+        Assert.Equal(runner.Campaign.Port!.Purchases, restored.Port!.Purchases);
+        Assert.Equal(json, SaveSerializer.Serialize(restored));
+
+        var old = JsonNode.Parse(json)!.AsObject();
+        old["schemaVersion"] = 16;
+        old["port"]!.AsObject().Remove("purchases");
+        var upgraded = SaveSerializer.Deserialize(old.ToJsonString(), Shipped);
+        Assert.Empty(upgraded.Port!.Purchases);
+        Assert.Empty(ShipPreparation.Of(upgraded, Shipped)!.OnQuay);
+    }
+
+    [Fact]
+    public void EveryItemSaysHowItIsPacked()
+    {
+        Assert.All(Shipped.Items.Values, item => Assert.Contains(item.PackedIn, Expedition.Simulation.Items.ItemDefinition.Packages));
     }
 }

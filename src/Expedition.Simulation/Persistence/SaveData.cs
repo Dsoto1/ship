@@ -450,6 +450,9 @@ public sealed record PortData
     /// <summary>Leads heard, oldest first. Added in format 16.</summary>
     public IReadOnlyList<HeardLeadData> Leads { get; init; } = [];
 
+    /// <summary>Lots bought, oldest first. Added in format 17.</summary>
+    public IReadOnlyList<PurchaseData> Purchases { get; init; } = [];
+
     /// <summary>Sueldos left.</summary>
     public required int Funds { get; init; }
 
@@ -482,5 +485,15 @@ public sealed record HeardLeadData
     public required string Lead { get; init; }
 
     /// <summary>When it was heard.</summary>
+    public required long Tick { get; init; }
+}
+
+/// <summary>A saved purchase from the chandler. Added in format 17.</summary>
+public sealed record PurchaseData
+{
+    /// <summary>Lot index.</summary>
+    public required int Lot { get; init; }
+
+    /// <summary>When it was bought.</summary>
     public required long Tick { get; init; }
 }

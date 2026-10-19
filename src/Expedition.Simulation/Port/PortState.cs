@@ -11,6 +11,7 @@ public sealed class PortState
     private readonly HashSet<CharacterId> _hired = [];
     private readonly HashSet<CharacterId> _gone = [];
     private readonly List<HeardLead> _leads = [];
+    private readonly List<Purchase> _purchases = [];
 
     /// <summary>Sueldos left.</summary>
     public int Funds { get; internal set; }
@@ -33,6 +34,9 @@ public sealed class PortState
     /// <summary>Leads heard, oldest first: the captain's journal of people worth finding.</summary>
     public IReadOnlyList<HeardLead> Leads => _leads;
 
+    /// <summary>Lots bought from the chandler, oldest first, and when: what is being loaded (R2c).</summary>
+    public IReadOnlyList<Purchase> Purchases => _purchases;
+
     /// <summary>Half days of late fees already charged.</summary>
     public int LateFeesCharged { get; internal set; }
 
@@ -48,6 +52,8 @@ public sealed class PortState
     internal void MarkHired(CharacterId id) => _hired.Add(id);
 
     internal void MarkGone(CharacterId id) => _gone.Add(id);
+
+    internal void AddPurchase(int lot, long tick) => _purchases.Add(new Purchase(lot, tick));
 
     internal bool AddLead(string leadId, long tick)
     {
@@ -65,5 +71,12 @@ public sealed class PortState
 /// <param name="LeadId">The lead's content ID.</param>
 /// <param name="Tick">When it was heard.</param>
 public sealed record HeardLead(string LeadId, long Tick)
+{
+}
+
+/// <summary>A lot bought from the chandler.</summary>
+/// <param name="Lot">Index into the port's goods.</param>
+/// <param name="Tick">When it was bought.</param>
+public sealed record Purchase(int Lot, long Tick)
 {
 }

@@ -67,6 +67,11 @@ internal static class ContentValidator
             errors.Add($"Item '{item.Id}': weightKg and volumeLitres must not be negative.");
         }
 
+        if (!ItemDefinition.Packages.Contains(item.PackedIn) || item.PerPackage < 1)
+        {
+            errors.Add($"Item '{item.Id}': packedIn must be one of {string.Join(", ", ItemDefinition.Packages)}, and perPackage at least 1.");
+        }
+
         if (item.HungerRelief < 0 || item.ThirstRelief < 0)
         {
             errors.Add($"Item '{item.Id}': hungerRelief and thirstRelief must not be negative.");

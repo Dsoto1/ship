@@ -23,4 +23,17 @@ public sealed record ItemDefinition
 
     /// <summary>Thirst removed by drinking one unit. Zero for things that are not drink.</summary>
     public double ThirstRelief { get; init; }
+
+    /// <summary>
+    /// What it is stowed in: <c>cask</c>, <c>barrel</c>, <c>sack</c>, <c>chest</c>, <c>crate</c>, <c>coil</c>,
+    /// <c>bale</c>, <c>plank</c> or <c>basket</c>. Only how a stack of it looks (R2c).
+    /// </summary>
+    public string PackedIn { get; init; } = "crate";
+
+    /// <summary>Units in one cask, sack or chest.</summary>
+    public int PerPackage { get; init; } = 1;
+
+    /// <summary>The kinds of package there are pictures for.</summary>
+    public static readonly IReadOnlySet<string> Packages =
+        new HashSet<string>(["cask", "barrel", "sack", "chest", "crate", "coil", "bale", "plank", "basket"], StringComparer.Ordinal);
 }

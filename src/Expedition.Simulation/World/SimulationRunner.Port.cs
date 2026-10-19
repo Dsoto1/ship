@@ -544,6 +544,7 @@ public sealed partial class SimulationRunner
 
         port.Funds -= goods.Price;
         port.SetStock(lot, port.Stock[lot] - 1);
+        port.AddPurchase(lot, Campaign.Clock.Tick);
         return CommandResult.Ok();
     }
 

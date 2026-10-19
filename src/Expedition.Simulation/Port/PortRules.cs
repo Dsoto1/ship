@@ -45,8 +45,30 @@ public sealed record PortRules
     public IEnumerable<(LeadDefinition Lead, string? From)> AllLeads() =>
         People.SelectMany(p => p.Leads.Select(l => (l, (string?)p.Id))).Concat(Notices.Select(n => (n, (string?)null)));
 
+    /// <summary>How the ship's preparation shows: when stores are carried aboard, and the stages.</summary>
+    public PreparationRules Preparation { get; init; } = new();
+
     /// <summary>Everyone on the waterfront.</summary>
     public required IReadOnlyList<PersonDefinition> People { get; init; }
+}
+
+/// <summary>
+/// Thresholds for the ship's preparation stages (PORT_EXPERIENCE §5) and how long bought stores wait on
+/// the quay before they are aboard. Placeholders to tune.
+/// </summary>
+public sealed record PreparationRules
+{
+    /// <summary>Hours a bought lot stands on the quay; it goes aboard steadily over that time.</summary>
+    public double LoadingHours { get; init; } = 3;
+
+    /// <summary>Lots bought, with half the crew signed on, for the expedition to be taking shape.</summary>
+    public int TakingShapeLots { get; init; } = 3;
+
+    /// <summary>Lots bought, with the minimum crew, for her to be ready.</summary>
+    public int ReadyLots { get; init; } = 6;
+
+    /// <summary>Hours before the convoy sails that departure morning begins.</summary>
+    public double DepartureMorningHours { get; init; } = 3;
 }
 
 /// <summary>A day of the campaign (1 is the first) and an hour.</summary>
