@@ -1,6 +1,7 @@
 // What people do on the Bocana waterfront (R1). Townsfolk do these on their daily schedules; the skill
 // or attribute a task names is what the captain learns by watching someone finish it. People in port
-// have no needs simulated, so these carry no need rates.
+// have no needs simulated, so these carry no need rates. 'then' chains a loop of work (PORT_EXPERIENCE §7):
+// the next task starts at once when one finishes. 'carries' is what is carried there (crate, basket, plank).
 [
   { "id": "task.sleep_at_home", "name": "Asleep at home", "durationMinutes": 120, "isRest": true, "needsWorkSpot": true },
   { "id": "task.drink", "name": "Drinking at the Three Anchors", "durationMinutes": 60, "needsWorkSpot": true },
@@ -14,16 +15,26 @@
   { "id": "task.keep_accounts", "name": "Keeping accounts", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.negotiation" },
   { "id": "task.trade_goods", "name": "Trading", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.negotiation" },
   { "id": "task.sell_fish", "name": "Selling fish", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.fishing" },
+  { "id": "task.land_catch", "name": "Landing the catch", "durationMinutes": 10, "needsWorkSpot": true, "skill": "skill.fishing", "then": "task.carry_catch" },
+  { "id": "task.carry_catch", "name": "Carrying fish to the stalls", "durationMinutes": 3, "needsWorkSpot": true, "carries": "basket", "then": "task.sell_fish" },
   { "id": "task.treat_patients", "name": "Treating patients", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.first_aid" },
   { "id": "task.dun_debtor", "name": "Dunning a debtor", "durationMinutes": 30, "needsWorkSpot": true },
-  { "id": "task.port_carpentry", "name": "Carpentry in the yard", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.carpentry" },
+  { "id": "task.port_carpentry", "name": "Sawing at the bench", "durationMinutes": 30, "needsWorkSpot": true, "skill": "skill.carpentry", "then": "task.fetch_timber" },
+  { "id": "task.fetch_timber", "name": "Fetching timber", "durationMinutes": 8, "needsWorkSpot": true, "then": "task.fit_timber" },
+  { "id": "task.fit_timber", "name": "Fitting a plank to the hull", "durationMinutes": 30, "needsWorkSpot": true, "skill": "skill.carpentry", "carries": "plank" },
   { "id": "task.coopering", "name": "Making casks", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.crafting" },
-  { "id": "task.haul_cargo", "name": "Hauling cargo", "durationMinutes": 60, "needsWorkSpot": true, "attribute": "attribute.strength" },
+  { "id": "task.haul_cargo", "name": "Shouldering cargo", "durationMinutes": 8, "needsWorkSpot": true, "attribute": "attribute.strength", "then": "task.deliver_cargo" },
+  { "id": "task.deliver_cargo", "name": "Carrying cargo to the lighter", "durationMinutes": 4, "needsWorkSpot": true, "carries": "crate" },
   { "id": "task.port_rigging", "name": "Working a boat's rigging", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.rigging" },
   { "id": "task.mend_nets", "name": "Mending nets", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.seamanship" },
   { "id": "task.wait_in_irons", "name": "Waiting in irons", "durationMinutes": 120, "needsWorkSpot": true },
   { "id": "task.stand_guard", "name": "Standing guard", "durationMinutes": 120, "needsWorkSpot": true },
   { "id": "task.play", "name": "Playing in the square", "durationMinutes": 60, "needsWorkSpot": true },
   { "id": "task.meet_in_secret", "name": "Talking quietly in the alley", "durationMinutes": 60, "needsWorkSpot": true },
+  { "id": "task.watch_water", "name": "Watching the harbour", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.navigation" },
+  { "id": "task.make_rope", "name": "Spinning yarn on the ropewalk", "durationMinutes": 20, "needsWorkSpot": true, "skill": "skill.crafting", "then": "task.lay_rope" },
+  { "id": "task.lay_rope", "name": "Walking the yarn down the ropewalk", "durationMinutes": 20, "needsWorkSpot": true, "carries": "yarn" },
+  { "id": "task.smithing", "name": "At the forge", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.crafting" },
+  { "id": "task.mend_sails", "name": "Mending sailcloth", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.rigging" },
   { "id": "task.board", "name": "Going aboard", "durationMinutes": 1, "needsWorkSpot": true }
 ]

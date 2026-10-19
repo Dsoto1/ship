@@ -85,6 +85,11 @@
     },
     {
      "from": 7,
+     "to": 8,
+     "task": "task.drink"
+    },
+    {
+     "from": 8,
      "to": 11,
      "task": "task.study_charts",
      "spot": "spot.chart_table"
@@ -92,7 +97,7 @@
     {
      "from": 11,
      "to": 12,
-     "task": "task.read_notices"
+     "task": "task.watch_water"
     },
     {
      "from": 12,
@@ -1026,7 +1031,7 @@
     {
      "from": 5,
      "to": 13,
-     "task": "task.sell_fish"
+     "task": "task.land_catch"
     },
     {
      "from": 13,
@@ -1586,6 +1591,141 @@
      "from": 14,
      "to": 20,
      "task": "task.play"
+    }
+   ]
+  },
+  {
+   "id": "person.benito",
+   "name": "Benito Ferrer",
+   "age": 47,
+   "sex": "Male",
+   "origin": "La Bocana",
+   "status": "status.craftsman",
+   "occupation": "smith",
+   "look": "A smith with singed forearms and a leather apron, deaf in one ear.",
+   "home": "spot.home_29",
+   "schedule": [
+    {
+     "from": 20,
+     "to": 6,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 6,
+     "to": 12,
+     "task": "task.smithing"
+    },
+    {
+     "from": 12,
+     "to": 13,
+     "task": "task.drink"
+    },
+    {
+     "from": 13,
+     "to": 19,
+     "task": "task.smithing"
+    },
+    {
+     "from": 19,
+     "to": 20,
+     "task": "task.drink"
+    }
+   ],
+   "skills": {
+    "skill.crafting": 4
+   },
+   "attributes": {
+    "attribute.strength": 4
+   }
+  },
+  {
+   "id": "person.marta",
+   "name": "Marta la Cordelera",
+   "age": 35,
+   "sex": "Female",
+   "origin": "La Bocana",
+   "status": "status.craftsman",
+   "occupation": "ropemaker",
+   "look": "A ropemaker with hemp in her hair, walking backwards down the ropewalk.",
+   "home": "spot.home_30",
+   "schedule": [
+    {
+     "from": 21,
+     "to": 6,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 6,
+     "to": 12,
+     "task": "task.make_rope"
+    },
+    {
+     "from": 12,
+     "to": 13,
+     "task": "task.pray"
+    },
+    {
+     "from": 13,
+     "to": 18,
+     "task": "task.make_rope"
+    },
+    {
+     "from": 18,
+     "to": 21,
+     "task": "task.drink"
+    }
+   ],
+   "skills": {
+    "skill.crafting": 3
+   }
+  },
+  {
+   "id": "person.simon",
+   "name": "Old Simón",
+   "age": 66,
+   "sex": "Male",
+   "origin": "Almara",
+   "status": "status.craftsman",
+   "occupation": "sailmaker",
+   "look": "A stooped sailmaker with a palm-thimble and needles in his hat.",
+   "home": "spot.home_31",
+   "schedule": [
+    {
+     "from": 20,
+     "to": 7,
+     "task": "task.sleep_at_home"
+    },
+    {
+     "from": 7,
+     "to": 12,
+     "task": "task.mend_sails"
+    },
+    {
+     "from": 12,
+     "to": 14,
+     "task": "task.drink"
+    },
+    {
+     "from": 14,
+     "to": 18,
+     "task": "task.mend_sails"
+    },
+    {
+     "from": 18,
+     "to": 20,
+     "task": "task.watch_water"
+    }
+   ],
+   "skills": {
+    "skill.rigging": 4
+   },
+   "knows": [
+    {
+     "about": "person.rodrigo",
+     "text": "Rodrigo? Mended his topsail for him once. Knows his work aloft, I'll say that.",
+     "levels": {
+      "skill.rigging": 3
+     }
     }
    ]
   }

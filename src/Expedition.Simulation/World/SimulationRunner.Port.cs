@@ -120,7 +120,7 @@ public sealed partial class SimulationRunner
 
         var hour = (int)(Campaign.Clock.Tick % SimulationClock.TicksPerDay / SimulationClock.TicksPerHour);
         var block = person.Schedule.FirstOrDefault(b => b.Contains(hour));
-        if (block is null || current?.DefinitionId == block.Task)
+        if (block is null || (current is not null && IsStepOf(block.Task, current.DefinitionId)))
         {
             return;
         }
@@ -136,6 +136,23 @@ public sealed partial class SimulationRunner
         {
             Start(character, new TaskInstance(Campaign.Ids.NextTaskId(), character.Id, task.Id, TaskPriority.Normal) { Origin = TaskOrigin.Schedule }, spot);
         }
+    }
+
+    // True if a task is the start of a loop of work, or one of its later steps.
+    private bool IsStepOf(string first, string task)
+    {
+        var step = first;
+        for (var i = 0; i < 8 && step is not null; i++)
+        {
+            if (step == task)
+            {
+                return true;
+            }
+
+            step = Content.Tasks.TryGetValue(step, out var definition) ? definition.Then : null;
+        }
+
+        return false;
     }
 
     // True on the first tick of a port, so everyone takes up their place at once.

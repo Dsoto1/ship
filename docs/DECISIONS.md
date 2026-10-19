@@ -562,3 +562,23 @@ lowest cost, and keeps hand-made art for what matters most.
 **Why.** GAME_VISION §5 and TECHNICAL_SPEC §15: a compact, active port, NPCs with schedules, and
 investigation by observing, conversing, references and demonstrations.
 
+
+---
+
+## D-023 — The port brief is the authority for the port
+
+**Date:** 2026-10-19
+**Status:** Accepted (owner supplied `docs/PORT_EXPERIENCE.md` to guide the build)
+
+**Decision.**
+- `PORT_EXPERIENCE.md` governs the port: districts, the ship as landmark, simulation tiers,
+  activity loops, leads, ambient events, weather, sound, recognition and departure.
+- Its historical rules apply to the fictional analogue of SETTING.md (D-013).
+- R2 is split into R2a–R2e following its §23 order; its four validation scenes become R3
+  (`VISION_ALIGNMENT.md` §5).
+- **Port time is slowed so people can be watched.** Walking in port is about 2.5 m per game
+  minute, and the slowest port speed is half a game minute per second. A day still passes in
+  minutes at the faster speeds.
+
+**Why.** The brief's north star is a port that is crowded, purposeful and watchable (§1, §7), with
+the ship always in view (§5).

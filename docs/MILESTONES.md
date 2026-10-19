@@ -28,8 +28,12 @@ This file tracks status and breaks the next work into tickets.
 | V3 | Things happen: events with choices, crew who speak up | Done (2026-10-19) |
 | V4 | Choose who comes: simple pre-voyage hiring (the core of 5c) | Done (2026-10-19), **stopgap**: a menu, against GAME_VISION §5 (D-020) |
 | R1 | The living port, simulated: waterfront places, ~25 people on schedules, observation, real deadline, candidates who weigh you | Done (2026-10-19) |
-| R2 | The living port, playable: walk the waterfront, click anyone, talk and offer in the world, inspect the Garza, chandler and stowage | Next |
-| R3 | Visual validation, Test A port then Test B ship, with the chosen art pipeline | Waiting on owner (art pipeline) |
+| R2a | Port greybox and play: five districts, the Garza moored, walk, click anyone, talk, ask, offer, demonstrate, chandler, set sail (PORT_EXPERIENCE §23 steps 1, 2, 7, 8) | In progress |
+| R2b | Activity nodes and work loops; leads journal (steps 3–5) | Planned |
+| R2c | Tier C crowd, background ships, ship preparation states, visible cargo (steps 6, 9) | Planned |
+| R2d | Sound zones, port weather and reactions, ambient micro-events (steps 10–12) | Planned |
+| R2e | Recognition and the departure sequence (steps 13, 14) | Planned |
+| R3 | Visual validation: the four port scenes of PORT_EXPERIENCE §21, then Test B ship, with the hybrid pipeline (D-021) | Planned |
 | R4 | Voyage gaps: chart and estimated position, cargo, medical crisis, chained storms, state-driven events | Planned |
 | R5 | Shipwreck continuation: survivors and salvage on a beach | Planned |
 | R6 | Landfall camp at Punta Ceniza | Planned |

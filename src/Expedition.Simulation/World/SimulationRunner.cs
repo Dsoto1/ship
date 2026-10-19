@@ -889,6 +889,13 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
                     shipmate.Needs.Apply(relief, 1);
                 }
             }
+
+            // A loop of work goes straight on to its next step; a demonstration does not.
+            if (definition.Then is { } next && task.Origin != TaskOrigin.Order && character.CanWork
+                && Content.Tasks.TryGetValue(next, out var following) && FindWorkSpot(character, following).Spot is not null)
+            {
+                Start(character, new TaskInstance(Campaign.Ids.NextTaskId(), character.Id, next, task.Priority) { Origin = task.Origin });
+            }
         }
     }
 
@@ -1086,7 +1093,8 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             return;
         }
 
-        var minutes = Math.Max(1, (long)Math.Ceiling((path.Count - 1) / Content.Rules.WalkCellsPerMinute));
+        var speed = Content.Locations[placement.LocationId].WalkCellsPerMinute ?? Content.Rules.WalkCellsPerMinute;
+        var minutes = Math.Max(1, (long)Math.Ceiling((path.Count - 1) / speed));
         placement.Movement = new Movement(path, now, now + minutes / SimulationClock.MinutesPerTick);
     }
 

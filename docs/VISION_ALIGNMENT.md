@@ -208,3 +208,57 @@ Velho's secrets begin to matter here.
 2. **Succession rules (TECHNICAL_SPEC §18.1).** The placeholder stays until approved.
 3. **Camera.** Keep the orthographic isometric view (D-006). "A la Hitman" is read here as *living
    crowds with routines you can watch and exploit*, not as a third-person camera.
+
+---
+
+## 5. The port brief (`PORT_EXPERIENCE.md`, added 2026-10-19)
+
+The owner supplied a port specification. It is now the authority for the port (D-023), alongside the
+three main documents. It confirms the direction of R1–R2 and adds a lot. Its historical rules apply
+to the approved fictional analogue (SETTING.md, D-013): "early-16th-century" means Castrena and La
+Bocana, judged against the real 1490–1530 Atlantic they are modelled on.
+
+### 5.1 Acceptance criteria (§22) against what exists
+
+| Criterion | Now | Verdict |
+|---|---|---|
+| Five recognizable, interconnected districts | Quay, square, tavern, chapel, Chamber, chandler and one yard on a flat strip | Partly; workshops thin, no customs height |
+| Expedition ship visible and persistent | The *Garza* is a separate deck map; not drawn in port | Missing |
+| Ship visibly changes with preparation | — | Missing |
+| Candidates follow purposeful schedules | 12 candidates and 16 locals on daily schedules | Aligned (simulation) |
+| A candidate found through a lead, not a menu | References and rumours exist; no leads journal; everyone's "seeking" is visible | Partly |
+| Candidate information shows uncertainty and provenance | Sources, informants and levels in the knowledge book | Aligned (simulation); needs the card |
+| At least three NPC activity loops visibly work | People sit at one spot for an hour; no carrying | Missing |
+| Crowd tiers create apparent density | Tier A and B exist as characters; no Tier C | Missing |
+| Time of day changes activity and sound | Activity yes; no sound | Partly |
+| Weather changes visuals and behaviour | No port weather | Missing |
+| Ambient events, without rewards | — | Missing |
+| Purchases change authoritative cargo | `Buy` stores goods in the hold | Aligned |
+| Representative cargo appears physically | — | Missing |
+| Port recognition changes with the expedition | — | Missing |
+| Departure uses the actual crew and cargo | Sailing moves the real crew; no departure sequence | Partly |
+| Save and load keep persistent NPC and expedition state | Format 15 | Aligned |
+| Performance within targets | Not measured | Missing |
+| Nothing historical canonized from unverified generation | Fictional analogue; generated layout | Aligned |
+
+### 5.2 The port work, in the brief's order (§23)
+
+R2 is split so each step is playable and testable:
+
+| Step | Brief §23 | Work |
+|---|---|---|
+| **R2a** | 1, 2, 7, 8 | Five-district greybox with sightlines (customs on a terrace over the harbour, market and tavern, a workshop street with cooper, smith, sail loft, ropewalk and shipwright, the quay with piers and vaults). The *Garza* moored as the landmark. Walking speed slowed so people can be watched. The captain walks; click anyone for a card with what is known and where it came from; talk, ask, offer and demonstrate in the world; the chandler; set sail. |
+| **R2b** | 3, 4, 5 | Semantic activity nodes with reservation. Work loops: dockers carrying from the vaults to ships, fishermen landing catch to the stalls, the shipwright's timber–saw–hull round, the ropemaker walking the ropewalk. A leads journal: candidates are found by word of mouth, not marked. |
+| **R2c** | 6, 9 | Tier C crowd (cheap visual walkers that are not characters), background vessels, ship preparation states, and cargo stacks drawn from the hold. |
+| **R2d** | 10, 11, 12 | Sound zones (procedural until CC0 audio is reachable), one weather change in port with reactions, ambient micro-events. |
+| **R2e** | 13, 14 | Recognition (merchants greet, candidates approach, creditors notice) and the departure sequence with the real crew and cargo. |
+| **R3** | 15, 16 | The four validation scenes of §21 (dawn quay, midday market, rainy workshop street, departure morning) with the hybrid pipeline (D-021), and profiling. |
+
+### 5.3 Needing the owner's approval (brief §19, §24)
+
+- **Final NPC counts and performance budgets.** Working target: the brief's 20–30 meaningful people
+  plus a Tier C crowd, until profiled in R3.
+- **Port geography.** R2a reshapes the generated R1 map into the five districts the brief asks for.
+  It stays a first draft; nothing about it is canon.
+- **Sound assets.** No CC0 audio host is reachable from the build environment, so R2d starts with
+  generated sound.

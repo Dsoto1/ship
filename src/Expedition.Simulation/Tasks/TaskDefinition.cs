@@ -62,6 +62,15 @@ public sealed record TaskDefinition
     /// <summary>True if doing this keeps the ship's watch (helm and lookout), which she needs to make full speed.</summary>
     public bool KeepsWatch { get; init; }
 
+    /// <summary>
+    /// The task taken up as soon as this one is finished, making a loop of work (PORT_EXPERIENCE §7): a
+    /// docker shoulders a crate, then carries it to the lighter. Null for none.
+    /// </summary>
+    public string? Then { get; init; }
+
+    /// <summary>What is carried while walking to and doing this task, for drawing: crate, basket, plank, yarn.</summary>
+    public string? Carries { get; init; }
+
     /// <summary>When this task is worth taking up as a standing duty; null means always.</summary>
     public DutyCondition? DutyWhen { get; init; }
 }

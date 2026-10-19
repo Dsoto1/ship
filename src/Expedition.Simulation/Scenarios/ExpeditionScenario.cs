@@ -84,7 +84,7 @@ public static class ExpeditionScenario
         runner.SetSail(TestDeckScenario.ShipName, TestDeckScenario.Destination, TestDeckScenario.VoyageLeagues);
 
     /// <summary>Where the captain starts: on the quay by the gangway.</summary>
-    public static readonly GridPosition Quayside = new(31, 28);
+    public static readonly GridPosition Quayside = new(31, 32);
 
     private static void Require(Core.CommandResult result)
     {

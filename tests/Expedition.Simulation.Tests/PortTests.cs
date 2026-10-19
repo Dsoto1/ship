@@ -33,11 +33,28 @@ public class PortTests
             .Select(d => new GridPosition(target.X + d.Item1, target.Y + d.Item2))
             .First(cell => location.IsWalkable(cell) && !taken.Contains(cell));
         Assert.True(runner.MoveCharacter(Captain(runner), next).Succeeded);
-        runner.Advance(2);
+        for (var minute = 0; minute < 90 && runner.Campaign.Placements[Captain(runner)].IsMoving; minute++)
+        {
+            runner.Advance(1);
+        }
+
+        Assert.False(runner.Campaign.Placements[Captain(runner)].IsMoving);
     }
 
-    private static void ApproachPerson(SimulationRunner runner, string person) =>
-        Approach(runner, runner.Campaign.Placements[Id(runner, person)].CellAt(runner.Campaign.Clock.Tick));
+    // People at work move about (a docker carries his crate away), so keep after them until close.
+    private static void ApproachPerson(SimulationRunner runner, string person)
+    {
+        for (var attempt = 0; attempt < 6; attempt++)
+        {
+            Approach(runner, runner.Campaign.Placements[Id(runner, person)].CellAt(runner.Campaign.Clock.Tick));
+            if (runner.WhyCannotSpeak(Id(runner, person)) is null)
+            {
+                return;
+            }
+        }
+
+        Assert.Fail(runner.WhyCannotSpeak(Id(runner, person)) ?? person);
+    }
 
     private static void AdvanceTo(SimulationRunner runner, int day, int hour, int minute = 0) =>
         runner.Advance((int)((day - 1L) * SimulationClock.TicksPerDay + hour * 60 + minute - runner.Campaign.Clock.Tick));
@@ -49,7 +66,7 @@ public class PortTests
 
         Assert.Equal(CampaignPhase.PortPreparation, runner.Campaign.Phase);
         Assert.Single(runner.Campaign.Crew);
-        Assert.Equal(28, runner.Campaign.Characters.Values.Count(c => c.Membership == Membership.Local));
+        Assert.Equal(31, runner.Campaign.Characters.Values.Count(c => c.Membership == Membership.Local));
         Assert.Equal(7000, runner.Campaign.Port!.Funds);
         Assert.Null(runner.Campaign.Voyage);
         Assert.Equal("task.port_carpentry", Doing(runner, "person.bartolo"));
@@ -137,7 +154,7 @@ public class PortTests
 
         var velho = Id(runner, "person.velho");
         Assert.NotNull(runner.Campaign.Knowledge.Assess(velho, "fact.velho_brennish"));
-        var noticed = runner.Campaign.Chronicle.Entries.Single(e => e.Kind == ChronicleEntryKind.Noticed);
+        var noticed = runner.Campaign.Chronicle.Entries.Single(e => e.Kind == ChronicleEntryKind.Noticed && e.Characters[0] == velho);
         Assert.Equal("You noticed something about Duarte Velho: seen meeting the brennish trader in the alley after dark.",
             new ChronicleFormatter(runner.Campaign, Shipped).Format(noticed));
     }
@@ -340,5 +357,70 @@ public class PortTests
 
         Assert.Null(loaded.Port);
         Assert.All(loaded.Characters.Values, c => Assert.Equal(Membership.Crew, c.Membership));
+    }
+
+    // What someone does, minute by minute, from now for the given minutes.
+    private static List<string> Watch(SimulationRunner runner, string person, int minutes)
+    {
+        var seen = new List<string>();
+        for (var minute = 0; minute < minutes; minute++)
+        {
+            runner.Advance(1);
+            if (Doing(runner, person) is { } task && (seen.Count == 0 || seen[^1] != task))
+            {
+                seen.Add(task);
+            }
+        }
+
+        return seen;
+    }
+
+    [Theory]
+    [InlineData("person.andres", 9, "task.haul_cargo", "task.deliver_cargo")]
+    [InlineData("person.bartolo", 9, "task.port_carpentry", "task.fetch_timber", "task.fit_timber")]
+    [InlineData("person.catalina", 9, "task.land_catch", "task.carry_catch", "task.sell_fish")]
+    [InlineData("person.marta", 9, "task.make_rope", "task.lay_rope")]
+    public void WorkGoesRoundInLoops(string person, int hour, params string[] loop)
+    {
+        var runner = Port();
+        AdvanceTo(runner, 1, hour);
+
+        var seen = Watch(runner, person, 150);
+
+        // Each step in turn, and round again.
+        var expected = Enumerable.Repeat(loop, 40).SelectMany(l => l).ToList();
+        var start = expected.IndexOf(seen[0]);
+        Assert.True(start >= 0, string.Join(", ", seen));
+        Assert.True(expected.Skip(start).Take(seen.Count).SequenceEqual(seen), string.Join(", ", seen));
+        Assert.True(seen.Count > loop.Length, string.Join(", ", seen));
+    }
+
+    [Fact]
+    public void CarriedLoadsGoFromPickupToDropoff()
+    {
+        var runner = Port();
+        AdvanceTo(runner, 1, 9);
+        var andres = Id(runner, "person.andres");
+        var location = runner.Content.Locations["location.bocana"];
+
+        for (var minute = 0; minute < 120; minute++)
+        {
+            runner.Advance(1);
+            if (runner.Campaign.ActiveTasks.TryGetValue(andres, out var task) && task.SpotId is { } spot && !runner.Campaign.Placements[andres].IsMoving)
+            {
+                var kind = location.FindSpot(spot)!.Kind;
+                var carries = runner.Content.Tasks[task.DefinitionId].Carries;
+                Assert.Equal(kind == "CarryDropoff", carries == "crate");
+            }
+        }
+    }
+
+    [Fact]
+    public void ALoopEndsWhenTheDayMovesOn()
+    {
+        var runner = Port();
+        AdvanceTo(runner, 1, 12, 5);
+
+        Assert.Equal("task.drink", Doing(runner, "person.bartolo"));
     }
 }

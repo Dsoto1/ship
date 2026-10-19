@@ -88,6 +88,11 @@ public sealed class GameContent
                 errors.Add($"Task '{task.Id}': unknown attribute '{task.Attribute}'.");
             }
 
+            if (task.Then is not null && !Tasks.ContainsKey(task.Then))
+            {
+                errors.Add($"Task '{task.Id}': then names unknown task '{task.Then}'.");
+            }
+
             if (task.DutyWhen?.StartBetween is { } windows && windows.Any(w => w.Length != 2 || w[0] < 0 || w[1] > 24 || w[0] >= w[1]))
             {
                 errors.Add($"Task '{task.Id}': dutyWhen.startBetween windows must be [from, to) hours with 0 <= from < to <= 24.");
