@@ -9,7 +9,8 @@ carried through every phase.
 
 **Status:** building a playable voyage (D-015). V1 (the world around you) and V2 (the ship in danger:
 leaks, weather, wear, supplies, landfall or foundering), V3 (events with choices) and V4 (hiring your
-crew in port) are done.
+crew in port) are done. **Realignment (D-020):** the port becomes a living district next; see
+[`docs/VISION_ALIGNMENT.md`](docs/VISION_ALIGNMENT.md).
 P0 (simulation foundation) is complete. Characters with skills, attributes, traits,
 relationships and appearance; tasks with queues and priorities; time, needs, provisions, inventories,
 positions, a structured chronicle and versioned save/load. All of it is tested headless and shown in
@@ -58,6 +59,7 @@ Saves go to `~/Library/Application Support/The Expedition/saves/` on macOS.
 - [`docs/MILESTONES.md`](docs/MILESTONES.md) — ticket plan and status
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — decision log
 - [`docs/SETTING.md`](docs/SETTING.md) — the fictional setting (approved, D-013)
+- [`docs/VISION_ALIGNMENT.md`](docs/VISION_ALIGNMENT.md) — where the build stands against the vision, and the re-plan (D-020)
 - [`docs/P1_OPTIONS_BRIEF.md`](docs/P1_OPTIONS_BRIEF.md) — historical situations to draw inspiration from (setting is fictional: D-012)
 
 ## Tech

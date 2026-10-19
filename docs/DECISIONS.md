@@ -487,3 +487,29 @@ coming nor do anything about storms except patch. Simulated over 30 seeds:
 **Why.** It gives the player a stake in the crew from the first minute: they chose these people,
 on what they knew, with money they could have spent on water.
 
+---
+
+## D-020 — Realign with the vision: a living port, real art, continuation after disaster
+
+**Date:** 2026-10-19
+**Status:** Accepted (owner: "we are getting away from the game's vision… the first part should feel
+alive (a la Hitman, with all the NPCs in this port). It needs to look amazing not so-so or be a bunch of
+menus"). The review is in `docs/VISION_ALIGNMENT.md`.
+
+**Decision.**
+- **Port first.** The port becomes a living district before more voyage features:
+  - about 25 people with schedules and visible work;
+  - a captain who walks it;
+  - click anyone for a record of what you know;
+  - investigation by watching, talking, asking and testing in the world;
+  - a deadline with real consequences.
+- **The V4 hiring menu is a stopgap.** Its rules and data stay; its presentation moves into the
+  world (R1–R2).
+- **The art pipeline is decided before any more art.** The code-built visuals are a graybox, not the
+  target. The pipeline is chosen with the owner, then proven in validation scenes, port first
+  (ART_BIBLE §23 and §25).
+- **Disasters continue the game.** Shipwreck and landfall lead into survival and camp (R5–R6), not
+  end screens (pillar 3).
+
+**Why.** GAME_VISION §2, §5, §7 and ART_BIBLE §1, §7.1, §20 and §23, as reviewed.
+

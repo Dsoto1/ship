@@ -26,7 +26,13 @@ This file tracks status and breaks the next work into tickets.
 | V1 | The world around you: sea, sky, day and night, a real ship, people (D-015) | Done (2026-10-19) |
 | V2 | The ship in danger: leaks, wear, supplies, distance, need-driven duties | Done (2026-10-19) |
 | V3 | Things happen: events with choices, crew who speak up | Done (2026-10-19) |
-| V4 | Choose who comes: simple pre-voyage hiring (the core of 5c) | Done (2026-10-19) |
+| V4 | Choose who comes: simple pre-voyage hiring (the core of 5c) | Done (2026-10-19), **stopgap**: a menu, against GAME_VISION §5 (D-020) |
+| R1 | The living port, simulated: waterfront places, ~25 people on schedules, observation, real deadline, candidates who weigh you | Next |
+| R2 | The living port, playable: walk the waterfront, click anyone, talk and offer in the world, inspect the Garza, chandler and stowage | Planned |
+| R3 | Visual validation, Test A port then Test B ship, with the chosen art pipeline | Waiting on owner (art pipeline) |
+| R4 | Voyage gaps: chart and estimated position, cargo, medical crisis, chained storms, state-driven events | Planned |
+| R5 | Shipwreck continuation: survivors and salvage on a beach | Planned |
+| R6 | Landfall camp at Punta Ceniza | Planned |
 | 5c | Recruitment rules in full: investigation, references, counteroffers | Later (core moves into V4) |
 | 5d | Godot waterfront recruitment scene | Later, once the voyage is fun |
 | 6 | Voyage-to-crisis vertical slice | Becomes V2–V3 |
