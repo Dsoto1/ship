@@ -461,3 +461,29 @@ coming nor do anything about storms except patch. Simulated over 30 seeds:
 | Heaves to in storms | 24–25 |
 | Heaves to in storms and presses on in fair weather | 25–28, about two days sooner |
 
+---
+
+## D-019 — Hiring in port: truth, claims and references
+
+**Date:** 2026-10-19
+**Status:** Accepted (V4; candidates and prices are a first pass)
+
+**Decision.**
+- **Start in port:** a campaign starts in PortPreparation with only the captain aboard and hiring
+  open (`CampaignState.Recruitment`, saved).
+- **Candidates are data,** and are not campaign characters until hired.
+- **What the captain learns** about a candidate is kept as facts with a source: claim, reference or
+  test. On hiring, those facts become knowledge entries for the new character.
+- **Time is the limit:** inquiries are limited. Talking is free; asking around and testing cost one
+  each.
+- **Money is shared:** wages and the chandler's stores come out of the same purse.
+- **What the HUD shows:** for anyone but the captain, skills and traits as the captain knows them,
+  never the truth (TECHNICAL_SPEC.md §5.2).
+- **Lost captain:** if the captain dies or goes missing, the able crew member the others trust and
+  respect most (plus leadership) takes command. **This is a placeholder;** the succession rules need
+  the owner's approval (TECHNICAL_SPEC.md §18.1).
+- **All hands lost:** if no one is left alive aboard, the voyage ends and the campaign fails.
+
+**Why.** It gives the player a stake in the crew from the first minute: they chose these people,
+on what they knew, with money they could have spent on water.
+

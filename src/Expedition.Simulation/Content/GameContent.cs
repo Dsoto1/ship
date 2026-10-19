@@ -25,7 +25,8 @@ public sealed class GameContent
         IEnumerable<LanguageDefinition>? languages = null,
         IEnumerable<StatusDefinition>? statuses = null,
         Voyage.VoyageRules? voyage = null,
-        IEnumerable<Events.EventDefinition>? events = null)
+        IEnumerable<Events.EventDefinition>? events = null,
+        Recruitment.RecruitmentRules? recruitment = null)
     {
         var errors = new List<string>();
         Rules = rules;
@@ -68,6 +69,7 @@ public sealed class GameContent
         ContentValidator.ValidateRules(rules, errors);
         Voyage = voyage;
         Events = IndexById(events ?? [], e => e.Id, "event", errors);
+        Recruitment = recruitment;
         if (voyage is not null)
         {
             errors.AddRange(voyage.Validate());
@@ -107,6 +109,11 @@ public sealed class GameContent
             ValidateEvent(definition, errors);
         }
 
+        if (recruitment is not null)
+        {
+            ValidateRecruitment(recruitment, errors);
+        }
+
         if (errors.Count > 0)
         {
             throw new ContentValidationException(errors);
@@ -114,6 +121,54 @@ public sealed class GameContent
 
         Foods = Items.Values.Where(i => i.HungerRelief > 0).OrderBy(i => i.Id, StringComparer.Ordinal).ToList();
         Drinks = Items.Values.Where(i => i.ThirstRelief > 0).OrderBy(i => i.Id, StringComparer.Ordinal).ToList();
+    }
+
+    /// <summary>Hiring rules and candidates, or null if the content has none.</summary>
+    public Recruitment.RecruitmentRules? Recruitment { get; }
+
+    private void ValidateRecruitment(Recruitment.RecruitmentRules rules, List<string> errors)
+    {
+        if (rules.Funds < 0 || rules.Berths < 1 || rules.MinimumCrew < 1 || rules.MinimumCrew > rules.Berths || rules.Inquiries < 0)
+        {
+            errors.Add("Recruitment: needs funds >= 0, berths >= 1, 1 <= minimumCrew <= berths, inquiries >= 0.");
+        }
+
+        foreach (var lot in rules.Goods.Where(g => !Items.ContainsKey(g.Item) || g.Quantity <= 0 || g.Price < 0))
+        {
+            errors.Add($"Recruitment: chandler lot '{lot.Item}' needs a known item, a positive quantity and a price.");
+        }
+
+        if (rules.Candidates.Select(c => c.Id).Distinct().Count() != rules.Candidates.Count)
+        {
+            errors.Add("Recruitment: candidate IDs must be unique.");
+        }
+
+        foreach (var candidate in rules.Candidates)
+        {
+            var where = $"Candidate '{candidate.Id}'";
+            bool KnownTopic(string topic) => Skills.ContainsKey(topic) || Languages.ContainsKey(topic) || Traits.ContainsKey(topic);
+            if (!Statuses.ContainsKey(candidate.Status))
+            {
+                errors.Add($"{where}: unknown status '{candidate.Status}'.");
+            }
+
+            var levels = candidate.Skills.Concat(candidate.Attributes).Concat(candidate.Languages).Concat(candidate.Claims).Concat(candidate.Reference.Levels);
+            if (levels.Any(pair => pair.Value is < 0 or > 5))
+            {
+                errors.Add($"{where}: levels must be 0..5.");
+            }
+
+            var unknown = candidate.Skills.Keys.Where(k => !Skills.ContainsKey(k))
+                .Concat(candidate.Attributes.Keys.Where(k => !Attributes.ContainsKey(k)))
+                .Concat(candidate.Languages.Keys.Where(k => !Languages.ContainsKey(k)))
+                .Concat(candidate.Traits.Where(t => !Traits.ContainsKey(t)))
+                .Concat(candidate.Claims.Keys.Concat(candidate.Reference.Levels.Keys).Where(k => !KnownTopic(k)))
+                .ToList();
+            if (unknown.Count > 0)
+            {
+                errors.Add($"{where}: unknown {string.Join(", ", unknown)}.");
+            }
+        }
     }
 
     /// <summary>Event definitions by ID.</summary>

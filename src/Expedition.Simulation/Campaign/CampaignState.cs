@@ -118,6 +118,12 @@ public sealed class CampaignState
         }
     }
 
+    /// <summary>Hiring in port, or null when not hiring.</summary>
+    public Recruitment.RecruitmentState? Recruitment { get; private set; }
+
+    /// <summary>Opens or closes hiring. The runner checks the rules; the loader restores it.</summary>
+    internal void SetRecruitment(Recruitment.RecruitmentState? recruitment) => Recruitment = recruitment;
+
     /// <summary>The ship at sea, or null when the expedition is not on a voyage.</summary>
     public Voyage.VoyageState? Voyage { get; private set; }
 

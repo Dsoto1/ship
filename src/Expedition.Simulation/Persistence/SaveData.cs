@@ -61,6 +61,9 @@ public sealed record SaveData
     /// <summary>Active tasks, in character ID order.</summary>
     public required IReadOnlyList<TaskData> ActiveTasks { get; init; }
 
+    /// <summary>Hiring in progress, or null. Added in format 14.</summary>
+    public RecruitmentData? Recruitment { get; init; }
+
     /// <summary>An event waiting for the captain, or null. Added in format 12.</summary>
     public PendingEventData? PendingEvent { get; init; }
 
@@ -433,4 +436,54 @@ public sealed record EventRecordData
 
     /// <summary>When it last fired.</summary>
     public required long LastTick { get; init; }
+}
+
+/// <summary>Saved hiring in progress.</summary>
+public sealed record RecruitmentData
+{
+    /// <summary>Sueldos left.</summary>
+    public required int Funds { get; init; }
+
+    /// <summary>Inquiries left.</summary>
+    public required int InquiriesLeft { get; init; }
+
+    /// <summary>What was learned about candidates.</summary>
+    public required IReadOnlyList<CandidateFactData> Facts { get; init; }
+
+    /// <summary>Candidates talked to.</summary>
+    public required IReadOnlyList<string> TalkedTo { get; init; }
+
+    /// <summary>Candidates asked about.</summary>
+    public required IReadOnlyList<string> AskedAbout { get; init; }
+
+    /// <summary>Candidates who refused a test.</summary>
+    public required IReadOnlyList<string> RefusedTest { get; init; }
+
+    /// <summary>Candidates haggled with.</summary>
+    public required IReadOnlyList<string> Haggled { get; init; }
+
+    /// <summary>Candidates who walked away.</summary>
+    public required IReadOnlyList<string> Gone { get; init; }
+
+    /// <summary>Prices changed by haggling.</summary>
+    public required IReadOnlyDictionary<string, int> Prices { get; init; }
+
+    /// <summary>Hired candidates and the character ID number each became.</summary>
+    public required IReadOnlyDictionary<string, int> Hired { get; init; }
+}
+
+/// <summary>A saved fact about a candidate.</summary>
+public sealed record CandidateFactData
+{
+    /// <summary>Candidate ID.</summary>
+    public required string Candidate { get; init; }
+
+    /// <summary>Topic.</summary>
+    public required string Topic { get; init; }
+
+    /// <summary>Level.</summary>
+    public required int Level { get; init; }
+
+    /// <summary>Source name.</summary>
+    public required string Source { get; init; }
 }

@@ -374,15 +374,6 @@ public partial class Hud : CanvasLayer
         return walking ? "walking" : "idle";
     }
 
-    // What the captain has learned about this person (TECHNICAL_SPEC.md §5.2). For the crew already aboard
-    // the true values are shown above; this line shows what the captain has confirmed, and for recruits
-    // (Ticket 5c) it will be all the HUD shows.
-    private static string Known(SimulationRunner runner, CharacterId id)
-    {
-        var lines = KnowledgeText.Describe(runner.Campaign.Knowledge, id, runner.Content);
-        return lines.Count == 0 ? "" : $"Captain knows: {string.Join(", ", lines)}\n";
-    }
-
     private void RefreshSelected(SimulationRunner runner, CharacterId? selected)
     {
         if (selected is not { } id || !runner.Campaign.Characters.TryGetValue(id, out var character))
@@ -398,10 +389,25 @@ public partial class Hud : CanvasLayer
         }
 
         _name.Text = id == runner.Campaign.CaptainId ? $"{character.Name} (captain)" : character.Name;
-        var skills = character.Skills.Levels.Count == 0
-            ? "none"
-            : string.Join(", ", character.Skills.Levels.OrderByDescending(p => p.Value)
-                .Select(p => $"{runner.Content.Skills[p.Key].Name} {p.Value}"));
+        // The captain knows their own skills; everyone else's are what the captain has learned (D-019).
+        var isCaptain = id == runner.Campaign.CaptainId;
+        var book = runner.Campaign.Knowledge;
+        string Known(string topic, string name)
+        {
+            var belief = book.Assess(id, topic)!;
+            return $"{name} {belief.Level} ({KnowledgeText.SourceText(belief.Source)}{(belief.Conflicting ? "; disputed" : "")})";
+        }
+
+        var knownSkills = book.TopicsAbout(id).Where(runner.Content.Skills.ContainsKey).Select(t => Known(t, runner.Content.Skills[t].Name)).ToList();
+        var knownTraits = book.TopicsAbout(id).Where(runner.Content.Traits.ContainsKey).Where(t => book.Assess(id, t)!.Level > 0)
+            .Select(t => runner.Content.Traits[t].Name).ToList();
+        var traits = isCaptain
+            ? (character.Traits.Count == 0 ? "none" : string.Join(", ", character.Traits.Select(t => runner.Content.Traits.TryGetValue(t, out var trait) ? trait.Name : t)))
+            : knownTraits.Count == 0 ? "not yet known" : string.Join(", ", knownTraits);
+        var skills = isCaptain
+            ? (character.Skills.Levels.Count == 0 ? "none" : string.Join(", ", character.Skills.Levels.OrderByDescending(p => p.Value)
+                .Select(p => $"{runner.Content.Skills[p.Key].Name} {p.Value}")))
+            : knownSkills.Count == 0 ? "not yet known: watch them work" : string.Join(", ", knownSkills);
         var progress = runner.Campaign.ActiveTasks.TryGetValue(id, out var task)
             ? $" ({task.Progress / runner.Content.Tasks[task.DefinitionId].DurationMinutes:P0})"
             : "";
@@ -416,13 +422,13 @@ public partial class Hud : CanvasLayer
             (tongues.Length > 0 ? $"Speaks: {tongues}\n" : "") +
             $"{character.SurvivalState} · health {character.Health.Value:0}\n" +
             (character.Appearance is { } looks ? $"Looks: {AppearanceText.Describe(looks, runner.Content.Appearance)}\n" : "") +
-            $"Skills: {skills}\n" +
+            $"{(isCaptain ? "Skills" : "Skills, as far as you know")}: {skills}\n" +
             $"Physique: {string.Join(", ", attributes)}\n" +
-            $"Traits: {(character.Traits.Count == 0 ? "none" : string.Join(", ", character.Traits.Select(t => runner.Content.Traits.TryGetValue(t, out var trait) ? trait.Name : t)))}\n" +
+            $"Character: {traits}\n" +
             (character.Health.Conditions.Count > 0
                 ? $"Conditions: {string.Join(", ", character.Health.Conditions.Select(c => runner.Content.Conditions.TryGetValue(c, out var condition) ? condition.Name : c))}\n"
                 : "") +
-            Known(runner, id) +
+
             Views(runner, id);
 
         _doing.Text = $"Doing: {Activity(runner, character)}{progress}";

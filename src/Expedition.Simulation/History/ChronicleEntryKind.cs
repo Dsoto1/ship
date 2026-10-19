@@ -59,4 +59,7 @@ public enum ChronicleEntryKind
 
     /// <summary>Nobody is left alive aboard.</summary>
     AllHandsLost,
+
+    /// <summary>Someone signed on (parameter: level = advance paid; character: who).</summary>
+    CrewHired,
 }

@@ -8,8 +8,8 @@ carried through every phase.
 ![The Garza at sea](docs/screenshots/v1-day.jpg)
 
 **Status:** building a playable voyage (D-015). V1 (the world around you) and V2 (the ship in danger:
-leaks, weather, wear, supplies, landfall or foundering) and V3 (events with choices) are done; next is
-V4, choosing who comes.
+leaks, weather, wear, supplies, landfall or foundering), V3 (events with choices) and V4 (hiring your
+crew in port) are done.
 P0 (simulation foundation) is complete. Characters with skills, attributes, traits,
 relationships and appearance; tasks with queues and priorities; time, needs, provisions, inventories,
 positions, a structured chronicle and versioned save/load. All of it is tested headless and shown in

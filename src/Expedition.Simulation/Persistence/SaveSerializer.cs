@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 13;
+    public const int CurrentSchemaVersion = 14;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -143,6 +143,13 @@ public static class SaveSerializer
                 root["eventHistory"] = new JsonArray();
                 root["lastEventTick"] = long.MinValue / 2;
                 root["rationing"] = false;
+                return root;
+            },
+
+            // Format 14 added hiring in port. Earlier campaigns had none in progress.
+            [13] = root =>
+            {
+                root["recruitment"] = null;
                 return root;
             },
 
@@ -407,6 +414,21 @@ public static class SaveSerializer
             {
                 CharacterId = pair.Key.Value, Tasks = pair.Value.Tasks.ToList(),
             }).ToList(),
+            Recruitment = campaign.Recruitment is { } hiring
+                ? new RecruitmentData
+                {
+                    Funds = hiring.Funds,
+                    InquiriesLeft = hiring.InquiriesLeft,
+                    Facts = hiring.Facts.Select(f => new CandidateFactData { Candidate = f.Candidate, Topic = f.Topic, Level = f.Level, Source = f.Source.ToString() }).ToList(),
+                    TalkedTo = hiring.TalkedTo.Order(StringComparer.Ordinal).ToList(),
+                    AskedAbout = hiring.AskedAbout.Order(StringComparer.Ordinal).ToList(),
+                    RefusedTest = hiring.RefusedTest.Order(StringComparer.Ordinal).ToList(),
+                    Haggled = hiring.Haggled.Order(StringComparer.Ordinal).ToList(),
+                    Gone = hiring.Gone.Order(StringComparer.Ordinal).ToList(),
+                    Prices = new SortedDictionary<string, int>(hiring.Prices.ToDictionary(), StringComparer.Ordinal),
+                    Hired = new SortedDictionary<string, int>(hiring.Hired.ToDictionary(p => p.Key, p => p.Value.Value), StringComparer.Ordinal),
+                }
+                : null,
             PendingEvent = campaign.PendingEvent is { } pending
                 ? new PendingEventData { Event = pending.DefinitionId, Subject = pending.Subject?.Value, Other = pending.Other?.Value, Tick = pending.Tick }
                 : null,
@@ -670,6 +692,33 @@ public static class SaveSerializer
             }
 
             campaign.SetDuties(id, saved.Tasks.ToList());
+        }
+
+        if (data.Recruitment is { } savedHiring)
+        {
+            var candidates = content.Recruitment?.Candidates.Select(c => c.Id).ToHashSet(StringComparer.Ordinal) ?? [];
+            var named = savedHiring.Facts.Select(f => f.Candidate).Concat(savedHiring.TalkedTo).Concat(savedHiring.AskedAbout)
+                .Concat(savedHiring.RefusedTest).Concat(savedHiring.Haggled).Concat(savedHiring.Gone).Concat(savedHiring.Prices.Keys).Concat(savedHiring.Hired.Keys);
+            if (named.Any(id => !candidates.Contains(id)) || savedHiring.Hired.Values.Any(n => !campaign.Characters.ContainsKey(new CharacterId(n)))
+                || savedHiring.InquiriesLeft < 0 || savedHiring.Facts.Any(f => f.Level is < 0 or > 5))
+            {
+                throw new SaveLoadException("The hiring in progress refers to unknown candidates or crew, or has invalid values.");
+            }
+
+            var hiring = new Recruitment.RecruitmentState { Funds = savedHiring.Funds, InquiriesLeft = savedHiring.InquiriesLeft };
+            foreach (var fact in savedHiring.Facts)
+            {
+                hiring.Learn(new Recruitment.CandidateFact(fact.Candidate, fact.Topic, fact.Level, ParseEnum<KnowledgeSource>(fact.Source, "knowledge source")));
+            }
+
+            foreach (var id in savedHiring.TalkedTo) hiring.MarkTalked(id);
+            foreach (var id in savedHiring.AskedAbout) hiring.MarkAsked(id);
+            foreach (var id in savedHiring.RefusedTest) hiring.MarkRefused(id);
+            foreach (var id in savedHiring.Haggled) hiring.MarkHaggled(id);
+            foreach (var id in savedHiring.Gone) hiring.MarkGone(id);
+            foreach (var (id, price) in savedHiring.Prices) hiring.SetPrice(id, price);
+            foreach (var (id, number) in savedHiring.Hired) hiring.MarkHired(id, new CharacterId(number));
+            campaign.SetRecruitment(hiring);
         }
 
         Events.PendingEvent? pendingEvent = null;

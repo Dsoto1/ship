@@ -26,7 +26,7 @@ This file tracks status and breaks the next work into tickets.
 | V1 | The world around you: sea, sky, day and night, a real ship, people (D-015) | Done (2026-10-19) |
 | V2 | The ship in danger: leaks, wear, supplies, distance, need-driven duties | Done (2026-10-19) |
 | V3 | Things happen: events with choices, crew who speak up | Done (2026-10-19) |
-| V4 | Choose who comes: simple pre-voyage hiring (the core of 5c) | Next |
+| V4 | Choose who comes: simple pre-voyage hiring (the core of 5c) | Done (2026-10-19) |
 | 5c | Recruitment rules in full: investigation, references, counteroffers | Later (core moves into V4) |
 | 5d | Godot waterfront recruitment scene | Later, once the voyage is fun |
 | 6 | Voyage-to-crisis vertical slice | Becomes V2–V3 |
@@ -462,4 +462,33 @@ Owner playtest: "need faster sim speed", and storms sank the ship after the repa
 - **Repairs left** on the voyage bar: hull patches and rigging repairs the hold can still pay for.
 - **Repair duties wait for real damage** (75%), so materials last.
 - **Save format 13** (sail plan). 342 tests pass.
+
+## V4 — Choose who comes
+
+D-019. A new game starts at La Bocana with Captain Álvaro alone aboard, 7,000 sueldos from the
+Company, the Company's basic stores, and the convoy due to sail.
+- **Twelve candidates** (`data/recruitment.json`) from the setting: Duarte Velho the Lusaran pilot,
+  Ilario Pons the barber-surgeon fleeing debts, old Bartolo the carpenter, Leonor Alarcón the
+  Company's widowed clerk, Tomé Arcos the convict, Ximena Durán the interpreter, Gil the cooper, Nuño
+  the cook, Rodrigo the topman, Wat Harrow the Brennish seaman, young Pascual, and Don Fernán the
+  disgraced gentleman (who pays for his passage). Each has true skills, attributes, traits and
+  languages, and separately what they claim and what someone on the waterfront says of them. Some
+  boast, some undersell themselves, one hides what he was.
+- **Inquiries:** talking is free (their claims); asking around and putting someone to the test cost
+  one of six inquiries (a reference, or the true level). The proud refuse to be tested.
+- **Offers:** each asks an advance; haggling once can take a fifth off or add a tenth, and a proud
+  candidate may walk away. Seven berths; at least four hands to sail.
+- **The chandler** sells water, biscuit, pork, wine, rope, oakum and planks from the same purse. The
+  screen shows how long the stores will last the crew chosen so far.
+- **Aboard,** hired people keep what the captain learned as knowledge (claims, references, tests),
+  get duties to suit their real skills, and their true skills come out as they work. The crew
+  panel now shows skills and character as the captain knows them, not the hidden truth.
+- **Also fixed:** the voyage ends when all hands are lost, and command passes to the most respected
+  crew member if the captain dies (placeholder until succession rules are approved).
+- **Save format 14** (hiring in progress).
+
+Balance (8 seeds, a sensible captain choosing events at random): a well-found ship with a balanced
+crew and bought stores arrives 5–8 times; the same crew with only the Company's stores, never.
+363 tests pass. Developer options: `--testdeck` starts the old test scenario directly; `--hire=`
+hires, talks (`talk:id`), asks (`ask:id`) and sails (`sail`) for screenshots.
 

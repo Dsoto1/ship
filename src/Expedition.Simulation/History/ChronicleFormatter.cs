@@ -52,6 +52,9 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
             ChronicleEntryKind.WeatherChanged => WeatherChange(entry),
             ChronicleEntryKind.EventResolved => EventLine(entry),
             ChronicleEntryKind.AllHandsLost => $"No one is left alive aboard {Ship()}.",
+            ChronicleEntryKind.CrewHired => int.TryParse(entry.Get(ChronicleParameters.Level), out var paid) && paid < 0
+                ? $"{who} signed on, paying {-paid} sueldos for the passage."
+                : $"{who} signed on for an advance of {entry.Get(ChronicleParameters.Level)} sueldos.",
             ChronicleEntryKind.SailPlanChanged => entry.Get(ChronicleParameters.To) switch
             {
                 "PressOn" => "The captain ordered every sail set: press on.",
