@@ -34,6 +34,8 @@ public partial class PortHud : CanvasLayer
     private OptionButton _demonstrate = null!;
     private SpinBox _offer = null!;
     private Button _offerButton = null!;
+    private HBoxContainer _claimRow = null!;
+    private Label _claimText = null!;
     private Button _demonstrateButton = null!;
     private Label _pending = null!;
     private PanelContainer _dialogue = null!;
@@ -74,6 +76,9 @@ public partial class PortHud : CanvasLayer
 
     /// <summary>The card was closed.</summary>
     public event Action? CardClosed;
+
+    /// <summary>The captain answers a creditor's claim: the creditor, and true to pay.</summary>
+    public event Action<CharacterId, bool>? ClaimAnswered;
 
     public override void _Ready()
     {
@@ -244,6 +249,12 @@ public partial class PortHud : CanvasLayer
 
         var seekingNow = person?.Seeking is not null && talked && !port.Hired.Contains(id) && !port.Gone.Contains(id);
         _offer.Editable = seekingNow;
+        var claim = runner.OpenClaims().FirstOrDefault(c => c.Creditor == id);
+        _claimRow.Visible = claim.Claim is not null && runner.Campaign.Port?.Approached.Contains(id) == true;
+        _claimText.Visible = _claimRow.Visible;
+        _claimText.Text = claim.Claim is { } open && runner.CharacterFor(open.Debtor) is { } debtor
+            ? $"Claims {open.Amount} sueldos that {debtor.Name} owes him."
+            : "";
         _offerButton.Disabled = !seekingNow;
         _offerButton.TooltipText = seekingNow
             ? "Offer an advance on wages. Too little insults; some will not sail with certain others, or under a captain they distrust."
@@ -365,6 +376,14 @@ public partial class PortHud : CanvasLayer
         offer.AddChild(_offerButton);
         _offer = new SpinBox { MinValue = -2000, MaxValue = 5000, Step = 50, Suffix = "sueldos", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         offer.AddChild(_offer);
+
+        // A creditor's claim against someone signed on (R2e): pay it from the purse, or refuse.
+        _claimText = Ui.Text("", Ui.TextMeta + 1, Ui.Brass, 290);
+        column.AddChild(_claimText);
+        _claimRow = new HBoxContainer();
+        column.AddChild(_claimRow);
+        _claimRow.AddChild(Ui.Button("Pay the debt", "Pay it from the purse: the debtor sails with his name clear", () => { if (_shown is { } id) ClaimAnswered?.Invoke(id, true); }));
+        _claimRow.AddChild(Ui.Button("Refuse", "He sails anyway; the creditor will not forget it", () => { if (_shown is { } id) ClaimAnswered?.Invoke(id, false); }));
     }
 
     private void BuildDialogue()
@@ -446,7 +465,7 @@ public partial class PortHud : CanvasLayer
             $"Purse: {port.Funds} sueldos\nStores for {port.Hired.Count + 1}: water ~{Math.Floor(water * 0.9):0}–{Math.Ceiling(water * 1.1):0} days, food ~{Math.Floor(food * 0.9):0}–{Math.Ceiling(food * 1.1):0} days";
         if (Expedition.Simulation.Port.ShipPreparation.Of(runner.Campaign, runner.Content) is { } preparation)
         {
-            _objectives.Text += $"\n\nThe Garza — {Expedition.Simulation.Port.ShipPreparation.Describe(preparation.Stage)}";
+            _objectives.Text += $"\n\nThe Garza — {Expedition.Simulation.Port.ShipPreparation.Describe(preparation.Stage)}\n{runner.DescribeStanding()}";
             if (preparation.OnQuay.Count > 0)
             {
                 _objectives.Text += "\nOn the quay, going aboard: " + string.Join(", ", preparation.OnQuay.Select(s =>

@@ -37,7 +37,7 @@ This file tracks status and breaks the next work into tickets.
 | R2c | Tier C crowd, background ships, ship preparation states, visible cargo (steps 6, 9) | Done (2026-10-19) |
 | R2d | Sound zones, port weather and reactions, ambient micro-events (steps 10–12) | Done (2026-10-19) |
 | A-2 | Asset pass: recorded CC0 beds for surf, market crowd, tavern, wind and rain (Freesound) | Done (2026-10-19), awaiting the owner's listen |
-| R2e | Recognition and the departure sequence (steps 13, 14) | Planned |
+| R2e | Recognition and the departure sequence (steps 13, 14) | Done (2026-10-19) |
 | R3 | Visual validation: the four port scenes of PORT_EXPERIENCE §21, then Test B ship, with the hybrid pipeline (D-021) | Planned |
 | R4a | Wind, heading and sailing: wind direction, visibility, warning signs; why she is slow (VOYAGE §5, §20) | Planned |
 | R4b | True vs estimated position; the chart: dead reckoning, a latitude sight, uncertainty region, route legs, annotations (NAVIGATION) | Planned |
@@ -992,3 +992,76 @@ market by day 0.04, the tavern at night 0.08 with cups peaking at 0.66. The reco
 2. Stand on the quay: the surf. Walk to the market by day: the crowd. The tavern at night: voices.
 3. `--weather=rain`: the rain. `--weather=breezy`: the wind rises.
 4. Say if any bed sounds wrong for 1519 (a modern noise, music, a language) and it will be swapped.
+
+## R2e — The port comes to know the expedition, and the Garza sails
+
+PORT_EXPERIENCE §16–17; CHARACTER_DESIGN §29 (D-027 adopts the character briefs).
+
+**Recognition** (`SimulationRunner.Recognition.cs`; data in `data/port/bocana.json` → `recognition`
+and per person):
+- **Standing** comes from the hands signed on (2 each), the lots bought (1 each) and every 1,000
+  sueldos spent. It has four levels: not yet noticed, noticed, talked of, known. It is shown only in
+  words (the Expedition panel) and in what people do.
+- **Greetings:** once noticed, people the captain passes greet him, once a day each, with lines by
+  standing that use the crew count and the hours to the convoy. The chandler, the landlady, the
+  priest and the factor have lines of their own. The line passes as a toast.
+- **Candidates come to the captain:** once the expedition is talked of, about every hour one person
+  looking for a berth whom the captain has not met walks over and introduces themselves, with their
+  pitch and claims, as if spoken to. They are selected and their line is shown. They give up after
+  two hours if they cannot reach him.
+- **A creditor notices:** sign on Pons and Grilo the moneylender comes straight away, whatever the
+  standing: Pons owes him 400 sueldos. Pay it (Pons's trust +10) or refuse it (Grilo's trust −15) from
+  his card. If it is still open at departure, he is at the gangway.
+
+**The departure** (`DeparturePlan` in the simulation, `DepartureSequence` in the game). "Set sail"
+now plays it. It is written from the expedition as it is:
+1. the hour against the convoy: ahead of it, with it at dawn, or hours behind it;
+2. the crew aboard by name;
+3. for each hand, who has come to see them off. These farewells are written per person in the data:
+   - Pascual's mother;
+   - Tomé's irons unlocked and his pardon handed up;
+   - Inés in the tavern door for Nuño;
+   - Pons hurrying aboard;
+   - and others.
+
+   Otherwise no one has come;
+4. Grilo at the gangway if his claim is open, answered there by paying or refusing;
+5. the last stores going up the gangway, and what is in the hold, in casks, sacks and coils;
+6. the Company's clearance, or the factor's letter about the harbour dues paid for the delay;
+7. the captain boards last, the gangway comes in, the lines are cast off;
+8. the Garza is towed round and gathers way while the camera rises after her, then the voyage
+   begins.
+
+The management interface steps aside meanwhile, and people gather on the quay. Escape or "Skip"
+cuts to the sailing; an open claim is then refused.
+
+**Save format 19** records who has approached, any approach under way, the claims answered and the
+greetings given.
+
+**Developer:** `--depart` plays the departure at once.
+
+**Tests:** 401 pass, including:
+- standing;
+- no greetings before the expedition is noticed, then greetings once each;
+- a candidate seeking the captain out with their pitch;
+- Grilo's claim, paid;
+- the departure plan from the real crew;
+- **port-to-voyage continuity:** the same IDs, names, relationships, knowledge, hold and chronicle;
+- saving and migration.
+
+**Screenshots:** `docs/screenshots/r2e-departure-farewell.jpg`.
+
+**Limits:**
+- the crew are already aboard (they board when signed on), so the departure shows them at the rail,
+  not walking up the gangway;
+- farewells are lines with the gathered crowd, not the named relatives as figures;
+- recognition does not yet change prices;
+- the sponsor does not visit the ship before departure day.
+
+**Manual test (macOS):**
+1. `git pull`, Build, Cmd+B.
+2. Sign on two or three people and buy stores: people start to greet you as you pass the market.
+3. Keep going: someone looking for a berth comes to find you.
+4. Sign on Pons: Grilo comes for his money. Pay or refuse him from his card.
+5. Set sail with at least four hands: watch the departure through to the open sea, or press
+   Escape to skip.

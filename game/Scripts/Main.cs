@@ -79,6 +79,7 @@ public partial class Main : Node3D
     private PortCrowd _crowd = null!;
     private HarbourView _harbour = null!;
     private AmbientScenes _ambient = null!;
+    private DepartureSequence _departure = null!;
     private PreparationView _preparation = null!;
     private bool _farewells;
     private bool _portBuilt;
@@ -206,9 +207,41 @@ public partial class Main : Node3D
             CarryOutPending();
         };
         _portHud.BuyRequested += lot => _hud.ShowResult(_runner.Buy(lot), "Bought. The chandler's boy will carry it aboard.");
-        _portHud.SetSailRequested += () =>
+        _portHud.ClaimAnswered += (creditor, pay) =>
+        {
+            var result = pay ? _runner.PayClaim(creditor) : _runner.RefuseClaim(creditor);
+            _portHud.Say(!result.Succeeded ? result.Reason
+                : pay ? $"{_runner.Campaign.Characters[creditor].Name} counts the coins twice and goes off satisfied."
+                : $"{_runner.Campaign.Characters[creditor].Name} says the Chamber will hear of this.");
+        };
+
+        // Sailing plays the departure first (R2e): the real crew, cargo and claims, then the lines cast off.
+        _departure = new DepartureSequence { Name = "Departure" };
+        AddChild(_departure);
+        _departure.Beat += kind =>
+        {
+            switch (kind)
+            {
+                case "deadline":
+                    _portSound.Cue("bell", 0.5f);
+                    break;
+                case "gangway":
+                    _port.Gangway.Visible = false;
+                    _portSound.Cue("mallet", 0.45f);
+                    break;
+                case "lines":
+                    _port.Lines.Visible = false;
+                    _portSound.Cue("creak", 0.6f);
+                    break;
+            }
+        };
+        _departure.Finished += () =>
         {
             var result = ExpeditionScenario.SetSail(_runner);
+            _hud.Visible = true;
+            _portHud.Visible = true;
+            _port.Gangway.Visible = true;
+            _port.Lines.Visible = true;
             if (!result.Succeeded)
             {
                 _portHud.Say(result.Reason);
@@ -221,6 +254,7 @@ public partial class Main : Node3D
             _hud.ClosePanel();
             _hud.ShowStatus("Lines cast off. La Bocana falls astern.");
         };
+        _portHud.SetSailRequested += BeginDeparture;
 
         // Each new voyage gets its own seed; the seed is saved, so a reported problem can be replayed.
         var seed = (ulong)System.Random.Shared.NextInt64();
@@ -269,6 +303,23 @@ public partial class Main : Node3D
 
         CheckAlerts();
         CheckEvent();
+        if (_runner.Campaign.Port is not null)
+        {
+            // What people say to the captain of their own accord (R2e): greetings in passing are a
+            // passing line; someone who has come looking for him is shown and selected.
+            foreach (var line in _runner.TakeLines())
+            {
+                if (line.Approach)
+                {
+                    _selected = line.Who;
+                    _portHud.Say(line.Text);
+                }
+                else if (!_departure.Playing)
+                {
+                    _hud.Toast(line.Text);
+                }
+            }
+        }
         CarryOutPending();
         if (_runner.Campaign.Crew.Count() != _crewSeen)
         {
@@ -300,8 +351,9 @@ public partial class Main : Node3D
         // The ship rolls, pitches and heaves with the sea (ART_BIBLE.md 12). Visual only.
         var t = (float)_elapsed;
         var swell = inPort ? 0.15f : 0.35f + _seaState * 0.65f;
-        _ship.RotationDegrees = new Vector3(Mathf.Sin(t * 0.45f) * 0.8f * swell, inPort ? -90f : 0, Mathf.Sin(t * 0.6f) * 1.6f * swell);
-        _ship.Position = (inPort ? _port.Berth : _shipCentre) + new Vector3(0, Mathf.Sin(t * 0.7f) * 0.08f * swell - _sink, 0);
+        var leaving = inPort && _departure.Playing ? _departure.Ship : (Offset: Vector3.Zero, Turn: 0f);
+        _ship.RotationDegrees = new Vector3(Mathf.Sin(t * 0.45f) * 0.8f * swell, inPort ? -90f + leaving.Turn : 0, Mathf.Sin(t * 0.6f) * 1.6f * swell);
+        _ship.Position = (inPort ? _port.Berth + leaving.Offset : _shipCentre) + new Vector3(0, Mathf.Sin(t * 0.7f) * 0.08f * swell - _sink, 0);
 
         var clock = _runner.Campaign.Clock;
         var hour = (float)((clock.Tick + (speed > 0 ? _tickFraction : 0)) % SimulationClock.TicksPerDay / SimulationClock.TicksPerHour);
@@ -311,7 +363,17 @@ public partial class Main : Node3D
         if (inPort)
         {
             _seaState = 0.35f;
-            FollowCaptain((float)delta);
+            if (_departure.Camera is { } shot)
+            {
+                // The departure moves the camera itself: to the gangway, then after the ship.
+                _follow = false;
+                _camera.Target = _camera.Target.Lerp(shot.Target, Mathf.Clamp((float)delta * 1.5f, 0, 1));
+                _camera.Size = Mathf.Lerp(_camera.Size, shot.Size, Mathf.Clamp((float)delta * 1.2f, 0, 1));
+            }
+            else
+            {
+                FollowCaptain((float)delta);
+            }
             _port.UpdateLook(_world.Darkness, t, _portWet);
             FadeForeground((float)delta);
             ListenToThePort(hour, (float)delta);
@@ -338,7 +400,7 @@ public partial class Main : Node3D
             _preparation.Show(Expedition.Simulation.Port.ShipPreparation.Of(_runner.Campaign, _content), _runner.RainingInPort);
 
             // Departure morning: from first light, people come down to the quay to see her off (PORT_EXPERIENCE §5).
-            var farewells = inPort && _preparation.Stage == Expedition.Simulation.Port.PreparationStage.DepartureMorning && hour >= 4.5f;
+            var farewells = inPort && (_departure.Playing || (_preparation.Stage == Expedition.Simulation.Port.PreparationStage.DepartureMorning && hour >= 4.5f));
             if (farewells != _farewells)
             {
                 _farewells = farewells;
@@ -634,7 +696,7 @@ public partial class Main : Node3D
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (_runner is null)
+        if (_runner is null || _departure.Playing)
         {
             return;
         }
@@ -705,6 +767,23 @@ public partial class Main : Node3D
                     break;
             }
         }
+    }
+
+    // Sailing from port plays the departure first (R2e); the departure sails when it ends.
+    private void BeginDeparture()
+    {
+        if (_content.Port is { } rules && _runner.Campaign.Port is { } port && port.Hired.Count < rules.MinimumCrew)
+        {
+            _portHud.Say($"The Garza needs at least {rules.MinimumCrew} hands to sail; {port.Hired.Count} are signed on.");
+            return;
+        }
+
+        _hud.ClosePanel();
+        _hud.Visible = false;
+        _portHud.Visible = false;
+        _selected = _runner.Campaign.CaptainId;
+        SetSpeed(1);
+        _departure.Play(_runner, new Vector3(_port.Berth.X, 0, 33.6f), _port.Berth);
     }
 
     private void StartCampaign(SimulationRunner runner, string message)
@@ -1144,6 +1223,7 @@ public partial class Main : Node3D
     private int _developerHire;
     private int _developerAfter;
     private string? _developerScene;
+    private bool _developerDepart;
     private double _shotDelay = 3.0;
 
     // For screenshots of the port: --select=person.velho opens their card (and --talk walks the captain
@@ -1244,6 +1324,12 @@ public partial class Main : Node3D
         {
             _ambient.Force(scene);
         }
+
+        // --depart plays the departure at once (with --shotdelay to catch a moment of it).
+        if (_developerDepart && _runner.Campaign.Port is not null)
+        {
+            BeginDeparture();
+        }
     }
 
     private void ReadDeveloperArguments(ref ulong seed)
@@ -1274,6 +1360,7 @@ public partial class Main : Node3D
                 case "offer" when int.TryParse(value, out var advance): _developerOffer = advance; break;
                 case "buy": _developerBuy = value; break;
                 case "scene": _developerScene = value; break;
+                case "depart": _developerDepart = true; break;
                 case "shotdelay" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var wait): _shotDelay = wait; break;
                 case "hire" when int.TryParse(value, out var hands): _developerHire = hands; break;
                 case "after" when int.TryParse(value, out var later): _developerAfter = later; break;

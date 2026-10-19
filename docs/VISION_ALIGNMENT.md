@@ -235,8 +235,8 @@ Bocana, judged against the real 1490–1530 Atlantic they are modelled on.
 | Ambient events, without rewards | Ten data-driven scenes played near the player, no reward or state (R2d) | Aligned |
 | Purchases change authoritative cargo | `Buy` stores goods in the hold | Aligned |
 | Representative cargo appears physically | Bought stores stand on the quay, cross to the deck and go below as casks, sacks, chests and coils; the Garza dresses by preparation stage (R2c) | Aligned |
-| Port recognition changes with the expedition | — | Missing |
-| Departure uses the actual crew and cargo | Sailing moves the real crew; no departure sequence | Partly |
+| Port recognition changes with the expedition | Standing from hands, stores and spending shows as greetings, candidates seeking the captain out and a creditor's claim, never a number (R2e) | Aligned |
+| Departure uses the actual crew and cargo | The departure is written from the real crew, farewells, claims, stores and lateness, then she casts off and leaves (R2e) | Aligned |
 | Save and load keep persistent NPC and expedition state | Format 15 | Aligned |
 | Performance within targets | Not measured | Missing |
 | Nothing historical canonized from unverified generation | Fictional analogue; generated layout | Aligned |

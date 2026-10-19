@@ -50,6 +50,12 @@ public partial class PortView : Node3D
     private ShaderMaterial _ground = null!;
     private LocationDefinition _location = null!;
 
+    /// <summary>The Garza's gangway, taken in at departure.</summary>
+    public Node3D Gangway { get; private set; } = null!;
+
+    /// <summary>Her mooring lines to the bollards, cast off at departure.</summary>
+    public Node3D Lines { get; private set; } = null!;
+
     /// <summary>Centre of the Garza's hull where she lies alongside, at the waterline-relative deck height.</summary>
     public Vector3 Berth { get; private set; }
 
@@ -1075,6 +1081,11 @@ public partial class PortView : Node3D
     // man-ropes, fenders, and her ensign at the stern (PORT_VISUAL_PASS §3.11).
     private void MooringAndGangway()
     {
+        // In their own nodes, so the departure can take in the gangway and cast off the lines (R2e).
+        var scenery = _batch;
+        _batch = new MeshBatcher();
+        Lines = new Node3D { Name = "MooringLines" };
+        AddChild(Lines);
         var berth = Berth;
         var side = berth.Z - 4.3f;
         foreach (var (bollard, onShip) in new[] { (19f, berth.X - 10.5f), (27f, berth.X - 2.5f), (35f, berth.X + 2.5f), (41f, berth.X + 10f) })
@@ -1085,6 +1096,10 @@ public partial class PortView : Node3D
             Spar(post, sag, 0.025f, Rope);
             Spar(sag, cleat, 0.025f, Rope);
         }
+
+        _batch.Commit(Lines);
+        Gangway = new Node3D { Name = "Gangway" };
+        AddChild(Gangway);
 
         // The gangway: a plank with cleats, rising from the quay to her rail, man-ropes either side.
         var foot = new Vector3(berth.X, 0.06f, 33.6f);
@@ -1103,6 +1118,9 @@ public partial class PortView : Node3D
             Spar(foot + new Vector3(x, 1f, 0), top + new Vector3(x, 0.9f, 0), 0.015f, Rope);
         }
 
+        _batch.Commit(Gangway);
+        _batch = new MeshBatcher();
+
         // Fenders of old rope hanging between her side and the quay.
         foreach (var x in new[] { -7f, -1.5f, 4f, 8.5f })
         {
@@ -1114,6 +1132,9 @@ public partial class PortView : Node3D
         Spar(staff, staff + new Vector3(0, 4.2f, 0), 0.04f, Timber);
         AddBox(staff + new Vector3(-0.75f, 3.7f, 0), new Vector3(1.4f, 0.9f, 0.03f), new Color(0.62f, 0.13f, 0.12f), rotation: new Vector3(0, 12, 0));
         AddBox(staff + new Vector3(-0.75f, 3.7f, 0.02f), new Vector3(0.5f, 0.5f, 0.02f), new Color(0.85f, 0.7f, 0.25f), rotation: new Vector3(0, 12, 0));
+        // Fenders and ensign go with her lines: in when she casts off.
+        _batch.Commit(Lines);
+        _batch = scenery;
     }
 
     // ---- small parts
