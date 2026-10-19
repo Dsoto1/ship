@@ -21,7 +21,7 @@ public partial class CameraRig : Camera3D
     public override void _Ready()
     {
         Projection = ProjectionType.Orthogonal;
-        Size = 20f;
+        Size = 22f;
         Far = 200f;
         Current = true;
         Apply();

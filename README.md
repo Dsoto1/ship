@@ -5,7 +5,10 @@ A single-player isometric historical survival, expedition and settlement game se
 and survives what follows: a storm, a shipwreck, landfall and settlement. The same crew is
 carried through every phase.
 
-**Status:** P0 (simulation foundation) complete. Characters with skills, attributes, traits,
+![The Garza at sea](docs/screenshots/v1-day.jpg)
+
+**Status:** building a playable voyage (D-015). V1, the world around you, is done; next is V2, the ship
+in danger. P0 (simulation foundation) is complete. Characters with skills, attributes, traits,
 relationships and appearance; tasks with queues and priorities; time, needs, provisions, inventories,
 positions, a structured chronicle and versioned save/load. All of it is tested headless and shown in
 a graybox Godot scene (`game/`). Next: P1, the first playable vertical slice.
@@ -35,7 +38,7 @@ Controls:
 | Right-hand panel, Orders tab | Order a task (dimmed tasks say why they are refused) |
 | Right-hand panel, Duties tab | Choose what this crew member does on their own when idle |
 | Space, 1–4 | Pause and time speed |
-| WASD / arrow keys, wheel, Q/E | Pan, zoom, turn the camera |
+| WASD / arrow keys, wheel, Q/E | Pan, zoom (zoom out to see the sails), turn the camera |
 | Cmd+S / Cmd+L (Ctrl elsewhere), or F5 / F9 | Quick save / quick load |
 | Tab | Select the next crew member |
 

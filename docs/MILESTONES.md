@@ -23,9 +23,13 @@ This file tracks status and breaks the next work into tickets.
 | 5a | Identity: sex, languages, social status | Done (2026-10-19) |
 | 5b | Captain's knowledge: truth vs what is known | Done (2026-10-19) |
 | 5b+ | Standing duties and self-care (owner: "the crew needs automating") | Done (2026-10-19) |
-| 5c | Recruitment rules: candidates, investigation, offers, deadline | Proposed |
-| 5d | Godot waterfront recruitment scene | Proposed |
-| 6 | Voyage-to-crisis vertical slice | Not started |
+| V1 | The world around you: sea, sky, day and night, a real ship, people (D-015) | Done (2026-10-19) |
+| V2 | The ship in danger: leaks, wear, supplies, distance, need-driven duties | Next |
+| V3 | Things happen: events with choices, crew who speak up | Planned |
+| V4 | Choose who comes: simple pre-voyage hiring (the core of 5c) | Planned |
+| 5c | Recruitment rules in full: investigation, references, counteroffers | Later (core moves into V4) |
+| 5d | Godot waterfront recruitment scene | Later, once the voyage is fun |
+| 6 | Voyage-to-crisis vertical slice | Becomes V2–V3 |
 | 7 | Shipwreck or landfall continuation | Not started |
 
 ## Ticket 0 findings
@@ -363,4 +367,32 @@ D-014. Crew now keep themselves busy without clicking.
   with all work counted as ordered and no duties.
 
 296 tests pass, including three days of the crew running on duties alone with nobody exhausted.
+
+## V1 — The world around you (owner: "just watching pills move on a boxy ship")
+
+D-015. Visual only: the simulation is unchanged except clearer refusal messages.
+- **Sea:** a shader ocean (`game/Shaders/ocean.gdshader`): rolling swells, ripples, whitecaps, a
+  wake along the hull and astern, drifting cloud shadows and haze. It follows the camera, so it never
+  ends, and takes a sea state (calm to heavy) ready for weather in V2.
+- **Day and night** from the simulation clock (`SeaAndSky`): the sun crosses the sky, dusk warms the
+  light, and night is blue moonlight with lanterns on the masts and stern and the galley fire.
+- **The ship** (`ShipView`, replaces `DeckView`): a curved hull with a wale and pale bottom that hugs
+  the walkable deck, bulwarks with sheer, planked deck, raised stern with cabin and lantern, bowsprit,
+  fore and main masts with yards and bellied square sails, a lateen mizzen, shrouds and stays, a
+  pennant, hatch gratings, lashed casks, and fittings at each work spot (pump, galley fire box, rope
+  coils, planks and tar). Sails fade at working zoom so they never hide the crew; zoom out to see
+  them whole.
+- **People** (`CrewFigure`): legs, body, arms, head, hair and beard from the appearance record;
+  officers wear a brimmed hat, sailors a cap. They walk with a stride, work with their arms, sit to
+  rest, lie down when hurt, and turn to face where they are going. Seabirds wheel overhead.
+- **Interface:** smaller text, see-through panels, a compact hold line, a foldable chronicle and a
+  "Controls" button instead of a permanent help block.
+- **Messages:** refusals name skills and items ("needs Rigging 1", "Rope ×2"), not IDs.
+- **Developer screenshots:** `-- --screenshot=PATH --advance=MINUTES --zoom=N --seed=N` renders the
+  scene without a person at the screen, so changes can be checked before the owner tests them.
+  Screenshots in `docs/screenshots/`.
+
+296 tests pass. Rendered and checked with Godot 4.7.2 (Compatibility renderer, software GPU) at day,
+dusk and night and at three zoom levels; the owner's Mac uses Forward+, which may look a little
+different.
 

@@ -358,3 +358,24 @@ base for watch rotations and roles (bosun, cook) once ship systems exist (Ticket
 per person, and duties that respond to need (pump only when the bilge is high). These need ship
 systems.
 
+---
+
+## D-015 — Playable voyage before the port
+
+**Date:** 2026-10-19
+**Status:** Accepted (owner: "there is no gameplay yet… I have 0 investment in these people or the
+ship, nothing seems to happen and we see nothing around us"; approved the plan)
+
+**Decision.** Build one short, playable voyage before finishing recruitment and the port, in four
+steps the owner can play after each:
+1. **V1, the world around you:** sea, sky, day and night, a real ship, people instead of pills.
+2. **V2, the ship in danger:** leaks and the bilge, rigging wear, supplies running down, distance to
+   the Ember Coast, a way to win or lose; duties that respond to need.
+3. **V3, things happen:** authored events that pause and offer choices with lasting consequences;
+   crew who voice concerns.
+4. **V4, choose who comes:** a simple hiring screen before sailing, using the 5b knowledge model.
+
+**Why.** The simulation foundation (P0, 5a, 5b, duties) is what the voyage runs on, but without
+stakes, events and a visible world it is not a game. The full port (5c, 5d) waits until the voyage
+is worth playing.
+

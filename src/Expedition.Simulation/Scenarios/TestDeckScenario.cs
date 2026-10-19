@@ -41,7 +41,7 @@ public static class TestDeckScenario
         (0, 1, Characters.RelationshipDimension.Respect, 25, "the best rigger he knows"),
         (2, 3, Characters.RelationshipDimension.Respect, -20, "young and careless"),
         (3, 2, Characters.RelationshipDimension.Affection, 15, "fed him when he first came aboard"),
-        (4, 0, Characters.RelationshipDimension.Trust, -10, "a Portuguese stranger to this captain"),
+        (4, 0, Characters.RelationshipDimension.Trust, -10, "a Lusaran stranger to this captain"),
     ];
 
     // Standing duties, by index into Crew: what each does when idle with no orders (in turn).

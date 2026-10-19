@@ -126,7 +126,7 @@ public class TaskExecutionTests
         var result = runner.AssignTask(sailor.Id, "task.repair_rigging");
 
         Assert.False(result.Succeeded);
-        Assert.Contains("skill.rigging", result.Reason);
+        Assert.Contains("Rigging 1", result.Reason);
         Assert.Equal(2, runner.Campaign.SharedStore.Count("item.rope"));
     }
 
@@ -140,7 +140,7 @@ public class TaskExecutionTests
         var result = runner.AssignTask(sailor.Id, "task.repair_rigging");
 
         Assert.False(result.Succeeded);
-        Assert.Contains("item.marlinspike", result.Reason);
+        Assert.Contains("Marlinspike", result.Reason);
     }
 
     [Fact]
@@ -154,7 +154,7 @@ public class TaskExecutionTests
         var result = runner.AssignTask(sailor.Id, "task.repair_rigging");
 
         Assert.False(result.Succeeded);
-        Assert.Contains("item.rope x2", result.Reason);
+        Assert.Contains("Rope ×2", result.Reason);
         Assert.Equal(1, runner.Campaign.SharedStore.Count("item.rope"));
     }
 

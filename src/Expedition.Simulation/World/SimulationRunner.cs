@@ -137,7 +137,7 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
 
         if (task.Skill is not null && character.Skills.Get(task.Skill) < task.MinSkill)
         {
-            return (CommandResult.Rejected($"{character.Name} lacks the skill: {task.Name} needs {task.Skill} {task.MinSkill}."), false);
+            return (CommandResult.Rejected($"{character.Name} lacks the skill: {task.Name} needs {SkillName(task.Skill)} {task.MinSkill}."), false);
         }
 
         Campaign.ActiveTasks.TryGetValue(characterId, out var current);
@@ -192,7 +192,7 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
 
             if (task.Skill is not null && character.Skills.Get(task.Skill) < task.MinSkill)
             {
-                return CommandResult.Rejected($"{character.Name} lacks the skill: {task.Name} needs {task.Skill} {task.MinSkill}.");
+                return CommandResult.Rejected($"{character.Name} lacks the skill: {task.Name} needs {SkillName(task.Skill)} {task.MinSkill}.");
             }
         }
 
@@ -237,6 +237,10 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
         return CommandResult.Ok();
     }
 
+    private string ItemName(string id) => Content.Items.TryGetValue(id, out var item) ? item.Name : id;
+
+    private string SkillName(string id) => Content.Skills.TryGetValue(id, out var skill) ? skill.Name : id;
+
     /// <summary>The eligibility rules shared by every way of starting work.</summary>
     private CommandResult Check(Character character, TaskDefinition task, bool materialsAlreadyUsed)
     {
@@ -253,19 +257,19 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
         if (task.Skill is not null && character.Skills.Get(task.Skill) < task.MinSkill)
         {
             return CommandResult.Rejected(
-                $"{character.Name} lacks the skill: {task.Name} needs {task.Skill} {task.MinSkill}.");
+                $"{character.Name} lacks the skill: {task.Name} needs {SkillName(task.Skill)} {task.MinSkill}.");
         }
 
         var missingTools = task.RequiredTools.Where(tool => Available(character, tool) == 0).ToList();
         if (missingTools.Count > 0)
         {
-            return CommandResult.Rejected($"{task.Name} needs tools that are not on hand: {string.Join(", ", missingTools)}.");
+            return CommandResult.Rejected($"{task.Name} needs tools that are not on hand: {string.Join(", ", missingTools.Select(ItemName))}.");
         }
 
         if (!materialsAlreadyUsed)
         {
             var missing = task.Consumes.Where(pair => Available(character, pair.Key) < pair.Value)
-                .Select(pair => $"{pair.Key} x{pair.Value}")
+                .Select(pair => $"{ItemName(pair.Key)} ×{pair.Value}")
                 .ToList();
             if (missing.Count > 0)
             {

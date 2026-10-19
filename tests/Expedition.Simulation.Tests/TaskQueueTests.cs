@@ -153,7 +153,7 @@ public class TaskQueueTests
         Assert.Equal("task.rest", Current(runner, sailor));
         var dropped = runner.Campaign.Chronicle.Entries.Single(e => e.Kind == ChronicleEntryKind.TaskDropped);
         Assert.Equal("task.repair_rigging", dropped.Get(ChronicleParameters.Task));
-        Assert.Contains("item.marlinspike", dropped.Get(ChronicleParameters.Cause));
+        Assert.Contains("Marlinspike", dropped.Get(ChronicleParameters.Cause));
     }
 
     [Fact]

@@ -66,7 +66,7 @@ public partial class Hud : CanvasLayer
 
     public override void _Ready()
     {
-        var root = new Control { MouseFilter = Control.MouseFilterEnum.Ignore };
+        var root = new Control { MouseFilter = Control.MouseFilterEnum.Ignore, Theme = BuildTheme() };
         root.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         AddChild(root);
 
@@ -74,6 +74,38 @@ public partial class Hud : CanvasLayer
         BuildLeftPanel(root);
         BuildRightPanel(root);
         BuildChronicle(root);
+    }
+
+    // Smaller text and see-through dark panels, so the interface frames the scene instead of covering it.
+    private static Theme BuildTheme()
+    {
+        var theme = new Theme { DefaultFontSize = 13 };
+        var panel = new StyleBoxFlat
+        {
+            BgColor = new Color(0.07f, 0.06f, 0.05f, 0.72f),
+            CornerRadiusTopLeft = 4, CornerRadiusTopRight = 4, CornerRadiusBottomLeft = 4, CornerRadiusBottomRight = 4,
+            ContentMarginLeft = 8, ContentMarginRight = 8, ContentMarginTop = 6, ContentMarginBottom = 6,
+        };
+        theme.SetStylebox("panel", "PanelContainer", panel);
+        foreach (var state in new[] { "normal", "hover", "pressed", "focus", "disabled" })
+        {
+            var button = new StyleBoxFlat
+            {
+                BgColor = state switch
+                {
+                    "hover" => new Color(0.3f, 0.25f, 0.18f, 0.85f),
+                    "pressed" => new Color(0.45f, 0.35f, 0.2f, 0.9f),
+                    _ => new Color(0.18f, 0.15f, 0.12f, 0.75f),
+                },
+                CornerRadiusTopLeft = 3, CornerRadiusTopRight = 3, CornerRadiusBottomLeft = 3, CornerRadiusBottomRight = 3,
+                ContentMarginLeft = 6, ContentMarginRight = 6, ContentMarginTop = 3, ContentMarginBottom = 3,
+            };
+            theme.SetStylebox(state, "Button", button);
+        }
+
+        theme.SetColor("font_color", "Label", new Color(0.93f, 0.9f, 0.84f));
+        theme.SetColor("font_color", "Button", new Color(0.93f, 0.9f, 0.84f));
+        return theme;
     }
 
     /// <summary>Rebuilds the crew list and task buttons for a newly started or loaded campaign.</summary>
@@ -151,15 +183,15 @@ public partial class Hud : CanvasLayer
             button.Modulate = id == selected ? new Color(1f, 0.93f, 0.7f) : Colors.White;
         }
 
-        _hold.Text = "Ship's hold\n" + string.Join("\n", campaign.SharedStore.Quantities
-            .Select(pair => $"  {runner.Content.Items[pair.Key].Name}: {pair.Value}"));
+        _hold.Text = "Hold: " + string.Join(" · ", campaign.SharedStore.Quantities
+            .Select(pair => $"{runner.Content.Items[pair.Key].Name} {pair.Value}"));
 
         RefreshSelected(runner, selected);
 
         if (campaign.Chronicle.Entries.Count != _chronicleCount)
         {
             _chronicleCount = campaign.Chronicle.Entries.Count;
-            _chronicle.Text = string.Join("\n", campaign.Chronicle.Entries.TakeLast(40)
+            _chronicle.Text = string.Join("\n", campaign.Chronicle.Entries.TakeLast(30)
                 .Select(e => $"[{new SimulationClock(e.Tick)}] {_formatter.Format(e)}"));
         }
     }
@@ -335,24 +367,34 @@ public partial class Hud : CanvasLayer
 
     private void BuildLeftPanel(Control root)
     {
-        var panel = new PanelContainer { Position = new Vector2(10, 50), CustomMinimumSize = new Vector2(260, 0) };
+        var panel = new PanelContainer { Position = new Vector2(8, 40), CustomMinimumSize = new Vector2(230, 0) };
         root.AddChild(panel);
         var column = new VBoxContainer();
+        column.AddThemeConstantOverride("separation", 2);
         panel.AddChild(column);
         column.AddChild(new Label { Text = "Crew" });
         _crewList = new VBoxContainer();
+        _crewList.AddThemeConstantOverride("separation", 2);
         column.AddChild(_crewList);
         column.AddChild(new HSeparator());
-        _hold = new Label();
+        _hold = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(214, 0) };
+        _hold.AddThemeFontSizeOverride("font_size", 11);
         column.AddChild(_hold);
-        column.AddChild(new HSeparator());
+
+        // Controls reminder, folded away until asked for.
         var help = new Label
         {
-            Text = "Left-click: select\nRight-click deck: walk there\nSpace: pause · 1–4: speed\nTab: next crew member\n" +
-                   "WASD: pan · wheel: zoom · Q/E: turn\nCmd+S / Cmd+L: save / load",
-            Modulate = new Color(1, 1, 1, 0.7f),
+            Text = "Left-click: select · Right-click deck: walk there\nSpace: pause · 1–4: speed · Tab: next crew member\n" +
+                   "WASD: pan · wheel: zoom (zoom out to see the sails) · Q/E: turn\nCmd+S / Cmd+L: save / load",
+            Modulate = new Color(1, 1, 1, 0.75f),
+            Visible = false,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            CustomMinimumSize = new Vector2(214, 0),
         };
-        help.AddThemeFontSizeOverride("font_size", 12);
+        help.AddThemeFontSizeOverride("font_size", 11);
+        var toggle = new Button { Text = "Controls", FocusMode = Control.FocusModeEnum.None, Alignment = HorizontalAlignment.Left };
+        toggle.Pressed += () => help.Visible = !help.Visible;
+        column.AddChild(toggle);
         column.AddChild(help);
     }
 
@@ -363,16 +405,16 @@ public partial class Hud : CanvasLayer
         var panel = new PanelContainer
         {
             AnchorLeft = 1, AnchorRight = 1, AnchorBottom = 1,
-            OffsetLeft = -370, OffsetRight = -10, OffsetTop = 50, OffsetBottom = -10,
+            OffsetLeft = -318, OffsetRight = -8, OffsetTop = 40, OffsetBottom = -8,
         };
         root.AddChild(panel);
         var column = new VBoxContainer();
         panel.AddChild(column);
 
         _name = new Label();
-        _name.AddThemeFontSizeOverride("font_size", 20);
+        _name.AddThemeFontSizeOverride("font_size", 17);
         column.AddChild(_name);
-        _doing = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(330, 0) };
+        _doing = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(290, 0) };
         column.AddChild(_doing);
 
         foreach (var need in new[] { "Hunger", "Thirst", "Fatigue", "Stress" })
@@ -399,7 +441,7 @@ public partial class Hud : CanvasLayer
         orders.AddChild(new Label
         {
             Text = "Click a task to order it. It starts when current work is done.",
-            AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(320, 0),
+            AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(286, 0),
         });
         _urgent = new CheckBox { Text = "Urgent: pause current work and do this first", FocusMode = Control.FocusModeEnum.None };
         orders.AddChild(_urgent);
@@ -417,7 +459,7 @@ public partial class Hud : CanvasLayer
         duties.AddChild(new Label
         {
             Text = "When idle with no orders, this crew member takes up these duties in turn. Everyone rests on their own when tired, and your orders always come first.",
-            AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(320, 0),
+            AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(286, 0),
         });
         _dutyList = new VBoxContainer();
         duties.AddChild(_dutyList);
@@ -445,25 +487,38 @@ public partial class Hud : CanvasLayer
     }
 
     private static Label Wrapped() =>
-        new() { AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(320, 0) };
+        new() { AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(286, 0) };
 
     private void BuildChronicle(Control root)
     {
         var panel = new PanelContainer
         {
             AnchorTop = 1, AnchorBottom = 1, AnchorRight = 1,
-            OffsetLeft = 280, OffsetRight = -380, OffsetTop = -200, OffsetBottom = -10,
+            OffsetLeft = 246, OffsetRight = -326, OffsetTop = -112, OffsetBottom = -8,
         };
         root.AddChild(panel);
         var column = new VBoxContainer();
         panel.AddChild(column);
-        column.AddChild(new Label { Text = "Chronicle" });
+        var header = new HBoxContainer();
+        column.AddChild(header);
+        header.AddChild(new Label { Text = "Chronicle", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill });
         _chronicle = new RichTextLabel
         {
             ScrollFollowing = true,
             SizeFlagsVertical = Control.SizeFlags.ExpandFill,
             SelectionEnabled = true,
         };
+        _chronicle.AddThemeFontSizeOverride("normal_font_size", 12);
         column.AddChild(_chronicle);
+
+        // Fold the log down to its title bar to see more of the deck.
+        var fold = new Button { Text = "Hide", FocusMode = Control.FocusModeEnum.None };
+        fold.Pressed += () =>
+        {
+            _chronicle.Visible = !_chronicle.Visible;
+            panel.OffsetTop = _chronicle.Visible ? -112 : -36;
+            fold.Text = _chronicle.Visible ? "Hide" : "Show";
+        };
+        header.AddChild(fold);
     }
 }

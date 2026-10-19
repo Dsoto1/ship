@@ -67,7 +67,7 @@ public class DutyTests
         runner.Advance(1);
 
         Assert.False(runner.Campaign.ActiveTasks.ContainsKey(crew[1]));
-        Assert.Contains("item.rope", runner.WhyNoDuty(crew[1]));
+        Assert.Contains("Rope", runner.WhyNoDuty(crew[1]));
     }
 
     [Fact]

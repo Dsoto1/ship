@@ -1,3 +1,4 @@
+using Expedition.Simulation.Characters;
 using Expedition.Simulation.Content;
 using Expedition.Simulation.Core;
 using Expedition.Simulation.Persistence;
@@ -30,13 +31,17 @@ public partial class Main : Node3D
     private CameraRig _camera = null!;
     private Node3D _ship = null!;
     private Node3D _shipContents = null!;
-    private DeckView _deck = null!;
+    private ShipView _deck = null!;
+    private SeaAndSky _world = null!;
+    private readonly List<SeaBird> _birds = [];
+    private float _seaState = 1f;
     private Hud _hud = null!;
     private CharacterId? _selected;
     private int _speedIndex;
     private int _lastRunningSpeed = 1;
     private double _tickFraction;
     private double _elapsed;
+    private Vector3 _shipCentre;
 
     public override void _Ready()
     {
@@ -72,7 +77,22 @@ public partial class Main : Node3D
 
         // Each new voyage gets its own seed; the seed is saved, so a reported problem can be replayed.
         var seed = (ulong)System.Random.Shared.NextInt64();
+        ReadDeveloperArguments(ref seed);
         StartCampaign(TestDeckScenario.Create(_content, seed), "New voyage started. Left-click to select, right-click to walk.");
+        if (_startZoom is { } size)
+        {
+            _camera.Size = size;
+        }
+
+        if (_advanceOnStart > 0)
+        {
+            _runner.Advance(_advanceOnStart);
+        }
+
+        if (!string.IsNullOrEmpty(_screenshotPath))
+        {
+            TakeScreenshotAndQuit();
+        }
     }
 
     public override void _Process(double delta)
@@ -95,19 +115,40 @@ public partial class Main : Node3D
             }
         }
 
-        // A gentle roll so the ship feels afloat (ART_BIBLE.md 12). Visual only.
-        _ship.RotationDegrees = new Vector3(Mathf.Sin((float)_elapsed * 0.45f) * 0.5f, 0, Mathf.Sin((float)_elapsed * 0.6f) * 0.9f);
+        // The ship rolls, pitches and heaves with the sea (ART_BIBLE.md 12). Visual only.
+        var t = (float)_elapsed;
+        var swell = 0.35f + _seaState * 0.65f;
+        _ship.RotationDegrees = new Vector3(Mathf.Sin(t * 0.45f) * 0.8f * swell, 0, Mathf.Sin(t * 0.6f) * 1.6f * swell);
+        _ship.Position = _shipCentre + new Vector3(0, Mathf.Sin(t * 0.7f) * 0.08f * swell, 0);
+
+        var clock = _runner.Campaign.Clock;
+        var hour = (float)((clock.Tick + (speed > 0 ? _tickFraction : 0)) % SimulationClock.TicksPerDay / SimulationClock.TicksPerHour);
+        var hull = new Vector4(_deck.CentreX, (_deck.Length.Bow + _deck.Length.Stern) / 2f, _deck.HalfBeam, (_deck.Length.Stern - _deck.Length.Bow) / 2f);
+        _world.UpdateWorld(hour, _seaState, 1.6f, (float)delta, _camera.Target, hull);
+        var cooking = _runner.Campaign.ActiveTasks.Values.Any(task => task.DefinitionId == "task.cook");
+        // Sails turn see-through at working zoom so they never hide the crew (ART_BIBLE.md 3); zoom out to see them whole.
+        _deck.UpdateLook(_world.Darkness, Mathf.Lerp(0.38f, 1f, Mathf.SmoothStep(18f, 32f, _camera.Size)), t, cooking);
+        foreach (var bird in _birds)
+        {
+            bird.Centre = _shipCentre + new Vector3(0, 0, -2f);
+        }
 
         var drawTick = _runner.Campaign.Clock.Tick + (speed > 0 ? _tickFraction : 0);
+        var animationRate = speed == 0 ? 0f : 1f + Mathf.Log(speed) * 0.25f;
         foreach (var (id, figure) in _figures)
         {
             var character = _runner.Campaign.Characters[id];
             if (_runner.Campaign.Placements.TryGetValue(id, out var placement))
             {
-                var activity = _runner.Campaign.ActiveTasks.TryGetValue(id, out var task)
-                    ? _content.Tasks[task.DefinitionId].Name
-                    : "";
-                figure.Refresh(character, placement, drawTick, id == _selected, activity, id == _runner.Campaign.CaptainId);
+                _runner.Campaign.ActiveTasks.TryGetValue(id, out var task);
+                var definition = task is null ? null : _content.Tasks[task.DefinitionId];
+                var pose = character.SurvivalState is SurvivalState.Incapacitated or SurvivalState.Dead ? Pose.Lying
+                    : placement.IsMoving ? Pose.Walking
+                    : definition is { IsRest: true } ? Pose.Resting
+                    : definition is not null ? Pose.Working
+                    : Pose.Standing;
+                figure.Refresh(character, placement, drawTick, id == _selected, Hud.Activity(_runner, character),
+                    id == _runner.Campaign.CaptainId, pose, (float)delta, animationRate);
             }
         }
 
@@ -170,13 +211,16 @@ public partial class Main : Node3D
 
         // Roll around the middle of the deck rather than its corner.
         var centre = new Vector3((location.Width - 1) / 2f, 0, (location.Height - 1) / 2f);
+        _shipCentre = centre;
         _ship.Position = centre;
         _shipContents.Position = -centre;
         _camera.Target = centre;
 
         foreach (var id in runner.Campaign.Placements.Keys.Order())
         {
-            var figure = CrewFigure.Create(runner.Campaign.Characters[id].Appearance, _content.Appearance);
+            var character = runner.Campaign.Characters[id];
+            var officer = id == runner.Campaign.CaptainId || character.StatusId is "status.officer" or "status.gentleman";
+            var figure = CrewFigure.Create(character.Appearance, _content.Appearance, officer);
             _shipContents.AddChild(figure);
             _figures[id] = figure;
         }
@@ -284,42 +328,57 @@ public partial class Main : Node3D
 
     private void BuildWorld()
     {
-        AddChild(new WorldEnvironment
-        {
-            Environment = new Godot.Environment
-            {
-                BackgroundMode = Godot.Environment.BGMode.Color,
-                BackgroundColor = new Color(0.62f, 0.7f, 0.76f),
-                AmbientLightSource = Godot.Environment.AmbientSource.Color,
-                AmbientLightColor = new Color(0.7f, 0.76f, 0.85f),
-                AmbientLightEnergy = 0.55f,
-                TonemapMode = Godot.Environment.ToneMapper.Filmic,
-            },
-        });
-        AddChild(new DirectionalLight3D
-        {
-            RotationDegrees = new Vector3(-52, -35, 0),
-            LightColor = new Color(1f, 0.95f, 0.85f),
-            LightEnergy = 1.1f,
-            ShadowEnabled = true,
-        });
-
-        AddChild(new MeshInstance3D
-        {
-            Mesh = new PlaneMesh { Size = new Vector2(400, 400) },
-            MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.16f, 0.32f, 0.38f), Roughness = 0.35f },
-            Position = new Vector3(4, -1.2f, 10),
-        });
+        _world = new SeaAndSky { Name = "SeaAndSky" };
+        AddChild(_world);
 
         _ship = new Node3D { Name = "Ship" };
         AddChild(_ship);
         _shipContents = new Node3D { Name = "ShipContents" };
         _ship.AddChild(_shipContents);
-        _deck = new DeckView { Name = "Deck" };
+        _deck = new ShipView { Name = "ShipView" };
         _shipContents.AddChild(_deck);
+
+        for (var i = 0; i < 3; i++)
+        {
+            var bird = SeaBird.Create(Vector3.Zero, 9f + i * 4f, (i % 2 == 0 ? 0.35f : -0.28f) + i * 0.03f, i * 2.1f, 9f + i * 2.5f);
+            AddChild(bird);
+            _birds.Add(bird);
+        }
 
         _camera = new CameraRig { Name = "Camera" };
         AddChild(_camera);
+    }
+
+    // Developer options, passed after "--" on the Godot command line, for checking the scene without a
+    // person at the screen: --seed=N, --speed=0..3, --advance=MINUTES (simulate before the first frame),
+    // --screenshot=PATH (save the screen after a few seconds, then quit), --hour=H (start at that hour).
+    private string? _screenshotPath;
+    private int _advanceOnStart;
+    private float? _startZoom;
+
+    private void ReadDeveloperArguments(ref ulong seed)
+    {
+        foreach (var argument in OS.GetCmdlineUserArgs())
+        {
+            var parts = argument.TrimStart('-').Split('=', 2);
+            var value = parts.Length > 1 ? parts[1] : "";
+            switch (parts[0])
+            {
+                case "seed" when ulong.TryParse(value, out var number): seed = number; break;
+                case "speed" when int.TryParse(value, out var speed): SetSpeed(Math.Clamp(speed, 0, TicksPerSecond.Length - 1)); break;
+                case "advance" when int.TryParse(value, out var minutes): _advanceOnStart = minutes; break;
+                case "screenshot": _screenshotPath = value; break;
+                case "zoom" when float.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var zoom): _startZoom = zoom; break;
+            }
+        }
+    }
+
+    private async void TakeScreenshotAndQuit()
+    {
+        await ToSignal(GetTree().CreateTimer(3.0), SceneTreeTimer.SignalName.Timeout);
+        await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+        GetViewport().GetTexture().GetImage().SavePng(_screenshotPath);
+        GetTree().Quit();
     }
 
     private void ShowFatalError(string message)
