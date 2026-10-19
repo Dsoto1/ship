@@ -55,6 +55,9 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
             ChronicleEntryKind.Noticed => $"You noticed something about {who}: {Secret(entry.Get(ChronicleParameters.To))}",
             ChronicleEntryKind.LeftPort => $"{who} {entry.Get(ChronicleParameters.Reason)}.",
             ChronicleEntryKind.ConvoyWarning => $"The Chamber's notice: the convoy sails at dawn, in {entry.Get(ChronicleParameters.Level)} hours.",
+            ChronicleEntryKind.LeadHeard => Lead(entry.Get(ChronicleParameters.To)) is { } lead
+                ? $"Heard of someone worth finding: \"{lead.Text}\" ({lead.Where})"
+                : "Heard of someone worth finding.",
             ChronicleEntryKind.LateFee => $"The convoy has gone without {Ship()}. Harbour fees and the Company's displeasure: {entry.Get(ChronicleParameters.Level)} sueldos.",
             ChronicleEntryKind.CrewHired => int.TryParse(entry.Get(ChronicleParameters.Level), out var paid) && paid < 0
                 ? $"{who} signed on, paying {-paid} sueldos for the passage."
@@ -112,6 +115,9 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
         content.Port?.People.SelectMany(p => p.Secrets).FirstOrDefault(s => s.Id == id)?.Text is { Length: > 0 } text
             ? char.ToLowerInvariant(text[0]) + text[1..]
             : "something odd.";
+
+    private Port.LeadDefinition? Lead(string? id) =>
+        content.Port?.AllLeads().Select(l => l.Lead).FirstOrDefault(l => l.Id == id);
 
     private string Ship() => campaign.Voyage?.ShipName ?? "the ship";
 

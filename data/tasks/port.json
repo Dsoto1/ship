@@ -22,7 +22,8 @@
   { "id": "task.port_carpentry", "name": "Sawing at the bench", "durationMinutes": 30, "needsWorkSpot": true, "skill": "skill.carpentry", "then": "task.fetch_timber" },
   { "id": "task.fetch_timber", "name": "Fetching timber", "durationMinutes": 8, "needsWorkSpot": true, "then": "task.fit_timber" },
   { "id": "task.fit_timber", "name": "Fitting a plank to the hull", "durationMinutes": 30, "needsWorkSpot": true, "skill": "skill.carpentry", "carries": "plank" },
-  { "id": "task.coopering", "name": "Making casks", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.crafting" },
+  { "id": "task.coopering", "name": "Making casks", "durationMinutes": 45, "needsWorkSpot": true, "skill": "skill.crafting", "then": "task.deliver_cask" },
+  { "id": "task.deliver_cask", "name": "Rolling a cask to the chandler", "durationMinutes": 4, "needsWorkSpot": true, "carries": "cask" },
   { "id": "task.haul_cargo", "name": "Shouldering cargo", "durationMinutes": 8, "needsWorkSpot": true, "attribute": "attribute.strength", "then": "task.deliver_cargo" },
   { "id": "task.deliver_cargo", "name": "Carrying cargo to the lighter", "durationMinutes": 4, "needsWorkSpot": true, "carries": "crate" },
   { "id": "task.port_rigging", "name": "Working a boat's rigging", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.rigging" },
@@ -35,6 +36,8 @@
   { "id": "task.make_rope", "name": "Spinning yarn on the ropewalk", "durationMinutes": 20, "needsWorkSpot": true, "skill": "skill.crafting", "then": "task.lay_rope" },
   { "id": "task.lay_rope", "name": "Walking the yarn down the ropewalk", "durationMinutes": 20, "needsWorkSpot": true, "carries": "yarn" },
   { "id": "task.smithing", "name": "At the forge", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.crafting" },
-  { "id": "task.mend_sails", "name": "Mending sailcloth", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.rigging" },
+  { "id": "task.mend_sails", "name": "Mending sailcloth", "durationMinutes": 50, "needsWorkSpot": true, "skill": "skill.rigging", "then": "task.deliver_canvas" },
+  { "id": "task.deliver_canvas", "name": "Carrying mended canvas to the ships", "durationMinutes": 5, "needsWorkSpot": true, "carries": "canvas" },
+  { "id": "task.inspect_ship", "name": "Looking over the Garza", "durationMinutes": 60, "needsWorkSpot": true, "skill": "skill.seamanship" },
   { "id": "task.board", "name": "Going aboard", "durationMinutes": 1, "needsWorkSpot": true }
 ]

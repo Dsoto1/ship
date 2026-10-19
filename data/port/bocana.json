@@ -106,6 +106,11 @@
     },
     {
      "from": 14,
+     "to": 15,
+     "task": "task.inspect_ship"
+    },
+    {
+     "from": 15,
      "to": 18,
      "task": "task.mend_nets"
     },
@@ -919,6 +924,20 @@
       "skill.carpentry": 3
      }
     }
+   ],
+   "leads": [
+    {
+     "id": "lead.corbalan_bartolo",
+     "about": "person.bartolo",
+     "text": "If it's a carpenter you want, Bartolo in the shipwright's yard is between ships.",
+     "where": "the yard at the east end, by the hull on the stocks"
+    },
+    {
+     "id": "lead.corbalan_gil",
+     "about": "person.gil",
+     "text": "Gil makes my casks. He'd sail, he says, if the advance was right.",
+     "where": "the cooperage on the workshop street"
+    }
    ]
   },
   {
@@ -1010,6 +1029,26 @@
      },
      "rumour": true
     }
+   ],
+   "leads": [
+    {
+     "id": "lead.ines_velho",
+     "about": "person.velho",
+     "text": "There's a Lusaran pilot, Duarte Velho, between ships. Knows the western sea, so he says.",
+     "where": "mornings at the chart table up on the Chamber's terrace; evenings in here"
+    },
+    {
+     "id": "lead.ines_rodrigo",
+     "about": "person.rodrigo",
+     "text": "Rodrigo the topman drinks here every night and tells anyone who'll listen he's the best man aloft in Castrena.",
+     "where": "working the boats off the piers by day; dicing here at night"
+    },
+    {
+     "id": "lead.ines_nuno",
+     "about": "person.nuno",
+     "text": "My own cook, Nuño, talks of going to sea. Don't you dare take him.",
+     "where": "at the cook fire outside, most of the day"
+    }
    ]
   },
   {
@@ -1046,7 +1085,15 @@
    ],
    "skills": {
     "skill.fishing": 3
-   }
+   },
+   "leads": [
+    {
+     "id": "lead.catalina_pons",
+     "about": "person.pons",
+     "text": "Want a surgeon? Pons the barber patches up the dockers, when he isn't hiding from Grilo.",
+     "where": "his stool on the square, near the terrace steps"
+    }
+   ]
   },
   {
    "id": "person.anselmo",
@@ -1089,6 +1136,14 @@
      "levels": {
       "skill.sailing": 0
      }
+    }
+   ],
+   "leads": [
+    {
+     "id": "lead.anselmo_pascual",
+     "about": "person.pascual",
+     "text": "The candle-seller's boy, Pascual, wants a ship, God help him, and his mother will not hear of it.",
+     "where": "hauling on the quay most days"
     }
    ]
   },
@@ -1148,6 +1203,14 @@
      "levels": {
       "skill.leadership": 3
      }
+    }
+   ],
+   "leads": [
+    {
+     "id": "lead.varzi_leonor",
+     "about": "person.leonor",
+     "text": "My clerk, Leonor, wishes to see the factory for herself. She keeps a good ledger.",
+     "where": "the Company's table on the terrace"
     }
    ]
   },
@@ -1320,6 +1383,14 @@
       "skill.sailing": 2
      }
     }
+   ],
+   "leads": [
+    {
+     "id": "lead.mateo_tome",
+     "about": "person.tome",
+     "text": "That one in the cart, Tomé? Offer him a berth and the Chamber pardons him. Knifed a man, mind.",
+     "where": "in the gaol cart at the east end of the quay"
+    }
    ]
   },
   {
@@ -1489,6 +1560,14 @@
      "levels": {
       "language.ahuneri": 2
      }
+    }
+   ],
+   "leads": [
+    {
+     "id": "lead.hernando_ximena",
+     "about": "person.ximena",
+     "text": "Ximena at the fish stalls came back off the Ember Coast. Speaks their tongue, I'd swear to it.",
+     "where": "the fish stalls in the market"
     }
    ]
   },
@@ -1728,6 +1807,33 @@
      }
     }
    ]
+  }
+ ],
+ "noticeBoard": "spot.chamber_board",
+ "notices": [
+  {
+   "id": "lead.notice_wat",
+   "about": "person.wat",
+   "text": "Seaman of Brennmouth seeks a berth on any ship of the convoy. Ask for Wat.",
+   "where": "mending nets on the quay by the west pier"
+  },
+  {
+   "id": "lead.notice_ulloa",
+   "about": "person.ulloa",
+   "text": "Don Fernán de Ulloa, gentleman of Almara, seeks passage west and will pay for it.",
+   "where": "at the Three Anchors, afternoons and evenings"
+  },
+  {
+   "id": "lead.notice_tome",
+   "about": "person.tome",
+   "text": "By the Chamber's leave: a convict may be pardoned to serve aboard a convoy ship. Apply to the guard.",
+   "where": "the gaol cart on the quay"
+  },
+  {
+   "id": "lead.notice_velho",
+   "about": "person.velho",
+   "text": "A pilot of Lusara, examined in the western routes, offers his services.",
+   "where": "enquire of the Chamber's clerk"
   }
  ]
 }

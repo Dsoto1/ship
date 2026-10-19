@@ -62,8 +62,9 @@ public partial class Main : Node3D
     private PendingAction? _pending;
     private int _crewSeen;
 
-    // Something the captain walks over to do: talk, ask, test or offer.
-    private sealed record PendingAction(CharacterId Target, string Description, Action Act, long GiveUpTick)
+    // Something the captain walks over to do: talk, ask, test or offer; or, with no target, read the
+    // notice board at a fixed cell.
+    private sealed record PendingAction(CharacterId? Target, string Description, Action Act, long GiveUpTick, GridPosition? Place = null)
     {
         public GridPosition? Heading { get; set; }
     }
@@ -161,6 +162,22 @@ public partial class Main : Node3D
             var result = _runner.Offer(id, advance);
             _portHud.Say(result.Succeeded ? $"{name} spits in a palm and shakes on it, and goes to stow a sea chest aboard the Garza." : result.Reason);
         });
+        _portHud.NoticesRequested += () =>
+        {
+            if (_content.Port?.NoticeBoard is not { } board || _content.Locations[_content.Port.Location].FindSpot(board) is not { } spot)
+            {
+                return;
+            }
+
+            _pending = new PendingAction(null, "read the Chamber's notices", () =>
+            {
+                var (result, said) = _runner.ReadNotices();
+                _portHud.Say(result.Succeeded ? said : result.Reason);
+            }, _runner.Campaign.Clock.Tick + 3 * SimulationClock.TicksPerHour, spot.Cell);
+            _follow = true;
+            _hud.ShowStatus("Walking to the Chamber's notice board…");
+            CarryOutPending();
+        };
         _portHud.BuyRequested += lot => _hud.ShowResult(_runner.Buy(lot), "Bought. The chandler's boy will carry it aboard.");
         _portHud.SetSailRequested += () =>
         {
@@ -312,7 +329,7 @@ public partial class Main : Node3D
         "task.drink" or "task.gamble" => kind == "SitPoint" ? Pose.Sitting : Pose.Drinking,
         "task.pray" => Pose.Praying,
         "task.sell_fish" or "task.trade_goods" or "task.dun_debtor" or "task.serve_drinks" or "task.play" or "task.meet_in_secret" => Pose.Talking,
-        "task.watch_water" or "task.stand_guard" => Pose.Watching,
+        "task.watch_water" or "task.stand_guard" or "task.inspect_ship" => Pose.Watching,
         "task.read_notices" => Pose.Standing,
         "task.wait_in_irons" or "task.treat_patients" or "task.keep_accounts" or "task.study_charts" => kind == "SitPoint" ? Pose.Sitting : Pose.Working,
         _ => kind switch
@@ -343,6 +360,42 @@ public partial class Main : Node3D
         _camera.Target = _camera.Target.Lerp(figure.GlobalPosition, Mathf.Clamp(delta * 2.5f, 0, 1));
     }
 
+    // Walks to a fixed place (the notice board) and acts on arriving within speaking distance of it.
+    private void CarryOutAtPlace(PendingAction pending, CharacterId captain)
+    {
+        var place = pending.Place!.Value;
+        var here = _runner.Campaign.Placements[captain];
+        var cell = here.CellAt(_runner.Campaign.Clock.Tick);
+        if (Math.Max(Math.Abs(cell.X - place.X), Math.Abs(cell.Y - place.Y)) <= SimulationRunner.SpeakingDistance && !here.IsMoving)
+        {
+            _pending = null;
+            _portHud.ShowPending(null);
+            pending.Act();
+            return;
+        }
+
+        if (_runner.Campaign.Clock.Tick > pending.GiveUpTick)
+        {
+            _pending = null;
+            return;
+        }
+
+        if (!here.IsMoving)
+        {
+            var location = _content.Locations[here.LocationId];
+            foreach (var d in new[] { (0, 1), (1, 1), (-1, 1), (1, 0), (-1, 0), (0, 2), (1, 2), (-1, 2) })
+            {
+                var next = new GridPosition(place.X + d.Item1, place.Y + d.Item2);
+                if (location.IsWalkable(next) && _runner.MoveCharacter(captain, next).Succeeded)
+                {
+                    break;
+                }
+            }
+        }
+
+        _portHud.ShowPending($"Walking over to {pending.Description}…");
+    }
+
     // Walks the captain over to someone, then does what was asked once within speaking distance.
     private void WalkOverTo(CharacterId target, string description, Action act)
     {
@@ -366,8 +419,14 @@ public partial class Main : Node3D
             return;
         }
 
-        var name = PortHud.KnownName(_runner, pending.Target);
-        if (_runner.WhyCannotSpeak(pending.Target) is null)
+        if (pending.Target is not { } target)
+        {
+            CarryOutAtPlace(pending, captain);
+            return;
+        }
+
+        var name = PortHud.KnownName(_runner, target);
+        if (_runner.WhyCannotSpeak(target) is null)
         {
             _pending = null;
             _portHud.ShowPending(null);
@@ -375,7 +434,7 @@ public partial class Main : Node3D
             return;
         }
 
-        if (!_runner.Campaign.Placements.TryGetValue(pending.Target, out var there) || _runner.IsIndoors(pending.Target)
+        if (!_runner.Campaign.Placements.TryGetValue(target, out var there) || _runner.IsIndoors(target)
             || _runner.Campaign.Clock.Tick > pending.GiveUpTick)
         {
             _pending = null;
@@ -843,6 +902,7 @@ public partial class Main : Node3D
     private string? _developerSelect;
     private string? _developerLook;
     private bool _developerTalk;
+    private bool _developerJournal;
     private int? _developerOffer;
     private float? _developerYaw;
 
@@ -889,6 +949,11 @@ public partial class Main : Node3D
             _follow = false;
         }
 
+        if (_developerJournal)
+        {
+            _portHud.ShowJournal();
+        }
+
         if (_developerYaw is { } yaw)
         {
             _camera.SetYaw(yaw);
@@ -917,6 +982,7 @@ public partial class Main : Node3D
                 case "select": _developerSelect = value; break;
                 case "look": _developerLook = value; break;
                 case "talk": _developerTalk = true; break;
+                case "journal": _developerJournal = true; break;
                 case "offer" when int.TryParse(value, out var advance): _developerOffer = advance; break;
                 case "yaw" when float.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var yaw): _developerYaw = yaw; break;
             }

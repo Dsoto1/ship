@@ -10,6 +10,7 @@ public sealed class PortState
     private readonly HashSet<(CharacterId Informant, CharacterId About)> _asked = [];
     private readonly HashSet<CharacterId> _hired = [];
     private readonly HashSet<CharacterId> _gone = [];
+    private readonly List<HeardLead> _leads = [];
 
     /// <summary>Sueldos left.</summary>
     public int Funds { get; internal set; }
@@ -29,6 +30,9 @@ public sealed class PortState
     /// <summary>People who stopped waiting and went elsewhere.</summary>
     public IReadOnlySet<CharacterId> Gone => _gone;
 
+    /// <summary>Leads heard, oldest first: the captain's journal of people worth finding.</summary>
+    public IReadOnlyList<HeardLead> Leads => _leads;
+
     /// <summary>Half days of late fees already charged.</summary>
     public int LateFeesCharged { get; internal set; }
 
@@ -44,4 +48,22 @@ public sealed class PortState
     internal void MarkHired(CharacterId id) => _hired.Add(id);
 
     internal void MarkGone(CharacterId id) => _gone.Add(id);
+
+    internal bool AddLead(string leadId, long tick)
+    {
+        if (_leads.Any(l => l.LeadId == leadId))
+        {
+            return false;
+        }
+
+        _leads.Add(new HeardLead(leadId, tick));
+        return true;
+    }
+}
+
+/// <summary>A lead the captain has heard, and when.</summary>
+/// <param name="LeadId">The lead's content ID.</param>
+/// <param name="Tick">When it was heard.</param>
+public sealed record HeardLead(string LeadId, long Tick)
+{
 }

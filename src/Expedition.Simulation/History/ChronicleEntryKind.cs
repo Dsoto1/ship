@@ -74,4 +74,7 @@ public enum ChronicleEntryKind
 
     /// <summary>The ship stayed after the convoy and paid for it (parameter: level = sueldos).</summary>
     LateFee,
+
+    /// <summary>The captain heard where someone worth finding might be. Parameter: <c>to</c> (the lead ID).</summary>
+    LeadHeard,
 }

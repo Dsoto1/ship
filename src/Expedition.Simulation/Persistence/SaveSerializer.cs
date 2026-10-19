@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 15;
+    public const int CurrentSchemaVersion = 16;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -143,6 +143,17 @@ public static class SaveSerializer
                 root["eventHistory"] = new JsonArray();
                 root["lastEventTick"] = long.MinValue / 2;
                 root["rationing"] = false;
+                return root;
+            },
+
+            // Format 16 added the journal of leads. Earlier ports had heard none.
+            [15] = root =>
+            {
+                if (root["port"] is JsonObject port)
+                {
+                    port["leads"] = new JsonArray();
+                }
+
                 return root;
             },
 
@@ -441,6 +452,7 @@ public static class SaveSerializer
                     Gone = port.Gone.Select(id => id.Value).Order().ToList(),
                     LateFeesCharged = port.LateFeesCharged,
                     Warned = port.Warned,
+                    Leads = port.Leads.Select(l => new HeardLeadData { Lead = l.LeadId, Tick = l.Tick }).ToList(),
                 }
                 : null,
             PendingEvent = campaign.PendingEvent is { } pending
@@ -725,6 +737,14 @@ public static class SaveSerializer
             foreach (var pair in savedPort.Asked) port.MarkAsked(Known(pair[0]), Known(pair[1]));
             foreach (var id in savedPort.Hired) port.MarkHired(Known(id));
             foreach (var id in savedPort.Gone) port.MarkGone(Known(id));
+            var leadIds = portRules.AllLeads().Select(l => l.Lead.Id).ToHashSet(StringComparer.Ordinal);
+            foreach (var lead in savedPort.Leads)
+            {
+                if (!leadIds.Contains(lead.Lead) || lead.Tick < 0 || lead.Tick > data.Tick || !port.AddLead(lead.Lead, lead.Tick))
+                {
+                    throw new SaveLoadException($"The save's journal names a lead '{lead.Lead}' this game does not have, or twice.");
+                }
+            }
             campaign.SetPort(port);
         }
 

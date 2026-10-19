@@ -380,6 +380,8 @@ public class PortTests
     [InlineData("person.bartolo", 9, "task.port_carpentry", "task.fetch_timber", "task.fit_timber")]
     [InlineData("person.catalina", 9, "task.land_catch", "task.carry_catch", "task.sell_fish")]
     [InlineData("person.marta", 9, "task.make_rope", "task.lay_rope")]
+    [InlineData("person.gil", 9, "task.coopering", "task.deliver_cask")]
+    [InlineData("person.simon", 8, "task.mend_sails", "task.deliver_canvas")]
     public void WorkGoesRoundInLoops(string person, int hour, params string[] loop)
     {
         var runner = Port();
@@ -436,5 +438,86 @@ public class PortTests
         var line = KnowledgeText.Lines(runner.Campaign.Knowledge, rodrigo, Shipped, runner.Campaign.Characters).Single(l => l.Topic == "skill.rigging");
 
         Assert.Equal(("Rigging", "skilled", "Vouched for by Andrés", "Fairly sure"), (line.Name, line.Value, line.Source, line.Confidence));
+    }
+
+    private static IReadOnlyList<string> Journal(SimulationRunner runner) => runner.Campaign.Port!.Leads.Select(l => l.LeadId).ToList();
+
+    [Fact]
+    public void EveryoneLookingForABerthCanBeFoundThroughALead()
+    {
+        var rules = Shipped.Port!;
+        var pointedTo = rules.AllLeads().Select(l => l.Lead.About).ToHashSet();
+
+        Assert.All(rules.People.Where(p => p.Seeking is not null), p => Assert.Contains(p.Id, pointedTo));
+    }
+
+    [Fact]
+    public void TheLandladyPointsYouToPeopleWorthFinding()
+    {
+        var runner = Port();
+        AdvanceTo(runner, 1, 10);
+        ApproachPerson(runner, "person.ines");
+
+        var (result, said) = runner.TalkTo(Id(runner, "person.ines"));
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(["lead.ines_velho", "lead.ines_rodrigo", "lead.ines_nuno"], Journal(runner));
+        Assert.Contains("tells you of Duarte Velho, Rodrigo Alba and Nuño Pardo", said);
+        var velho = Id(runner, "person.velho");
+        Assert.Equal("lead.ines_velho", Assert.Single(runner.LeadsAbout(velho)).Id);
+        Assert.Equal(Id(runner, "person.ines"), runner.LeadGiver("lead.ines_velho"));
+        Assert.Equal(3, runner.Campaign.Chronicle.Entries.Count(e => e.Kind == ChronicleEntryKind.LeadHeard));
+        Assert.StartsWith("Heard of someone worth finding: \"There's a Lusaran pilot",
+            new ChronicleFormatter(runner.Campaign, Shipped).Format(runner.Campaign.Chronicle.Entries.First(e => e.Kind == ChronicleEntryKind.LeadHeard)));
+
+        // A lead is a pointer, not knowledge: nothing is yet known of what Velho can do.
+        Assert.Empty(runner.Campaign.Knowledge.About(velho));
+
+        var (_, again) = runner.TalkTo(Id(runner, "person.ines"));
+        Assert.DoesNotContain("tells you of", again);
+        Assert.Equal(3, Journal(runner).Count);
+    }
+
+    [Fact]
+    public void TheNoticeBoardMustBeReadInPerson()
+    {
+        var runner = Port();
+
+        Assert.False(runner.ReadNotices().Result.Succeeded);
+
+        Approach(runner, Shipped.Locations["location.bocana"].FindSpot("spot.chamber_board")!.Cell);
+        var (result, said) = runner.ReadNotices();
+
+        Assert.True(result.Succeeded);
+        Assert.Contains("Ask for Wat", said);
+        Assert.Equal(["lead.notice_wat", "lead.notice_ulloa", "lead.notice_tome", "lead.notice_velho"], Journal(runner));
+        Assert.Null(runner.LeadGiver("lead.notice_wat"));
+        Assert.StartsWith("Nothing new", runner.ReadNotices().Said);
+    }
+
+    [Fact]
+    public void TheJournalIsSavedAndOldPortsLoadWithAnEmptyOne()
+    {
+        var runner = Port();
+        AdvanceTo(runner, 1, 10);
+        ApproachPerson(runner, "person.ines");
+        runner.TalkTo(Id(runner, "person.ines"));
+        var json = SaveSerializer.Serialize(runner.Campaign);
+
+        Assert.Equal(Journal(runner), Journal(new SimulationRunner(SaveSerializer.Deserialize(json, Shipped), Shipped)));
+
+        var old = JsonNode.Parse(json)!.AsObject();
+        old["schemaVersion"] = 15;
+        old["port"]!.AsObject().Remove("leads");
+        Assert.Empty(new SimulationRunner(SaveSerializer.Deserialize(old.ToJsonString(), Shipped), Shipped).Campaign.Port!.Leads);
+    }
+
+    [Fact]
+    public void ThePilotLooksTheGarzaOverInTheAfternoon()
+    {
+        var runner = Port();
+        AdvanceTo(runner, 1, 14, 30);
+
+        Assert.Equal("task.inspect_ship", Doing(runner, "person.velho"));
     }
 }

@@ -300,9 +300,14 @@ public sealed partial class SimulationRunner
             return (CommandResult.Ok(), $"{character.Name} has work to do.");
         }
 
+        // Whom they point you to, if they have not already (PORT_EXPERIENCE §9).
+        // The full word and where to look go in the journal; here they are only named.
+        var pointers = person.Leads.Where(l => Hear(l)).Select(l => CharacterFor(l.About)?.Name ?? l.About).ToList();
+        var tips = pointers.Count == 0 ? "" : $"\n\n{person.Name} tells you of {Join(pointers)}, and where to find them. (Noted in your journal.)";
+
         if (person.Seeking is not { } seeking || Campaign.Port?.Hired.Contains(id) == true)
         {
-            return (CommandResult.Ok(), $"{person.Name}, {person.Occupation}, passes the time of day with you.");
+            return (CommandResult.Ok(), (pointers.Count == 0 ? $"{person.Name}, {person.Occupation}, passes the time of day with you." : $"{person.Name}, {person.Occupation}, stops to talk.") + tips);
         }
 
         foreach (var (topic, level) in seeking.Claims.OrderBy(c => c.Key, StringComparer.Ordinal))
@@ -310,8 +315,62 @@ public sealed partial class SimulationRunner
             Campaign.Learn(id, topic, level, KnowledgeSource.Claim);
         }
 
-        return (CommandResult.Ok(), seeking.Pitch);
+        return (CommandResult.Ok(), seeking.Pitch + tips);
     }
+
+    private static string Join(IReadOnlyList<string> names) =>
+        names.Count == 1 ? names[0] : string.Join(", ", names.Take(names.Count - 1)) + " and " + names[^1];
+
+    // Notes a lead in the journal, once. True if it was new.
+    private bool Hear(LeadDefinition lead)
+    {
+        if (Campaign.Port is not { } port || !port.AddLead(lead.Id, Campaign.Clock.Tick))
+        {
+            return false;
+        }
+
+        var about = CharacterFor(lead.About);
+        Campaign.Record(ChronicleEntryKind.LeadHeard, [new(ChronicleParameters.To, lead.Id)], about is null ? [] : [about.Id]);
+        return true;
+    }
+
+    /// <summary>
+    /// Reads the Chamber's notice board, which the captain must be standing by: seamen seeking berths,
+    /// passages wanted, pardons offered. New notices go in the journal. Returns what the board says.
+    /// </summary>
+    public (CommandResult Result, string Said) ReadNotices()
+    {
+        if (Content.Port is not { NoticeBoard: { } boardId } rules || Campaign.Port is null || Campaign.CaptainId is not { } captain
+            || !Campaign.Placements.TryGetValue(captain, out var here) || Content.Locations[here.LocationId].FindSpot(boardId) is not { } board)
+        {
+            return (CommandResult.Rejected("There is no notice board here."), "");
+        }
+
+        if (Distance(here.CellAt(Campaign.Clock.Tick), board.Cell) > SpeakingDistance)
+        {
+            return (CommandResult.Rejected("Walk over to the Chamber's notice board first."), "");
+        }
+
+        var fresh = rules.Notices.Where(Hear).ToList();
+        var all = rules.Notices.Select(n => $"• {n.Text}");
+        return (CommandResult.Ok(), (fresh.Count == 0 ? "Nothing new on the Chamber's board.\n" : "The Chamber's board:\n") + string.Join("\n", all));
+    }
+
+    /// <summary>The leads in the captain's journal about someone.</summary>
+    public IEnumerable<LeadDefinition> LeadsAbout(CharacterId id)
+    {
+        if (Campaign.Port is not { } port || Content.Port is not { } rules || Campaign.Characters.GetValueOrDefault(id)?.PersonId is not { } person)
+        {
+            return [];
+        }
+
+        var heard = port.Leads.Select(l => l.LeadId).ToHashSet(StringComparer.Ordinal);
+        return rules.AllLeads().Select(l => l.Lead).Where(l => l.About == person && heard.Contains(l.Id));
+    }
+
+    /// <summary>Who gave a lead, or null for the notice board.</summary>
+    public CharacterId? LeadGiver(string leadId) =>
+        Content.Port?.AllLeads().FirstOrDefault(l => l.Lead.Id == leadId).From is { } from ? CharacterFor(from)?.Id : null;
 
     /// <summary>
     /// Asks someone nearby what they know of another person. What they say depends on who they are: the

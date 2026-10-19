@@ -447,6 +447,9 @@ public sealed record EventRecordData
 /// <summary>Saved preparations in port. Added in format 15.</summary>
 public sealed record PortData
 {
+    /// <summary>Leads heard, oldest first. Added in format 16.</summary>
+    public IReadOnlyList<HeardLeadData> Leads { get; init; } = [];
+
     /// <summary>Sueldos left.</summary>
     public required int Funds { get; init; }
 
@@ -470,4 +473,14 @@ public sealed record PortData
 
     /// <summary>Whether the eve-of-sailing warning was given.</summary>
     public required bool Warned { get; init; }
+}
+
+/// <summary>A saved lead. Added in format 16.</summary>
+public sealed record HeardLeadData
+{
+    /// <summary>Lead content ID.</summary>
+    public required string Lead { get; init; }
+
+    /// <summary>When it was heard.</summary>
+    public required long Tick { get; init; }
 }

@@ -170,6 +170,9 @@ spot("spot.stall_drop_1", 45, 23, ["task.carry_catch"], "CarryDropoff"); spot("s
 spot("spot.timber_stack", 74, 23, ["task.fetch_timber"], "CarryPickup")
 spot("spot.hull_1", 65, 27, ["task.fit_timber"], "HammerStation"); spot("spot.hull_2", 72, 29, ["task.fit_timber"], "HammerStation")
 spot("spot.ropewalk_2", 78, 4, ["task.lay_rope"], "RopeWork")
+spot("spot.chandler_drop", 53, 16, ["task.deliver_cask"], "CarryDropoff")
+spot("spot.garza_side_1", 28, 33, ["task.deliver_canvas", "task.inspect_ship"], "ShipInspection")
+spot("spot.garza_side_2", 34, 33, ["task.deliver_canvas", "task.inspect_ship"], "ShipInspection")
 # the alley between the tavern and the chapel
 spot("spot.alley_1", 35, 8, ["task.meet_in_secret"], "ConversationPoint"); spot("spot.alley_2", 36, 8, ["task.meet_in_secret"], "ConversationPoint")
 # homes: doors on the back lane

@@ -35,6 +35,16 @@ public sealed record PortRules
     /// <summary>What the chandler sells, and how fast it sells to others.</summary>
     public required IReadOnlyList<PortGoods> Goods { get; init; }
 
+    /// <summary>The spot where the Chamber posts its notices; read there for leads.</summary>
+    public string? NoticeBoard { get; init; }
+
+    /// <summary>Notices on the Chamber's board: seamen seeking berths, passages wanted, pardons offered.</summary>
+    public IReadOnlyList<LeadDefinition> Notices { get; init; } = [];
+
+    /// <summary>Every lead in the port, from people and the notice board, by ID.</summary>
+    public IEnumerable<(LeadDefinition Lead, string? From)> AllLeads() =>
+        People.SelectMany(p => p.Leads.Select(l => (l, (string?)p.Id))).Concat(Notices.Select(n => (n, (string?)null)));
+
     /// <summary>Everyone on the waterfront.</summary>
     public required IReadOnlyList<PersonDefinition> People { get; init; }
 }
@@ -127,6 +137,28 @@ public sealed record PersonDefinition
 
     /// <summary>Their terms if they want a berth, or null.</summary>
     public BerthTerms? Seeking { get; init; }
+
+    /// <summary>Who they will point the captain to when talked with (PORT_EXPERIENCE §9).</summary>
+    public IReadOnlyList<LeadDefinition> Leads { get; init; } = [];
+}
+
+/// <summary>
+/// Word of someone worth finding: "There's a Lusaran pilot between ships", and where they are said to
+/// be. Given by a person when talked with, or posted on the Chamber's notice board.
+/// </summary>
+public sealed record LeadDefinition
+{
+    /// <summary>ID, unique across the port, for example <c>lead.ines_velho</c>.</summary>
+    public required string Id { get; init; }
+
+    /// <summary>The person it points to.</summary>
+    public required string About { get; init; }
+
+    /// <summary>What is said.</summary>
+    public required string Text { get; init; }
+
+    /// <summary>Where they are said to be found. Hearsay: it may be out of date.</summary>
+    public required string Where { get; init; }
 }
 
 /// <summary>An hour block of someone's day: [from, to), wrapping past midnight.</summary>

@@ -383,6 +383,23 @@ public partial class CrewFigure : Node3D
             case "plank":
                 _load.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(0.22f, 0.06f, 2.6f) }, MaterialOverride = wood, Position = new Vector3(0.18f, 0.32f, -0.2f) });
                 break;
+            case "cask":
+                _load.AddChild(new MeshInstance3D
+                {
+                    Mesh = new CylinderMesh { TopRadius = 0.22f, BottomRadius = 0.22f, Height = 0.55f, RadialSegments = 10 },
+                    MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.46f, 0.32f, 0.18f), Roughness = 0.9f },
+                    Position = new Vector3(0, 0.05f, 0.08f),
+                });
+                break;
+            case "canvas":
+                _load.AddChild(new MeshInstance3D
+                {
+                    Mesh = new CylinderMesh { TopRadius = 0.16f, BottomRadius = 0.16f, Height = 1.3f, RadialSegments = 8 },
+                    MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.88f, 0.84f, 0.74f), Roughness = 1f },
+                    Position = new Vector3(0.1f, 0.32f, -0.1f),
+                    RotationDegrees = new Vector3(0, 0, 90),
+                });
+                break;
             case "yarn":
                 _load.AddChild(new MeshInstance3D
                 {

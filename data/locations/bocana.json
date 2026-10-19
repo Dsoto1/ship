@@ -918,6 +918,35 @@
     "kind": "RopeWork"
    },
    {
+    "id": "spot.chandler_drop",
+    "x": 53,
+    "y": 16,
+    "tasks": [
+     "task.deliver_cask"
+    ],
+    "kind": "CarryDropoff"
+   },
+   {
+    "id": "spot.garza_side_1",
+    "x": 28,
+    "y": 33,
+    "tasks": [
+     "task.deliver_canvas",
+     "task.inspect_ship"
+    ],
+    "kind": "ShipInspection"
+   },
+   {
+    "id": "spot.garza_side_2",
+    "x": 34,
+    "y": 33,
+    "tasks": [
+     "task.deliver_canvas",
+     "task.inspect_ship"
+    ],
+    "kind": "ShipInspection"
+   },
+   {
     "id": "spot.alley_1",
     "x": 35,
     "y": 8,

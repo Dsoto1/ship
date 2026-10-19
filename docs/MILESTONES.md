@@ -29,7 +29,7 @@ This file tracks status and breaks the next work into tickets.
 | V4 | Choose who comes: simple pre-voyage hiring (the core of 5c) | Done (2026-10-19), **stopgap**: a menu, against GAME_VISION §5 (D-020) |
 | R1 | The living port, simulated: waterfront places, ~25 people on schedules, observation, real deadline, candidates who weigh you | Done (2026-10-19) |
 | R2a | Port greybox and play: five districts, the Garza moored, walk, click anyone, talk, ask, offer, demonstrate, chandler, set sail (PORT_EXPERIENCE §23 steps 1, 2, 7, 8) | Done (2026-10-19), awaiting the owner's manual test |
-| R2b | Activity nodes and work loops; leads journal (steps 3–5) | Planned |
+| R2b | Leads journal and the Chamber's notices; more work loops (steps 3–5) | Done (2026-10-19), awaiting the owner's manual test |
 | R2c | Tier C crowd, background ships, ship preparation states, visible cargo (steps 6, 9) | Planned |
 | R2d | Sound zones, port weather and reactions, ambient micro-events (steps 10–12) | Planned |
 | R2e | Recognition and the departure sequence (steps 13, 14) | Planned |
@@ -618,3 +618,34 @@ Roof occlusion is not handled: the captain's name shows through roofs.
 6. Open **Chandler's list** and buy water; the stores forecast rises.
 7. Offer berths until four are signed (try Gil, Wat, Tomé and Pascual), then **Set sail**. The port
    disappears and the voyage starts.
+
+## R2b — Found by word of mouth
+
+`PORT_EXPERIENCE.md` §9 ("discover candidates through leads, not a menu") and §7 (work loops).
+- **Leads** (`leads` on people and `notices` on the port in `data/port/bocana.json`):
+  - Talking with someone who sees a lot of the waterfront points you to people worth finding, and
+    to where they are said to be.
+  - Givers: Inés the landlady (Velho, Rodrigo, Nuño), Corbalán the chandler (Bartolo, Gil), Father
+    Anselmo (Pascual), Mateo the guard (Tomé), Hernando (Ximena), Catalina (Pons), and Varzi
+    (Leonor).
+  - The Chamber's notice board on the terrace must be read in person ("Read the notices" walks the
+    captain there). It lists Wat, Don Fernán, the convict's pardon, and a pilot.
+  - Every candidate can be found through at least one lead (a test checks this).
+- **A lead is a pointer, not knowledge.** It tells you nothing of what someone can do, and "where"
+  is hearsay. The person card says "Could this be the one you heard of?" with the lead and who
+  gave it.
+- **The journal:** each lead with what was said, where to look, from whom and when, and whether
+  they have been found, signed on, or gone. Leads are chronicled.
+- **New work loops:**
+  - Gil makes casks and rolls them to the chandler's yard;
+  - Old Simón mends canvas and carries it to the *Garza*;
+  - Velho looks the *Garza* over in the early afternoon.
+- **Save format 16** (the journal). Format 15 ports load with an empty one.
+
+380 tests pass.
+
+**Manual test (macOS):**
+1. Walk to the Three Anchors after 09:00 and talk with Inés. She names three people.
+2. Open **Journal** to see the leads.
+3. Click **Read the notices**. The captain walks up to the terrace board and four notices appear.
+4. Find Velho at the chart table in the morning. His card shows the lead before you talk to him.

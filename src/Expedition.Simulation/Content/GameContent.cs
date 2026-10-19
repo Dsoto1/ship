@@ -160,6 +160,22 @@ public sealed class GameContent
             errors.Add("Port: person IDs must be unique.");
         }
 
+        var leads = rules.AllLeads().ToList();
+        if (leads.Select(l => l.Lead.Id).Distinct(StringComparer.Ordinal).Count() != leads.Count)
+        {
+            errors.Add("Port: lead IDs must be unique.");
+        }
+
+        foreach (var (lead, _) in leads.Where(l => !ids.Contains(l.Lead.About) || string.IsNullOrWhiteSpace(l.Lead.Text) || string.IsNullOrWhiteSpace(l.Lead.Where)))
+        {
+            errors.Add($"Port: lead '{lead.Id}' needs a known person, text and where.");
+        }
+
+        if (rules.NoticeBoard is { } board && waterfront.FindSpot(board) is null)
+        {
+            errors.Add($"Port: notice board '{board}' is not a spot on the waterfront.");
+        }
+
         bool KnownTopic(string topic) => Skills.ContainsKey(topic) || Languages.ContainsKey(topic) || Traits.ContainsKey(topic) || Attributes.ContainsKey(topic);
         foreach (var person in rules.People)
         {

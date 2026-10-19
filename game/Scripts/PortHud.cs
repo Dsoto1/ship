@@ -36,6 +36,10 @@ public partial class PortHud : CanvasLayer
     private PanelContainer _dialogue = null!;
     private Label _dialogueText = null!;
     private PanelContainer _chandler = null!;
+    private PanelContainer _journal = null!;
+    private VBoxContainer _journalList = null!;
+    private int _journalCount = -1;
+    private Label _cardLeads = null!;
     private VBoxContainer _lots = null!;
     private Label _hold = null!;
     private readonly List<CharacterId> _askChoices = [];
@@ -58,6 +62,9 @@ public partial class PortHud : CanvasLayer
     /// <summary>Buy a lot from the chandler.</summary>
     public event Action<int>? BuyRequested;
 
+    /// <summary>Walk to the Chamber's board and read it.</summary>
+    public event Action? NoticesRequested;
+
     /// <summary>Sail now.</summary>
     public event Action? SetSailRequested;
 
@@ -73,6 +80,7 @@ public partial class PortHud : CanvasLayer
         BuildCard();
         BuildDialogue();
         BuildChandler();
+        BuildJournal();
     }
 
     /// <summary>The name the captain knows someone by, or how they look to a stranger ("a docker").</summary>
@@ -90,6 +98,9 @@ public partial class PortHud : CanvasLayer
         var article = "aeiou".Contains(char.ToLowerInvariant(occupation[0])) ? "An" : "A";
         return $"{article} {occupation.Split(',')[0]}";
     }
+
+    /// <summary>Opens the journal of leads.</summary>
+    public void ShowJournal() => _journal.Visible = true;
 
     /// <summary>Shows what someone said, or why something could not be done.</summary>
     public void Say(string text)
@@ -132,6 +143,11 @@ public partial class PortHud : CanvasLayer
         {
             RefreshChandler(runner);
         }
+
+        if (_journal.Visible)
+        {
+            RefreshJournal(runner);
+        }
     }
 
     private void RefreshCard(SimulationRunner runner, CharacterId? shown)
@@ -161,6 +177,12 @@ public partial class PortHud : CanvasLayer
             : talked ? "Not looking for a berth."
             : "Talk to them to learn whether they want work.";
         _cardSeeking.Modulate = person?.Seeking is not null && talked ? new Color(1f, 0.9f, 0.55f) : new Color(1, 1, 1, 0.75f);
+
+        // What you have heard that may point to them: the face is new, but the description fits.
+        var leads = runner.LeadsAbout(id).ToList();
+        _cardLeads.Visible = leads.Count > 0;
+        _cardLeads.Text = string.Join("\n", leads.Select(l =>
+            $"{(talked ? "You heard" : "Could this be the one you heard of?")} \"{l.Text}\" — {(runner.LeadGiver(l.Id) is { } giver ? KnownName(runner, giver) : "the Chamber's board")}"));
 
         // What the captain believes, rebuilt only when it changes.
         var lines = KnowledgeText.Lines(campaign.Knowledge, id, runner.Content, campaign.Characters);
@@ -291,6 +313,12 @@ public partial class PortHud : CanvasLayer
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         buttons.AddThemeConstantOverride("separation", 10);
         column.AddChild(buttons);
+        var notices = new Button { Text = "Read the notices", FocusMode = Control.FocusModeEnum.None, TooltipText = "Walk to the Chamber's board on the terrace: berths wanted, passages, pardons" };
+        notices.Pressed += () => NoticesRequested?.Invoke();
+        buttons.AddChild(notices);
+        var journal = new Button { Text = "Journal", FocusMode = Control.FocusModeEnum.None, TooltipText = "People worth finding: what you heard, from whom, and where they are said to be" };
+        journal.Pressed += () => _journal.Visible = !_journal.Visible;
+        buttons.AddChild(journal);
         var chandler = new Button { Text = "Chandler's list", FocusMode = Control.FocusModeEnum.None, TooltipText = "Maese Corbalán's stores, delivered to the Garza" };
         chandler.Pressed += () => _chandler.Visible = !_chandler.Visible;
         buttons.AddChild(chandler);
@@ -332,6 +360,9 @@ public partial class PortHud : CanvasLayer
         column.AddChild(_cardDoing);
         _cardSeeking = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(310, 0) };
         column.AddChild(_cardSeeking);
+        _cardLeads = Small("", 0.9f);
+        _cardLeads.Modulate = new Color(0.85f, 0.9f, 1f);
+        column.AddChild(_cardLeads);
         column.AddChild(new HSeparator());
         column.AddChild(new Label { Text = "What you know" });
         _cardKnown = new VBoxContainer();
@@ -436,6 +467,72 @@ public partial class PortHud : CanvasLayer
         column.AddChild(_hold);
     }
 
+    private void BuildJournal()
+    {
+        _journal = new PanelContainer
+        {
+            AnchorTop = 1, AnchorBottom = 1, OffsetLeft = 8, OffsetRight = 380, OffsetTop = -560, OffsetBottom = -250,
+            Visible = false,
+        };
+        _journal.AddThemeStyleboxOverride("panel", Paper());
+        _root.AddChild(_journal);
+        var column = new VBoxContainer();
+        _journal.AddChild(column);
+        var header = new HBoxContainer();
+        column.AddChild(header);
+        header.AddChild(new Label { Text = "Journal — people worth finding", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill });
+        var close = new Button { Text = "×", Flat = true, FocusMode = Control.FocusModeEnum.None };
+        close.Pressed += () => _journal.Visible = false;
+        header.AddChild(close);
+        var scroll = new ScrollContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill, HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
+        column.AddChild(scroll);
+        _journalList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        _journalList.AddThemeConstantOverride("separation", 8);
+        scroll.AddChild(_journalList);
+    }
+
+    private void RefreshJournal(SimulationRunner runner)
+    {
+        var port = runner.Campaign.Port!;
+        var signature = port.Leads.Count * 1000 + port.TalkedTo.Count * 31 + port.Hired.Count * 7 + port.Gone.Count;
+        if (signature == _journalCount)
+        {
+            return;
+        }
+
+        _journalCount = signature;
+        foreach (var child in _journalList.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        if (port.Leads.Count == 0)
+        {
+            _journalList.AddChild(Small("Nothing yet. Talk to people who see a lot of the waterfront (a landlady, a chandler, a priest, a guard), or read the Chamber's notices.", 0.8f));
+            return;
+        }
+
+        var leads = runner.Content.Port!.AllLeads().ToDictionary(l => l.Lead.Id, l => l.Lead);
+        foreach (var heard in port.Leads.AsEnumerable().Reverse())
+        {
+            var lead = leads[heard.LeadId];
+            var about = runner.CharacterFor(lead.About);
+            var status = about is null ? "" : port.Hired.Contains(about.Id) ? "Signed on."
+                : port.Gone.Contains(about.Id) ? "Gone from the port."
+                : port.TalkedTo.Contains(about.Id) ? $"Found: you have spoken with {about.Name}."
+                : "Not yet found.";
+            var giver = runner.LeadGiver(lead.Id) is { } from ? KnownName(runner, from) : "the Chamber's board";
+            var entry = new VBoxContainer();
+            entry.AddThemeConstantOverride("separation", 1);
+            entry.AddChild(new Label { Text = $"\"{lead.Text}\"", AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(340, 0) });
+            entry.AddChild(Small($"   Said to be: {lead.Where}.", 0.85f));
+            var line = Small($"   From {giver}, {new SimulationClock(heard.Tick)}. {status}", 0.7f);
+            line.Modulate = status.StartsWith("Not yet") ? new Color(1f, 0.9f, 0.6f) : new Color(0.75f, 1f, 0.75f);
+            entry.AddChild(line);
+            _journalList.AddChild(entry);
+        }
+    }
+
     /// <summary>Hides chandler buttons beyond the number of lots on sale.</summary>
     public void Bind(SimulationRunner runner)
     {
@@ -448,6 +545,8 @@ public partial class PortHud : CanvasLayer
 
         _shown = null;
         _chandler.Visible = false;
+        _journal.Visible = false;
+        _journalCount = -1;
         Say("");
     }
 
