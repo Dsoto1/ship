@@ -513,3 +513,25 @@ menus"). The review is in `docs/VISION_ALIGNMENT.md`.
 
 **Why.** GAME_VISION §2, §5, §7 and ART_BIBLE §1, §7.1, §20 and §23, as reviewed.
 
+---
+
+## D-021 — Art pipeline: hybrid
+
+**Date:** 2026-10-19
+**Status:** Accepted (owner chose "Hybrid" when asked, under ART_BIBLE §20 and §24)
+
+**Decision.**
+- **Now:**
+  - free CC0 assets: textures and materials, props, and a rigged, animated human base;
+  - AI-generated props and buildings, each checked against the Art Bible's AI rules (§19:
+    plausibility, construction, consistency) before use.
+- **Later:** a commissioned artist for the hero pieces: the *Garza*, key characters and portraits.
+- **Rules:**
+  - Every asset records its source and licence in an asset manifest.
+  - Nothing is scaled up until the port validation scene (Test A, R3) shows a coherent illustrated
+    historical realism at gameplay zoom.
+  - Paid generation services are an owner decision (TECHNICAL_SPEC §41); none is used without asking.
+
+**Why.** Code-built shapes cannot reach the target. This gets the biggest quality jump at the
+lowest cost, and keeps hand-made art for what matters most.
+
