@@ -27,7 +27,10 @@ public partial class PortView : Node3D
     private static readonly Color Canvas = new(0.88f, 0.84f, 0.74f);
 
     private readonly Dictionary<Color, StandardMaterial3D> _materials = [];
-    private readonly List<(OmniLight3D Light, StandardMaterial3D Glass)> _lanterns = [];
+    private readonly List<OmniLight3D> _lanterns = [];
+    private readonly MeshBatcher _batch = new();
+    private StandardMaterial3D _glass = null!;
+    private StandardMaterial3D _gableMaterial = null!;
     private readonly List<OmniLight3D> _fires = [];
     private ShaderMaterial _roof = null!;
     private ShaderMaterial _ground = null!;
@@ -64,6 +67,8 @@ public partial class PortView : Node3D
         _roof = new ShaderMaterial { Shader = GD.Load<Shader>("res://Shaders/roof.gdshader") };
         _ground = new ShaderMaterial { Shader = GD.Load<Shader>("res://Shaders/ground.gdshader") };
         _ground.SetShaderParameter("quay_from", 29.5f);
+        _glass = new StandardMaterial3D { AlbedoColor = new Color(1f, 0.8f, 0.45f), EmissionEnabled = true, Emission = new Color(1f, 0.7f, 0.35f), EmissionEnergyMultiplier = 0.2f };
+        _gableMaterial = new StandardMaterial3D { VertexColorUseAsAlbedo = true, Roughness = 0.95f, CullMode = BaseMaterial3D.CullModeEnum.Disabled };
 
         var ship = location.Features.FirstOrDefault(f => f.Kind == "ship");
         Berth = ship is null ? new Vector3(31, 0, 39.3f) : new Vector3((ship.X0 + ship.X1) / 2f, 0, 39.3f);
@@ -76,17 +81,19 @@ public partial class PortView : Node3D
 
         BuildTownBehind();
         BuildLights();
+        _batch.Commit(this);
     }
 
     /// <summary>Lanterns, forge and cook fire by the light of day; wet stone in rain.</summary>
     public void UpdateLook(float darkness, float time, float wetness = 0f)
     {
         var flicker = 0.9f + 0.1f * Mathf.Sin(time * 11f) * Mathf.Sin(time * 4.3f);
-        foreach (var (light, glass) in _lanterns)
+        foreach (var light in _lanterns)
         {
             light.LightEnergy = darkness * 2.2f * flicker;
-            glass.EmissionEnergyMultiplier = 0.2f + darkness * 3f;
         }
+
+        _glass.EmissionEnergyMultiplier = 0.2f + darkness * 3f;
 
         foreach (var fire in _fires)
         {
@@ -127,16 +134,17 @@ public partial class PortView : Node3D
 
     private void GroundQuad(float x0, float z0, float x1, float z1, float y)
     {
-        var tool = new SurfaceTool();
-        tool.Begin(Mesh.PrimitiveType.Triangles);
-        foreach (var v in new[] { new Vector3(x0, y, z0), new Vector3(x1, y, z0), new Vector3(x1, y, z1), new Vector3(x0, y, z0), new Vector3(x1, y, z1), new Vector3(x0, y, z1) })
+        // In 8 m tiles, so the ground batches and culls with the rest of the scenery.
+        for (var tx = x0; tx < x1; tx += 8f)
         {
-            tool.SetUV(new Vector2(v.X, v.Z));
-            tool.AddVertex(v);
+            for (var tz = z0; tz < z1; tz += 8f)
+            {
+                var ex = Mathf.Min(tx + 8f, x1);
+                var ez = Mathf.Min(tz + 8f, z1);
+                Vector3[] v = [new(tx, y, tz), new(ex, y, tz), new(ex, y, ez), new(tx, y, tz), new(ex, y, ez), new(tx, y, ez)];
+                _batch.AddTriangles(_ground, v, v.Select(p => new Vector2(p.X, p.Z)).ToArray());
+            }
         }
-
-        tool.GenerateNormals();
-        AddChild(new MeshInstance3D { Mesh = tool.Commit(), MaterialOverride = _ground });
     }
 
     private void Steps(float x0, float x1, float z0, float z1, bool alongX)
@@ -157,7 +165,7 @@ public partial class PortView : Node3D
         var along = to - from;
         var length = along.Length();
         var mid = (from + to) / 2f;
-        var rail = AddBox(mid + new Vector3(0, 0.95f, 0), new Vector3(along.X == 0 ? 0.25f : length, 0.12f, along.Z == 0 ? 0.25f : length), Lime.Darkened(0.12f));
+        AddBox(mid + new Vector3(0, 0.95f, 0), new Vector3(along.X == 0 ? 0.25f : length, 0.12f, along.Z == 0 ? 0.25f : length), Lime.Darkened(0.12f));
         for (var d = 0.4f; d < length; d += 0.55f)
         {
             AddCylinder(from + along / length * d + new Vector3(0, 0.45f, 0), 0.07f, 0.9f, Lime.Darkened(0.18f));
@@ -417,27 +425,14 @@ public partial class PortView : Node3D
         var d = new Vector3(a.X, ridgeHeight, ridgeZ);
         var slope = (d - a).Length();
         var length = (b - a).Length();
-        var tool = new SurfaceTool();
-        tool.Begin(Mesh.PrimitiveType.Triangles);
-        void V(Vector3 v, float u, float w) { tool.SetUV(new Vector2(u, w)); tool.AddVertex(v); }
-        V(a, 0, slope); V(d, 0, 0); V(c, length, 0);
-        V(a, 0, slope); V(c, length, 0); V(b, length, slope);
-        tool.GenerateNormals();
-        AddChild(new MeshInstance3D { Mesh = tool.Commit(), MaterialOverride = _roof });
+        _batch.AddTriangles(_roof, [a, d, c, a, c, b],
+            [new(0, slope), new(0, 0), new(length, 0), new(0, slope), new(length, 0), new(length, slope)]);
         AddBox((a + b) / 2f + new Vector3(0, -0.06f, 0), new Vector3(Mathf.Abs(b.X - a.X), 0.14f, 0.18f), new Color(0.42f, 0.22f, 0.14f));
     }
 
     private void Gable(float x, float eave, float ridge, float back, float front, float ridgeZ, Color wall)
     {
-        var tool = new SurfaceTool();
-        tool.Begin(Mesh.PrimitiveType.Triangles);
-        tool.SetColor(wall);
-        tool.AddVertex(new Vector3(x, eave, back));
-        tool.AddVertex(new Vector3(x, ridge, ridgeZ));
-        tool.AddVertex(new Vector3(x, eave, front));
-        tool.GenerateNormals();
-        var material = new StandardMaterial3D { VertexColorUseAsAlbedo = true, Roughness = 0.95f, CullMode = BaseMaterial3D.CullModeEnum.Disabled };
-        AddChild(new MeshInstance3D { Mesh = tool.Commit(), MaterialOverride = material });
+        _batch.AddTriangles(_gableMaterial, [new Vector3(x, eave, back), new Vector3(x, ridge, ridgeZ), new Vector3(x, eave, front)], colour: wall);
     }
 
     // A dark arched opening on a south face: a door, a vault mouth.
@@ -469,15 +464,13 @@ public partial class PortView : Node3D
         var hull = new Color(0.32f, 0.26f, 0.2f);
         AddBox(at, new Vector3(length, 0.7f, 1.6f), hull);
         AddBox(at + new Vector3(0, 0.37f, 0), new Vector3(length - 0.3f, 0.06f, 1.3f), Wood);
-        var bow = AddBox(at + new Vector3(length / 2f + 0.2f, 0.1f, 0), new Vector3(0.9f, 0.6f, 1.1f), hull);
-        bow.RotationDegrees = new Vector3(0, 45, 0);
+        AddBox(at + new Vector3(length / 2f + 0.2f, 0.1f, 0), new Vector3(0.9f, 0.6f, 1.1f), hull, rotation: new Vector3(0, 45, 0));
         AddBox(at + new Vector3(0, 0.35f, 0.81f), new Vector3(length, 0.12f, 0.04f), new Color(0.55f, 0.22f, 0.16f));
         if (mast)
         {
             AddBox(at + new Vector3(-0.3f, 2.7f, 0), new Vector3(0.12f, 5f, 0.12f), Timber);
             AddBox(at + new Vector3(-0.3f, 4.1f, 0), new Vector3(0.08f, 0.08f, 3.2f), Timber);
-            var sail = AddBox(at + new Vector3(-0.3f, 3.3f, 0), new Vector3(0.04f, 1.4f, 2.6f), Canvas.Darkened(0.15f));
-            sail.RotationDegrees = new Vector3(0, 0, 4);
+            AddBox(at + new Vector3(-0.3f, 3.3f, 0), new Vector3(0.04f, 1.4f, 2.6f), Canvas.Darkened(0.15f), rotation: new Vector3(0, 0, 4));
         }
     }
 
@@ -493,7 +486,7 @@ public partial class PortView : Node3D
         {
             AddCylinder(at + new Vector3(x, 1.8f + height / 2f, 0), 0.18f, height, Timber);
             AddBox(at + new Vector3(x, 1.8f + height * 0.75f, 0), new Vector3(0.14f, 0.14f, height * 0.6f), Timber);
-            var furled = AddBox(at + new Vector3(x, 1.8f + height * 0.75f + 0.15f, 0), new Vector3(0.3f, 0.25f, height * 0.55f), Canvas.Darkened(0.2f));
+            AddBox(at + new Vector3(x, 1.8f + height * 0.75f + 0.15f, 0), new Vector3(0.3f, 0.25f, height * 0.55f), Canvas.Darkened(0.2f));
         }
     }
 
@@ -550,16 +543,14 @@ public partial class PortView : Node3D
             var half = 0.9f + t * 1.6f;
             foreach (var side in new[] { -1f, 1f })
             {
-                var rib = AddBox(new Vector3(x + side * half * 0.6f, 1.6f, z), new Vector3(0.12f, 2.4f, 0.14f), Wood);
-                rib.RotationDegrees = new Vector3(0, 0, -side * 22f);
+                AddBox(new Vector3(x + side * half * 0.6f, 1.6f, z), new Vector3(0.12f, 2.4f, 0.14f), Wood, rotation: new Vector3(0, 0, -side * 22f));
             }
         }
 
         // Planking up the lower half on the camera's side.
         for (var row = 0; row < 3; row++)
         {
-            var plank = AddBox(new Vector3(x + 1.1f + row * 0.2f, 0.95f + row * 0.32f, (back + front) / 2f + 0.3f), new Vector3(0.06f, 0.3f, length - 2.2f - row * 0.8f), Wood.Lightened(0.08f));
-            plank.RotationDegrees = new Vector3(0, 0, -22f);
+            AddBox(new Vector3(x + 1.1f + row * 0.2f, 0.95f + row * 0.32f, (back + front) / 2f + 0.3f), new Vector3(0.06f, 0.3f, length - 2.2f - row * 0.8f), Wood.Lightened(0.08f), rotation: new Vector3(0, 0, -22f));
         }
 
         // Shores holding her upright.
@@ -567,8 +558,7 @@ public partial class PortView : Node3D
         {
             foreach (var side in new[] { -1f, 1f })
             {
-                var shore = AddBox(new Vector3(x + side * 2.4f, 1.0f, z), new Vector3(0.14f, 2.3f, 0.14f), Wood.Darkened(0.15f));
-                shore.RotationDegrees = new Vector3(0, 0, side * 30f);
+                AddBox(new Vector3(x + side * 2.4f, 1.0f, z), new Vector3(0.14f, 2.3f, 0.14f), Wood.Darkened(0.15f), rotation: new Vector3(0, 0, side * 30f));
             }
         }
     }
@@ -593,8 +583,7 @@ public partial class PortView : Node3D
         for (var i = 0; i < stripes; i++)
         {
             var stripe = i % 2 == 0 ? awning : new Color(0.9f, 0.86f, 0.76f);
-            var box = AddBox(at + new Vector3(-width / 2f + (i + 0.5f) * width / stripes, 2.15f, 0.1f), new Vector3(width / stripes, 0.04f, 1.7f), stripe);
-            box.RotationDegrees = new Vector3(14, 0, 0);
+            AddBox(at + new Vector3(-width / 2f + (i + 0.5f) * width / stripes, 2.15f, 0.1f), new Vector3(width / stripes, 0.04f, 1.7f), stripe, rotation: new Vector3(14, 0, 0));
         }
 
         Color[] goods = style switch
@@ -662,24 +651,11 @@ public partial class PortView : Node3D
 
     private void Cask(Vector3 at, bool lying)
     {
-        var cask = new MeshInstance3D
+        var turn = lying ? new Vector3(0, 0, 90) : Vector3.Zero;
+        AddCylinder(at, 0.28f, 0.8f, new Color(0.46f, 0.32f, 0.18f), rotation: turn);
+        foreach (var offset in new[] { -0.25f, 0.25f })
         {
-            Mesh = new CylinderMesh { TopRadius = 0.28f, BottomRadius = 0.28f, Height = 0.8f, RadialSegments = 12 },
-            MaterialOverride = Material(new Color(0.46f, 0.32f, 0.18f)),
-            Position = at,
-        };
-        if (lying) cask.RotationDegrees = new Vector3(0, 0, 90);
-        AddChild(cask);
-        foreach (var y in new[] { -0.25f, 0.25f })
-        {
-            var hoop = new MeshInstance3D
-            {
-                Mesh = new CylinderMesh { TopRadius = 0.3f, BottomRadius = 0.3f, Height = 0.05f, RadialSegments = 12 },
-                MaterialOverride = Material(new Color(0.2f, 0.18f, 0.16f)),
-                Position = lying ? new Vector3(y, 0, 0) : new Vector3(0, y, 0),
-            };
-            if (lying) hoop.RotationDegrees = new Vector3(0, 0, 90);
-            cask.AddChild(hoop);
+            AddCylinder(at + (lying ? new Vector3(offset, 0, 0) : new Vector3(0, offset, 0)), 0.3f, 0.05f, new Color(0.2f, 0.18f, 0.16f), rotation: turn);
         }
     }
 
@@ -809,11 +785,10 @@ public partial class PortView : Node3D
             AddBox(at + new Vector3(0, -1.2f, 0), new Vector3(0.12f, 2.4f, 0.12f), Timber);
         }
 
-        var glass = new StandardMaterial3D { AlbedoColor = new Color(1f, 0.8f, 0.45f), EmissionEnabled = true, Emission = new Color(1f, 0.7f, 0.35f), EmissionEnergyMultiplier = 0.2f };
-        AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(0.22f, 0.3f, 0.22f) }, MaterialOverride = glass, Position = at });
+        _batch.Add(new BoxMesh { Size = new Vector3(0.22f, 0.3f, 0.22f) }, new Transform3D(Basis.Identity, at), _glass);
         var light = new OmniLight3D { Position = at, LightColor = new Color(1f, 0.72f, 0.4f), OmniRange = 8f, OmniAttenuation = 1.4f };
         AddChild(light);
-        _lanterns.Add((light, glass));
+        _lanterns.Add(light);
     }
 
     private static CpuParticles3D Smoke(Vector3 at, bool dark) => new()
@@ -840,28 +815,27 @@ public partial class PortView : Node3D
     private static Aabb Box(float x0, float x1, float z0, float z1, float y0, float y1) =>
         new(new Vector3(x0, y0, z0), new Vector3(x1 - x0, y1 - y0, z1 - z0));
 
-    private MeshInstance3D AddBox(Aabb box, Color colour) => AddBox(box.GetCenter(), box.Size, colour);
+    private void AddBox(Aabb box, Color colour) => AddBox(box.GetCenter(), box.Size, colour);
 
-    private MeshInstance3D AddBox(Vector3 position, Vector3 size, Color colour, bool emissive = false)
+    // Static scenery goes into the batcher; only glowing parts (forge, embers) stay separate nodes.
+    private void AddBox(Vector3 position, Vector3 size, Color colour, bool emissive = false, Vector3? rotation = null)
     {
-        var material = emissive
-            ? new StandardMaterial3D { AlbedoColor = colour, EmissionEnabled = true, Emission = colour, EmissionEnergyMultiplier = 1.5f }
-            : Material(colour);
-        var box = new MeshInstance3D { Mesh = new BoxMesh { Size = size }, MaterialOverride = material, Position = position };
-        AddChild(box);
-        return box;
+        var transform = new Transform3D(Basis.FromEuler((rotation ?? Vector3.Zero) * Mathf.Pi / 180f), position);
+        if (emissive)
+        {
+            var glow = new StandardMaterial3D { AlbedoColor = colour, EmissionEnabled = true, Emission = colour, EmissionEnergyMultiplier = 1.5f };
+            AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = size }, MaterialOverride = glow, Transform = transform });
+            return;
+        }
+
+        _batch.AddColoured(new BoxMesh { Size = size }, transform, colour);
     }
 
-    private void AddCylinder(Vector3 position, float radius, float height, Color colour, bool rotateX = false)
+    private void AddCylinder(Vector3 position, float radius, float height, Color colour, bool rotateX = false, Vector3? rotation = null)
     {
-        var cylinder = new MeshInstance3D
-        {
-            Mesh = new CylinderMesh { TopRadius = radius, BottomRadius = radius, Height = height, RadialSegments = 12 },
-            MaterialOverride = Material(colour),
-            Position = position,
-        };
-        if (rotateX) cylinder.RotationDegrees = new Vector3(90, 0, 0);
-        AddChild(cylinder);
+        var turn = rotation ?? (rotateX ? new Vector3(90, 0, 0) : Vector3.Zero);
+        var mesh = new CylinderMesh { TopRadius = radius, BottomRadius = radius, Height = height, RadialSegments = radius > 0.5f ? 16 : 10, Rings = 1 };
+        _batch.AddColoured(mesh, new Transform3D(Basis.FromEuler(turn * Mathf.Pi / 180f), position), colour);
     }
 
     private StandardMaterial3D Material(Color colour)

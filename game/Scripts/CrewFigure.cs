@@ -56,7 +56,11 @@ public partial class CrewFigure : Node3D
     private static readonly Color Breeches = new(0.24f, 0.2f, 0.17f);
     private static readonly Color Shoes = new(0.12f, 0.09f, 0.07f);
 
-    private readonly List<(StandardMaterial3D Material, Color Colour)> _tintable = [];
+    // Each rigid piece (body, each leg, each arm) is one mesh with its colours in the vertices, so a
+    // figure costs a handful of draw calls (PORT_VISUAL_PASS.md §1.6).
+    private readonly Dictionary<Node3D, SurfaceTool> _pieces = [];
+    private StandardMaterial3D _skinAndCloth = null!;
+    private bool _shownDead;
     private Node3D _model = null!;
     private Node3D _body = null!;
     private Node3D _leftLeg = null!;
@@ -113,14 +117,14 @@ public partial class CrewFigure : Node3D
         figure._rightLeg = figure.Limb(figure._body, new Vector3(0.07f * bulk, 0, 0));
         foreach (var leg in new[] { figure._leftLeg, figure._rightLeg })
         {
-            figure.AddPart(leg, new CylinderMesh { TopRadius = 0.075f * bulk, BottomRadius = 0.05f, Height = figure._legLength - 0.06f }, new Vector3(0, -(figure._legLength - 0.06f) / 2f, 0), Breeches);
+            figure.AddPart(leg, new CylinderMesh { TopRadius = 0.075f * bulk, BottomRadius = 0.05f, Height = figure._legLength - 0.06f, RadialSegments = 8, Rings = 1 }, new Vector3(0, -(figure._legLength - 0.06f) / 2f, 0), Breeches);
             figure.AddPart(leg, new BoxMesh { Size = new Vector3(0.09f, 0.06f, 0.2f) }, new Vector3(0, -figure._legLength + 0.03f, 0.04f), Shoes);
         }
 
         // Body: a doublet or shirt in the clothing dye, a belt or sash in the accent colour.
-        figure.AddPart(figure._body, new CylinderMesh { TopRadius = shoulder, BottomRadius = 0.15f * bulk, Height = torso }, new Vector3(0, torso / 2f, 0), clothing);
-        figure.AddPart(figure._body, new CylinderMesh { TopRadius = 0.152f * bulk, BottomRadius = 0.155f * bulk, Height = 0.05f }, new Vector3(0, 0.04f, 0), accent);
-        figure.AddPart(figure._body, new CylinderMesh { TopRadius = 0.05f, BottomRadius = 0.06f, Height = 0.08f }, new Vector3(0, torso + 0.03f, 0), skin);
+        figure.AddPart(figure._body, new CylinderMesh { TopRadius = shoulder, BottomRadius = 0.15f * bulk, Height = torso, RadialSegments = 8, Rings = 1 }, new Vector3(0, torso / 2f, 0), clothing);
+        figure.AddPart(figure._body, new CylinderMesh { TopRadius = 0.152f * bulk, BottomRadius = 0.155f * bulk, Height = 0.05f, RadialSegments = 8, Rings = 1 }, new Vector3(0, 0.04f, 0), accent);
+        figure.AddPart(figure._body, new CylinderMesh { TopRadius = 0.05f, BottomRadius = 0.06f, Height = 0.08f, RadialSegments = 8, Rings = 1 }, new Vector3(0, torso + 0.03f, 0), skin);
 
         // Arms hang from the shoulders, sleeves in the clothing colour, bare hands.
         var armLength = h * 0.34f;
@@ -128,18 +132,18 @@ public partial class CrewFigure : Node3D
         figure._rightArm = figure.Limb(figure._body, new Vector3(shoulder + 0.03f, torso - 0.03f, 0));
         foreach (var arm in new[] { figure._leftArm, figure._rightArm })
         {
-            figure.AddPart(arm, new CylinderMesh { TopRadius = 0.05f * bulk, BottomRadius = 0.04f, Height = armLength - 0.05f }, new Vector3(0, -(armLength - 0.05f) / 2f, 0), clothing.Darkened(0.08f));
-            figure.AddPart(arm, new SphereMesh { Radius = 0.038f, Height = 0.076f }, new Vector3(0, -armLength + 0.02f, 0), skin);
+            figure.AddPart(arm, new CylinderMesh { TopRadius = 0.05f * bulk, BottomRadius = 0.04f, Height = armLength - 0.05f, RadialSegments = 8, Rings = 1 }, new Vector3(0, -(armLength - 0.05f) / 2f, 0), clothing.Darkened(0.08f));
+            figure.AddPart(arm, new SphereMesh { Radius = 0.038f, Height = 0.076f, RadialSegments = 10, Rings = 5 }, new Vector3(0, -armLength + 0.02f, 0), skin);
         }
 
         // Head, hair, beard.
         var headCentre = torso + 0.07f + headRadius;
-        figure.AddPart(figure._body, new SphereMesh { Radius = headRadius, Height = headRadius * 2.1f }, new Vector3(0, headCentre, 0), skin);
+        figure.AddPart(figure._body, new SphereMesh { Radius = headRadius, Height = headRadius * 2.1f, RadialSegments = 10, Rings = 5 }, new Vector3(0, headCentre, 0), skin);
         figure.AddPart(figure._body, new BoxMesh { Size = new Vector3(0.03f, 0.04f, 0.03f) }, new Vector3(0, headCentre - 0.005f, headRadius * 0.95f), skin.Darkened(0.08f));
         if (looks is not null && looks.HairStyle != "style.bald")
         {
             var back = looks.HairStyle == "style.receding" ? -0.035f : -0.012f;
-            figure.AddPart(figure._body, new SphereMesh { Radius = headRadius * 1.07f, Height = headRadius * 1.5f }, new Vector3(0, headCentre + 0.03f, back), hair);
+            figure.AddPart(figure._body, new SphereMesh { Radius = headRadius * 1.07f, Height = headRadius * 1.5f, RadialSegments = 10, Rings = 5 }, new Vector3(0, headCentre + 0.03f, back), hair);
         }
 
         if (looks is not null && looks.FacialHair is "beard.short" or "beard.full")
@@ -152,17 +156,17 @@ public partial class CrewFigure : Node3D
         if (officer)
         {
             var black = new Color(0.08f, 0.07f, 0.07f);
-            figure.AddPart(figure._body, new CylinderMesh { TopRadius = headRadius * 1.9f, BottomRadius = headRadius * 1.9f, Height = 0.02f }, new Vector3(0, headCentre + headRadius * 0.7f, 0), black);
-            figure.AddPart(figure._body, new CylinderMesh { TopRadius = headRadius * 0.95f, BottomRadius = headRadius * 1.05f, Height = 0.09f }, new Vector3(0, headCentre + headRadius * 0.7f + 0.05f, 0), black);
+            figure.AddPart(figure._body, new CylinderMesh { TopRadius = headRadius * 1.9f, BottomRadius = headRadius * 1.9f, Height = 0.02f, RadialSegments = 8, Rings = 1 }, new Vector3(0, headCentre + headRadius * 0.7f, 0), black);
+            figure.AddPart(figure._body, new CylinderMesh { TopRadius = headRadius * 0.95f, BottomRadius = headRadius * 1.05f, Height = 0.09f, RadialSegments = 8, Rings = 1 }, new Vector3(0, headCentre + headRadius * 0.7f + 0.05f, 0), black);
         }
         else
         {
-            figure.AddPart(figure._body, new SphereMesh { Radius = headRadius * 1.1f, Height = headRadius * 1.3f }, new Vector3(0, headCentre + headRadius * 0.55f, -0.01f), accent.Lerp(new Color(0.55f, 0.15f, 0.12f), 0.5f));
+            figure.AddPart(figure._body, new SphereMesh { Radius = headRadius * 1.1f, Height = headRadius * 1.3f, RadialSegments = 10, Rings = 5 }, new Vector3(0, headCentre + headRadius * 0.55f, -0.01f), accent.Lerp(new Color(0.55f, 0.15f, 0.12f), 0.5f));
         }
 
         figure._ring = new MeshInstance3D
         {
-            Mesh = new TorusMesh { InnerRadius = 0.36f, OuterRadius = 0.43f },
+            Mesh = new TorusMesh { InnerRadius = 0.36f, OuterRadius = 0.43f, Rings = 24, RingSegments = 4 },
             MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.98f, 0.86f, 0.45f), ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded },
             Position = new Vector3(0, 0.03f, 0),
             Visible = false,
@@ -179,6 +183,7 @@ public partial class CrewFigure : Node3D
             Position = new Vector3(0, h + 0.3f, 0),
         };
         figure.AddChild(figure._label);
+        figure.CommitPieces();
 
         // What they carry hangs in front of the chest; built when the load changes.
         figure._load = new Node3D { Position = new Vector3(0, torso * 0.75f, 0.24f) };
@@ -221,9 +226,10 @@ public partial class CrewFigure : Node3D
         Animate(pose);
 
         var dead = character.SurvivalState == SurvivalState.Dead;
-        foreach (var (material, colour) in _tintable)
+        if (dead != _shownDead)
         {
-            material.AlbedoColor = dead ? colour.Darkened(0.6f).Lerp(new Color(0.3f, 0.3f, 0.32f), 0.5f) : colour;
+            _shownDead = dead;
+            _skinAndCloth.AlbedoColor = dead ? new Color(0.42f, 0.42f, 0.45f) : Colors.White;
         }
 
         _ring.Visible = selected;
@@ -369,13 +375,13 @@ public partial class CrewFigure : Node3D
             case "basket":
                 _load.AddChild(new MeshInstance3D
                 {
-                    Mesh = new CylinderMesh { TopRadius = 0.26f, BottomRadius = 0.2f, Height = 0.24f },
+                    Mesh = new CylinderMesh { TopRadius = 0.26f, BottomRadius = 0.2f, Height = 0.24f, RadialSegments = 8, Rings = 1 },
                     MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.68f, 0.56f, 0.34f), Roughness = 1f },
                     Position = new Vector3(0, 0.02f, 0.06f),
                 });
                 _load.AddChild(new MeshInstance3D
                 {
-                    Mesh = new SphereMesh { Radius = 0.22f, Height = 0.12f },
+                    Mesh = new SphereMesh { Radius = 0.22f, Height = 0.12f, RadialSegments = 10, Rings = 5 },
                     MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.6f, 0.66f, 0.68f), Metallic = 0.4f, Roughness = 0.4f },
                     Position = new Vector3(0, 0.15f, 0.06f),
                 });
@@ -386,7 +392,7 @@ public partial class CrewFigure : Node3D
             case "cask":
                 _load.AddChild(new MeshInstance3D
                 {
-                    Mesh = new CylinderMesh { TopRadius = 0.22f, BottomRadius = 0.22f, Height = 0.55f, RadialSegments = 10 },
+                    Mesh = new CylinderMesh { TopRadius = 0.22f, BottomRadius = 0.22f, Height = 0.55f, RadialSegments = 10, Rings = 1 },
                     MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.46f, 0.32f, 0.18f), Roughness = 0.9f },
                     Position = new Vector3(0, 0.05f, 0.08f),
                 });
@@ -394,7 +400,7 @@ public partial class CrewFigure : Node3D
             case "canvas":
                 _load.AddChild(new MeshInstance3D
                 {
-                    Mesh = new CylinderMesh { TopRadius = 0.16f, BottomRadius = 0.16f, Height = 1.3f, RadialSegments = 8 },
+                    Mesh = new CylinderMesh { TopRadius = 0.16f, BottomRadius = 0.16f, Height = 1.3f, RadialSegments = 8, Rings = 1 },
                     MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.88f, 0.84f, 0.74f), Roughness = 1f },
                     Position = new Vector3(0.1f, 0.32f, -0.1f),
                     RotationDegrees = new Vector3(0, 0, 90),
@@ -403,7 +409,7 @@ public partial class CrewFigure : Node3D
             case "yarn":
                 _load.AddChild(new MeshInstance3D
                 {
-                    Mesh = new TorusMesh { InnerRadius = 0.08f, OuterRadius = 0.2f },
+                    Mesh = new TorusMesh { InnerRadius = 0.08f, OuterRadius = 0.2f, Rings = 12, RingSegments = 4 },
                     MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.78f, 0.7f, 0.5f), Roughness = 1f },
                     RotationDegrees = new Vector3(90, 0, 0),
                 });
@@ -420,8 +426,33 @@ public partial class CrewFigure : Node3D
 
     private void AddPart(Node3D parent, Mesh mesh, Vector3 position, Color colour)
     {
-        var material = new StandardMaterial3D { AlbedoColor = colour, Roughness = 0.85f };
-        _tintable.Add((material, colour));
-        parent.AddChild(new MeshInstance3D { Mesh = mesh, MaterialOverride = material, Position = position });
+        if (!_pieces.TryGetValue(parent, out var tool))
+        {
+            tool = new SurfaceTool();
+            tool.Begin(Mesh.PrimitiveType.Triangles);
+            _pieces[parent] = tool;
+        }
+
+        var arrays = mesh.SurfaceGetArrays(0);
+        var vertices = arrays[(int)Mesh.ArrayType.Vertex].AsVector3Array();
+        var normals = arrays[(int)Mesh.ArrayType.Normal].AsVector3Array();
+        var indices = arrays[(int)Mesh.ArrayType.Index].AsInt32Array();
+        foreach (var index in indices)
+        {
+            tool.SetColor(colour);
+            tool.SetNormal(normals[index]);
+            tool.AddVertex(vertices[index] + position);
+        }
+    }
+
+    private void CommitPieces()
+    {
+        _skinAndCloth = new StandardMaterial3D { VertexColorUseAsAlbedo = true, Roughness = 0.85f };
+        foreach (var (parent, tool) in _pieces)
+        {
+            parent.AddChild(new MeshInstance3D { Mesh = tool.Commit(), MaterialOverride = _skinAndCloth });
+        }
+
+        _pieces.Clear();
     }
 }

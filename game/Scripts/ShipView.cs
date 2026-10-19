@@ -59,7 +59,13 @@ public partial class ShipView : Node3D
         BuildStern();
         BuildMastsAndRigging(location);
         BuildSpotProps(location);
+        _batch.Commit(this);
     }
+
+    // Static parts of the ship (hull, fittings, spars, rigging) merged into a few meshes; the sails,
+    // lanterns and fire stay separate because they change.
+    private readonly MeshBatcher _batch = new();
+    private readonly Dictionary<Color, StandardMaterial3D> _plain = [];
 
     /// <summary>
     /// Sets things that change with time: lantern light at night, the galley fire, and how see-through
@@ -560,33 +566,35 @@ public partial class ShipView : Node3D
             return;
         }
 
-        var instance = new MeshInstance3D
-        {
-            Mesh = new CylinderMesh { TopRadius = radius * 0.85f, BottomRadius = radius, Height = length, RadialSegments = radius > 0.05f ? 12 : 5, Rings = 1 },
-            MaterialOverride = Plain(colour),
-            Position = (from + to) / 2f,
-        };
-        instance.Quaternion = new Quaternion(Vector3.Up, direction / length);
-        AddChild(instance);
+        var mesh = new CylinderMesh { TopRadius = radius * 0.85f, BottomRadius = radius, Height = length, RadialSegments = radius > 0.05f ? 12 : 5, Rings = 1 };
+        _batch.AddColoured(mesh, new Transform3D(new Basis(new Quaternion(Vector3.Up, direction / length)), (from + to) / 2f), colour);
     }
 
     private void AddBox(Vector3 position, Vector3 size, Color colour, bool emissive = false)
     {
-        var material = Plain(colour);
         if (emissive)
         {
-            material.EmissionEnabled = true;
-            material.Emission = colour;
-            material.EmissionEnergyMultiplier = 1.5f;
+            var glow = new StandardMaterial3D { AlbedoColor = colour, Roughness = 0.88f, EmissionEnabled = true, Emission = colour, EmissionEnergyMultiplier = 1.5f };
+            AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = size }, MaterialOverride = glow, Position = position });
+            return;
         }
 
-        AddMesh(new BoxMesh { Size = size }, material, position);
+        _batch.AddColoured(new BoxMesh { Size = size }, new Transform3D(Basis.Identity, position), colour);
     }
 
     private void AddMesh(Mesh mesh, Material material, Vector3? position = null) =>
-        AddChild(new MeshInstance3D { Mesh = mesh, MaterialOverride = material, Position = position ?? Vector3.Zero });
+        _batch.Add(mesh, new Transform3D(Basis.Identity, position ?? Vector3.Zero), material);
 
-    private static StandardMaterial3D Plain(Color colour) => new() { AlbedoColor = colour, Roughness = 0.88f };
+    private StandardMaterial3D Plain(Color colour)
+    {
+        if (!_plain.TryGetValue(colour, out var material))
+        {
+            material = new StandardMaterial3D { AlbedoColor = colour, Roughness = 0.88f };
+            _plain[colour] = material;
+        }
+
+        return material;
+    }
 
     private static StandardMaterial3D VertexColoured(float roughness) => new() { VertexColorUseAsAlbedo = true, Roughness = roughness };
 
