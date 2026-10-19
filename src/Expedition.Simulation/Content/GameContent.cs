@@ -149,6 +149,12 @@ public sealed class GameContent
             errors.Add("Port: needs funds >= 0, 1 <= minimumCrew <= berths, and a late fee >= 0.");
         }
 
+        if (rules.Preparation is { LoadingHours: <= 0 } or { StowingHours: < 0 } or { DepartureMorningHours: < 0 } or { TakingShapeLots: < 0 }
+            || rules.Preparation.ReadyLots < rules.Preparation.TakingShapeLots)
+        {
+            errors.Add("Port preparation: loadingHours must be positive, the other hours not negative, and readyLots at least takingShapeLots.");
+        }
+
         foreach (var lot in rules.Goods.Where(g => !Items.ContainsKey(g.Item) || g.Quantity <= 0 || g.Price < 0 || g.Stock < 0 || g.SoldPerDay < 0))
         {
             errors.Add($"Port: chandler lot '{lot.Item}' needs a known item, a positive quantity, and non-negative price, stock and sales.");

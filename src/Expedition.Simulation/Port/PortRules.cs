@@ -61,6 +61,9 @@ public sealed record PreparationRules
     /// <summary>Hours a bought lot stands on the quay; it goes aboard steadily over that time.</summary>
     public double LoadingHours { get; init; } = 3;
 
+    /// <summary>Hours stores lie on deck once aboard, before they are struck down into the hold.</summary>
+    public double StowingHours { get; init; } = 5;
+
     /// <summary>Lots bought, with half the crew signed on, for the expedition to be taking shape.</summary>
     public int TakingShapeLots { get; init; } = 3;
 

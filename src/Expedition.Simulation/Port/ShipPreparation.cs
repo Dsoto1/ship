@@ -42,13 +42,16 @@ public sealed record CargoPackages(string Item, string Package, int Count)
 /// <param name="Stage">How far preparation has come.</param>
 /// <param name="OnQuay">Bought lots still on the quay by the gangway.</param>
 /// <param name="Aboard">The hold's contents, less what is still on the quay.</param>
+/// <param name="OnDeck">Of what is aboard, what lies on deck waiting to be struck down into the hold.</param>
 /// <param name="Belongings">Hands signed on, each with a sea chest or a bundle.</param>
-public sealed record ShipPreparation(PreparationStage Stage, IReadOnlyList<CargoPackages> OnQuay, IReadOnlyList<CargoPackages> Aboard, int Belongings)
+public sealed record ShipPreparation(PreparationStage Stage, IReadOnlyList<CargoPackages> OnQuay, IReadOnlyList<CargoPackages> Aboard,
+    IReadOnlyList<CargoPackages> OnDeck, int Belongings)
 {
     /// <summary>
     /// The ship's preparation in port, or null at sea. Stores bought at the chandler stand on the quay and
     /// go aboard steadily over <see cref="PreparationRules.LoadingHours"/>; the hold's quantities are
-    /// already counted, so the picture is the only thing that waits.
+    /// already counted, so the picture is the only thing that waits. Once aboard they lie on deck for
+    /// <see cref="PreparationRules.StowingHours"/> while they are struck down below.
     /// </summary>
     public static ShipPreparation? Of(CampaignState campaign, GameContent content)
     {
@@ -59,27 +62,34 @@ public sealed record ShipPreparation(PreparationStage Stage, IReadOnlyList<Cargo
 
         var now = campaign.Clock.Tick;
         var loading = rules.Preparation.LoadingHours * SimulationClock.TicksPerHour;
+        var stowing = rules.Preparation.StowingHours * SimulationClock.TicksPerHour;
         var onQuay = new Dictionary<string, int>(StringComparer.Ordinal);
+        var onDeck = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var purchase in port.Purchases)
         {
             var waited = now - purchase.Tick;
-            if (waited < 0 || waited >= loading)
+            if (waited < 0 || waited >= loading + stowing)
             {
                 continue;
             }
 
             var goods = rules.Goods[purchase.Lot];
             var packages = PackagesOf(content, goods.Item, goods.Quantity);
-            var left = (int)Math.Ceiling(packages * (1 - waited / loading));
+            var left = waited < loading ? (int)Math.Ceiling(packages * (1 - waited / loading)) : 0;
+            var deck = waited < loading ? packages - left : (int)Math.Ceiling(packages * (1 - (waited - loading) / stowing));
             onQuay[goods.Item] = onQuay.GetValueOrDefault(goods.Item) + left;
+            onDeck[goods.Item] = onDeck.GetValueOrDefault(goods.Item) + deck;
         }
 
         var aboard = campaign.SharedStore.Quantities
             .Where(pair => pair.Value > 0 && content.Items.ContainsKey(pair.Key))
             .Select(pair => (Item: pair.Key, Count: PackagesOf(content, pair.Key, pair.Value) - onQuay.GetValueOrDefault(pair.Key)))
-            .Where(stack => stack.Count > 0);
+            .Where(stack => stack.Count > 0)
+            .ToList();
+        var deckLoad = aboard.Select(stack => (stack.Item, Count: Math.Min(stack.Count, onDeck.GetValueOrDefault(stack.Item))));
 
-        return new ShipPreparation(StageOf(campaign, rules), Stacks(content, onQuay.Select(p => (p.Key, p.Value))), Stacks(content, aboard), port.Hired.Count);
+        return new ShipPreparation(StageOf(campaign, rules), Stacks(content, onQuay.Select(p => (p.Key, p.Value))), Stacks(content, aboard),
+            Stacks(content, deckLoad), port.Hired.Count);
     }
 
     /// <summary>The stage, from the crew signed on, the lots bought and the hour (PORT_EXPERIENCE §5).</summary>

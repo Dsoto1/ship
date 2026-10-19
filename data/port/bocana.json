@@ -15,6 +15,13 @@
   "hour": 6
  },
  "lateFeePerHalfDay": 300,
+ "preparation": {
+  "loadingHours": 3,
+  "stowingHours": 5,
+  "takingShapeLots": 3,
+  "readyLots": 6,
+  "departureMorningHours": 3
+ },
  "goods": [
   {
    "item": "item.water",

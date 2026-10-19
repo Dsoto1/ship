@@ -578,6 +578,7 @@ public class PortTests
 
         Assert.Equal(PreparationStage.AwaitingExpedition, ready.Stage);
         Assert.Empty(ready.OnQuay);
+        Assert.Empty(ready.OnDeck);
         Assert.Equal(4, Packages(ready.Aboard, "item.water"));
         Assert.Equal(4, Packages(ready.Aboard, "item.biscuit"));
         Assert.Equal("cask", ready.Aboard.Single(s => s.Item == "item.water").Package);
@@ -602,12 +603,19 @@ public class PortTests
         var halfway = ShipPreparation.Of(runner.Campaign, Shipped)!;
         Assert.Equal(1, Packages(halfway.OnQuay, "item.rope"));
         Assert.Equal(5, Packages(halfway.Aboard, "item.rope"));
+        Assert.Equal(1, Packages(halfway.OnDeck, "item.rope"));
 
         runner.Advance(90);
         var loaded = ShipPreparation.Of(runner.Campaign, Shipped)!;
         Assert.Empty(loaded.OnQuay);
         Assert.Equal(6, Packages(loaded.Aboard, "item.rope"));
         Assert.Equal(5, Packages(loaded.Aboard, "item.water"));
+        Assert.Equal(2, Packages(loaded.OnDeck, "item.rope"));
+
+        runner.Advance(5 * 60);
+        var stowed = ShipPreparation.Of(runner.Campaign, Shipped)!;
+        Assert.Empty(stowed.OnDeck);
+        Assert.Equal(6, Packages(stowed.Aboard, "item.rope"));
     }
 
     [Fact]

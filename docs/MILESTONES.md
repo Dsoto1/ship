@@ -33,7 +33,7 @@ This file tracks status and breaks the next work into tickets.
 | UI-1 | UI/UX design system, first pass: tokens, HUD shell, management drawer, alerts, uncertainty vocabulary (UI_UX §68 steps 1–11) | Done (2026-10-19), awaiting the owner's manual test |
 | VP-0 | Port visual pass, step 0: batching and lighter figures (PORT_VISUAL_PASS §5) | Done (2026-10-19) |
 | VP-1 | Port visual pass, first block, Chandler's Quay: lighting, ground, clusters, kits, ship, depth, rain, sound (PORT_VISUAL_PASS §5–6) | Done (2026-10-19), awaiting the owner's review |
-| R2c | Tier C crowd, background ships, ship preparation states, visible cargo (steps 6, 9) | Planned |
+| R2c | Tier C crowd, background ships, ship preparation states, visible cargo (steps 6, 9) | Done (2026-10-19) |
 | R2d | Sound zones, port weather and reactions, ambient micro-events (steps 10–12) | Planned |
 | R2e | Recognition and the departure sequence (steps 13, 14) | Planned |
 | R3 | Visual validation: the four port scenes of PORT_EXPERIENCE §21, then Test B ship, with the hybrid pipeline (D-021) | Planned |
@@ -643,7 +643,7 @@ Roof occlusion is not handled: the captain's name shows through roofs.
   - Gil makes casks and rolls them to the chandler's yard;
   - Old Simón mends canvas and carries it to the *Garza*;
   - Velho looks the *Garza* over in the early afternoon.
-- **Save format 16** (the journal). Format 15 ports load with an empty one.
+- **Save format 16** (the journal). Format 15 ports load with an empty one. (Now 17: see R2c.)
 
 380 tests pass.
 
@@ -759,3 +759,69 @@ Screenshots: `docs/screenshots/ui-a-port-exploration.jpg`, `ui-b-recruit-inspect
 3. Run to dusk at 60×: long warm light, then the lanterns.
 4. Listen near the quay, the stalls and the yard: the sound changes.
 5. Report the frame rate (Godot's Debugger ▸ Monitors), and how it compares with before.
+
+## R2c — The crowd, the harbour, and the Garza taking shape
+
+PORT_EXPERIENCE §5, §6, §18–19; VISION_ALIGNMENT §5.2.
+
+**Tier C crowd** (`PortCrowd`, `CrowdMesh`, `crowd.gdshader`):
+- passers-by who each make a trip with a reason: in from a street end or out of a door, sometimes
+  stopping at a stall, the well or the notice board, then off to another door, street or pier;
+- about a quarter carry a sack;
+- about 40 at the morning market, a handful at night;
+- the whole crowd is one mesh drawn in one batch and animated in the shader: two draw calls with its
+  shadows;
+- they walk at the port's pace in game time, so they stop when paused;
+- never characters: no names, no clicks, nothing saved.
+
+**The harbour** (`HarbourView`):
+- a nao, a caravel and a fishing caravel at anchor, swinging and rolling a little, with hands working
+  on deck and stern lanterns lit at night;
+- two boats rowing between the piers and the ships by day.
+
+**The Garza taking shape** (`ShipPreparation` in the simulation, `PreparationView` in the game):
+- **Stages** come from the crew signed on, the lots bought and the hour, with thresholds in
+  `data/port` → `preparation`:
+  - awaiting the expedition: a tar pot and a loose coil;
+  - inspection under way: the hatch open, a lantern;
+  - loading;
+  - taking shape: a whip from the main yard, a sea chest or bundle for each hand;
+  - ready for sea: hatch closed, deck load under lashed tarpaulins, coils at the masts;
+  - departure morning: from first light, people gather on the quay to see her off.
+- **Stores** bought at the chandler are counted in the hold at once, as before. They are drawn on the
+  quay by the gangway and cross to the deck over 3 hours. They lie on deck for 5 more hours while
+  they are struck below.
+- **Packages:** each item says what it is packed in (`items.json` → `packedIn`, `perPackage`): a
+  cask of 40 litres of water, a sack of 25 rations, a coil of rope.
+- **The Expedition panel** names the stage and what is still on the quay.
+
+**Save format 17** records purchases and when they were made. Older saves load with everything
+already aboard.
+
+**Developer options:** `--hire=N` signs on the first N who want a berth; `--buy=0,0,4` buys those
+lots; `--after=MINUTES` then lets time pass.
+
+**Tests:** 388 pass, including:
+- the Company's stores;
+- stores waiting on the quay, then on deck, then below;
+- the stage thresholds;
+- purchases saved and old saves migrated;
+- every item packed.
+
+**Screenshots:** `docs/screenshots/r2c-{market,loading,ready-day,departure,harbour}.jpg`.
+
+**Limits:**
+- the crowd walks through named people and the captain rather than around them;
+- only some carry, and they do not react to rain yet (R2d sets `Density`);
+- the anchored ships are greybox hulls;
+- no livestock;
+- repairs are not yet visible on the hull.
+
+**Manual test (macOS):**
+1. `git pull`, Build, Cmd+B.
+2. At Watch speed on the market, see passers-by stop at stalls and leave by streets and doors.
+3. Buy water and rope at the chandler (C): casks and coils appear by the gangway, cross to the
+   deck, then disappear below over the next hours at 60×.
+4. Sign on hands: sea chests appear forward.
+5. Run to day 3 at dawn: people on the quay to see her off.
+6. Pan south to see the ships at anchor and the boats rowing.

@@ -74,6 +74,10 @@ public partial class Main : Node3D
     private PortView _port = null!;
     private PortSound _portSound = null!;
     private Node3D _portFigures = null!;
+    private PortCrowd _crowd = null!;
+    private HarbourView _harbour = null!;
+    private PreparationView _preparation = null!;
+    private bool _farewells;
     private bool _portBuilt;
     private bool _follow = true;
     private CharacterId? _hovered;
@@ -304,6 +308,22 @@ public partial class Main : Node3D
             _port.UpdateLook(_world.Darkness, t, _portWet);
             FadeForeground((float)delta);
             ListenToThePort(hour, (float)delta);
+            _crowd.Update(hour, (float)(delta * speed), _portWet);
+            _harbour.Update(hour, (float)(delta * speed), (float)delta, _world.Darkness);
+        }
+
+        // The Garza's preparation as it stands (R2c): stores on the quay and deck, the stage's dressing.
+        if (Engine.GetProcessFrames() % 6 == 0)
+        {
+            _preparation.Show(Expedition.Simulation.Port.ShipPreparation.Of(_runner.Campaign, _content));
+
+            // Departure morning: from first light, people come down to the quay to see her off (PORT_EXPERIENCE §5).
+            var farewells = inPort && _preparation.Stage == Expedition.Simulation.Port.PreparationStage.DepartureMorning && hour >= 4.5f;
+            if (farewells != _farewells)
+            {
+                _farewells = farewells;
+                _crowd.SetGathering(farewells ? new Vector3(33.5f, 0, 32.6f) : null, 12, new Vector2(0, 1));
+            }
         }
         var making = voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } ? 0.3f + (float)voyage.SpeedLeaguesPerHour * 1.3f : 0f;
         _world.UpdateWorld(hour, _seaState, making, (float)delta, _camera.Target, hull, _gloom);
@@ -676,6 +696,8 @@ public partial class Main : Node3D
         {
             _port.Build(_content.Locations[rules.Location], _content.Tasks);
             _portSound.Build(_content.Locations[rules.Location]);
+            _crowd.Build(_content.Locations[rules.Location], _port.HeightAt);
+            _harbour.Build();
             _portBuilt = true;
         }
 
@@ -1046,6 +1068,13 @@ public partial class Main : Node3D
         AddChild(_portSound);
         _portFigures = new Node3D { Name = "PortFigures" };
         AddChild(_portFigures);
+        _crowd = new PortCrowd { Name = "PortCrowd" };
+        _portFigures.AddChild(_crowd);
+        _harbour = new HarbourView { Name = "Harbour" };
+        _portFigures.AddChild(_harbour);
+        _preparation = new PreparationView { Name = "PreparationView" };
+        AddChild(_preparation);
+        _preparation.Attach(_shipContents, _portFigures);
 
         for (var i = 0; i < 3; i++)
         {
@@ -1078,11 +1107,40 @@ public partial class Main : Node3D
     private PanelId? _developerPanel;
     private int? _developerOffer;
     private float? _developerYaw;
+    private string? _developerBuy;
+    private int _developerHire;
+    private int _developerAfter;
 
     // For screenshots of the port: --select=person.velho opens their card (and --talk walks the captain
     // over and talks, at once; --offer=N then offers that advance); --look=x,z points the camera; --yaw=degrees turns it.
     private void DeveloperPort()
     {
+        // For the preparation stages (R2c): --hire=N signs on the first N who want a berth, --buy=0,0,4
+        // buys those lots, --after=MINUTES then lets time pass.
+        if (_developerHire > 0 && _content.Port is { } rules)
+        {
+            foreach (var seeker in rules.People.Where(p => p.Seeking is not null).Take(_developerHire))
+            {
+                if (_runner.CharacterFor(seeker.Id) is { } hand)
+                {
+                    _runner.DeveloperHire(hand.Id);
+                }
+            }
+        }
+
+        foreach (var lot in (_developerBuy ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (int.TryParse(lot, out var index))
+            {
+                _runner.Buy(index);
+            }
+        }
+
+        if (_developerAfter > 0)
+        {
+            _runner.Advance(_developerAfter);
+        }
+
         if (_developerSelect is { } person && _runner.CharacterFor(person) is { } character)
         {
             _selected = character.Id;
@@ -1171,6 +1229,9 @@ public partial class Main : Node3D
                 case "perf": _developerPerf = true; break;
                 case "panel" when Enum.TryParse<PanelId>(value, true, out var panel): _developerPanel = panel; break;
                 case "offer" when int.TryParse(value, out var advance): _developerOffer = advance; break;
+                case "buy": _developerBuy = value; break;
+                case "hire" when int.TryParse(value, out var hands): _developerHire = hands; break;
+                case "after" when int.TryParse(value, out var later): _developerAfter = later; break;
                 case "yaw" when float.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var yaw): _developerYaw = yaw; break;
             }
         }
@@ -1218,7 +1279,7 @@ public partial class Main : Node3D
         if (_developerPerf)
         {
             // Render cost of the frame just drawn (--perf): what the scene asks of the GPU.
-            GD.Print($"PERF fps={Engine.GetFramesPerSecond():0} drawCalls={Performance.GetMonitor(Performance.Monitor.RenderTotalDrawCallsInFrame):0} " +
+            GD.Print($"PERF crowd={_crowd.Count} fps={Engine.GetFramesPerSecond():0} drawCalls={Performance.GetMonitor(Performance.Monitor.RenderTotalDrawCallsInFrame):0} " +
                 $"objects={Performance.GetMonitor(Performance.Monitor.RenderTotalObjectsInFrame):0} primitives={Performance.GetMonitor(Performance.Monitor.RenderTotalPrimitivesInFrame):0} " +
                 $"nodes={Performance.GetMonitor(Performance.Monitor.ObjectNodeCount):0} processMs={Performance.GetMonitor(Performance.Monitor.TimeProcess) * 1000:0.0} " +
                 $"videoMemMB={Performance.GetMonitor(Performance.Monitor.RenderVideoMemUsed) / 1048576:0}");

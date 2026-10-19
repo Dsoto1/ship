@@ -229,12 +229,12 @@ Bocana, judged against the real 1490–1530 Atlantic they are modelled on.
 | A candidate found through a lead, not a menu | References and rumours exist; no leads journal; everyone's "seeking" is visible | Partly |
 | Candidate information shows uncertainty and provenance | Sources, informants and levels in the knowledge book | Aligned (simulation); needs the card |
 | At least three NPC activity loops visibly work | People sit at one spot for an hour; no carrying | Missing |
-| Crowd tiers create apparent density | Tier A and B exist as characters; no Tier C | Missing |
+| Crowd tiers create apparent density | Tier A and B are characters; Tier C passers-by, hands on other ships and rowing boats are presentation only (R2c) | Aligned |
 | Time of day changes activity and sound | Activity yes; no sound | Partly |
 | Weather changes visuals and behaviour | No port weather | Missing |
 | Ambient events, without rewards | — | Missing |
 | Purchases change authoritative cargo | `Buy` stores goods in the hold | Aligned |
-| Representative cargo appears physically | — | Missing |
+| Representative cargo appears physically | Bought stores stand on the quay, cross to the deck and go below as casks, sacks, chests and coils; the Garza dresses by preparation stage (R2c) | Aligned |
 | Port recognition changes with the expedition | — | Missing |
 | Departure uses the actual crew and cargo | Sailing moves the real crew; no departure sequence | Partly |
 | Save and load keep persistent NPC and expedition state | Format 15 | Aligned |

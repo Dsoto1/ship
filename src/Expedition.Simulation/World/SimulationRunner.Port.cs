@@ -502,6 +502,28 @@ public sealed partial class SimulationRunner
         }
 
         port.Funds -= advance;
+        SignOn(port, rules, id, advance);
+        return CommandResult.Ok();
+    }
+
+    /// <summary>
+    /// Developer tool for screenshots and testing: signs someone looking for a berth on at once, for
+    /// nothing, wherever they are. Never called by the game itself.
+    /// </summary>
+    public CommandResult DeveloperHire(CharacterId id)
+    {
+        if (Content.Port is not { } rules || Campaign.Port is not { } port || PersonOf(id)?.Seeking is null || port.Hired.Contains(id) || port.Gone.Contains(id))
+        {
+            return CommandResult.Rejected("Not someone looking for a berth here.");
+        }
+
+        SignOn(port, rules, id, 0);
+        return CommandResult.Ok();
+    }
+
+    private void SignOn(PortState port, PortRules rules, CharacterId id, int advance)
+    {
+        var character = Campaign.Characters[id];
         port.MarkHired(id);
         character.Membership = Membership.Crew;
         Campaign.AbandonTask(id);
@@ -509,7 +531,6 @@ public sealed partial class SimulationRunner
         SetCell(id, deck.Id, FreeCell(deck));
         SetDuties(id, DutiesFor(character));
         Campaign.Record(ChronicleEntryKind.CrewHired, [new(ChronicleParameters.Level, advance.ToString(CultureInfo.InvariantCulture))], id);
-        return CommandResult.Ok();
     }
 
     /// <summary>Buys a lot from the chandler, if there is stock and money.</summary>

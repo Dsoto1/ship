@@ -444,6 +444,15 @@ public partial class PortHud : CanvasLayer
             $"Expedition: sail with the convoy at dawn on day {rules.Departure.Day} — {(hours > 0 ? $"in {Math.Floor(hours):0} hours" : $"it has sailed; {rules.LateFeePerHalfDay} sueldos for every half day late")}\n" +
             "Charter: reach Punta Ceniza, learn what became of the factory, re-establish it and hold it\n\n" +
             $"Purse: {port.Funds} sueldos\nStores for {port.Hired.Count + 1}: water ~{Math.Floor(water * 0.9):0}–{Math.Ceiling(water * 1.1):0} days, food ~{Math.Floor(food * 0.9):0}–{Math.Ceiling(food * 1.1):0} days";
+        if (Expedition.Simulation.Port.ShipPreparation.Of(runner.Campaign, runner.Content) is { } preparation)
+        {
+            _objectives.Text += $"\n\nThe Garza — {Expedition.Simulation.Port.ShipPreparation.Describe(preparation.Stage)}";
+            if (preparation.OnQuay.Count > 0)
+            {
+                _objectives.Text += "\nOn the quay, going aboard: " + string.Join(", ", preparation.OnQuay.Select(s =>
+                    $"{s.Count} {(s.Count == 1 ? s.Package : s.Package + "s")} of {runner.Content.Items[s.Item].Name.Split(" (")[0].ToLowerInvariant()}"));
+            }
+        }
 
         var signature = port.Leads.Count * 1000 + port.TalkedTo.Count * 31 + port.Hired.Count * 7 + port.Gone.Count;
         if (signature == _journalSignature)
@@ -489,7 +498,7 @@ public partial class PortHud : CanvasLayer
         var section = new VBoxContainer();
         body.AddChild(section);
         body.MoveChild(section, 0);
-        section.AddChild(Ui.Heading("Maese Corbalán, chandler — delivered aboard"));
+        section.AddChild(Ui.Heading("Maese Corbalán, chandler — delivered to the gangway"));
         _lots = new VBoxContainer();
         _lots.AddThemeConstantOverride("separation", 2);
         section.AddChild(_lots);
@@ -525,7 +534,7 @@ public partial class PortHud : CanvasLayer
             buttons[lot].Disabled = left <= 0 || port.Funds < goods.Price;
             buttons[lot].TooltipText = left <= 0 ? "Sold out: others bought the last of it."
                 : port.Funds < goods.Price ? $"Only {port.Funds} sueldos left in the purse."
-                : $"About {goods.SoldPerDay} of these sell to other ships each day.";
+                : $"Left on the quay by the gangway and carried aboard over the next hours. About {goods.SoldPerDay} of these sell to other ships each day.";
         }
     }
 
