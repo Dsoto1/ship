@@ -75,6 +75,8 @@ Saves go to `~/Library/Application Support/The Expedition/saves/` on macOS.
 - [`docs/VOYAGE_EXPERIENCE.md`](docs/VOYAGE_EXPERIENCE.md) — the voyage and ship brief (D-024)
 - [`docs/NAVIGATION.md`](docs/NAVIGATION.md) — the navigation and chart brief (D-024)
 - [`docs/SETTLEMENT_EXPERIENCE.md`](docs/SETTLEMENT_EXPERIENCE.md) — the landfall and settlement brief (D-024)
+- [`docs/UI_UX_DESIGN_SYSTEM.md`](docs/UI_UX_DESIGN_SYSTEM.md) — the interface authority for every phase (D-026)
+- [`docs/PORT_VISUAL_PASS.md`](docs/PORT_VISUAL_PASS.md) — the port visual slice: audit, approved plan (D-026)
 - [`docs/P1_OPTIONS_BRIEF.md`](docs/P1_OPTIONS_BRIEF.md) — historical situations to draw inspiration from (setting is fictional: D-012)
 
 ## Tech

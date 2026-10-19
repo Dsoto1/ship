@@ -1,7 +1,7 @@
 # Port Visual Vertical Slice — Audit and Proposal
 
-**Status:** PROPOSAL, awaiting the owner's approval. Nothing below has been built yet. The only code
-change so far is a `--perf` developer flag, used to measure render cost.
+**Status:** APPROVED by the owner on 2026-10-19 with every recommendation in §4 (D-026). Built step by
+step from §5; progress is in `docs/MILESTONES.md`.
 **Authorities:**
 - ART_BIBLE.md §1–3, §7.1, §8–9, §16, §19–20, §23;
 - PORT_EXPERIENCE.md §3–8, §12–15, §18, §21;

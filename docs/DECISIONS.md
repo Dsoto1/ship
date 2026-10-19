@@ -626,3 +626,42 @@ continuing (SETTLEMENT §0). The current build is measured against them in `VISI
   drop back to pause.
 
 **Why.** The owner chose the recommended options under NAVIGATION §8 and §43 and VOYAGE §51.
+
+---
+
+## D-026 — Port visual slice approved; the UI/UX design system is an authority
+
+**Date:** 2026-10-19
+**Status:** Accepted (owner: "approved, go with your recommendations. we also need to implement this
+UI/UX.md")
+
+**Decision.**
+- **The visual pass** (`PORT_VISUAL_PASS.md`) is approved with every recommendation in its §4:
+  - the slice is Chandler's Quay;
+  - SSAO (low) and height fog are allowed;
+  - the shipwright gets a repair station by the *Garza*, and locals get short shopping and chatting
+    blocks so people form clusters;
+  - rain is visual-only until R2d;
+  - sound gets a zone framework with generated placeholders, and CC0 recordings once audio hosts are
+    allowed;
+  - a hoist now, a crane deferred;
+  - the HUD layout is approved.
+- **`UI_UX_DESIGN_SYSTEM.md` governs the interface** in every phase. It is built in its §68 order:
+  - **now** (§68 steps 1–11): tokens, type and icon rules, the HUD shell, port panels collapsed,
+    alerts, the selected-character card, the management shell, crew, cargo, chronicle, and the
+    voyage HUD;
+  - **with their systems:** ship management (R4e), the chart (R4b) and settlement (R6).
+- **Uncertainty vocabulary follows UI_UX §22:**
+  - sources: Rumored, Claimed, Suspected, Observed, Confirmed;
+  - confidence: Poor, Low, Fair, High, Very High.
+
+  This replaces the R2a wording.
+- **Approval items in UI_UX** (final arrangement §12, key mapping §48, minimum resolution §50) start
+  on defaults:
+  - People / Expedition / Cargo / Ship / Chart / Chronicle as compact buttons with keys P, X, C, S,
+    M, L;
+  - the existing mouse controls;
+  - a minimum of 1280 × 720.
+
+**Why.** Both documents ask for a world-first screen, honest uncertainty and one interface family
+(UI_UX §1, §4, §69).
