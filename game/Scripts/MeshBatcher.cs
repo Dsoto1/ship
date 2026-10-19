@@ -43,7 +43,7 @@ public sealed class MeshBatcher
     }
 
     /// <summary>The shared material for <see cref="AddColoured"/>: matte, colour from the vertices.</summary>
-    public StandardMaterial3D Coloured { get; } = new() { VertexColorUseAsAlbedo = true, Roughness = 0.9f };
+    public StandardMaterial3D Coloured { get; } = new() { VertexColorUseAsAlbedo = true, VertexColorIsSrgb = true, Roughness = 0.9f };
 
     /// <summary>
     /// Adds loose triangles (roof slopes, gables, ground) with UVs and an optional vertex colour.

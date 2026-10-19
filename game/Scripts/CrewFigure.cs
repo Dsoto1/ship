@@ -447,7 +447,7 @@ public partial class CrewFigure : Node3D
 
     private void CommitPieces()
     {
-        _skinAndCloth = new StandardMaterial3D { VertexColorUseAsAlbedo = true, Roughness = 0.85f };
+        _skinAndCloth = new StandardMaterial3D { VertexColorUseAsAlbedo = true, VertexColorIsSrgb = true, Roughness = 0.85f };
         foreach (var (parent, tool) in _pieces)
         {
             parent.AddChild(new MeshInstance3D { Mesh = tool.Commit(), MaterialOverride = _skinAndCloth });

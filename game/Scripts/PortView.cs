@@ -68,7 +68,7 @@ public partial class PortView : Node3D
         _ground = new ShaderMaterial { Shader = GD.Load<Shader>("res://Shaders/ground.gdshader") };
         _ground.SetShaderParameter("quay_from", 29.5f);
         _glass = new StandardMaterial3D { AlbedoColor = new Color(1f, 0.8f, 0.45f), EmissionEnabled = true, Emission = new Color(1f, 0.7f, 0.35f), EmissionEnergyMultiplier = 0.2f };
-        _gableMaterial = new StandardMaterial3D { VertexColorUseAsAlbedo = true, Roughness = 0.95f, CullMode = BaseMaterial3D.CullModeEnum.Disabled };
+        _gableMaterial = new StandardMaterial3D { VertexColorUseAsAlbedo = true, VertexColorIsSrgb = true, Roughness = 0.95f, CullMode = BaseMaterial3D.CullModeEnum.Disabled };
 
         var ship = location.Features.FirstOrDefault(f => f.Kind == "ship");
         Berth = ship is null ? new Vector3(31, 0, 39.3f) : new Vector3((ship.X0 + ship.X1) / 2f, 0, 39.3f);

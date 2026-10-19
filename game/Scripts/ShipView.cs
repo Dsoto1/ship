@@ -596,7 +596,7 @@ public partial class ShipView : Node3D
         return material;
     }
 
-    private static StandardMaterial3D VertexColoured(float roughness) => new() { VertexColorUseAsAlbedo = true, Roughness = roughness };
+    private static StandardMaterial3D VertexColoured(float roughness) => new() { VertexColorUseAsAlbedo = true, VertexColorIsSrgb = true, Roughness = roughness };
 
     private static List<float> Stations(float from, float to, float step)
     {
