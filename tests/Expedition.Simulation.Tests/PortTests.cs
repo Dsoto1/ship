@@ -550,7 +550,7 @@ public class PortTests
         var noon = Port();
         AdvanceTo(noon, 1, 12, 20);
         Assert.Equal("task.buy_at_market", Doing(noon, "person.anselmo"));
-        Assert.Equal("N", At(noon, "person.anselmo").Face);
+        Assert.Equal("E", At(noon, "person.anselmo").Face);
     }
 
     [Fact]

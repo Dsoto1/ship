@@ -343,6 +343,7 @@ public partial class PortView : Node3D
                 AddBox(new Vector3(split - 0.4f, baseHeight + 1.4f, front + 0.06f), new Vector3(1.6f, 2.5f, 0.08f), Timber);
                 HangingSign(new Vector3(split + 0.6f, baseHeight + 3.4f, front + 0.7f), new Color(0.2f, 0.25f, 0.32f));
                 Lantern(new Vector3(split - 1.6f, baseHeight + 2.6f, front + 0.3f));
+                TavernKit(split - 0.4f, front, baseHeight);
                 break;
             case "chapel":
                 House(left, right, back, front, Lime, Lime, 1, 7f, frame: false, baseHeight);
@@ -361,6 +362,7 @@ public partial class PortView : Node3D
                 AddBox(new Vector3(middleX, baseHeight + 6.8f, front + 0.9f), new Vector3(0.25f, 0.25f, 1.8f), Timber);
                 AddCylinder(new Vector3(middleX, baseHeight + 5.2f, front + 1.6f), 0.02f, 3.2f, Rope);
                 HangingSign(new Vector3(right - 1f, baseHeight + 3.2f, front + 0.7f), new Color(0.3f, 0.2f, 0.12f));
+                ChandlerKit(middleX, front, baseHeight);
                 break;
             case "cooperage":
                 House(left, right, back, front, new Color(0.76f, 0.68f, 0.56f), Stone, 1, 3.6f, frame: true, baseHeight);
@@ -370,6 +372,7 @@ public partial class PortView : Node3D
                     Cask(new Vector3(right - 0.8f - i * 0.75f, baseHeight + 0.42f, front + 0.6f), false);
                 }
 
+                CooperageKit(left, front, baseHeight);
                 break;
             case "smithy":
                 House(left, right, back, front, DarkStone.Lightened(0.15f), DarkStone, 1, 3.4f, frame: false, baseHeight);
@@ -388,6 +391,102 @@ public partial class PortView : Node3D
                 House(left, right, back, front, Plaster.Darkened(0.04f), Stone, 3, 3f, frame: true, baseHeight);
                 break;
         }
+    }
+
+    // ---- dressing kits: the secondary layer that says what a building is for (PORT_VISUAL_PASS §3.4)
+
+    // The chandler's: doors open on the stores, a load on the hoist line, rope, canvas and the steelyard.
+    private void ChandlerKit(float doorX, float front, float baseHeight)
+    {
+        var at = new Vector3(doorX, baseHeight, front);
+        // Door leaves swung open against the wall.
+        AddBox(at + new Vector3(-1.75f, 1.5f, 0.45f), new Vector3(0.9f, 2.9f, 0.07f), Timber.Lightened(0.08f), rotation: new Vector3(0, -70, 0));
+        AddBox(at + new Vector3(1.75f, 1.5f, 0.45f), new Vector3(0.9f, 2.9f, 0.07f), Timber.Lightened(0.08f), rotation: new Vector3(0, 70, 0));
+        // A bale halfway up the hoist line.
+        AddBox(at + new Vector3(0, 4.3f, 1.6f), new Vector3(0.7f, 0.55f, 0.55f), new Color(0.7f, 0.64f, 0.48f));
+        AddBox(at + new Vector3(0, 4.3f, 1.6f), new Vector3(0.72f, 0.06f, 0.57f), Rope);
+        // Rope coils in two heaps, and canvas bolts on a trestle.
+        foreach (var (x, z, n) in new[] { (-2.6f, 1.0f, 3), (-1.9f, 1.7f, 2) })
+        {
+            for (var i = 0; i < n; i++)
+            {
+                AddShape(new TorusMesh { InnerRadius = 0.12f, OuterRadius = 0.34f, Rings = 12, RingSegments = 5 }, at + new Vector3(x, 0.07f + i * 0.13f, z), Rope.Lightened(0.04f * i));
+            }
+        }
+
+        Trestle(at + new Vector3(2.4f, 0, 1.3f), 1.6f, 0.5f);
+        for (var i = 0; i < 3; i++)
+        {
+            AddCylinder(at + new Vector3(2.4f, 0.86f + (i == 2 ? 0.2f : 0f), 1.16f + (i == 2 ? 0.14f : i * 0.28f)), 0.13f, 1.4f, Canvas.Darkened(0.04f * i), rotation: new Vector3(0, 0, 90));
+        }
+
+        // The steelyard: a post, a beam, a pan.
+        AddBox(at + new Vector3(1.1f, 1.1f, 2.1f), new Vector3(0.1f, 2.2f, 0.1f), Timber);
+        AddBox(at + new Vector3(1.1f, 2.15f, 2.1f), new Vector3(1.1f, 0.05f, 0.05f), new Color(0.25f, 0.24f, 0.24f), rotation: new Vector3(0, 0, -6));
+        AddCylinder(at + new Vector3(0.65f, 1.35f, 2.1f), 0.2f, 0.04f, new Color(0.3f, 0.28f, 0.26f));
+        AddCylinder(at + new Vector3(0.65f, 1.75f, 2.1f), 0.008f, 0.75f, Rope);
+    }
+
+    // The tavern: the green branch over the door that marks wine for sale, casks, a cask-top table with jug and cups.
+    private void TavernKit(float doorX, float front, float baseHeight)
+    {
+        var at = new Vector3(doorX, baseHeight, front);
+        AddBox(at + new Vector3(0, 2.75f, 0.35f), new Vector3(0.06f, 0.06f, 0.7f), Timber);
+        foreach (var (dx, dy) in new[] { (0f, 0f), (0.18f, -0.12f), (-0.16f, -0.08f), (0.05f, -0.24f) })
+        {
+            AddShape(new SphereMesh { Radius = 0.22f, Height = 0.36f, RadialSegments = 8, Rings = 4 }, at + new Vector3(dx, 2.55f + dy, 0.72f), new Color(0.3f, 0.42f, 0.2f));
+        }
+
+        Cask(at + new Vector3(-1.4f, 0.42f, 0.55f), false);
+        Cask(at + new Vector3(-2.05f, 0.42f, 0.5f), false);
+        Cask(at + new Vector3(1.4f, 0.42f, 0.7f), false);
+        AddCylinder(at + new Vector3(1.4f, 0.84f, 0.7f), 0.36f, 0.05f, Wood);
+        AddCylinder(at + new Vector3(1.32f, 0.97f, 0.66f), 0.07f, 0.22f, new Color(0.62f, 0.42f, 0.28f));
+        AddCylinder(at + new Vector3(1.55f, 0.92f, 0.78f), 0.045f, 0.1f, new Color(0.7f, 0.55f, 0.38f));
+        // A broom against the wall.
+        AddBox(at + new Vector3(2.5f, 0.75f, 0.14f), new Vector3(0.04f, 1.5f, 0.04f), Wood, rotation: new Vector3(0, 0, -10));
+        AddBox(at + new Vector3(2.62f, 0.12f, 0.14f), new Vector3(0.24f, 0.24f, 0.08f), new Color(0.6f, 0.5f, 0.3f), rotation: new Vector3(0, 0, -10));
+    }
+
+    // The cooperage: staves leaned against the wall, hoops on pegs, a cask half raised in its truss.
+    private void CooperageKit(float left, float front, float baseHeight)
+    {
+        var at = new Vector3(left, baseHeight, front);
+        for (var i = 0; i < 9; i++)
+        {
+            AddBox(at + new Vector3(0.6f + i * 0.14f, 0.6f, 0.2f), new Vector3(0.1f, 1.2f, 0.03f), Wood.Lightened(0.03f * (i % 3)), rotation: new Vector3(-12, 0, (i % 2 == 0 ? 3 : -2)));
+        }
+
+        foreach (var x in new[] { 2.2f, 2.65f })
+        {
+            AddShape(new TorusMesh { InnerRadius = 0.25f, OuterRadius = 0.29f, Rings = 16, RingSegments = 4 }, at + new Vector3(x, 1.7f, 0.1f), Iron, new Vector3(90, 0, 0));
+        }
+
+        // Staves standing in a ring, not yet hooped at the top.
+        var centre = at + new Vector3(3.6f, 0, 1.2f);
+        for (var i = 0; i < 14; i++)
+        {
+            var angle = i / 14f * Mathf.Tau;
+            var spread = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle));
+            AddBox(centre + spread * 0.3f + new Vector3(0, 0.4f, 0), new Vector3(0.11f, 0.8f, 0.03f), Wood.Lightened(0.05f),
+                rotation: new Vector3(-Mathf.Sin(angle) * 8f, -angle * 180f / Mathf.Pi + 90f, Mathf.Cos(angle) * 8f));
+        }
+
+        AddShape(new TorusMesh { InnerRadius = 0.3f, OuterRadius = 0.34f, Rings = 16, RingSegments = 4 }, centre + new Vector3(0, 0.12f, 0), Iron);
+    }
+
+    private static readonly Color Iron = new(0.22f, 0.21f, 0.2f);
+
+    // A trestle table: boards on two A-frames.
+    private void Trestle(Vector3 at, float width, float depth)
+    {
+        foreach (var side in new[] { -width / 2f + 0.15f, width / 2f - 0.15f })
+        {
+            AddBox(at + new Vector3(side, 0.36f, -depth / 3f), new Vector3(0.05f, 0.75f, 0.05f), Wood.Darkened(0.15f), rotation: new Vector3(14, 0, 0));
+            AddBox(at + new Vector3(side, 0.36f, depth / 3f), new Vector3(0.05f, 0.75f, 0.05f), Wood.Darkened(0.15f), rotation: new Vector3(-14, 0, 0));
+        }
+
+        AddBox(at + new Vector3(0, 0.74f, 0), new Vector3(width, 0.05f, depth), Wood);
     }
 
     // A house over a rectangle, facing south: stone ground floor, plastered storeys, a pitched tiled roof.
@@ -539,19 +638,38 @@ public partial class PortView : Node3D
         AddBox(new Vector3(right - 0.6f, 0.6f, (back + front) / 2f - 0.4f), new Vector3(0.5f, 1.2f, 0.6f), Wood);
     }
 
+    // A post-and-rail fence with timber stacked against it in places: a yard boundary with a reason
+    // (PORT_VISUAL_PASS §3.5). The gate is left open.
     private void Fence(float left, float right, float back, float front)
     {
         var vertical = right - left < front - back;
         var length = vertical ? front - back : right - left;
         for (var d = 0.5f; d < length; d += 1f)
         {
-            var at = vertical ? new Vector3((left + right) / 2f, 0.6f, back + d) : new Vector3(left + d, 0.6f, (back + front) / 2f);
+            var at = vertical ? new Vector3((left + right) / 2f, 0, back + d) : new Vector3(left + d, 0, (back + front) / 2f);
             if (_location.IsWalkable(new GridPosition(Mathf.FloorToInt(at.X + 0.5f), Mathf.FloorToInt(at.Z + 0.5f))))
             {
                 continue;
             }
 
-            AddBox(at, vertical ? new Vector3(0.1f, 1.2f, 0.95f) : new Vector3(0.95f, 1.2f, 0.1f), Wood.Darkened(0.1f));
+            AddBox(at + new Vector3(0, 0.62f, 0), new Vector3(0.11f, 1.24f, 0.11f), WetWood);
+            foreach (var y in new[] { 0.45f, 1.05f })
+            {
+                AddBox(at + new Vector3(0, y, 0), vertical ? new Vector3(0.05f, 0.09f, 1.02f) : new Vector3(1.02f, 0.09f, 0.05f), Wood.Darkened(0.08f));
+            }
+
+            // Every few posts, planks or poles leaned against the rails, as a yard keeps its timber.
+            var seed = (int)(at.X * 3 + at.Z * 5);
+            if (seed % 4 == 0)
+            {
+                for (var i = 0; i < 3; i++)
+                {
+                    var lean = vertical ? new Vector3(0, 0, 0) : new Vector3(0, 0, 0);
+                    var offset = vertical ? new Vector3(-0.22f - i * 0.05f, 0.7f, 0.2f * i - 0.2f) : new Vector3(0.2f * i - 0.2f, 0.7f, 0.22f + i * 0.05f);
+                    AddBox(at + offset, new Vector3(vertical ? 0.06f : 0.18f, 1.45f, vertical ? 0.18f : 0.06f), Wood.Lightened(0.05f * i),
+                        rotation: vertical ? new Vector3(0, 0, -14) : new Vector3(14, 0, 0));
+                }
+            }
         }
     }
 
@@ -589,49 +707,90 @@ public partial class PortView : Node3D
         }
     }
 
+    // A market stall: a trestle board under an undyed canvas awning that sags and is patched, goods that
+    // say what is sold, and the baskets and crates around it (PORT_VISUAL_PASS §3.10).
     private void Stall(Vector3 at, float width, string style)
     {
-        var awning = style switch
-        {
-            "fish" => new Color(0.2f, 0.36f, 0.55f),
-            "cloth" => new Color(0.62f, 0.2f, 0.32f),
-            "tools" => new Color(0.4f, 0.42f, 0.25f),
-            _ => new Color(0.72f, 0.2f, 0.16f),
-        };
         width = Mathf.Max(width, 2f);
-        AddBox(at + new Vector3(0, 0.45f, 0), new Vector3(width, 0.9f, 0.9f), Wood);
-        foreach (var (x, z) in new[] { (-width / 2f, -0.5f), (width / 2f, -0.5f), (-width / 2f, 0.7f), (width / 2f, 0.7f) })
+        var seed = (int)(at.X * 7 + at.Z * 13);
+        var canvas = style switch
         {
-            AddBox(at + new Vector3(x, 1.1f, z), new Vector3(0.08f, 2.2f, 0.08f), Timber);
-        }
-
-        var stripes = Mathf.RoundToInt(width / 0.35f);
-        for (var i = 0; i < stripes; i++)
-        {
-            var stripe = i % 2 == 0 ? awning : new Color(0.9f, 0.86f, 0.76f);
-            AddBox(at + new Vector3(-width / 2f + (i + 0.5f) * width / stripes, 2.15f, 0.1f), new Vector3(width / stripes, 0.04f, 1.7f), stripe, rotation: new Vector3(14, 0, 0));
-        }
-
-        Color[] goods = style switch
-        {
-            "fish" => [new(0.6f, 0.66f, 0.68f), new(0.7f, 0.55f, 0.5f), new(0.5f, 0.56f, 0.6f)],
-            "cloth" => [new(0.7f, 0.2f, 0.2f), new(0.25f, 0.3f, 0.5f), new(0.85f, 0.78f, 0.6f)],
-            "tools" => [new(0.35f, 0.35f, 0.38f), new(0.5f, 0.4f, 0.28f), new(0.3f, 0.3f, 0.32f)],
-            _ => [new(0.7f, 0.3f, 0.18f), new(0.55f, 0.6f, 0.25f), new(0.85f, 0.7f, 0.35f), new(0.5f, 0.3f, 0.45f)],
+            "produce" => new Color(0.72f, 0.5f, 0.38f),   // a faded madder red
+            "fish" => new Color(0.66f, 0.68f, 0.66f),      // salt-greyed
+            _ => Canvas.Darkened(0.05f + (seed % 3) * 0.04f),
         };
-        var count = Mathf.RoundToInt(width / 0.45f);
-        for (var i = 0; i < count; i++)
+        Trestle(at, width, 0.9f);
+        foreach (var (x, z, h) in new[] { (-width / 2f, -0.5f, 2.3f), (width / 2f, -0.5f, 2.3f), (-width / 2f, 0.7f, 1.9f), (width / 2f, 0.7f, 1.9f) })
         {
-            var colour = goods[i % goods.Length];
-            if (style is "cloth" or "tools")
-            {
-                AddBox(at + new Vector3(-width / 2f + 0.3f + i * 0.45f, 0.96f, 0), new Vector3(0.36f, 0.1f, 0.5f), colour);
-            }
-            else
-            {
-                AddCylinder(at + new Vector3(-width / 2f + 0.3f + i * 0.45f, 0.97f, 0), 0.17f, 0.14f, colour);
-            }
+            AddBox(at + new Vector3(x, h / 2f, z), new Vector3(0.07f, h, 0.07f), Timber);
         }
+
+        // The awning in two slopes meeting low in the middle: canvas that sags between its poles.
+        var back = at + new Vector3(0, 2.3f, -0.5f);
+        var mid = at + new Vector3(0, 2.0f, 0.12f);
+        var fore = at + new Vector3(0, 1.9f, 0.75f);
+        Awning(back, mid, width, canvas);
+        Awning(mid, fore, width, canvas.Darkened(0.06f));
+        AddBox(at + new Vector3(width * 0.2f, 2.09f, -0.12f), new Vector3(0.4f, 0.015f, 0.32f), canvas.Darkened(0.18f), rotation: new Vector3(-22, 0, 0));
+
+        switch (style)
+        {
+            case "fish":
+                for (var i = 0; i < 3; i++)
+                {
+                    var basket = at + new Vector3(-width / 2f + 0.4f + i * 0.6f, 0.8f, 0);
+                    AddCylinder(basket, 0.26f, 0.1f, new Color(0.62f, 0.52f, 0.32f));
+                    for (var f = 0; f < 3; f++)
+                    {
+                        AddShape(new SphereMesh { Radius = 0.06f, Height = 0.12f, RadialSegments = 6, Rings = 3 }, basket + new Vector3(-0.12f + f * 0.12f, 0.07f, (f % 2) * 0.08f), new Color(0.62f, 0.66f, 0.68f), new Vector3(0, 30 * f, 0));
+                    }
+                }
+
+                AddBox(at + new Vector3(width / 2f - 0.35f, 0.79f, 0.1f), new Vector3(0.45f, 0.03f, 0.3f), Wood.Lightened(0.15f));
+                AddCylinder(at + new Vector3(width / 2f + 0.3f, 0.2f, 0.5f), 0.18f, 0.4f, Wood.Darkened(0.2f));
+                AddCylinder(at + new Vector3(-width / 2f - 0.35f, 0.18f, 0.3f), 0.3f, 0.36f, new Color(0.62f, 0.52f, 0.32f));
+                break;
+            case "produce":
+                for (var i = 0; i < 3; i++)
+                {
+                    AddShape(new SphereMesh { Radius = 0.22f, Height = 0.4f, RadialSegments = 8, Rings = 4 }, at + new Vector3(-width / 2f + 0.4f + i * 0.55f, 0.95f, 0), new Color(0.7f, 0.6f, 0.42f));
+                }
+
+                // Strings of garlic and onions hung from the awning bar.
+                foreach (var x in new[] { -0.5f, 0f, 0.5f })
+                {
+                    AddCylinder(at + new Vector3(x, 1.72f, 0.66f), 0.05f, 0.42f, x == 0f ? new Color(0.62f, 0.4f, 0.24f) : new Color(0.88f, 0.84f, 0.74f));
+                }
+
+                AddShape(new SphereMesh { Radius = 0.26f, Height = 0.5f, RadialSegments = 8, Rings = 4 }, at + new Vector3(width / 2f + 0.35f, 0.25f, 0.4f), new Color(0.68f, 0.58f, 0.4f));
+                AddCylinder(at + new Vector3(-width / 2f - 0.3f, 0.16f, 0.4f), 0.28f, 0.32f, new Color(0.6f, 0.5f, 0.3f));
+                break;
+            case "cloth":
+                for (var i = 0; i < 4; i++)
+                {
+                    var bolt = new[] { new Color(0.58f, 0.24f, 0.22f), new Color(0.3f, 0.34f, 0.46f), new Color(0.82f, 0.76f, 0.6f), new Color(0.42f, 0.4f, 0.28f) }[i];
+                    AddBox(at + new Vector3(-width / 2f + 0.35f + i * 0.45f, 0.82f + (i % 2) * 0.08f, 0), new Vector3(0.36f, 0.14f, 0.55f), bolt);
+                }
+
+                AddBox(at + new Vector3(0, 0.92f, 0.35f), new Vector3(width * 0.8f, 0.02f, 0.03f), Wood.Lightened(0.2f));
+                break;
+            default:
+                AddBox(at + new Vector3(0, 0.79f, 0), new Vector3(width * 0.8f, 0.03f, 0.6f), Wood.Darkened(0.2f));
+                for (var i = 0; i < 5; i++)
+                {
+                    AddBox(at + new Vector3(-width / 2f + 0.4f + i * 0.33f, 0.83f, (i % 2) * 0.15f), new Vector3(0.22f, 0.04f, 0.08f), Iron, rotation: new Vector3(0, i * 25, 0));
+                }
+
+                AddCylinder(at + new Vector3(width / 2f + 0.3f, 0.2f, 0.4f), 0.2f, 0.4f, Wood);
+                break;
+        }
+    }
+
+    private void Awning(Vector3 from, Vector3 to, float width, Color colour)
+    {
+        var length = (to - from).Length();
+        var tilt = Mathf.Atan2(to.Y - from.Y, to.Z - from.Z) * 180f / Mathf.Pi;
+        AddBox((from + to) / 2f, new Vector3(width + 0.1f, 0.03f, length), colour, rotation: new Vector3(-tilt, 0, 0));
     }
 
     private void Well(Vector3 at)
@@ -671,6 +830,9 @@ public partial class PortView : Node3D
                 AddBox(at + new Vector3(0.5f, 0.35f, 0.3f), new Vector3(0.8f, 0.7f, 0.8f), Wood.Darkened(0.1f));
                 AddBox(at + new Vector3(-0.3f, 1.15f, -0.2f), new Vector3(0.7f, 0.7f, 0.7f), Wood.Lightened(0.1f));
                 AddBox(at + new Vector3(0.45f, 0.95f, 0.3f), new Vector3(0.5f, 0.5f, 0.5f), Wood.Lightened(0.05f));
+                // Lashed for the lighter: rope bands round the stack.
+                AddBox(at + new Vector3(-0.4f, 0.55f, -0.3f), new Vector3(0.92f, 0.04f, 0.92f), Rope);
+                AddBox(at + new Vector3(-0.4f, 0.7f, -0.3f), new Vector3(0.04f, 1.4f, 0.92f), Rope);
                 break;
         }
     }
@@ -710,6 +872,14 @@ public partial class PortView : Node3D
         }
 
         AddBox(at + new Vector3(0, 2.05f, 0), new Vector3(2.2f, 0.06f, 1.4f), Shadow);
+        // Shafts resting on the ground, a chock under a wheel, a chain from the wheel to a ring in the quay.
+        foreach (var z in new[] { -0.45f, 0.45f })
+        {
+            AddBox(at + new Vector3(1.9f, 0.3f, z), new Vector3(1.8f, 0.08f, 0.08f), Wood, rotation: new Vector3(0, 0, 15));
+        }
+
+        AddBox(at + new Vector3(-0.9f, 0.08f, 1.0f), new Vector3(0.25f, 0.16f, 0.2f), Wood.Darkened(0.2f));
+        AddBox(at + new Vector3(-0.9f, 0.25f, 1.1f), new Vector3(0.04f, 0.4f, 0.04f), Iron, rotation: new Vector3(40, 0, 0));
         foreach (var (x, z) in new[] { (-0.9f, -0.75f), (0.9f, -0.75f), (-0.9f, 0.75f), (0.9f, 0.75f) })
         {
             AddCylinder(at + new Vector3(x, 0.45f, z), 0.45f, 0.08f, Wood, rotateX: true);
@@ -856,6 +1026,9 @@ public partial class PortView : Node3D
 
         _batch.AddColoured(new BoxMesh { Size = size }, transform, colour);
     }
+
+    private void AddShape(Mesh mesh, Vector3 position, Color colour, Vector3? rotation = null) =>
+        _batch.AddColoured(mesh, new Transform3D(Basis.FromEuler((rotation ?? Vector3.Zero) * Mathf.Pi / 180f), position), colour);
 
     private void AddCylinder(Vector3 position, float radius, float height, Color colour, bool rotateX = false, Vector3? rotation = null)
     {

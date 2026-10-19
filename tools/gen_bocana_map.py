@@ -148,9 +148,9 @@ for i, x in enumerate([4, 11, 16]):
 # chandler
 spot("spot.chandler_counter", 50, 14, ["task.trade_goods"], "MarketStall"); spot("spot.chandler_yard", 51, 17, ["task.trade_goods"], "MarketStall")
 # market
-spot("spot.fish_stall_1", 44, 21, ["task.sell_fish"], "MarketStall", face="S"); spot("spot.fish_stall_2", 48, 21, ["task.sell_fish"], "MarketStall", face="S")
-# customers in front of the stalls, facing the seller across the board (a merchant + customer cluster)
-spot("spot.fish_customer_1", 44, 23, ["task.buy_at_market"], "ConversationPoint", face="N"); spot("spot.fish_customer_2", 48, 23, ["task.buy_at_market"], "ConversationPoint", face="N")
+# sellers at the stall's east end (seen from the camera), customers at the west end facing them across the board
+spot("spot.fish_stall_1", 46, 22, ["task.sell_fish"], "MarketStall", face="W"); spot("spot.fish_stall_2", 50, 22, ["task.sell_fish"], "MarketStall", face="W")
+spot("spot.fish_customer_1", 43, 22, ["task.buy_at_market"], "ConversationPoint", face="E"); spot("spot.fish_customer_2", 47, 22, ["task.buy_at_market"], "ConversationPoint", face="E")
 # two people at the well, facing each other
 spot("spot.well_talk_1", 30, 23, ["task.gossip"], "ConversationPoint", face="E"); spot("spot.well_talk_2", 31, 23, ["task.gossip"], "ConversationPoint", face="W")
 spot("spot.surgeon_stool", 22, 26, ["task.treat_patients"], "WorkBench")
@@ -178,7 +178,7 @@ spot("spot.catch_1", 10, 38, ["task.land_catch"], "CarryPickup", face="E"); spot
 # porters catch their breath beside the pier head between loads (a worker resting by an active worksite)
 spot("spot.cargo_rest_1", 43, 33, ["task.catch_breath"], "SitPoint", face="S"); spot("spot.cargo_rest_2", 47, 33, ["task.catch_breath"], "SitPoint", face="S")
 spot("spot.cargo_rest_3", 42, 33, ["task.catch_breath"], "SitPoint", face="SE")
-spot("spot.stall_drop_1", 45, 21, ["task.carry_catch"], "CarryDropoff", face="S"); spot("spot.stall_drop_2", 49, 21, ["task.carry_catch"], "CarryDropoff", face="S")
+spot("spot.stall_drop_1", 45, 23, ["task.carry_catch"], "CarryDropoff", face="N"); spot("spot.stall_drop_2", 49, 23, ["task.carry_catch"], "CarryDropoff", face="N")
 spot("spot.timber_stack", 74, 23, ["task.fetch_timber"], "CarryPickup")
 spot("spot.hull_1", 65, 27, ["task.fit_timber"], "HammerStation"); spot("spot.hull_2", 72, 29, ["task.fit_timber"], "HammerStation")
 spot("spot.ropewalk_2", 78, 4, ["task.lay_rope"], "RopeWork")
