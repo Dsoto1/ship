@@ -81,6 +81,15 @@ public sealed record WorkSpotDefinition
     /// </summary>
     public string? Kind { get; init; }
 
+    /// <summary>
+    /// The compass direction someone here faces while at work, for clusters such as a seller and a
+    /// customer across a stall (N is towards row 0); null to face whatever is beside them.
+    /// </summary>
+    public string? Face { get; init; }
+
+    /// <summary>Compass directions allowed in <see cref="Face"/>.</summary>
+    public static readonly IReadOnlyList<string> Compass = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+
     /// <summary>The spot's cell.</summary>
     public GridPosition Cell => new(X, Y);
 }

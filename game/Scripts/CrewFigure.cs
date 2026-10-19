@@ -40,6 +40,24 @@ public enum Pose
 
     /// <summary>Standing still, a hand shading the eyes, looking out.</summary>
     Watching,
+
+    /// <summary>Bent at the waist, arms down: taking up a load at a pickup.</summary>
+    Lifting,
+
+    /// <summary>Bent forward, hands on knees, looking closely: inspecting a hull or cargo.</summary>
+    Inspecting,
+
+    /// <summary>Weight on one leg, a shoulder against a post or board.</summary>
+    Leaning,
+
+    /// <summary>A knife hand chopping at table height: gutting fish at the stall.</summary>
+    Gutting,
+
+    /// <summary>Stooped, both hands on a cask rolled along the ground.</summary>
+    Rolling,
+
+    /// <summary>Arms out at waist height, holding something still for another worker.</summary>
+    Steadying,
 }
 
 /// <summary>
@@ -76,6 +94,7 @@ public partial class CrewFigure : Node3D
     private float _phase;
     private Node3D _load = null!;
     private string? _carrying;
+    private Node3D _rolled = null!;
 
     private static StandardMaterial3D? _contactShadow;
 
@@ -210,6 +229,16 @@ public partial class CrewFigure : Node3D
         figure.AddChild(figure._label);
         figure.CommitPieces();
 
+        // A cask rolled along the ground in front of them, shown only while rolling.
+        figure._rolled = new Node3D { Position = new Vector3(0, 0.24f, 0.5f), Visible = false };
+        figure._model.AddChild(figure._rolled);
+        figure._rolled.AddChild(new MeshInstance3D
+        {
+            Mesh = new CylinderMesh { TopRadius = 0.24f, BottomRadius = 0.24f, Height = 0.6f, RadialSegments = 10, Rings = 1 },
+            MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.46f, 0.32f, 0.18f), Roughness = 0.9f },
+            RotationDegrees = new Vector3(0, 0, 90),
+        });
+
         // What they carry hangs in front of the chest; built when the load changes.
         figure._load = new Node3D { Position = new Vector3(0, torso * 0.75f, 0.24f) };
         figure._body.AddChild(figure._load);
@@ -228,7 +257,7 @@ public partial class CrewFigure : Node3D
     /// <param name="animationRate">How fast to animate: faster at higher game speeds, zero when paused.</param>
     public void Refresh(Character character, CharacterPlacement placement, double drawTick, bool selected, string activity,
         bool isCaptain, Pose pose, float delta, float animationRate, Func<float, float, float>? ground = null, string? carrying = null,
-        bool showLabel = true, string? shownName = null)
+        bool showLabel = true, string? shownName = null, Vector2? facing = null)
     {
         var (x, y) = placement.Movement?.PositionAt(drawTick) ?? (placement.Cell.X, placement.Cell.Y);
         Position = new Vector3((float)x, ground?.Invoke((float)x, (float)y) ?? 0, (float)y);
@@ -245,9 +274,20 @@ public partial class CrewFigure : Node3D
             var target = Mathf.Atan2(moved.X, moved.Z);
             _heading = Mathf.LerpAngle(_heading, target, Mathf.Clamp(delta * 10f, 0, 1));
         }
+        else if (facing is { } face && face != Vector2.Zero && !placement.IsMoving)
+        {
+            // At work: turn to the work, or to the person across the stall (PORT_VISUAL_PASS §3.6–7).
+            _heading = Mathf.LerpAngle(_heading, Mathf.Atan2(face.X, face.Y), Mathf.Clamp(delta * 6f, 0, 1));
+        }
 
         _model.Rotation = new Vector3(0, _heading, 0);
         _phase += delta * animationRate;
+        _rolled.Visible = pose == Pose.Rolling;
+        if (pose == Pose.Rolling)
+        {
+            _rolled.Rotation = new Vector3(_phase * 3f, 0, 0);
+        }
+
         Animate(pose);
 
         var dead = character.SurvivalState == SurvivalState.Dead;
@@ -361,6 +401,56 @@ public partial class CrewFigure : Node3D
                 _leftArm.RotationDegrees = new Vector3(4f, 0, 5f);
                 _rightArm.RotationDegrees = new Vector3(-150f, 0, -40f);
                 _body.RotationDegrees = new Vector3(-3f, 0, 0);
+                break;
+            case Pose.Lifting:
+                var heave = Mathf.Sin(_phase * 1.6f) * 0.5f + 0.5f;
+                _body.RotationDegrees = new Vector3(55f - heave * 25f, 0, 0);
+                _body.Position = new Vector3(0, _legLength * (0.88f + heave * 0.08f), -0.05f);
+                _leftLeg.RotationDegrees = new Vector3(-25f, 0, 6f);
+                _rightLeg.RotationDegrees = new Vector3(-25f, 0, -6f);
+                _leftArm.RotationDegrees = new Vector3(-20f - heave * 30f, 0, 12f);
+                _rightArm.RotationDegrees = new Vector3(-20f - heave * 30f, 0, -12f);
+                break;
+            case Pose.Inspecting:
+                var look = Mathf.Sin(_phase * 0.7f);
+                _body.RotationDegrees = new Vector3(38f, look * 8f, 0);
+                _body.Position = new Vector3(0, _legLength * 0.94f, 0);
+                _leftLeg.RotationDegrees = new Vector3(-14f, 0, 4f);
+                _rightLeg.RotationDegrees = new Vector3(-14f, 0, -4f);
+                _leftArm.RotationDegrees = new Vector3(-30f, 0, 16f);
+                _rightArm.RotationDegrees = new Vector3(-60f + look * 15f, 0, -10f);
+                break;
+            case Pose.Leaning:
+                _model.RotationDegrees = new Vector3(0, _model.RotationDegrees.Y, 0);
+                _body.RotationDegrees = new Vector3(-4f, 0, 7f);
+                _leftLeg.RotationDegrees = new Vector3(0, 0, 4f);
+                _rightLeg.RotationDegrees = new Vector3(14f, 0, -10f);
+                _leftArm.RotationDegrees = new Vector3(-25f, 0, 40f);
+                _rightArm.RotationDegrees = new Vector3(10f, 0, -6f);
+                break;
+            case Pose.Gutting:
+                var cut = Mathf.Pow(Mathf.Abs(Mathf.Sin(_phase * 4.5f)), 2f);
+                _body.RotationDegrees = new Vector3(18f, 0, 0);
+                _leftArm.RotationDegrees = new Vector3(-60f, 0, 18f);
+                _rightArm.RotationDegrees = new Vector3(-85f + cut * 30f, 0, -14f);
+                _leftLeg.RotationDegrees = new Vector3(-6f, 0, 0);
+                _rightLeg.RotationDegrees = new Vector3(6f, 0, 0);
+                break;
+            case Pose.Rolling:
+                _body.RotationDegrees = new Vector3(42f, 0, 0);
+                _body.Position = new Vector3(0, _legLength * 0.9f, 0);
+                _leftArm.RotationDegrees = new Vector3(-55f, 0, 12f);
+                _rightArm.RotationDegrees = new Vector3(-55f, 0, -12f);
+                _leftLeg.RotationDegrees = new Vector3(swing * 22f - 12f, 0, 0);
+                _rightLeg.RotationDegrees = new Vector3(-swing * 22f - 12f, 0, 0);
+                break;
+            case Pose.Steadying:
+                var strain = Mathf.Sin(_phase * 0.9f) * 3f;
+                _body.RotationDegrees = new Vector3(14f + strain, 0, 0);
+                _leftArm.RotationDegrees = new Vector3(-70f, 0, 22f);
+                _rightArm.RotationDegrees = new Vector3(-70f, 0, -22f);
+                _leftLeg.RotationDegrees = new Vector3(-12f, 0, 6f);
+                _rightLeg.RotationDegrees = new Vector3(12f, 0, -6f);
                 break;
             case Pose.Lying:
                 _model.RotationDegrees = new Vector3(-90f, _model.RotationDegrees.Y, 0);

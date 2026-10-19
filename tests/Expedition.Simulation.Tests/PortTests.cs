@@ -376,12 +376,13 @@ public class PortTests
     }
 
     [Theory]
-    [InlineData("person.andres", 9, "task.haul_cargo", "task.deliver_cargo")]
     [InlineData("person.bartolo", 9, "task.port_carpentry", "task.fetch_timber", "task.fit_timber")]
     [InlineData("person.catalina", 9, "task.land_catch", "task.carry_catch", "task.sell_fish")]
     [InlineData("person.marta", 9, "task.make_rope", "task.lay_rope")]
     [InlineData("person.gil", 9, "task.coopering", "task.deliver_cask")]
     [InlineData("person.simon", 8, "task.mend_sails", "task.deliver_canvas")]
+    [InlineData("person.andres", 14, "task.haul_cargo", "task.deliver_cargo", "task.catch_breath")]
+    [InlineData("person.bartolo", 13, "task.saw_planks", "task.fetch_plank", "task.fit_garza_plank")]
     public void WorkGoesRoundInLoops(string person, int hour, params string[] loop)
     {
         var runner = Port();
@@ -519,5 +520,50 @@ public class PortTests
         AdvanceTo(runner, 1, 14, 30);
 
         Assert.Equal("task.inspect_ship", Doing(runner, "person.velho"));
+    }
+
+    private static (string? Spot, string? Face) At(SimulationRunner runner, string person)
+    {
+        var task = runner.Campaign.ActiveTasks[Id(runner, person)];
+        var spot = runner.Content.Locations["location.bocana"].FindSpot(task.SpotId!);
+        return (spot?.Id, spot?.Face);
+    }
+
+    [Fact]
+    public void PeopleGatherInPairsAndGroups()
+    {
+        var runner = Port();
+
+        // The carter and the fishwife gossip at the well, face to face.
+        AdvanceTo(runner, 1, 13, 30);
+        Assert.Equal("task.gossip", Doing(runner, "person.catalina"));
+        Assert.Equal("task.gossip", Doing(runner, "person.paco"));
+        var faces = new[] { At(runner, "person.catalina").Face, At(runner, "person.paco").Face }.Order().ToArray();
+        Assert.Equal(["E", "W"], faces);
+
+        // The young man steadies the plank while the carpenter works at the Garza's side.
+        Assert.Equal("task.steady_plank", Doing(runner, "person.pascual"));
+        Assert.StartsWith("task.", Doing(runner, "person.bartolo"));
+        Assert.Contains(Doing(runner, "person.bartolo"), new[] { "task.saw_planks", "task.fetch_plank", "task.fit_garza_plank" });
+
+        // The priest buys fish across the stall from the seller.
+        var noon = Port();
+        AdvanceTo(noon, 1, 12, 20);
+        Assert.Equal("task.buy_at_market", Doing(noon, "person.anselmo"));
+        Assert.Equal("N", At(noon, "person.anselmo").Face);
+    }
+
+    [Fact]
+    public void FacingsMustBeCompassPoints()
+    {
+        var bad = Shipped.Locations["location.bocana"] with
+        {
+            Spots = [new WorkSpotDefinition { Id = "spot.odd", X = 31, Y = 32, Tasks = ["task.play"], Face = "up" }],
+        };
+        var errors = new List<string>();
+
+        ContentValidator.ValidateLocation(bad, Shipped.Tasks, errors);
+
+        Assert.Contains(errors, e => e.Contains("faces 'up'"));
     }
 }

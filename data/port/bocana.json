@@ -273,7 +273,7 @@
     {
      "from": 13,
      "to": 17,
-     "task": "task.port_carpentry"
+     "task": "task.saw_planks"
     },
     {
      "from": 17,
@@ -785,7 +785,7 @@
     {
      "from": 13,
      "to": 18,
-     "task": "task.haul_cargo"
+     "task": "task.steady_plank"
     },
     {
      "from": 18,
@@ -1074,6 +1074,11 @@
     },
     {
      "from": 13,
+     "to": 14,
+     "task": "task.gossip"
+    },
+    {
+     "from": 14,
      "to": 15,
      "task": "task.drink"
     },
@@ -1119,6 +1124,11 @@
     },
     {
      "from": 12,
+     "to": 13,
+     "task": "task.buy_at_market"
+    },
+    {
+     "from": 13,
      "to": 16,
      "task": "task.read_notices"
     },
@@ -1594,8 +1604,13 @@
     },
     {
      "from": 12,
-     "to": 14,
+     "to": 13,
      "task": "task.drink"
+    },
+    {
+     "from": 13,
+     "to": 14,
+     "task": "task.gossip"
     },
     {
      "from": 14,
@@ -1625,6 +1640,16 @@
     },
     {
      "from": 8,
+     "to": 10,
+     "task": "task.play"
+    },
+    {
+     "from": 10,
+     "to": 11,
+     "task": "task.buy_at_market"
+    },
+    {
+     "from": 11,
      "to": 12,
      "task": "task.play"
     },
@@ -1663,11 +1688,11 @@
     },
     {
      "from": 12,
-     "to": 14,
-     "task": "task.play"
+     "to": 13,
+     "task": "task.buy_at_market"
     },
     {
-     "from": 14,
+     "from": 13,
      "to": 20,
      "task": "task.play"
     }

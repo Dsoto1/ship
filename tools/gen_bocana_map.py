@@ -101,6 +101,8 @@ feature("cargo", 22, 31, 23, 32, style="crates"); feature("cargo", 38, 31, 39, 3
 feature("cargo", 2, 31, 3, 31, style="bales"); feature("cargo", 49, 31, 50, 32, style="crates")
 feature("net_frame", 12, 31, 13, 31)
 feature("gaol_cart", 53, 32, 54, 32)
+feature("planks", 25, 30, 27, 30)
+feature("sawhorse", 28, 31)
 for x in [1, 14, 19, 27, 35, 41, 48, 53]:
     feature("bollard", x, 34)
 
@@ -108,23 +110,26 @@ rows = [''.join(r) for r in g]
 spots = []
 
 
-def spot(id, x, y, tasks, kind, indoors=False):
+def spot(id, x, y, tasks, kind, indoors=False, face=None):
+    """face: the compass direction a person here looks (N is up the map, towards row 0)."""
     assert g[y][x] == '.', (id, x, y)
     d = {"id": id, "x": x, "y": y, "tasks": tasks, "kind": kind}
     if indoors:
         d["indoors"] = True
+    if face:
+        d["face"] = face
     spots.append(d)
 
 
 # Three Anchors
 spot("spot.tavern_door", 28, 14, ["task.drink"], "DrinkPoint", True)
 for i, x in enumerate([24, 26, 31, 33]):
-    spot(f"spot.tavern_bench_{i + 1}", x, 16, ["task.drink", "task.gamble"], "SitPoint")
+    spot(f"spot.tavern_bench_{i + 1}", x, 16, ["task.drink", "task.gamble"], "SitPoint", face="S")
 spot("spot.tavern_serving", 30, 15, ["task.serve_drinks"], "WorkBench")
 for i in range(10):
     spot(f"spot.tavern_inside_{i + 1}", 28, 14, ["task.drink", "task.gamble"], "DrinkPoint", True)
 for i, (x, y) in enumerate([(24, 18), (26, 18), (31, 18), (33, 18), (23, 16), (34, 16)]):
-    spot(f"spot.tavern_table_{i + 1}", x, y, ["task.drink", "task.gamble"], "SitPoint")
+    spot(f"spot.tavern_table_{i + 1}", x, y, ["task.drink", "task.gamble"], "SitPoint", face="N" if y == 18 else ("E" if x < 28 else "W"))
 spot("spot.tavern_fire", 35, 16, ["task.port_cooking"], "WorkBench")
 # chapel
 spot("spot.chapel_door", 40, 14, ["task.pray"], "PrayerPoint", True)
@@ -143,7 +148,11 @@ for i, x in enumerate([4, 11, 16]):
 # chandler
 spot("spot.chandler_counter", 50, 14, ["task.trade_goods"], "MarketStall"); spot("spot.chandler_yard", 51, 17, ["task.trade_goods"], "MarketStall")
 # market
-spot("spot.fish_stall_1", 44, 23, ["task.sell_fish"], "MarketStall"); spot("spot.fish_stall_2", 48, 23, ["task.sell_fish"], "MarketStall")
+spot("spot.fish_stall_1", 44, 21, ["task.sell_fish"], "MarketStall", face="S"); spot("spot.fish_stall_2", 48, 21, ["task.sell_fish"], "MarketStall", face="S")
+# customers in front of the stalls, facing the seller across the board (a merchant + customer cluster)
+spot("spot.fish_customer_1", 44, 23, ["task.buy_at_market"], "ConversationPoint", face="N"); spot("spot.fish_customer_2", 48, 23, ["task.buy_at_market"], "ConversationPoint", face="N")
+# two people at the well, facing each other
+spot("spot.well_talk_1", 30, 23, ["task.gossip"], "ConversationPoint", face="E"); spot("spot.well_talk_2", 31, 23, ["task.gossip"], "ConversationPoint", face="W")
 spot("spot.surgeon_stool", 22, 26, ["task.treat_patients"], "WorkBench")
 spot("spot.dun", 21, 27, ["task.dun_debtor"], "ConversationPoint")
 for i, (x, y) in enumerate([(27, 24), (33, 23), (28, 27), (41, 27)]):
@@ -161,18 +170,26 @@ for i, (x, y) in enumerate(cargo):
 spot("spot.boat_rigging_1", 10, 37, ["task.port_rigging"], "RopeWork"); spot("spot.boat_rigging_2", 46, 37, ["task.port_rigging"], "RopeWork")
 for i, (x, y) in enumerate([(11, 32), (13, 32), (12, 33), (14, 32)]):
     spot(f"spot.nets_{i + 1}", x, y, ["task.mend_nets"], "RopeWork")
-spot("spot.gaol_cart", 54, 31, ["task.wait_in_irons"], "SitPoint"); spot("spot.guard_post", 55, 30, ["task.stand_guard"], "LeanPoint")
+spot("spot.gaol_cart", 54, 31, ["task.wait_in_irons"], "SitPoint", face="N"); spot("spot.guard_post", 55, 30, ["task.stand_guard"], "LeanPoint", face="SW")
 # where work loops pick up and set down (PORT_EXPERIENCE §7)
 for i, (x, y) in enumerate([(45, 41), (44, 40), (46, 40), (44, 38)]):
-    spot(f"spot.lighter_{i + 1}", x, y, ["task.deliver_cargo"], "CarryDropoff")
-spot("spot.catch_1", 10, 38, ["task.land_catch"], "CarryPickup"); spot("spot.catch_2", 8, 39, ["task.land_catch"], "CarryPickup")
-spot("spot.stall_drop_1", 45, 23, ["task.carry_catch"], "CarryDropoff"); spot("spot.stall_drop_2", 49, 23, ["task.carry_catch"], "CarryDropoff")
+    spot(f"spot.lighter_{i + 1}", x, y, ["task.deliver_cargo"], "CarryDropoff", face="S")
+spot("spot.catch_1", 10, 38, ["task.land_catch"], "CarryPickup", face="E"); spot("spot.catch_2", 8, 39, ["task.land_catch"], "CarryPickup", face="W")
+# porters catch their breath beside the pier head between loads (a worker resting by an active worksite)
+spot("spot.cargo_rest_1", 43, 33, ["task.catch_breath"], "SitPoint", face="S"); spot("spot.cargo_rest_2", 47, 33, ["task.catch_breath"], "SitPoint", face="S")
+spot("spot.cargo_rest_3", 42, 33, ["task.catch_breath"], "SitPoint", face="SE")
+spot("spot.stall_drop_1", 45, 21, ["task.carry_catch"], "CarryDropoff", face="S"); spot("spot.stall_drop_2", 49, 21, ["task.carry_catch"], "CarryDropoff", face="S")
 spot("spot.timber_stack", 74, 23, ["task.fetch_timber"], "CarryPickup")
 spot("spot.hull_1", 65, 27, ["task.fit_timber"], "HammerStation"); spot("spot.hull_2", 72, 29, ["task.fit_timber"], "HammerStation")
 spot("spot.ropewalk_2", 78, 4, ["task.lay_rope"], "RopeWork")
 spot("spot.chandler_drop", 53, 16, ["task.deliver_cask"], "CarryDropoff")
-spot("spot.garza_side_1", 28, 33, ["task.deliver_canvas", "task.inspect_ship"], "ShipInspection")
-spot("spot.garza_side_2", 34, 33, ["task.deliver_canvas", "task.inspect_ship"], "ShipInspection")
+spot("spot.garza_side_1", 29, 33, ["task.deliver_canvas", "task.inspect_ship"], "ShipInspection", face="S")
+spot("spot.garza_side_2", 34, 33, ["task.deliver_canvas", "task.inspect_ship"], "ShipInspection", face="S")
+# the repair station at the Garza's side: plank stack -> sawhorse -> fitting at the hull; a helper steadies the work
+spot("spot.repair_saw", 28, 32, ["task.saw_planks"], "SawStation", face="N")
+spot("spot.repair_plank", 25, 31, ["task.fetch_plank"], "CarryPickup", face="N")
+spot("spot.repair_fit", 26, 34, ["task.fit_garza_plank"], "HammerStation", face="S")
+spot("spot.repair_helper", 29, 31, ["task.steady_plank"], "HelpPoint", face="W")
 # the alley between the tavern and the chapel
 spot("spot.alley_1", 35, 8, ["task.meet_in_secret"], "ConversationPoint"); spot("spot.alley_2", 36, 8, ["task.meet_in_secret"], "ConversationPoint")
 # homes: doors on the back lane

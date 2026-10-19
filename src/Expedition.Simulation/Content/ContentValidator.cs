@@ -155,6 +155,11 @@ internal static class ContentValidator
                 errors.Add($"{where}: spot '{spot.Id}' at {spot.Cell} is not on a walkable cell.");
             }
 
+            if (spot.Face is { } face && !WorkSpotDefinition.Compass.Contains(face))
+            {
+                errors.Add($"{where}: spot '{spot.Id}' faces '{face}'; use N, NE, E, SE, S, SW, W or NW.");
+            }
+
             foreach (var taskId in spot.Tasks)
             {
                 if (!tasks.TryGetValue(taskId, out var task))

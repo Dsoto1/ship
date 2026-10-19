@@ -319,8 +319,10 @@ public partial class Main : Node3D
                 var definition = task is null ? null : _content.Tasks[task.DefinitionId];
                 var location = _content.Locations[placement.LocationId];
                 var spot = task?.SpotId is { } spotId ? location.FindSpot(spotId) : null;
-                var carrying = definition?.Carries;
+                // A cask is rolled, not carried; everything else the task carries is held.
+                var carrying = definition?.Carries == "cask" ? null : definition?.Carries;
                 var pose = character.SurvivalState is SurvivalState.Incapacitated or SurvivalState.Dead ? Pose.Lying
+                    : definition?.Carries == "cask" ? (placement.IsMoving ? Pose.Rolling : Pose.Lifting)
                     : carrying is not null ? Pose.Carrying
                     : placement.IsMoving ? Pose.Walking
                     : definition is { IsRest: true } ? Pose.Resting
@@ -333,7 +335,8 @@ public partial class Main : Node3D
                 figure.Refresh(character, placement, drawTick, id == _selected, Hud.Activity(_runner, character),
                     isCaptain, pose, (float)delta, animationRate,
                     onPort ? _port.HeightAt : null, carrying,
-                    showLabel: !inPort || isCaptain || id == _hovered, shownName: inPort ? PortHud.KnownName(_runner, id) : null);
+                    showLabel: !inPort || isCaptain || id == _hovered, shownName: inPort ? PortHud.KnownName(_runner, id) : null,
+                    facing: spot is null ? null : FacingAt(location, spot));
             }
         }
 
@@ -341,17 +344,46 @@ public partial class Main : Node3D
         _portHud.Refresh(_runner, _selected);
     }
 
+    // Which way someone at a spot faces: the spot's own facing, or else the nearest thing beside them
+    // (the stall, the bench, the stack), so people turn to their work (PORT_VISUAL_PASS §3.6–7).
+    private static Vector2? FacingAt(LocationDefinition location, WorkSpotDefinition spot)
+    {
+        if (spot.Face is { } face)
+        {
+            return face switch
+            {
+                "N" => new Vector2(0, -1), "NE" => new Vector2(0.7f, -0.7f), "E" => new Vector2(1, 0), "SE" => new Vector2(0.7f, 0.7f),
+                "S" => new Vector2(0, 1), "SW" => new Vector2(-0.7f, 0.7f), "W" => new Vector2(-1, 0), _ => new Vector2(-0.7f, -0.7f),
+            };
+        }
+
+        foreach (var (dx, dy) in new[] { (0, -1), (1, 0), (-1, 0), (0, 1), (1, -1), (-1, -1), (1, 1), (-1, 1) })
+        {
+            if (!location.IsWalkable(new GridPosition(spot.X + dx, spot.Y + dy)))
+            {
+                return new Vector2(dx, dy);
+            }
+        }
+
+        return null;
+    }
+
     // How someone looks while working, from the kind of place and the work (PORT_EXPERIENCE §8).
     private static Pose WorkPose(string task, string? kind) => task switch
     {
         "task.drink" or "task.gamble" => kind == "SitPoint" ? Pose.Sitting : Pose.Drinking,
         "task.pray" => Pose.Praying,
-        "task.sell_fish" or "task.trade_goods" or "task.dun_debtor" or "task.serve_drinks" or "task.play" or "task.meet_in_secret" => Pose.Talking,
-        "task.watch_water" or "task.stand_guard" or "task.inspect_ship" => Pose.Watching,
-        "task.read_notices" => Pose.Standing,
+        "task.sell_fish" => Pose.Gutting,
+        "task.trade_goods" or "task.dun_debtor" or "task.serve_drinks" or "task.play" or "task.meet_in_secret" or "task.buy_at_market" or "task.gossip" => Pose.Talking,
+        "task.inspect_ship" => Pose.Inspecting,
+        "task.watch_water" => Pose.Watching,
+        "task.stand_guard" or "task.read_notices" => Pose.Leaning,
+        "task.steady_plank" => Pose.Steadying,
+        "task.catch_breath" => Pose.Sitting,
         "task.wait_in_irons" or "task.treat_patients" or "task.keep_accounts" or "task.study_charts" => kind == "SitPoint" ? Pose.Sitting : Pose.Working,
         _ => kind switch
         {
+            "CarryPickup" => Pose.Lifting,
             "HammerStation" => Pose.Hammering,
             "SawStation" => Pose.Sawing,
             "RopeWork" => Pose.Roping,

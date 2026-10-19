@@ -57,7 +57,7 @@ void fragment() {
 	float amount = clamp(fract(band) / 0.95, 0.0, 1.0) * step(0.02, use.a);
 	float fleck = step(1.0 - amount * 0.22, hash(floor(UV * 13.0))) * (1.0 - worn * 0.8);
 	vec3 litter = kind < 0.5 ? vec3(0.72, 0.62, 0.36) : kind < 1.5 ? vec3(0.8, 0.72, 0.55) : vec3(0.72, 0.76, 0.78);
-	colour = mix(colour, litter, fleck * 0.45);
+	colour = mix(colour, litter, fleck * 0.32);
 
 	// A drainage gutter down the quay, in front of the vaults, darker and damp.
 	float gutter = (1.0 - smoothstep(0.05, 0.18, abs(UV.y - (quay_from + 0.2)))) * (inside ? 1.0 : 0.0);

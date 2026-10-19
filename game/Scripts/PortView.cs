@@ -277,6 +277,27 @@ public partial class PortView : Node3D
                 AddBox(middle + new Vector3(0, 0.3f, 0), new Vector3(right - left + 0.4f, 0.25f, 0.3f), Wood);
                 AddBox(middle + new Vector3(0.6f, 0.9f, 0), new Vector3(0.05f, 1.2f, 0.25f), new Color(0.5f, 0.5f, 0.52f));
                 break;
+            case "planks":
+                // Sawn planks stacked on bearers, offcuts scattered beside: the repair station's stock.
+                for (var i = 0; i < 4; i++)
+                {
+                    AddBox(new Vector3(middle.X, 0.14f + i * 0.09f, middle.Z), new Vector3(right - left - (i % 2) * 0.2f, 0.07f, 0.34f), Wood.Lightened(0.06f * (i % 3)));
+                }
+
+                AddBox(new Vector3(middle.X, 0.05f, middle.Z), new Vector3(right - left - 0.4f, 0.1f, 0.5f), WetWood);
+                AddBox(new Vector3(middle.X + 0.9f, 0.03f, middle.Z + 0.45f), new Vector3(0.3f, 0.05f, 0.12f), Wood.Lightened(0.15f), rotation: new Vector3(0, 30, 0));
+                AddBox(new Vector3(middle.X - 0.6f, 0.03f, middle.Z + 0.5f), new Vector3(0.22f, 0.05f, 0.1f), Wood.Lightened(0.15f), rotation: new Vector3(0, -50, 0));
+                break;
+            case "sawhorse":
+                foreach (var side in new[] { -0.35f, 0.35f })
+                {
+                    AddBox(middle + new Vector3(side, 0.35f, -0.18f), new Vector3(0.06f, 0.75f, 0.06f), Wood, rotation: new Vector3(-14, 0, 0));
+                    AddBox(middle + new Vector3(side, 0.35f, 0.18f), new Vector3(0.06f, 0.75f, 0.06f), Wood, rotation: new Vector3(14, 0, 0));
+                }
+
+                AddBox(middle + new Vector3(0, 0.72f, 0), new Vector3(0.9f, 0.08f, 0.1f), Wood.Darkened(0.1f));
+                AddBox(middle + new Vector3(0.1f, 0.8f, 0), new Vector3(1.4f, 0.06f, 0.24f), Wood.Lightened(0.1f));
+                break;
             case "net_frame":
                 NetFrame(middle, right - left);
                 break;

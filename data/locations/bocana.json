@@ -38,8 +38,8 @@
    "######....#########.....................................#.........######........",
    "######....#########.....................................#.........######........",
    "######....#########.....................................#.........######........",
-   "..................................................................######........",
-   "..##........##........##..............##.........##...........##..######........",
+   ".........................###......................................######........",
+   "..##........##........##....#.........##.........##...........##..######........",
    "......................##..............##.........##..##.......##..######........",
    "..................................................................######........",
    ".#............#....#.......#.......#.....#......#....#..........................",
@@ -74,7 +74,8 @@
      "task.drink",
      "task.gamble"
     ],
-    "kind": "SitPoint"
+    "kind": "SitPoint",
+    "face": "S"
    },
    {
     "id": "spot.tavern_bench_2",
@@ -84,7 +85,8 @@
      "task.drink",
      "task.gamble"
     ],
-    "kind": "SitPoint"
+    "kind": "SitPoint",
+    "face": "S"
    },
    {
     "id": "spot.tavern_bench_3",
@@ -94,7 +96,8 @@
      "task.drink",
      "task.gamble"
     ],
-    "kind": "SitPoint"
+    "kind": "SitPoint",
+    "face": "S"
    },
    {
     "id": "spot.tavern_bench_4",
@@ -104,7 +107,8 @@
      "task.drink",
      "task.gamble"
     ],
-    "kind": "SitPoint"
+    "kind": "SitPoint",
+    "face": "S"
    },
    {
     "id": "spot.tavern_serving",
@@ -233,7 +237,8 @@
      "task.drink",
      "task.gamble"
     ],
-    "kind": "SitPoint"
+    "kind": "SitPoint",
+    "face": "N"
    },
    {
     "id": "spot.tavern_table_2",
@@ -243,7 +248,8 @@
      "task.drink",
      "task.gamble"
     ],
-    "kind": "SitPoint"
+    "kind": "SitPoint",
+    "face": "N"
    },
    {
     "id": "spot.tavern_table_3",
@@ -253,7 +259,8 @@
      "task.drink",
      "task.gamble"
     ],
-    "kind": "SitPoint"
+    "kind": "SitPoint",
+    "face": "N"
    },
    {
     "id": "spot.tavern_table_4",
@@ -263,7 +270,8 @@
      "task.drink",
      "task.gamble"
     ],
-    "kind": "SitPoint"
+    "kind": "SitPoint",
+    "face": "N"
    },
    {
     "id": "spot.tavern_table_5",
@@ -273,7 +281,8 @@
      "task.drink",
      "task.gamble"
     ],
-    "kind": "SitPoint"
+    "kind": "SitPoint",
+    "face": "E"
    },
    {
     "id": "spot.tavern_table_6",
@@ -283,7 +292,8 @@
      "task.drink",
      "task.gamble"
     ],
-    "kind": "SitPoint"
+    "kind": "SitPoint",
+    "face": "W"
    },
    {
     "id": "spot.tavern_fire",
@@ -533,20 +543,62 @@
    {
     "id": "spot.fish_stall_1",
     "x": 44,
-    "y": 23,
+    "y": 21,
     "tasks": [
      "task.sell_fish"
     ],
-    "kind": "MarketStall"
+    "kind": "MarketStall",
+    "face": "S"
    },
    {
     "id": "spot.fish_stall_2",
     "x": 48,
-    "y": 23,
+    "y": 21,
     "tasks": [
      "task.sell_fish"
     ],
-    "kind": "MarketStall"
+    "kind": "MarketStall",
+    "face": "S"
+   },
+   {
+    "id": "spot.fish_customer_1",
+    "x": 44,
+    "y": 23,
+    "tasks": [
+     "task.buy_at_market"
+    ],
+    "kind": "ConversationPoint",
+    "face": "N"
+   },
+   {
+    "id": "spot.fish_customer_2",
+    "x": 48,
+    "y": 23,
+    "tasks": [
+     "task.buy_at_market"
+    ],
+    "kind": "ConversationPoint",
+    "face": "N"
+   },
+   {
+    "id": "spot.well_talk_1",
+    "x": 30,
+    "y": 23,
+    "tasks": [
+     "task.gossip"
+    ],
+    "kind": "ConversationPoint",
+    "face": "E"
+   },
+   {
+    "id": "spot.well_talk_2",
+    "x": 31,
+    "y": 23,
+    "tasks": [
+     "task.gossip"
+    ],
+    "kind": "ConversationPoint",
+    "face": "W"
    },
    {
     "id": "spot.surgeon_stool",
@@ -798,7 +850,8 @@
     "tasks": [
      "task.wait_in_irons"
     ],
-    "kind": "SitPoint"
+    "kind": "SitPoint",
+    "face": "N"
    },
    {
     "id": "spot.guard_post",
@@ -807,7 +860,8 @@
     "tasks": [
      "task.stand_guard"
     ],
-    "kind": "LeanPoint"
+    "kind": "LeanPoint",
+    "face": "SW"
    },
    {
     "id": "spot.lighter_1",
@@ -816,7 +870,8 @@
     "tasks": [
      "task.deliver_cargo"
     ],
-    "kind": "CarryDropoff"
+    "kind": "CarryDropoff",
+    "face": "S"
    },
    {
     "id": "spot.lighter_2",
@@ -825,7 +880,8 @@
     "tasks": [
      "task.deliver_cargo"
     ],
-    "kind": "CarryDropoff"
+    "kind": "CarryDropoff",
+    "face": "S"
    },
    {
     "id": "spot.lighter_3",
@@ -834,7 +890,8 @@
     "tasks": [
      "task.deliver_cargo"
     ],
-    "kind": "CarryDropoff"
+    "kind": "CarryDropoff",
+    "face": "S"
    },
    {
     "id": "spot.lighter_4",
@@ -843,7 +900,8 @@
     "tasks": [
      "task.deliver_cargo"
     ],
-    "kind": "CarryDropoff"
+    "kind": "CarryDropoff",
+    "face": "S"
    },
    {
     "id": "spot.catch_1",
@@ -852,7 +910,8 @@
     "tasks": [
      "task.land_catch"
     ],
-    "kind": "CarryPickup"
+    "kind": "CarryPickup",
+    "face": "E"
    },
    {
     "id": "spot.catch_2",
@@ -861,25 +920,58 @@
     "tasks": [
      "task.land_catch"
     ],
-    "kind": "CarryPickup"
+    "kind": "CarryPickup",
+    "face": "W"
+   },
+   {
+    "id": "spot.cargo_rest_1",
+    "x": 43,
+    "y": 33,
+    "tasks": [
+     "task.catch_breath"
+    ],
+    "kind": "SitPoint",
+    "face": "S"
+   },
+   {
+    "id": "spot.cargo_rest_2",
+    "x": 47,
+    "y": 33,
+    "tasks": [
+     "task.catch_breath"
+    ],
+    "kind": "SitPoint",
+    "face": "S"
+   },
+   {
+    "id": "spot.cargo_rest_3",
+    "x": 42,
+    "y": 33,
+    "tasks": [
+     "task.catch_breath"
+    ],
+    "kind": "SitPoint",
+    "face": "SE"
    },
    {
     "id": "spot.stall_drop_1",
     "x": 45,
-    "y": 23,
+    "y": 21,
     "tasks": [
      "task.carry_catch"
     ],
-    "kind": "CarryDropoff"
+    "kind": "CarryDropoff",
+    "face": "S"
    },
    {
     "id": "spot.stall_drop_2",
     "x": 49,
-    "y": 23,
+    "y": 21,
     "tasks": [
      "task.carry_catch"
     ],
-    "kind": "CarryDropoff"
+    "kind": "CarryDropoff",
+    "face": "S"
    },
    {
     "id": "spot.timber_stack",
@@ -928,13 +1020,14 @@
    },
    {
     "id": "spot.garza_side_1",
-    "x": 28,
+    "x": 29,
     "y": 33,
     "tasks": [
      "task.deliver_canvas",
      "task.inspect_ship"
     ],
-    "kind": "ShipInspection"
+    "kind": "ShipInspection",
+    "face": "S"
    },
    {
     "id": "spot.garza_side_2",
@@ -944,7 +1037,48 @@
      "task.deliver_canvas",
      "task.inspect_ship"
     ],
-    "kind": "ShipInspection"
+    "kind": "ShipInspection",
+    "face": "S"
+   },
+   {
+    "id": "spot.repair_saw",
+    "x": 28,
+    "y": 32,
+    "tasks": [
+     "task.saw_planks"
+    ],
+    "kind": "SawStation",
+    "face": "N"
+   },
+   {
+    "id": "spot.repair_plank",
+    "x": 25,
+    "y": 31,
+    "tasks": [
+     "task.fetch_plank"
+    ],
+    "kind": "CarryPickup",
+    "face": "N"
+   },
+   {
+    "id": "spot.repair_fit",
+    "x": 26,
+    "y": 34,
+    "tasks": [
+     "task.fit_garza_plank"
+    ],
+    "kind": "HammerStation",
+    "face": "S"
+   },
+   {
+    "id": "spot.repair_helper",
+    "x": 29,
+    "y": 31,
+    "tasks": [
+     "task.steady_plank"
+    ],
+    "kind": "HelpPoint",
+    "face": "W"
    },
    {
     "id": "spot.alley_1",
@@ -1724,6 +1858,20 @@
     "y0": 32,
     "x1": 54,
     "y1": 32
+   },
+   {
+    "kind": "planks",
+    "x0": 25,
+    "y0": 30,
+    "x1": 27,
+    "y1": 30
+   },
+   {
+    "kind": "sawhorse",
+    "x0": 28,
+    "y0": 31,
+    "x1": 28,
+    "y1": 31
    },
    {
     "kind": "bollard",
