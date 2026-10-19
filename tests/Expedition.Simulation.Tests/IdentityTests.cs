@@ -84,6 +84,7 @@ public class IdentityTests
     {
         var root = JsonNode.Parse(SaveSerializer.Serialize(TestDeckScenario.Create(Shipped).Campaign))!.AsObject();
         root["schemaVersion"] = 7;
+        root.Remove("knowledge");
         foreach (var character in root["characters"]!.AsArray())
         {
             foreach (var field in new[] { "sex", "languages", "statusId" })

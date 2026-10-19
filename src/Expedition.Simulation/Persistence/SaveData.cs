@@ -61,6 +61,9 @@ public sealed record SaveData
     /// <summary>Active tasks, in character ID order.</summary>
     public required IReadOnlyList<TaskData> ActiveTasks { get; init; }
 
+    /// <summary>The captain's knowledge, oldest first. Added in format 9.</summary>
+    public required IReadOnlyList<KnowledgeData> Knowledge { get; init; }
+
     /// <summary>Full chronicle, in sequence order.</summary>
     public required IReadOnlyList<ChronicleEntryData> Chronicle { get; init; }
 }
@@ -305,4 +308,26 @@ public sealed record AppearanceData
 
     /// <summary>Distinguishing mark option ID.</summary>
     public required string Mark { get; init; }
+}
+
+/// <summary>A saved knowledge entry.</summary>
+public sealed record KnowledgeData
+{
+    /// <summary>Tick learned.</summary>
+    public required long Tick { get; init; }
+
+    /// <summary>Subject character ID number.</summary>
+    public required int Subject { get; init; }
+
+    /// <summary>Topic ID.</summary>
+    public required string Topic { get; init; }
+
+    /// <summary>Level.</summary>
+    public required int Level { get; init; }
+
+    /// <summary>Source name.</summary>
+    public required string Source { get; init; }
+
+    /// <summary>Informant character ID number, or null.</summary>
+    public int? Informant { get; init; }
 }

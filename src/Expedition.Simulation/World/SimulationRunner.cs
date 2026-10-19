@@ -447,6 +447,18 @@ public sealed class SimulationRunner(CampaignState campaign, GameContent content
 
         if (task.Progress >= definition.DurationMinutes)
         {
+            // Finished work shows what someone can really do. Anyone in the campaign is assumed to work
+            // in the captain's sight for now; distance and witnesses come with the port and ship scenes.
+            if (definition.Skill is not null)
+            {
+                Campaign.Learn(character.Id, definition.Skill, character.Skills.Get(definition.Skill), Knowledge.KnowledgeSource.Observation);
+            }
+
+            if (definition.Attribute is not null)
+            {
+                Campaign.Learn(character.Id, definition.Attribute, character.Attributes.Get(definition.Attribute), Knowledge.KnowledgeSource.Observation);
+            }
+
             Campaign.EndTask(character.Id);
             outcomes.Add(new TaskOutcome(Campaign.Clock.Tick, character.Id, definition.Id, TaskEnd.Completed, string.Empty));
         }

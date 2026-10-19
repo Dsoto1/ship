@@ -21,7 +21,7 @@ This file tracks status and breaks the next work into tickets.
 | 4b | Godot graybox interaction scene | Done (2026-10-18) — owner ran the manual test on macOS, all 8 steps passed |
 | 4c | Appearance record | Done (2026-10-18) |
 | 5a | Identity: sex, languages, social status | Done (2026-10-19) |
-| 5b | Captain's knowledge: truth vs what is known | Proposed |
+| 5b | Captain's knowledge: truth vs what is known | Done (2026-10-19) |
 | 5c | Recruitment rules: candidates, investigation, offers, deadline | Proposed |
 | 5d | Godot waterfront recruitment scene | Proposed |
 | 6 | Voyage-to-crisis vertical slice | Not started |
@@ -314,3 +314,19 @@ but specific Indigenous peoples. Before Ticket 5, the owner approves a short set
 - **Save format 8:** older characters load with identity unrecorded.
 
 256 tests pass.
+
+## Ticket 5b — Captain's knowledge: truth vs what is known
+
+Closes audit gap G12.
+- **Knowledge book:** `CampaignState.Knowledge` keeps every fact the captain learns about a person:
+  topic (skill, attribute, language or trait), level, source, informant and time. Sources, weakest
+  first: rumour, the person's own claim, a reference, observation at work, a test.
+- **Belief:** the most reliable source wins, and among equal sources the newest. Disagreeing
+  evidence marks the belief "disputed". Repeating the same fact is not recorded again.
+- **Truth is untouched:** learning never changes a character, and a claim can be a lie.
+- **Observation:** finishing a task records the worker's real skill and attribute for that task.
+- **Text:** `History/KnowledgeText` describes beliefs ("Rigging 3 (seen at work)").
+- **Godot record:** a "Captain knows" line. It fills in as the crew finish work.
+- **Save format 9:** older saves load knowing nothing; tampered knowledge is rejected.
+
+274 tests pass.

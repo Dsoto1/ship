@@ -158,6 +158,15 @@ public partial class Hud : CanvasLayer
         return walking ? "walking" : "idle";
     }
 
+    // What the captain has learned about this person (TECHNICAL_SPEC.md §5.2). For the crew already aboard
+    // the true values are shown above; this line shows what the captain has confirmed, and for recruits
+    // (Ticket 5c) it will be all the HUD shows.
+    private static string Known(SimulationRunner runner, CharacterId id)
+    {
+        var lines = KnowledgeText.Describe(runner.Campaign.Knowledge, id, runner.Content);
+        return lines.Count == 0 ? "" : $"Captain knows: {string.Join(", ", lines)}\n";
+    }
+
     private void RefreshSelected(SimulationRunner runner, CharacterId? selected)
     {
         if (selected is not { } id || !runner.Campaign.Characters.TryGetValue(id, out var character))
@@ -195,6 +204,7 @@ public partial class Hud : CanvasLayer
             (character.Health.Conditions.Count > 0
                 ? $"Conditions: {string.Join(", ", character.Health.Conditions.Select(c => runner.Content.Conditions.TryGetValue(c, out var condition) ? condition.Name : c))}\n"
                 : "") +
+            Known(runner, id) +
             Views(runner, id);
 
         _needBars["Hunger"].Value = character.Needs.Hunger;

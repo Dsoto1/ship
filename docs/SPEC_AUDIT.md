@@ -59,7 +59,7 @@ Ordered by how soon they block work. Each **[REQUIRED]** item in the spec is mar
 | G9 | §38 #15, #2 | **Missing named tests:** "time acceleration gives the same results" (it holds by construction, but isn't tested) and a 90-day voyage (we test 30 days). | Cheap; add now. |
 | G10 | §0, §26 | **No CI.** Tests only run when someone runs them. | Now. |
 | G11 | §4 | **Campaign has no `campaignId` and no `captainCharacterId`.** The captain is a persistent character in the design. | Before Ticket 4, so direct control has someone to control. |
-| G12 | §5.2 (R) | **No split between truth, player knowledge and belief.** | Recruitment (Ticket 5). Not needed earlier. |
+| G12 | §5.2 (R) | **No split between truth, player knowledge and belief.** | **Closed in Ticket 5b:** `KnowledgeBook` keeps the captain's knowledge separate from the truth. Per-character belief comes later. |
 | G13 | §9 | **Items are counted stacks with no instance state** (condition, freshness). The spec allows this for P0 ("instances as needed"). | Spoilage and damaged cargo (Ticket 6). |
 | G14 | §5.7 | **Health has only named conditions:** no severity, work restrictions or recovery. | Medical crisis (Ticket 6). |
 

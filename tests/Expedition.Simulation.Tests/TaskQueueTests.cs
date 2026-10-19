@@ -324,6 +324,7 @@ public class TaskQueueTests
         runner.QueueTask(sailor.Id, "task.pump");
         var root = JsonNode.Parse(SaveSerializer.Serialize(runner.Campaign))!.AsObject();
         root["schemaVersion"] = 5;
+        root.Remove("knowledge");
         root.Remove("lastTaskId");
         root.Remove("queuedTasks");
         var active = root["activeTasks"]!.AsArray()[0]!.AsObject();

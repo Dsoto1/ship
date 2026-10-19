@@ -2,6 +2,7 @@ using Expedition.Simulation.Characters;
 using Expedition.Simulation.Core;
 using Expedition.Simulation.History;
 using Expedition.Simulation.Items;
+using Expedition.Simulation.Knowledge;
 using Expedition.Simulation.Tasks;
 using Expedition.Simulation.World;
 
@@ -78,6 +79,20 @@ public sealed class CampaignState
 
     /// <summary>History of important events.</summary>
     public Chronicle Chronicle { get; } = new();
+
+    /// <summary>What the captain knows about people, separate from the truth (TECHNICAL_SPEC.md §5.2).</summary>
+    public KnowledgeBook Knowledge { get; } = new();
+
+    /// <summary>Records something the captain has learned, stamped with the current tick. Returns false if already known.</summary>
+    public bool Learn(CharacterId subject, string topic, int level, KnowledgeSource source, CharacterId? informant = null)
+    {
+        if (!_characters.ContainsKey(subject))
+        {
+            throw new KeyNotFoundException($"No character with ID {subject} in the campaign.");
+        }
+
+        return Knowledge.Learn(new KnowledgeEntry(Clock.Tick, subject, topic, level, source, informant));
+    }
 
     /// <summary>Every character in the campaign, living or dead, keyed by ID.</summary>
     public IReadOnlyDictionary<CharacterId, Character> Characters => _characters;

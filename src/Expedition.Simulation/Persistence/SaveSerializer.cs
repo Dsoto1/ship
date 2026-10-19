@@ -7,6 +7,7 @@ using Expedition.Simulation.Content;
 using Expedition.Simulation.Core;
 using Expedition.Simulation.History;
 using Expedition.Simulation.Items;
+using Expedition.Simulation.Knowledge;
 using Expedition.Simulation.Tasks;
 using Expedition.Simulation.World;
 
@@ -20,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 8;
+    public const int CurrentSchemaVersion = 9;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -98,6 +99,13 @@ public static class SaveSerializer
                     }
                 }
 
+                return root;
+            },
+
+            // Format 9 added the captain's knowledge. Earlier campaigns knew nothing recorded.
+            [8] = root =>
+            {
+                root["knowledge"] = new JsonArray();
                 return root;
             },
         };
@@ -347,6 +355,11 @@ public static class SaveSerializer
                 .SelectMany(id => campaign.QueueOf(id))
                 .Select(ToData)
                 .ToList(),
+            Knowledge = campaign.Knowledge.Entries.Select(k => new KnowledgeData
+            {
+                Tick = k.Tick, Subject = k.Subject.Value, Topic = k.Topic, Level = k.Level,
+                Source = k.Source.ToString(), Informant = k.Informant?.Value,
+            }).ToList(),
             Chronicle = campaign.Chronicle.Entries.Select(e => new ChronicleEntryData
             {
                 Sequence = e.Sequence,
@@ -570,6 +583,24 @@ public static class SaveSerializer
             {
                 throw new SaveLoadException($"{worker.Name}'s waiting orders are out of priority order.");
             }
+        }
+
+        foreach (var saved in data.Knowledge)
+        {
+            var subject = new CharacterId(saved.Subject);
+            CharacterId? informant = saved.Informant is { } number ? new CharacterId(number) : null;
+            if (!campaign.Characters.ContainsKey(subject) || (informant is { } who && !campaign.Characters.ContainsKey(who)))
+            {
+                throw new SaveLoadException($"Knowledge about {subject} refers to someone who is not in the save.");
+            }
+
+            if (saved.Level is < 0 or > 5 || saved.Tick < 0 || saved.Tick > data.Tick || string.IsNullOrWhiteSpace(saved.Topic))
+            {
+                throw new SaveLoadException($"Knowledge about {subject} ('{saved.Topic}') has an invalid level, time or topic.");
+            }
+
+            campaign.Knowledge.Restore(new KnowledgeEntry(
+                saved.Tick, subject, saved.Topic, saved.Level, ParseEnum<KnowledgeSource>(saved.Source, "knowledge source"), informant));
         }
 
         foreach (var saved in data.Chronicle)

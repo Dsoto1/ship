@@ -119,6 +119,7 @@ public class RelationshipsTraitsAndConditionsTests
     {
         var root = JsonNode.Parse(SaveSerializer.Serialize(TestDeckScenario.Create(Shipped()).Campaign))!.AsObject();
         root["schemaVersion"] = 4;
+        root.Remove("knowledge");
         root.Remove("relationships");
 
         var loaded = SaveSerializer.Deserialize(root.ToJsonString(), Shipped());

@@ -185,7 +185,7 @@ public class SaveLoadTests
     [Fact]
     public void OlderVersionIsUpgradedThroughMigrations()
     {
-        // Pretend this build reads format 9, and format 8 called the phase field "stage".
+        // Pretend this build reads format 10, and format 9 called the phase field "stage".
         var current = SaveSerializer.Serialize(StormDamagedVoyage().Campaign);
         var formatOne = Edit(current, root =>
         {
@@ -194,7 +194,7 @@ public class SaveLoadTests
         });
         var migrations = new Dictionary<int, Func<JsonObject, JsonObject>>
         {
-            [8] = root =>
+            [9] = root =>
             {
                 root["phase"] = root["stage"]!.DeepClone();
                 root.Remove("stage");
@@ -202,7 +202,7 @@ public class SaveLoadTests
             },
         };
 
-        var loaded = SaveSerializer.Deserialize(formatOne, TestContent.Create(), migrations, currentVersion: 9);
+        var loaded = SaveSerializer.Deserialize(formatOne, TestContent.Create(), migrations, currentVersion: 10);
 
         Assert.Equal(CampaignPhase.Voyage, loaded.Phase);
         Assert.Equal(current, SaveSerializer.Serialize(loaded));
@@ -214,9 +214,9 @@ public class SaveLoadTests
         var json = SaveSerializer.Serialize(StormDamagedVoyage().Campaign);
 
         var ex = Assert.Throws<SaveLoadException>(() =>
-            SaveSerializer.Deserialize(json, TestContent.Create(), new Dictionary<int, Func<JsonObject, JsonObject>>(), currentVersion: 9));
+            SaveSerializer.Deserialize(json, TestContent.Create(), new Dictionary<int, Func<JsonObject, JsonObject>>(), currentVersion: 10));
 
-        Assert.Contains("no upgrade from format 8", ex.Message);
+        Assert.Contains("no upgrade from format 9", ex.Message);
     }
 
     [Fact]
@@ -267,7 +267,7 @@ public class SaveLoadTests
     {
         root["schemaVersion"] = 3;
         root["random"] = root["randomStreams"]!["tasks"]!.DeepClone();
-        foreach (var field in new[] { "randomStreams", "seed", "campaignId", "captainId", "relationships", "lastTaskId", "queuedTasks" })
+        foreach (var field in new[] { "randomStreams", "seed", "campaignId", "captainId", "relationships", "lastTaskId", "queuedTasks", "knowledge" })
         {
             root.Remove(field);
         }
