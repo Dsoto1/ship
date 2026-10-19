@@ -295,3 +295,70 @@ Each step ends with screenshots of the block and a `--perf` measurement.
 
 **Definition of done:** your list, judged on side-by-side screenshots of the block in four conditions
 against the baseline, with draw calls within budget.
+
+---
+
+## 6. Result of the first representative block (2026-10-19)
+
+Built in the order of §5. Each step was screenshotted with Forward+ on a software Vulkan driver (the
+renderer macOS uses) and measured with `--perf`. Simulation tests: 383 pass.
+
+**Compare:** `docs/screenshots/vp-before-after-midday.jpg`, `vp-before-after-dawn.jpg`.
+**The four conditions:** `vp7-four-conditions.jpg`, and `vp7-chandlers-quay-{dawn,midday,rain,night}.jpg`.
+
+### 6.1 What was built, and what each piece is
+
+All of it is reusable. The block uses these pieces; the rest of La Bocana picks them up as it
+gets the same data.
+
+| Step | Built | Reusable as |
+|---|---|---|
+| 0 | `MeshBatcher`; figures merged per joint. Draw calls ~1,900 → ~400 | Every static scene (port, ship, later the camp) |
+| 0a | Vertex colours marked sRGB, fixing a washed-out look in Forward+ | — |
+| 2 | Lighting presets by hour; SSAO; haze; contact shadows | Every phase (`Lighting.At(hour)`) |
+| 3 | `GroundDetail`: wear, grime, damp and litter from the map and its loops | Any location with spots and features |
+| 4 | Spot facings; clusters (stall, well, pier, tavern, repair station); six new poses | Facings and kinds in map data; poses chosen from task and kind |
+| 5 | Kits: chandler, tavern, cooperage, stalls by trade, fences, cart, lashed cargo | Every building of a style, every stall, every fence |
+| 6 | Foreground pieces that fade; shear-legs; the *Garza* moored and furled; merchantman; hull on stocks | Any tall near-camera piece |
+| 7 | Rain look (`--weather=rain`, Shift+R in debug builds) | Port weather (R2d) will drive it |
+| 8 | `PortSound` zones with generated placeholders | Zones come from features; recordings replace the generators |
+
+### 6.2 Against the definition of done
+
+| Criterion | Verdict |
+|---|---|
+| Looks actively worked and inhabited | **Yes:** loads moving, work at stalls, the repair station and the well, porters resting |
+| NPCs visibly have reasons to be where they are | **Yes:** every person in the block is at a task with a facing and a pose |
+| Architecture communicates function | **Mostly:** the chandler, tavern and cooperage now read without labels; the Chamber and chapel are not yet dressed (outside the block) |
+| Empty cobbles broken up | **Yes, with restraint:** worn routes, damp, grime, gutter, litter by trade |
+| Blockers physically justified | **Yes in the block:** fences, cart, stacks, stalls; terrace walls are already masonry |
+| Characters and props grounded | **Yes:** contact shadows, SSAO, wall-base grime |
+| Daylight has intentional atmosphere | **Yes:** dawn, morning, midday, evening and night each differ |
+| Night has a warm/cool hierarchy | **Yes:** cool ambient against lantern and fire pools |
+| Market stalls feel individual | **Yes:** goods by trade, undyed or faded awnings, sag and patches |
+| The ship commands the waterfront | **Partly:** moored, furled, flagged and tied up, with masts crossing the market. Still the R1 greybox hull: the hero ship is the commissioned piece (D-021) |
+| Foreground, midground and background depth | **Partly:** shear-legs, rigs and haze; the far town is still simple blocks |
+| UI lets the world breathe | **Yes** (UI-1): about 90% of the view is clear while walking |
+| Same scene works at dawn, midday, rain and night | **Yes** (see screenshots) |
+| Performance acceptable | **Yes:** 190–570 draw calls and 0.17–0.42 M triangles at gameplay zoom, against ~1,900 and ~1.1 M before |
+| Reusable elsewhere in the port | **Yes:** every element is data- or style-driven |
+
+**Honest reading:** the block no longer reads as a greybox: it reads as a tidy, lived-in diorama.
+It does **not yet** reach "illustrated historical realism". Everything is still code-built boxes and
+cylinders with flat colour, and the figures are still jointed primitives without faces.
+
+The next big jump is the asset half of the hybrid pipeline (D-021):
+- CC0 materials (stone, timber, plaster, canvas, rope);
+- a rigged human base for the figures;
+- modelled props swapped in behind the same kits.
+
+This environment cannot reach the CC0 hosts (Poly Haven, ambientCG, Quaternius, Kenney) or audio
+hosts. Allowing them in the environment's network settings unblocks that step.
+
+### 6.3 Not done in this pass
+- vendors covering goods in rain (port weather, R2d);
+- cart ruts;
+- a crane (deferred, F);
+- recorded sound;
+- dressing the Chamber and chapel;
+- the far town's silhouettes.

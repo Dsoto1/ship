@@ -32,6 +32,7 @@ This file tracks status and breaks the next work into tickets.
 | R2b | Leads journal and the Chamber's notices; more work loops (steps 3–5) | Done (2026-10-19), awaiting the owner's manual test |
 | UI-1 | UI/UX design system, first pass: tokens, HUD shell, management drawer, alerts, uncertainty vocabulary (UI_UX §68 steps 1–11) | Done (2026-10-19), awaiting the owner's manual test |
 | VP-0 | Port visual pass, step 0: batching and lighter figures (PORT_VISUAL_PASS §5) | Done (2026-10-19) |
+| VP-1 | Port visual pass, first block, Chandler's Quay: lighting, ground, clusters, kits, ship, depth, rain, sound (PORT_VISUAL_PASS §5–6) | Done (2026-10-19), awaiting the owner's review |
 | R2c | Tier C crowd, background ships, ship preparation states, visible cargo (steps 6, 9) | Planned |
 | R2d | Sound zones, port weather and reactions, ambient micro-events (steps 10–12) | Planned |
 | R2e | Recognition and the departure sequence (steps 13, 14) | Planned |
@@ -725,3 +726,36 @@ Screenshots: `docs/screenshots/ui-a-port-exploration.jpg`, `ui-b-recruit-inspect
    word".
 4. Sign four hands, set sail, and run at 240×. When a storm or a leak comes, an alert appears with
    Focus, the game pauses, and Carry on resumes at 10×.
+
+## VP-1 — Chandler's Quay, the first representative block
+
+`PORT_VISUAL_PASS.md` §5 steps 2–8; results and the definition-of-done check are in its §6.
+- **Lighting:**
+  - presets by hour (dawn, morning, midday, afternoon, evening, dusk, night);
+  - SSAO, haze and contact shadows;
+  - the sun's day widened to about 05:30–19:30.
+- **Ground:** wear along real routes and loops, grime, damp, a gutter, and litter by trade.
+- **People:**
+  - spots face their work;
+  - clusters: seller and customer, gossip at the well, porters resting, drinkers across a table,
+    the carpenter and a helper at a new repair station by the *Garza*;
+  - poses: lifting, inspecting, leaning, gutting, rolling a cask, steadying.
+- **Kits:**
+  - chandler, tavern (the green branch over the door), cooperage;
+  - stalls by trade with undyed or faded, sagging awnings;
+  - post-and-rail fences, the cart's shafts and chain, lashed crates.
+- **The *Garza*:** moored with lines, gangway, fenders and ensign; sails furled.
+- **Depth:** shear-legs over the lighter; foreground pieces fade over the captain or selection.
+- **Rain look:** `--weather=rain` (Shift+R in debug builds).
+- **Sound zones** (generated): surf, market, workshop, tavern, street, rain.
+- **Fixed:** washed-out colours in Forward+ (vertex colours are sRGB).
+
+383 tests pass. Screenshots: `docs/screenshots/vp-before-after-*.jpg`, `vp7-*.jpg`.
+
+**Manual test (macOS):**
+1. `git pull`, Build, Cmd+B.
+2. Walk east from the gangway: the repair station by the *Garza*, the casks and dockers, the
+   shear-legs over the lighter, the fish stalls and the chandler.
+3. Run to dusk at 60×: long warm light, then the lanterns.
+4. Listen near the quay, the stalls and the yard: the sound changes.
+5. Report the frame rate (Godot's Debugger ▸ Monitors), and how it compares with before.
