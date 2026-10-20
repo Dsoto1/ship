@@ -1,0 +1,166 @@
+{
+ "characterId": "person.ines",
+ "name": "Inés Rubio",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from person.ines's description in data/port/bocana.json: \"A broad landlady with keys at her belt, who hears everything.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Female",
+ "age": 44,
+ "apparentAge": 46,
+ "heightCm": 163,
+ "seed": 6758,
+ "looks": {
+  "build": "heavy",
+  "posture": {
+   "stoop": 0.1,
+   "headForward": 0.1,
+   "shoulders": -0.1
+  },
+  "face": {
+   "width": 0.6,
+   "jaw": 0.4,
+   "chin": 0.0,
+   "nose": 0.3,
+   "noseLength": -0.1,
+   "brow": 0.2,
+   "cheeks": 0.8,
+   "mouth": 0.3,
+   "sag": 0.6
+  },
+  "skin": "#b6886a",
+  "weathering": 0.45,
+  "eyes": "eyes.darkbrown",
+  "hair": [
+   {
+    "mesh": "Hair_Buns",
+    "colour": "hair.darkbrown",
+    "grey": 0.3
+   },
+   {
+    "mesh": "Eyebrows_Female",
+    "colour": "hair.darkbrown",
+    "grey": 0.2
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "broad and strong-armed, sleeves rolled",
+  "a woad-blue saya, white apron and headcloth",
+  "keys at her belt; hears everything"
+ ],
+ "marks": [],
+ "occupationVisuals": "landlady of the Three Anchors",
+ "statusVisuals": "status.craftsman",
+ "clothing": [
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.862,
+    1.565
+   ],
+   "collar": [
+    1.455,
+    1.525
+   ],
+   "sleeve": 0.399,
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.007,
+   "bandWidth": 0.04,
+   "wear": 0.5
+  },
+  {
+   "id": "garment_wool_saya_01",
+   "layer": "outer",
+   "shape": "skirt",
+   "top": 1.022,
+   "bottom": 0.111,
+   "flare": 0.75,
+   "material": "wool",
+   "colour": "wool.woad",
+   "thickness": 0.03,
+   "wear": 0.6
+  },
+  {
+   "id": "garment_wool_bodice_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.9720000000000001,
+    1.565
+   ],
+   "collar": [
+    1.395,
+    1.525
+   ],
+   "material": "wool",
+   "colour": "wool.brown",
+   "thickness": 0.014,
+   "loose": 0.004,
+   "drape": 0.9,
+   "wear": 0.6
+  },
+  {
+   "id": "garment_apron_01",
+   "layer": "outer",
+   "shape": "skirt",
+   "arc": 62,
+   "top": 1.042,
+   "bottom": 0.35500000000000004,
+   "flare": 0.25,
+   "material": "linen",
+   "colour": "linen.bleached",
+   "thickness": 0.032,
+   "wear": 0.75
+  },
+  {
+   "id": "garment_linen_toca_01",
+   "layer": "headwear",
+   "shape": "shell",
+   "head": [
+    1.698,
+    1.593
+   ],
+   "material": "linen",
+   "colour": "linen.bleached",
+   "thickness": 0.016,
+   "band": 0.005,
+   "bandWidth": 0.02,
+   "wear": 0.4
+  }
+ ],
+ "accessories": [
+  {
+   "id": "acc_keys_01",
+   "shape": "pouch",
+   "side": "right",
+   "height": 1.012,
+   "size": [
+    0.06,
+    0.1,
+    0.03
+   ],
+   "material": "metal",
+   "colour": "iron"
+  }
+ ],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 0.9,
+  "work": "harvest",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "women's dress of the tavern and street: saya, corpiño, toca, apron",
+   "source": "Carmen Bernis, Indumentaria española en tiempos de Carlos V (1962)",
+   "region": "Castile/Andalusia",
+   "dates": "c. 1500–1530",
+   "confidence": "medium"
+  }
+ ]
+}

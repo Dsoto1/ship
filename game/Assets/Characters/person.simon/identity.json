@@ -1,0 +1,198 @@
+{
+ "characterId": "person.simon",
+ "name": "Old Simón",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from person.simon's description in data/port/bocana.json: \"A stooped sailmaker with a palm-thimble and needles in his hat.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Male",
+ "age": 66,
+ "apparentAge": 70,
+ "heightCm": 166,
+ "seed": 8149,
+ "looks": {
+  "build": "slight",
+  "posture": {
+   "stoop": 0.8,
+   "headForward": 0.6,
+   "shoulders": 0.4
+  },
+  "face": {
+   "width": -0.2,
+   "jaw": -0.1,
+   "chin": 0.3,
+   "nose": 0.7,
+   "noseLength": 0.7,
+   "noseBend": 0.2,
+   "brow": 0.5,
+   "cheeks": -0.8,
+   "cheekbones": 0.5,
+   "ears": 0.9,
+   "sag": 1.0
+  },
+  "skin": "#b08669",
+  "weathering": 0.8,
+  "eyes": "eyes.grey",
+  "hair": [
+   {
+    "mesh": "Hair_SimpleParted",
+    "recede": 0.6,
+    "colour": "hair.white",
+    "grey": 0.95
+   },
+   {
+    "mesh": "Hair_Beard",
+    "trim": 0.5,
+    "colour": "hair.white",
+    "grey": 0.95
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "hair.white",
+    "grey": 0.9
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "very old and stooped, white-bearded",
+  "a palm-thimble on his hand, needles stuck in his brown hat",
+  "big ears, a long nose"
+ ],
+ "marks": [],
+ "occupationVisuals": "sailmaker",
+ "statusVisuals": "status.craftsman",
+ "clothing": [
+  {
+   "id": "garment_wool_hose_01",
+   "layer": "lower",
+   "shape": "shell",
+   "leg": [
+    0.09,
+    0.5519999999999999
+   ],
+   "material": "wool",
+   "colour": "wool.grey",
+   "thickness": 0.003,
+   "wear": 0.4
+  },
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.69,
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.004,
+   "bandWidth": 0.02,
+   "wear": 0.7
+  },
+  {
+   "id": "garment_wool_doublet_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.9490000000000001,
+    1.6
+   ],
+   "collar": [
+    1.51,
+    1.57
+   ],
+   "material": "wool",
+   "colour": "wool.brown",
+   "thickness": 0.014,
+   "loose": 0.006,
+   "drape": 0.8,
+   "wear": 0.8,
+   "sleeve": 0.6699999999999999,
+   "band": 0.004,
+   "bandWidth": 0.025
+  },
+  {
+   "id": "garment_wool_doublet_01_skirt",
+   "layer": "outer",
+   "shape": "skirt",
+   "top": 0.9989999999999999,
+   "bottom": 0.8290000000000001,
+   "flare": 0.35,
+   "material": "wool",
+   "colour": "wool.brown",
+   "thickness": 0.022,
+   "wear": 0.8
+  },
+  {
+   "id": "garment_wool_breeches_01",
+   "layer": "lower",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.079
+   ],
+   "leg": [
+    0.472,
+    1.049
+   ],
+   "material": "wool",
+   "colour": "wool.grey",
+   "thickness": 0.011,
+   "loose": 0.022,
+   "band": 0.004,
+   "bandWidth": 0.03,
+   "wear": 0.55
+  },
+  {
+   "id": "garment_leather_shoes_01",
+   "layer": "footwear",
+   "shape": "shell",
+   "feet": 0.116,
+   "material": "leather",
+   "colour": "leather.brown",
+   "thickness": 0.008,
+   "wear": 0.6
+  }
+ ],
+ "accessories": [
+  {
+   "id": "acc_hat_brim_01",
+   "shape": "brim",
+   "radius": 0.14,
+   "droop": 0.01,
+   "material": "felt",
+   "colour": "felt.brown",
+   "raise": 0.012
+  },
+  {
+   "id": "acc_hat_crown_01",
+   "shape": "crown",
+   "radius": 0.1,
+   "topRadius": 0.095,
+   "height": 0.05,
+   "material": "felt",
+   "colour": "felt.brown"
+  }
+ ],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 0.7,
+  "work": "kneel_work",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "sailmakers",
+   "source": "Pablo E. Pérez-Mallaína, Spain's Men of the Sea (1998)",
+   "region": "Andalusian ports",
+   "dates": "16th c.",
+   "confidence": "medium"
+  }
+ ]
+}

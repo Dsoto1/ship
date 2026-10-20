@@ -1,0 +1,151 @@
+{
+ "characterId": "person.catalina",
+ "name": "Catalina",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from person.catalina's description in data/port/bocana.json: \"A loud fishwife with scales on her sleeves.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Female",
+ "age": 38,
+ "apparentAge": 40,
+ "heightCm": 160,
+ "seed": 12201,
+ "looks": {
+  "build": "stocky",
+  "posture": {
+   "stoop": 0.05,
+   "headForward": 0.2,
+   "shoulders": -0.1
+  },
+  "face": {
+   "width": 0.4,
+   "jaw": 0.5,
+   "chin": 0.3,
+   "nose": 0.4,
+   "noseLength": 0.1,
+   "brow": 0.3,
+   "cheeks": 0.4,
+   "mouth": 0.6,
+   "sag": 0.3
+  },
+  "skin": "#a47657",
+  "weathering": 0.65,
+  "eyes": "eyes.brown",
+  "hair": [
+   {
+    "mesh": "Hair_Buns",
+    "colour": "hair.black",
+    "grey": 0.15
+   },
+   {
+    "mesh": "Eyebrows_Female",
+    "colour": "hair.black"
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "loud, wide-mouthed, weathered",
+  "a madder-red skirt and a fish-stained leather apron",
+  "scales on her sleeves"
+ ],
+ "marks": [],
+ "occupationVisuals": "fishwife",
+ "statusVisuals": "status.servant",
+ "clothing": [
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.862,
+    1.565
+   ],
+   "collar": [
+    1.455,
+    1.525
+   ],
+   "sleeve": 0.399,
+   "material": "linen",
+   "colour": "linen.grey",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.007,
+   "bandWidth": 0.04,
+   "wear": 0.8
+  },
+  {
+   "id": "garment_wool_saya_01",
+   "layer": "outer",
+   "shape": "skirt",
+   "top": 1.022,
+   "bottom": 0.335,
+   "flare": 0.75,
+   "material": "wool",
+   "colour": "wool.madder",
+   "thickness": 0.03,
+   "wear": 0.7
+  },
+  {
+   "id": "garment_wool_bodice_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.9720000000000001,
+    1.565
+   ],
+   "collar": [
+    1.395,
+    1.525
+   ],
+   "material": "wool",
+   "colour": "wool.black",
+   "thickness": 0.014,
+   "loose": 0.004,
+   "drape": 0.9,
+   "wear": 0.7
+  },
+  {
+   "id": "garment_apron_01",
+   "layer": "outer",
+   "shape": "skirt",
+   "arc": 62,
+   "top": 1.042,
+   "bottom": 0.35500000000000004,
+   "flare": 0.25,
+   "material": "leather",
+   "colour": "leather.tan",
+   "thickness": 0.032,
+   "wear": 0.75
+  },
+  {
+   "id": "garment_linen_toca_01",
+   "layer": "headwear",
+   "shape": "shell",
+   "head": [
+    1.698,
+    1.593
+   ],
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.016,
+   "band": 0.005,
+   "bandWidth": 0.02,
+   "wear": 0.4
+  }
+ ],
+ "accessories": [],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 1.0,
+  "work": "harvest",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "fishwives' dress",
+   "source": "Carmen Bernis, Indumentaria española en tiempos de Carlos V (1962)",
+   "region": "Castile/Andalusia",
+   "dates": "c. 1500–1530",
+   "confidence": "medium"
+  }
+ ]
+}

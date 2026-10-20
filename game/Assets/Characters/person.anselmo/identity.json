@@ -1,0 +1,150 @@
+{
+ "characterId": "person.anselmo",
+ "name": "Father Anselmo",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from person.anselmo's description in data/port/bocana.json: \"An old priest in a patched cassock.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Male",
+ "age": 63,
+ "apparentAge": 66,
+ "heightCm": 164,
+ "seed": 10947,
+ "looks": {
+  "build": "slight",
+  "posture": {
+   "stoop": 0.6,
+   "headForward": 0.5,
+   "shoulders": 0.3
+  },
+  "face": {
+   "width": -0.2,
+   "jaw": -0.2,
+   "chin": 0.1,
+   "nose": 0.5,
+   "noseLength": 0.6,
+   "brow": 0.4,
+   "cheeks": -0.7,
+   "cheekbones": 0.4,
+   "ears": 0.8,
+   "sag": 1.0
+  },
+  "skin": "#b38a6e",
+  "weathering": 0.7,
+  "eyes": "eyes.grey",
+  "hair": [
+   {
+    "mesh": "Hair_Buzzed",
+    "recede": 1.0,
+    "crown": 1.0,
+    "colour": "hair.white",
+    "grey": 0.9
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "hair.white",
+    "grey": 0.9
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "old, bent, bald, big-eared",
+  "a brown cassock patched at the elbows and hem",
+  "a black skullcap"
+ ],
+ "marks": [],
+ "occupationVisuals": "priest of the waterfront chapel",
+ "statusVisuals": "status.gentleman",
+ "clothing": [
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.69,
+   "material": "linen",
+   "colour": "linen.grey",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.004,
+   "bandWidth": 0.02,
+   "wear": 0.45
+  },
+  {
+   "id": "garment_wool_cassock_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.9490000000000001,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.565
+   ],
+   "material": "wool",
+   "colour": "wool.brown",
+   "thickness": 0.024,
+   "loose": 0.045,
+   "drape": 1.0,
+   "band": 0.008,
+   "bandWidth": 0.04,
+   "wear": 0.85,
+   "sleeve": 0.6299999999999999
+  },
+  {
+   "id": "garment_wool_cassock_01_skirt",
+   "layer": "outer",
+   "shape": "skirt",
+   "top": 0.9989999999999999,
+   "bottom": 0.126,
+   "flare": 0.6,
+   "material": "wool",
+   "colour": "wool.brown",
+   "thickness": 0.034,
+   "wear": 0.85
+  },
+  {
+   "id": "garment_leather_shoes_01",
+   "layer": "footwear",
+   "shape": "shell",
+   "feet": 0.116,
+   "material": "leather",
+   "colour": "leather.dark",
+   "thickness": 0.008,
+   "wear": 0.6
+  }
+ ],
+ "accessories": [
+  {
+   "id": "acc_skullcap_brim_01",
+   "shape": "crown",
+   "radius": 0.085,
+   "topRadius": 0.06,
+   "height": -0.03,
+   "material": "wool",
+   "colour": "wool.black"
+  }
+ ],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 0.75,
+  "work": "kneel_work",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "secular clergy's sotana and bonete",
+   "source": "Carmen Bernis, Indumentaria española en tiempos de Carlos V (1962)",
+   "region": "Castile/Andalusia",
+   "dates": "c. 1500–1530",
+   "confidence": "medium"
+  }
+ ]
+}

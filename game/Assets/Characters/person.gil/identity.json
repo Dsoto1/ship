@@ -1,0 +1,196 @@
+{
+ "characterId": "person.gil",
+ "name": "Gil Cordero",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from person.gil's description in data/port/bocana.json: \"A cooper with forearms like hams, rolling a cask down the quay as he talks.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Male",
+ "age": 40,
+ "apparentAge": 42,
+ "heightCm": 171,
+ "seed": 5502,
+ "looks": {
+  "build": "stocky",
+  "posture": {
+   "stoop": 0.15,
+   "headForward": 0.1,
+   "shoulders": 0.2
+  },
+  "face": {
+   "width": 0.4,
+   "jaw": 0.6,
+   "chin": -0.2,
+   "nose": 0.4,
+   "noseLength": -0.2,
+   "brow": 0.3,
+   "cheeks": 0.5,
+   "ears": 0.3,
+   "sag": 0.2
+  },
+  "skin": "#a8785a",
+  "weathering": 0.55,
+  "eyes": "eyes.brown",
+  "hair": [
+   {
+    "mesh": "Hair_SimpleParted",
+    "colour": "hair.brown",
+    "grey": 0.15
+   },
+   {
+    "mesh": "Hair_Beard",
+    "trim": 0.8,
+    "colour": "hair.brown",
+    "grey": 0.1
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "hair.brown"
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "forearms like hams, sleeves rolled",
+  "a round, cheerful face and a cropped beard",
+  "leather apron, a mallet at work"
+ ],
+ "marks": [],
+ "occupationVisuals": "cooper",
+ "statusVisuals": "status.craftsman",
+ "clothing": [
+  {
+   "id": "garment_wool_hose_01",
+   "layer": "lower",
+   "shape": "shell",
+   "leg": [
+    0.09,
+    0.5519999999999999
+   ],
+   "material": "wool",
+   "colour": "wool.brown",
+   "thickness": 0.003,
+   "wear": 0.4
+  },
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.47,
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.007,
+   "bandWidth": 0.04,
+   "wear": 0.6
+  },
+  {
+   "id": "garment_wool_breeches_01",
+   "layer": "lower",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.079
+   ],
+   "leg": [
+    0.472,
+    1.049
+   ],
+   "material": "wool",
+   "colour": "wool.tawny",
+   "thickness": 0.011,
+   "loose": 0.022,
+   "band": 0.004,
+   "bandWidth": 0.03,
+   "wear": 0.55
+  },
+  {
+   "id": "garment_apron_01",
+   "layer": "outer",
+   "shape": "skirt",
+   "arc": 62,
+   "top": 1.059,
+   "bottom": 0.492,
+   "flare": 0.25,
+   "material": "leather",
+   "colour": "leather.tan",
+   "thickness": 0.032,
+   "wear": 0.75
+  },
+  {
+   "id": "garment_leather_belt_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    1.034,
+    1.079
+   ],
+   "material": "leather",
+   "colour": "leather.dark",
+   "thickness": 0.03,
+   "hides": false,
+   "wear": 0.5
+  },
+  {
+   "id": "garment_wool_cap_01",
+   "layer": "headwear",
+   "shape": "shell",
+   "head": [
+    1.745,
+    1.7000000000000002
+   ],
+   "material": "wool",
+   "colour": "wool.grey",
+   "thickness": 0.018,
+   "band": 0.008,
+   "bandWidth": 0.03,
+   "wear": 0.5
+  },
+  {
+   "id": "garment_leather_shoes_01",
+   "layer": "footwear",
+   "shape": "shell",
+   "feet": 0.116,
+   "material": "leather",
+   "colour": "leather.dark",
+   "thickness": 0.008,
+   "wear": 0.6
+  }
+ ],
+ "accessories": [],
+ "equipment": [
+  {
+   "id": "equip_cooper_mallet_01",
+   "shape": "mallet",
+   "socket": "hand_r",
+   "length": 0.42,
+   "handle": "ash",
+   "head": "oak",
+   "when": [
+    "Hammering",
+    "Working"
+   ]
+  }
+ ],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 1.0,
+  "work": "chop",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "coopers' dress and the cooper aboard",
+   "source": "Pablo E. Pérez-Mallaína, Spain's Men of the Sea (1998)",
+   "region": "Andalusian ports",
+   "dates": "16th c.",
+   "confidence": "medium"
+  }
+ ]
+}

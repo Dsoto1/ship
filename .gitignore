@@ -5,3 +5,7 @@ obj/
 .vs/
 .idea/
 .cache/
+
+# Full-detail meshes portraits are rendered from: rebuilt by tools/characters/build.py, not kept.
+game/Assets/Characters/*/portrait.glb
+game/Assets/Characters/*/portrait.glb.import

@@ -1,0 +1,153 @@
+{
+ "characterId": "person.ximena",
+ "name": "Ximena Durán",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from person.ximena's description in data/port/bocana.json: \"A lean woman with a tattooed wrist she keeps covered, and a lagoon shell on a thong.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Female",
+ "age": 33,
+ "apparentAge": 36,
+ "heightCm": 166,
+ "seed": 9340,
+ "looks": {
+  "build": "wiry",
+  "posture": {
+   "stoop": 0.1,
+   "headForward": 0.2,
+   "shoulders": 0.0
+  },
+  "face": {
+   "width": -0.3,
+   "jaw": 0.2,
+   "chin": 0.3,
+   "nose": 0.3,
+   "noseLength": 0.3,
+   "noseBridge": 0.4,
+   "brow": 0.3,
+   "cheeks": -0.6,
+   "cheekbones": 0.8,
+   "mouth": -0.1
+  },
+  "skin": "#9a6e52",
+  "weathering": 0.7,
+  "eyes": "eyes.hazel",
+  "hair": [
+   {
+    "mesh": "Hair_Long",
+    "bottom": 1.4749999999999999,
+    "colour": "hair.darkbrown",
+    "grey": 0.05
+   },
+   {
+    "mesh": "Eyebrows_Female",
+    "colour": "hair.darkbrown"
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "lean and sun-darkened, hollow-cheeked: years castaway on the far coast",
+  "a tattooed wrist she keeps covered with her sleeve",
+  "a lagoon shell on a thong"
+ ],
+ "marks": [],
+ "occupationVisuals": "fish seller, once a castaway",
+ "statusVisuals": "status.servant",
+ "clothing": [
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.862,
+    1.565
+   ],
+   "collar": [
+    1.455,
+    1.525
+   ],
+   "sleeve": 0.625,
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.004,
+   "bandWidth": 0.02,
+   "wear": 0.6
+  },
+  {
+   "id": "garment_wool_saya_01",
+   "layer": "outer",
+   "shape": "skirt",
+   "top": 1.022,
+   "bottom": 0.335,
+   "flare": 0.75,
+   "material": "wool",
+   "colour": "wool.russet",
+   "thickness": 0.03,
+   "wear": 0.7
+  },
+  {
+   "id": "garment_wool_bodice_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.9720000000000001,
+    1.565
+   ],
+   "collar": [
+    1.395,
+    1.525
+   ],
+   "material": "wool",
+   "colour": "wool.brown",
+   "thickness": 0.014,
+   "loose": 0.004,
+   "drape": 0.9,
+   "wear": 0.6
+  },
+  {
+   "id": "garment_apron_01",
+   "layer": "outer",
+   "shape": "skirt",
+   "arc": 62,
+   "top": 1.042,
+   "bottom": 0.35500000000000004,
+   "flare": 0.25,
+   "material": "linen",
+   "colour": "linen.grey",
+   "thickness": 0.032,
+   "wear": 0.75
+  },
+  {
+   "id": "garment_linen_toca_01",
+   "layer": "headwear",
+   "shape": "shell",
+   "head": [
+    1.698,
+    1.593
+   ],
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.016,
+   "band": 0.005,
+   "bandWidth": 0.02,
+   "wear": 0.4
+  }
+ ],
+ "accessories": [],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 1.05,
+  "work": "harvest",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "fishwives' saya, apron and headcloth",
+   "source": "Carmen Bernis, Indumentaria española en tiempos de Carlos V (1962)",
+   "region": "Castile/Andalusia",
+   "dates": "c. 1500–1530",
+   "confidence": "medium"
+  }
+ ]
+}

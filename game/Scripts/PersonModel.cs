@@ -107,8 +107,8 @@ public partial class PersonModel : Node3D
         _identity = Identity.Load($"{Folder}/{personId}/identity.json");
         Height = _identity.HeightCm / 100f;
         var scene = GD.Load<PackedScene>($"{Folder}/{personId}/{file}").Instantiate<Node3D>();
-        // Height by scale: every model is built on the 1.81 m base skeleton.
-        scene.Scale = Vector3.One * (Height / 1.81f);
+        // Height by scale: every model is built on its base skeleton, 1.81 m for men and 1.77 m for women.
+        scene.Scale = Vector3.One * (Height / (_identity.Sex == "Female" ? 1.767f : 1.81f));
         AddChild(scene);
         _skeleton = (Skeleton3D)scene.FindChild("Skeleton3D", true, false);
         foreach (var mesh in _skeleton.GetChildren().OfType<MeshInstance3D>())
@@ -254,6 +254,7 @@ public partial class PersonModel : Node3D
     {
         public string CharacterId { get; set; } = "";
         public string Name { get; set; } = "";
+        public string Sex { get; set; } = "Male";
         public int HeightCm { get; set; } = 170;
         public LooksRecord Looks { get; set; } = new();
         public List<EquipmentRecord> Equipment { get; set; } = [];

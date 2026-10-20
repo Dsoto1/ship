@@ -1,0 +1,230 @@
+{
+ "characterId": "person.hob",
+ "name": "Hob Tanner",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from person.hob's description in data/port/bocana.json: \"A red-bearded Brennish trader with too many rings.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Male",
+ "age": 42,
+ "apparentAge": 43,
+ "heightCm": 175,
+ "seed": 5464,
+ "looks": {
+  "build": "stocky",
+  "posture": {
+   "stoop": -0.2,
+   "headForward": 0.0,
+   "shoulders": -0.2
+  },
+  "face": {
+   "width": 0.5,
+   "jaw": 0.5,
+   "chin": 0.0,
+   "nose": 0.5,
+   "noseLength": 0.0,
+   "noseBridge": 0.2,
+   "brow": 0.3,
+   "cheeks": 0.6,
+   "mouth": 0.4,
+   "sag": 0.3
+  },
+  "skin": "#d4a68c",
+  "weathering": 0.55,
+  "eyes": "eyes.blue",
+  "hair": [
+   {
+    "mesh": "Hair_SimpleParted",
+    "colour": "#8f4626",
+    "grey": 0.1
+   },
+   {
+    "mesh": "Hair_Beard",
+    "trim": 0.0,
+    "colour": "#8f4626",
+    "grey": 0.1
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "#8f4626"
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "a full red beard, ruddy and fair",
+  "a madder doublet under an open brown coat; too many rings",
+  "a brown felt hat"
+ ],
+ "marks": [],
+ "occupationVisuals": "Brennish trader",
+ "statusVisuals": "status.sailor",
+ "clothing": [
+  {
+   "id": "garment_wool_hose_01",
+   "layer": "lower",
+   "shape": "shell",
+   "leg": [
+    0.09,
+    1.049
+   ],
+   "material": "wool",
+   "colour": "wool.woad",
+   "thickness": 0.003,
+   "wear": 0.4
+  },
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.69,
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.004,
+   "bandWidth": 0.02,
+   "wear": 0.45
+  },
+  {
+   "id": "garment_wool_doublet_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.9490000000000001,
+    1.6
+   ],
+   "collar": [
+    1.51,
+    1.57
+   ],
+   "material": "wool",
+   "colour": "wool.madder",
+   "thickness": 0.014,
+   "loose": 0.006,
+   "drape": 0.8,
+   "wear": 0.4,
+   "sleeve": 0.6699999999999999,
+   "band": 0.004,
+   "bandWidth": 0.025
+  },
+  {
+   "id": "garment_wool_doublet_01_skirt",
+   "layer": "outer",
+   "shape": "skirt",
+   "top": 0.9989999999999999,
+   "bottom": 0.8290000000000001,
+   "flare": 0.35,
+   "material": "wool",
+   "colour": "wool.madder",
+   "thickness": 0.022,
+   "wear": 0.4
+  },
+  {
+   "id": "garment_wool_coat_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.9490000000000001,
+    1.6
+   ],
+   "collar": [
+    1.27,
+    1.565
+   ],
+   "material": "wool",
+   "colour": "wool.brown",
+   "thickness": 0.024,
+   "loose": 0.045,
+   "drape": 1.0,
+   "band": 0.008,
+   "bandWidth": 0.04,
+   "wear": 0.5
+  },
+  {
+   "id": "garment_wool_coat_01_skirt",
+   "layer": "outer",
+   "shape": "skirt",
+   "top": 0.9989999999999999,
+   "bottom": 0.472,
+   "flare": 0.6,
+   "material": "wool",
+   "colour": "wool.brown",
+   "thickness": 0.034,
+   "wear": 0.5
+  },
+  {
+   "id": "garment_leather_belt_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    1.034,
+    1.079
+   ],
+   "material": "leather",
+   "colour": "leather.dark",
+   "thickness": 0.03,
+   "hides": false,
+   "wear": 0.5
+  },
+  {
+   "id": "garment_leather_shoes_01",
+   "layer": "footwear",
+   "shape": "shell",
+   "feet": 0.116,
+   "material": "leather",
+   "colour": "leather.brown",
+   "thickness": 0.008,
+   "wear": 0.6
+  }
+ ],
+ "accessories": [
+  {
+   "id": "acc_hat_brim_01",
+   "shape": "brim",
+   "radius": 0.15,
+   "droop": 0.01,
+   "material": "felt",
+   "colour": "felt.brown",
+   "raise": 0.012
+  },
+  {
+   "id": "acc_hat_crown_01",
+   "shape": "crown",
+   "radius": 0.1,
+   "topRadius": 0.095,
+   "height": 0.04,
+   "material": "felt",
+   "colour": "felt.brown"
+  },
+  {
+   "id": "acc_leather_purse_01",
+   "shape": "pouch",
+   "side": "left",
+   "height": 1.039,
+   "material": "leather",
+   "colour": "leather.tan"
+  }
+ ],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 1.0,
+  "work": "talk",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "northern merchants abroad",
+   "source": "Carmen Bernis, Indumentaria española en tiempos de Carlos V (1962)",
+   "region": "Castile/Andalusia",
+   "dates": "c. 1500–1530",
+   "confidence": "medium"
+  }
+ ]
+}

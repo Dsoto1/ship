@@ -1,0 +1,108 @@
+{
+ "characterId": "person.bastian",
+ "name": "Bastián",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from person.bastian's description in data/port/bocana.json: \"A young docker, all shoulders.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Male",
+ "age": 26,
+ "apparentAge": 25,
+ "heightCm": 180,
+ "seed": 10797,
+ "looks": {
+  "build": "heavy",
+  "posture": {
+   "stoop": 0.1,
+   "headForward": 0.1,
+   "shoulders": 0.0
+  },
+  "face": {
+   "width": 0.3,
+   "jaw": 0.6,
+   "chin": 0.2,
+   "nose": 0.0,
+   "brow": 0.3,
+   "cheeks": 0.2,
+   "ears": 0.4
+  },
+  "skin": "#9c6f51",
+  "weathering": 0.5,
+  "eyes": "eyes.darkbrown",
+  "hair": [
+   {
+    "mesh": "Hair_Buzzed",
+    "colour": "hair.black"
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "hair.black"
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "young, all shoulders, shaven-headed",
+  "barefoot, sleeves rolled to the shoulder"
+ ],
+ "marks": [],
+ "occupationVisuals": "docker",
+ "statusVisuals": "status.sailor",
+ "clothing": [
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.47,
+   "material": "linen",
+   "colour": "linen.grey",
+   "thickness": 0.008,
+   "loose": 0.015,
+   "drape": 0.9,
+   "band": 0.007,
+   "bandWidth": 0.04,
+   "wear": 0.7
+  },
+  {
+   "id": "garment_wool_breeches_01",
+   "layer": "lower",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.079
+   ],
+   "leg": [
+    0.472,
+    1.049
+   ],
+   "material": "wool",
+   "colour": "wool.natural",
+   "thickness": 0.011,
+   "loose": 0.022,
+   "band": 0.004,
+   "bandWidth": 0.03,
+   "wear": 0.7
+  }
+ ],
+ "accessories": [],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 1.0,
+  "work": "push",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "dock labourers",
+   "source": "Pablo E. Pérez-Mallaína, Spain's Men of the Sea (1998)",
+   "region": "Andalusian ports",
+   "dates": "16th c.",
+   "confidence": "medium"
+  }
+ ]
+}

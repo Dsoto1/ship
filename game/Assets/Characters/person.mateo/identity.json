@@ -1,0 +1,203 @@
+{
+ "characterId": "person.mateo",
+ "name": "Mateo",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from person.mateo's description in data/port/bocana.json: \"A guard with a halberd and a bored face.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Male",
+ "age": 33,
+ "apparentAge": 33,
+ "heightCm": 175,
+ "seed": 8001,
+ "looks": {
+  "build": "average",
+  "posture": {
+   "stoop": 0.1,
+   "headForward": 0.2,
+   "shoulders": 0.1
+  },
+  "face": {
+   "width": 0.2,
+   "jaw": 0.3,
+   "nose": 0.2,
+   "brow": 0.2,
+   "cheeks": 0.3,
+   "mouth": -0.1
+  },
+  "skin": "#a97b5d",
+  "weathering": 0.45,
+  "eyes": "eyes.brown",
+  "hair": [
+   {
+    "mesh": "Hair_Beard",
+    "trim": 0.5,
+    "colour": "hair.darkbrown"
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "hair.darkbrown"
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "a bored face, a trimmed dark beard",
+  "the town's madder and woad, an iron cap"
+ ],
+ "marks": [],
+ "occupationVisuals": "town guard",
+ "statusVisuals": "status.sailor",
+ "clothing": [
+  {
+   "id": "garment_wool_hose_01",
+   "layer": "lower",
+   "shape": "shell",
+   "leg": [
+    0.09,
+    1.049
+   ],
+   "material": "wool",
+   "colour": "wool.madder",
+   "thickness": 0.003,
+   "wear": 0.4
+  },
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.69,
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.004,
+   "bandWidth": 0.02,
+   "wear": 0.45
+  },
+  {
+   "id": "garment_wool_doublet_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.9490000000000001,
+    1.6
+   ],
+   "collar": [
+    1.51,
+    1.57
+   ],
+   "material": "wool",
+   "colour": "wool.woad",
+   "thickness": 0.014,
+   "loose": 0.006,
+   "drape": 0.8,
+   "wear": 0.5,
+   "sleeve": 0.6699999999999999,
+   "band": 0.004,
+   "bandWidth": 0.025
+  },
+  {
+   "id": "garment_wool_doublet_01_skirt",
+   "layer": "outer",
+   "shape": "skirt",
+   "top": 0.9989999999999999,
+   "bottom": 0.8290000000000001,
+   "flare": 0.35,
+   "material": "wool",
+   "colour": "wool.woad",
+   "thickness": 0.022,
+   "wear": 0.5
+  },
+  {
+   "id": "garment_wool_breeches_01",
+   "layer": "lower",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.079
+   ],
+   "leg": [
+    0.472,
+    1.049
+   ],
+   "material": "wool",
+   "colour": "wool.madder",
+   "thickness": 0.011,
+   "loose": 0.012,
+   "band": 0.004,
+   "bandWidth": 0.03,
+   "wear": 0.55
+  },
+  {
+   "id": "garment_leather_belt_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    1.034,
+    1.079
+   ],
+   "material": "leather",
+   "colour": "leather.dark",
+   "thickness": 0.03,
+   "hides": false,
+   "wear": 0.5
+  },
+  {
+   "id": "garment_iron_morion_01",
+   "layer": "headwear",
+   "shape": "shell",
+   "head": [
+    1.743,
+    1.713
+   ],
+   "material": "metal",
+   "colour": "iron",
+   "thickness": 0.024,
+   "band": 0.012,
+   "bandWidth": 0.02,
+   "wear": 0.4
+  },
+  {
+   "id": "garment_leather_shoes_01",
+   "layer": "footwear",
+   "shape": "shell",
+   "feet": 0.116,
+   "material": "leather",
+   "colour": "leather.dark",
+   "thickness": 0.008,
+   "wear": 0.6
+  }
+ ],
+ "accessories": [
+  {
+   "id": "equip_guard_sword_01",
+   "shape": "tool",
+   "side": "left",
+   "height": 1.049,
+   "material": "metal",
+   "colour": "iron"
+  }
+ ],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 1.0,
+  "work": "fold_arms",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "town guards: the city's colours, an iron cap, a halberd",
+   "source": "Carmen Bernis, Indumentaria española en tiempos de Carlos V (1962)",
+   "region": "Castile/Andalusia",
+   "dates": "c. 1500–1530",
+   "confidence": "medium"
+  }
+ ]
+}

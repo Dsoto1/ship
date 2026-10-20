@@ -1,0 +1,136 @@
+{
+ "characterId": "person.pascual",
+ "name": "Pascual Mena",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from person.pascual's description in data/port/bocana.json: \"An eager young man in borrowed sea clothes, too clean for the quay.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Male",
+ "age": 19,
+ "apparentAge": 18,
+ "heightCm": 174,
+ "seed": 10838,
+ "looks": {
+  "build": "slight",
+  "posture": {
+   "stoop": -0.1,
+   "headForward": -0.1,
+   "shoulders": -0.1
+  },
+  "face": {
+   "width": -0.1,
+   "jaw": -0.4,
+   "chin": -0.2,
+   "nose": -0.3,
+   "noseLength": -0.2,
+   "brow": -0.4,
+   "cheeks": 0.4,
+   "mouth": 0.1,
+   "ears": 0.3
+  },
+  "skin": "#bb8f71",
+  "weathering": 0.15,
+  "eyes": "eyes.brown",
+  "hair": [
+   {
+    "mesh": "Hair_SimpleParted",
+    "colour": "hair.darkbrown"
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "hair.darkbrown"
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "eager, boyish, beardless",
+  "sea clothes too clean and too new: borrowed",
+  "a red cap he keeps touching"
+ ],
+ "marks": [],
+ "occupationVisuals": "young man looking for a ship",
+ "statusVisuals": "status.sailor",
+ "clothing": [
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.69,
+   "material": "linen",
+   "colour": "linen.bleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.004,
+   "bandWidth": 0.02,
+   "wear": 0.05
+  },
+  {
+   "id": "garment_linen_slops_01",
+   "layer": "lower",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.079
+   ],
+   "leg": [
+    0.472,
+    1.049
+   ],
+   "material": "linen",
+   "colour": "linen.bleached",
+   "thickness": 0.011,
+   "loose": 0.035,
+   "band": 0.004,
+   "bandWidth": 0.03,
+   "wear": 0.05
+  },
+  {
+   "id": "garment_wool_cap_01",
+   "layer": "headwear",
+   "shape": "shell",
+   "head": [
+    1.745,
+    1.7000000000000002
+   ],
+   "material": "wool",
+   "colour": "wool.madder",
+   "thickness": 0.018,
+   "band": 0.008,
+   "bandWidth": 0.03,
+   "wear": 0.5
+  },
+  {
+   "id": "garment_leather_shoes_01",
+   "layer": "footwear",
+   "shape": "shell",
+   "feet": 0.116,
+   "material": "leather",
+   "colour": "leather.tan",
+   "thickness": 0.008,
+   "wear": 0.1
+  }
+ ],
+ "accessories": [],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 1.1,
+  "work": "push",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "ship's boys and young seamen",
+   "source": "Pablo E. Pérez-Mallaína, Spain's Men of the Sea (1998)",
+   "region": "Andalusian ports",
+   "dates": "16th c.",
+   "confidence": "medium"
+  }
+ ]
+}

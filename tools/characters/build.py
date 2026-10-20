@@ -133,6 +133,7 @@ def build_person(identity, palette, coarse=None):
     cloth_positions = bodylib.smooth(shaped, faces, np.clip(1 - shares["head"] * 0.8, 0, 1), iterations=80, ids=ids)
     cloth_normals = bodylib.vertex_normals(cloth_positions, faces, ids)
     base = g.Base(cloth_positions, faces, cloth_normals, joints, weights, region, shares, ids)
+    base.armhole = float(skeleton.world()[skeleton.index("upperarm_l")][0, 3]) - 0.025
 
     covered_body = np.zeros(len(shaped), bool)
     layers = []

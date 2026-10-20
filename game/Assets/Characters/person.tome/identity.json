@@ -1,0 +1,117 @@
+{
+ "characterId": "person.tome",
+ "name": "Tomé Arcos",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from person.tome's description in data/port/bocana.json: \"A big man in irons, offered a pardon if he sails; the guards keep their distance.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Male",
+ "age": 30,
+ "apparentAge": 33,
+ "heightCm": 186,
+ "seed": 6781,
+ "looks": {
+  "build": "heavy",
+  "posture": {
+   "stoop": 0.15,
+   "headForward": 0.3,
+   "shoulders": 0.4
+  },
+  "face": {
+   "width": 0.6,
+   "jaw": 1.0,
+   "chin": 0.3,
+   "nose": 0.5,
+   "noseBend": 0.6,
+   "noseBridge": 0.5,
+   "brow": 1.0,
+   "cheeks": 0.3,
+   "ears": 0.4
+  },
+  "skin": "#a47a5c",
+  "weathering": 0.55,
+  "eyes": "eyes.darkbrown",
+  "hair": [
+   {
+    "mesh": "Hair_Buzzed",
+    "colour": "hair.black",
+    "grey": 0.05
+   },
+   {
+    "mesh": "Hair_Beard",
+    "trim": 0.7,
+    "colour": "hair.black"
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "hair.black"
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "a big man, broad-jawed, heavy-browed, a nose broken more than once",
+  "barefoot and ragged from the prison",
+  "irons on him until the pardon is signed"
+ ],
+ "marks": [],
+ "occupationVisuals": "convict, offered a pardon",
+ "statusVisuals": "status.convict",
+ "clothing": [
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.47,
+   "material": "linen",
+   "colour": "linen.grey",
+   "thickness": 0.008,
+   "loose": 0.02,
+   "drape": 0.9,
+   "band": 0.007,
+   "bandWidth": 0.04,
+   "wear": 0.9
+  },
+  {
+   "id": "garment_wool_breeches_01",
+   "layer": "lower",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.079
+   ],
+   "leg": [
+    0.472,
+    1.049
+   ],
+   "material": "wool",
+   "colour": "wool.grey",
+   "thickness": 0.011,
+   "loose": 0.022,
+   "band": 0.004,
+   "bandWidth": 0.03,
+   "wear": 0.9
+  }
+ ],
+ "accessories": [],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 0.9,
+  "work": "push",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "prisoners pardoned to serve at sea",
+   "source": "Pablo E. Pérez-Mallaína, Spain's Men of the Sea (1998)",
+   "region": "Andalusian ports",
+   "dates": "16th c.",
+   "confidence": "medium"
+  }
+ ]
+}

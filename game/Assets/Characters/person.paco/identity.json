@@ -1,0 +1,180 @@
+{
+ "characterId": "person.paco",
+ "name": "Paco",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from person.paco's description in data/port/bocana.json: \"A carter with a mule he talks to more than to people.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Male",
+ "age": 45,
+ "apparentAge": 48,
+ "heightCm": 167,
+ "seed": 6633,
+ "looks": {
+  "build": "stocky",
+  "posture": {
+   "stoop": 0.3,
+   "headForward": 0.2,
+   "shoulders": 0.2
+  },
+  "face": {
+   "width": 0.4,
+   "jaw": 0.3,
+   "chin": -0.2,
+   "nose": 0.6,
+   "noseLength": -0.2,
+   "brow": 0.1,
+   "cheeks": 0.5,
+   "mouth": 0.2,
+   "sag": 0.5
+  },
+  "skin": "#a87b5e",
+  "weathering": 0.7,
+  "eyes": "eyes.brown",
+  "hair": [
+   {
+    "mesh": "Hair_Buzzed",
+    "colour": "hair.brown",
+    "grey": 0.3
+   },
+   {
+    "mesh": "Hair_Beard",
+    "trim": 0.3,
+    "colour": "hair.brown",
+    "grey": 0.3
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "hair.brown",
+    "grey": 0.2
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "a weathered, bulb-nosed carter with a grizzled beard",
+  "a broad straw hat against the sun",
+  "talks to his mule"
+ ],
+ "marks": [],
+ "occupationVisuals": "carter",
+ "statusVisuals": "status.servant",
+ "clothing": [
+  {
+   "id": "garment_wool_hose_01",
+   "layer": "lower",
+   "shape": "shell",
+   "leg": [
+    0.09,
+    0.5519999999999999
+   ],
+   "material": "wool",
+   "colour": "wool.grey",
+   "thickness": 0.003,
+   "wear": 0.4
+  },
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.69,
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.004,
+   "bandWidth": 0.02,
+   "wear": 0.7
+  },
+  {
+   "id": "garment_leather_jerkin_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.919,
+    1.6
+   ],
+   "collar": [
+    1.47,
+    1.56
+   ],
+   "material": "wool",
+   "colour": "wool.brown",
+   "thickness": 0.02,
+   "loose": 0.01,
+   "drape": 1.0,
+   "wear": 0.7
+  },
+  {
+   "id": "garment_wool_breeches_01",
+   "layer": "lower",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.079
+   ],
+   "leg": [
+    0.472,
+    1.049
+   ],
+   "material": "wool",
+   "colour": "wool.brown",
+   "thickness": 0.011,
+   "loose": 0.022,
+   "band": 0.004,
+   "bandWidth": 0.03,
+   "wear": 0.55
+  },
+  {
+   "id": "garment_leather_shoes_01",
+   "layer": "footwear",
+   "shape": "shell",
+   "feet": 0.116,
+   "material": "leather",
+   "colour": "leather.brown",
+   "thickness": 0.008,
+   "wear": 0.6
+  }
+ ],
+ "accessories": [
+  {
+   "id": "acc_hat_brim_01",
+   "shape": "brim",
+   "radius": 0.19,
+   "droop": 0.02,
+   "material": "straw",
+   "colour": "straw",
+   "raise": 0.012
+  },
+  {
+   "id": "acc_hat_crown_01",
+   "shape": "crown",
+   "radius": 0.1,
+   "topRadius": 0.095,
+   "height": 0.035,
+   "material": "straw",
+   "colour": "straw"
+  }
+ ],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 0.9,
+  "work": "push",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "carters and muleteers",
+   "source": "Carmen Bernis, Indumentaria española en tiempos de Carlos V (1962)",
+   "region": "Castile/Andalusia",
+   "dates": "c. 1500–1530",
+   "confidence": "medium"
+  }
+ ]
+}

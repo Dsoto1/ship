@@ -1,0 +1,137 @@
+{
+ "characterId": "person.marta",
+ "name": "Marta la Cordelera",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from person.marta's description in data/port/bocana.json: \"A ropemaker with hemp in her hair, walking backwards down the ropewalk.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Female",
+ "age": 35,
+ "apparentAge": 37,
+ "heightCm": 168,
+ "seed": 7978,
+ "looks": {
+  "build": "wiry",
+  "posture": {
+   "stoop": 0.2,
+   "headForward": 0.2,
+   "shoulders": 0.1
+  },
+  "face": {
+   "width": -0.1,
+   "jaw": 0.3,
+   "chin": 0.2,
+   "nose": 0.3,
+   "noseLength": 0.2,
+   "brow": 0.2,
+   "cheeks": -0.3,
+   "cheekbones": 0.5,
+   "mouth": 0.0
+  },
+  "skin": "#a97c5f",
+  "weathering": 0.6,
+  "eyes": "eyes.hazel",
+  "hair": [
+   {
+    "mesh": "Hair_Long",
+    "bottom": 1.4249999999999998,
+    "colour": "hair.brown",
+    "grey": 0.1
+   },
+   {
+    "mesh": "Eyebrows_Female",
+    "colour": "hair.brown"
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "lean, strong-handed, hemp in her loose hair",
+  "sleeves rolled, no headcloth at the ropewalk",
+  "walks backwards spinning yarn"
+ ],
+ "marks": [],
+ "occupationVisuals": "ropemaker",
+ "statusVisuals": "status.craftsman",
+ "clothing": [
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.862,
+    1.565
+   ],
+   "collar": [
+    1.455,
+    1.525
+   ],
+   "sleeve": 0.399,
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.007,
+   "bandWidth": 0.04,
+   "wear": 0.7
+  },
+  {
+   "id": "garment_wool_saya_01",
+   "layer": "outer",
+   "shape": "skirt",
+   "top": 1.022,
+   "bottom": 0.335,
+   "flare": 0.75,
+   "material": "wool",
+   "colour": "wool.tawny",
+   "thickness": 0.03,
+   "wear": 0.7
+  },
+  {
+   "id": "garment_wool_bodice_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.9720000000000001,
+    1.565
+   ],
+   "collar": [
+    1.395,
+    1.525
+   ],
+   "material": "wool",
+   "colour": "wool.grey",
+   "thickness": 0.014,
+   "loose": 0.004,
+   "drape": 0.9,
+   "wear": 0.6
+  },
+  {
+   "id": "garment_apron_01",
+   "layer": "outer",
+   "shape": "skirt",
+   "arc": 62,
+   "top": 1.042,
+   "bottom": 0.35500000000000004,
+   "flare": 0.25,
+   "material": "linen",
+   "colour": "linen.grey",
+   "thickness": 0.032,
+   "wear": 0.75
+  }
+ ],
+ "accessories": [],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 1.0,
+  "work": "push",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "ropemakers (cordeleros) at work",
+   "source": "Carmen Bernis, Indumentaria española en tiempos de Carlos V (1962)",
+   "region": "Castile/Andalusia",
+   "dates": "c. 1500–1530",
+   "confidence": "medium"
+  }
+ ]
+}

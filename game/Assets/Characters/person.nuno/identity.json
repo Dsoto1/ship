@@ -1,0 +1,152 @@
+{
+ "characterId": "person.nuno",
+ "name": "Nuño Pardo",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from person.nuno's description in data/port/bocana.json: \"A round cook in a stained apron, smelling of onions and smoke.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Male",
+ "age": 50,
+ "apparentAge": 52,
+ "heightCm": 168,
+ "seed": 6907,
+ "looks": {
+  "build": "heavy",
+  "posture": {
+   "stoop": 0.1,
+   "headForward": 0.2,
+   "shoulders": 0.1
+  },
+  "face": {
+   "width": 0.8,
+   "jaw": 0.4,
+   "chin": -0.4,
+   "nose": 0.5,
+   "noseLength": -0.3,
+   "brow": 0.0,
+   "cheeks": 1.0,
+   "mouth": 0.4,
+   "ears": 0.2,
+   "sag": 0.7
+  },
+  "skin": "#b08467",
+  "weathering": 0.45,
+  "eyes": "eyes.brown",
+  "hair": [
+   {
+    "mesh": "Hair_Buzzed",
+    "recede": 0.7,
+    "crown": 0.6,
+    "colour": "hair.darkbrown",
+    "grey": 0.4
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "hair.darkbrown",
+    "grey": 0.3
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "round and bald, clean-shaven, a heavy jowl",
+  "a stained linen apron",
+  "smells of onions and smoke"
+ ],
+ "marks": [],
+ "occupationVisuals": "cook at the Three Anchors",
+ "statusVisuals": "status.servant",
+ "clothing": [
+  {
+   "id": "garment_wool_hose_01",
+   "layer": "lower",
+   "shape": "shell",
+   "leg": [
+    0.09,
+    0.5519999999999999
+   ],
+   "material": "wool",
+   "colour": "wool.grey",
+   "thickness": 0.003,
+   "wear": 0.4
+  },
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.47,
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.007,
+   "bandWidth": 0.04,
+   "wear": 0.7
+  },
+  {
+   "id": "garment_wool_breeches_01",
+   "layer": "lower",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.079
+   ],
+   "leg": [
+    0.472,
+    1.049
+   ],
+   "material": "wool",
+   "colour": "wool.brown",
+   "thickness": 0.011,
+   "loose": 0.022,
+   "band": 0.004,
+   "bandWidth": 0.03,
+   "wear": 0.55
+  },
+  {
+   "id": "garment_linen_apron_01",
+   "layer": "outer",
+   "shape": "skirt",
+   "arc": 62,
+   "top": 1.059,
+   "bottom": 0.492,
+   "flare": 0.25,
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.032,
+   "wear": 0.75
+  },
+  {
+   "id": "garment_leather_shoes_01",
+   "layer": "footwear",
+   "shape": "shell",
+   "feet": 0.116,
+   "material": "leather",
+   "colour": "leather.dark",
+   "thickness": 0.008,
+   "wear": 0.6
+  }
+ ],
+ "accessories": [],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 0.85,
+  "work": "harvest",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "ship's cooks and tavern servants",
+   "source": "Pablo E. Pérez-Mallaína, Spain's Men of the Sea (1998)",
+   "region": "Andalusian ports",
+   "dates": "16th c.",
+   "confidence": "medium"
+  }
+ ]
+}

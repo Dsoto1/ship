@@ -1259,3 +1259,46 @@ Screenshot: `docs/screenshots/stores-prices-credit.jpg`.
 1. `git pull`, Build.
 2. Hire four hands: the Cargo panel offers credit.
 3. Buy on credit and sail without settling: Corbalán is at the gangway.
+
+## C-2 — Everyone recruitable, and every named adult of the port
+
+R3 found the largest gap was people: the six of C-1 looked like people, and everyone beside them
+like boxes (CHARACTER_ART §37: recruitable people never use disposable identity). Now all 29 named
+adults of La Bocana have their own model and portrait.
+- **Recruitable:** Velho, Pons, Bartolo, Rodrigo, Leonor, Tomé, Ximena, Gil, Nuño, Wat, Pascual and
+  Ulloa.
+- **The rest of the town:** Andrés, Varzi, Corbalán, Inés, Catalina, Father Anselmo, Quintana, Hob,
+  Grilo, the two guards Mateo and Lope, Bastián, Hernando, Paco, Benito, Marta and Old Simón.
+
+- **Identity records** come from `tools/characters/identities.py`. Each is written from the
+  person's own description, occupation, status, age and origin in `data/port/bocana.json`. Records
+  already on disk are never rewritten without `--force`, so no one is rerolled.
+- **The wardrobe** is a small set of period pieces:
+  - shirt, hose, breeches or slops, doublet, jerkin, gown, cassock, cloak;
+  - aprons in leather or linen, belts, shoes;
+  - caps, the flat gorra, brimmed hats in felt or straw, iron caps for the guards, a fur collar;
+  - for women, the long saya, the bodice and the toca.
+
+  Their cuts are measured on the base body of each sex, so one piece fits a man or a woman.
+- **Women** are built on the female base, with their own hair, brows and age lines, and scaled
+  from its height.
+- **Builder fixes:**
+  - armholes are a clean cut, not the ragged line of the body's weights;
+  - garment edges stay where they were cut when cloth is draped;
+  - the neckline snap no longer pulls the armholes up.
+
+  These also fixed the points on Andrés's jerkin.
+- **Budgets:** 4,600–5,060 triangles each, with light models of 2,500–3,150.
+- **Size:** the full-detail portrait meshes are rebuilt, not kept (`.gitignore`). What is committed comes to
+  about 35 MB: models 19 MB, the shared sheet and clips 5 MB, and portraits.
+- **Not yet:**
+  - the two children, Lucía and Tito: the base bodies are adults, and a child is not a small
+    adult;
+  - the unnamed crowd (Tier C), which keeps its simple walkers;
+  - all 29 share the pack's two young faces, so who they are comes from build, nose, jaw, hair,
+    beard, headwear and clothes.
+
+**Manual test (macOS):**
+1. `git pull`, then open the editor once (to import 23 new models), then Build.
+2. `res://Lineup.tscn -- --roster` shows everyone side by side.
+3. In the game, every named adult is drawn as themselves, with their portrait in their card.

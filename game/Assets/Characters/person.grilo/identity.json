@@ -1,0 +1,215 @@
+{
+ "characterId": "person.grilo",
+ "name": "Ser Bonifacio Grilo",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from person.grilo's description in data/port/bocana.json: \"A Ligurese moneylender in a fur collar, followed by a boy with a ledger.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Male",
+ "age": 51,
+ "apparentAge": 53,
+ "heightCm": 170,
+ "seed": 8073,
+ "looks": {
+  "build": "average",
+  "posture": {
+   "stoop": 0.2,
+   "headForward": 0.3,
+   "shoulders": 0.1
+  },
+  "face": {
+   "width": 0.0,
+   "jaw": -0.2,
+   "chin": -0.3,
+   "nose": 0.8,
+   "noseLength": 0.6,
+   "noseBend": 0.2,
+   "noseBridge": 0.8,
+   "brow": 0.4,
+   "cheeks": 0.2,
+   "mouth": -0.6,
+   "sag": 0.6
+  },
+  "skin": "#c29a7e",
+  "weathering": 0.3,
+  "eyes": "eyes.darkbrown",
+  "hair": [
+   {
+    "mesh": "Hair_Long",
+    "bottom": 1.56,
+    "colour": "hair.grey",
+    "grey": 0.6
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "hair.grey",
+    "grey": 0.5
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "a long hooked nose and a small hard mouth, clean-shaven",
+  "grey hair cut at the jaw in the Italian way",
+  "a tawny gown with a fur collar"
+ ],
+ "marks": [],
+ "occupationVisuals": "moneylender",
+ "statusVisuals": "status.gentleman",
+ "clothing": [
+  {
+   "id": "garment_wool_hose_01",
+   "layer": "lower",
+   "shape": "shell",
+   "leg": [
+    0.09,
+    1.049
+   ],
+   "material": "wool",
+   "colour": "wool.black",
+   "thickness": 0.003,
+   "wear": 0.4
+  },
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.69,
+   "material": "linen",
+   "colour": "linen.bleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.004,
+   "bandWidth": 0.02,
+   "wear": 0.45
+  },
+  {
+   "id": "garment_wool_doublet_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.9490000000000001,
+    1.6
+   ],
+   "collar": [
+    1.51,
+    1.57
+   ],
+   "material": "velvet",
+   "colour": "velvet.black",
+   "thickness": 0.014,
+   "loose": 0.006,
+   "drape": 0.8,
+   "wear": 0.2,
+   "sleeve": 0.6699999999999999,
+   "band": 0.004,
+   "bandWidth": 0.025
+  },
+  {
+   "id": "garment_wool_gown_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.9490000000000001,
+    1.6
+   ],
+   "collar": [
+    1.31,
+    1.565
+   ],
+   "material": "wool",
+   "colour": "wool.tawny",
+   "thickness": 0.024,
+   "loose": 0.045,
+   "drape": 1.0,
+   "band": 0.008,
+   "bandWidth": 0.04,
+   "wear": 0.3,
+   "sleeve": 0.6299999999999999
+  },
+  {
+   "id": "garment_wool_gown_01_skirt",
+   "layer": "outer",
+   "shape": "skirt",
+   "top": 0.9989999999999999,
+   "bottom": 0.126,
+   "flare": 0.6,
+   "material": "wool",
+   "colour": "wool.tawny",
+   "thickness": 0.034,
+   "wear": 0.3
+  },
+  {
+   "id": "garment_fur_collar_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    1.35,
+    1.6
+   ],
+   "collar": [
+    1.47,
+    1.57
+   ],
+   "sleeve": 0.24,
+   "material": "felt",
+   "colour": "#4b3424",
+   "thickness": 0.045,
+   "loose": 0.02,
+   "drape": 1.0,
+   "hides": false,
+   "wear": 0.2
+  },
+  {
+   "id": "garment_leather_shoes_01",
+   "layer": "footwear",
+   "shape": "shell",
+   "feet": 0.116,
+   "material": "leather",
+   "colour": "leather.dark",
+   "thickness": 0.008,
+   "wear": 0.6
+  }
+ ],
+ "accessories": [
+  {
+   "id": "acc_gorra_brim_01",
+   "shape": "brim",
+   "radius": 0.13,
+   "droop": 0.0,
+   "material": "velvet",
+   "colour": "velvet.black",
+   "raise": 0.02
+  },
+  {
+   "id": "acc_gorra_crown_01",
+   "shape": "crown",
+   "radius": 0.103,
+   "topRadius": 0.106,
+   "height": 0.03,
+   "material": "velvet",
+   "colour": "velvet.black"
+  }
+ ],
+ "equipment": [],
+ "animation": {
+  "walk": "walk_formal",
+  "walkSpeed": 1.0,
+  "work": "talk",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "Genoese merchants' gowns and fur collars",
+   "source": "Rosita Levi Pisetzky, Storia del costume in Italia vol. 3 (1966)",
+   "region": "Liguria",
+   "dates": "c. 1500–1525",
+   "confidence": "medium"
+  }
+ ]
+}

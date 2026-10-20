@@ -1,0 +1,148 @@
+{
+ "characterId": "person.hernando",
+ "name": "Hernando",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from person.hernando's description in data/port/bocana.json: \"A docker with a Company tattoo, back from the Ember Coast.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Male",
+ "age": 40,
+ "apparentAge": 44,
+ "heightCm": 172,
+ "seed": 12403,
+ "looks": {
+  "build": "wiry",
+  "posture": {
+   "stoop": 0.3,
+   "headForward": 0.3,
+   "shoulders": 0.3
+  },
+  "face": {
+   "width": -0.1,
+   "jaw": 0.3,
+   "chin": 0.2,
+   "nose": 0.4,
+   "noseBend": -0.4,
+   "brow": 0.5,
+   "cheeks": -0.6,
+   "cheekbones": 0.6,
+   "sag": 0.4
+  },
+  "skin": "#8f6247",
+  "weathering": 0.85,
+  "eyes": "eyes.darkbrown",
+  "hair": [
+   {
+    "mesh": "Hair_SimpleParted",
+    "colour": "hair.black",
+    "grey": 0.3
+   },
+   {
+    "mesh": "Hair_Beard",
+    "trim": 0.4,
+    "colour": "hair.black",
+    "grey": 0.3
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "hair.black",
+    "grey": 0.2
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "burnt dark by the far coast, gaunt",
+  "the Company's tattoo on his forearm",
+  "a red cap and slops: still dressed for the sea"
+ ],
+ "marks": [],
+ "occupationVisuals": "docker, back from the last Company ship",
+ "statusVisuals": "status.sailor",
+ "clothing": [
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.47,
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.007,
+   "bandWidth": 0.04,
+   "wear": 0.8
+  },
+  {
+   "id": "garment_linen_slops_01",
+   "layer": "lower",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.079
+   ],
+   "leg": [
+    0.472,
+    1.049
+   ],
+   "material": "linen",
+   "colour": "linen.grey",
+   "thickness": 0.011,
+   "loose": 0.03,
+   "band": 0.004,
+   "bandWidth": 0.03,
+   "wear": 0.8
+  },
+  {
+   "id": "garment_wool_cap_01",
+   "layer": "headwear",
+   "shape": "shell",
+   "head": [
+    1.745,
+    1.7000000000000002
+   ],
+   "material": "wool",
+   "colour": "wool.madder",
+   "thickness": 0.018,
+   "band": 0.008,
+   "bandWidth": 0.03,
+   "wear": 0.5
+  },
+  {
+   "id": "garment_leather_belt_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    1.034,
+    1.079
+   ],
+   "material": "leather",
+   "colour": "leather.dark",
+   "thickness": 0.03,
+   "hides": false,
+   "wear": 0.5
+  }
+ ],
+ "accessories": [],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 1.0,
+  "work": "push",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "returning seamen of the Carrera",
+   "source": "Pablo E. Pérez-Mallaína, Spain's Men of the Sea (1998)",
+   "region": "Andalusian ports",
+   "dates": "16th c.",
+   "confidence": "medium"
+  }
+ ]
+}

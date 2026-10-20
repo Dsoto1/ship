@@ -38,6 +38,8 @@ class Base:
         self.leg = leg
         self.reach = np.abs(positions[:, 0])  # along the arm
         self.height = positions[:, 1]
+        # Where a sleeveless garment's armhole is cut: in from the shoulder joint (set by build.py).
+        self.armhole = 0.19
 
 
 def covers(base, spec):
@@ -60,6 +62,9 @@ def covers(base, spec):
         mask |= base.arm & (x <= sleeve) & ~np.isin(r, ["hand_l", "hand_r"]) | (np.isin(r, ["hand_l", "hand_r"]) & (x <= sleeve))
         if torso:
             mask |= np.isin(r, ["torso"]) & (x > 0.12) & (y >= torso[0]) & (y <= torso[1] + 0.06)
+    if torso and sleeve is None:
+        # A clean armhole, not the ragged line where the body's weights pass from torso to arm.
+        mask &= ~(base.reach > base.armhole)
     if torso and spec.get("collar") is not None:
         mask &= ~(np.isin(r, ["torso", "neck"]) & (y > neckline(base.positions[:, 2], spec["collar"])))
     leg = spec.get("leg")
@@ -83,6 +88,15 @@ def covers(base, spec):
     width = spec.get("width")
     if width is not None:
         mask &= base.reach <= width
+    return mask
+
+
+def _open_edge_vertices(faces, ids):
+    edges = np.sort(np.concatenate([faces[:, [0, 1]], faces[:, [1, 2]], faces[:, [2, 0]]]), axis=1)
+    welded = np.sort(ids[edges], axis=1)
+    _, inverse, counts = np.unique(welded, axis=0, return_inverse=True, return_counts=True)
+    mask = np.zeros(faces.max() + 1 if len(faces) else 0, bool)
+    mask[edges[counts[inverse.ravel()] == 1].ravel()] = True
     return mask
 
 
@@ -143,6 +157,7 @@ def shell(base, spec, colour, kind, name):
     p += n * offset[:, None]
     drape = spec.get("drape", 0.0)
     if drape:
+        before = p.copy()
         region = base.region[used].copy()
         if spec.get("collar") is not None:
             # Leave the neckline alone: it is gathered to the neck below.
@@ -150,6 +165,18 @@ def shell(base, spec, colour, kind, name):
             region[(y > rim - 0.05) & np.isin(region, ["torso", "neck"])] = "collar"
         p = hang(p, region, drape)
         p = fall(p, region, drape, spec.get("collar"))
+        # The open edges (armholes, hems) stay where they were cut, and the cloth eases out from
+        # them over a couple of rings, so a sleeveless garment does not throw points at the shoulder.
+        edge = _open_edge_vertices(remap[faces], ids)
+        hold = edge.astype(float)
+        f = remap[faces]
+        for _ in range(3):
+            near = np.zeros(len(p))
+            np.maximum.at(near, f[:, 0], np.maximum(hold[f[:, 1]], hold[f[:, 2]]))
+            np.maximum.at(near, f[:, 1], np.maximum(hold[f[:, 0]], hold[f[:, 2]]))
+            np.maximum.at(near, f[:, 2], np.maximum(hold[f[:, 0]], hold[f[:, 1]]))
+            hold = np.maximum(hold, near * 0.6)
+        p = before + (p - before) * (1 - hold)[:, None]
     if spec.get("collar") is not None:
         # Gathered at the neck: within a few centimetres of the neckline the cloth comes in to the skin.
         rim = neckline(base.positions[used][:, 2], spec["collar"])
@@ -183,7 +210,8 @@ def shell(base, spec, colour, kind, name):
             snap = hem & torso & (y < low + 0.04)
             p[snap, 1] = low
     if spec.get("collar") is not None:
-        snap = hem & ~arm & ~leg & (y > spec["torso"][0] + 0.2)
+        # The neckline only: armhole and hem edges are not pulled up to it.
+        snap = hem & ~arm & ~leg & (y > spec["torso"][0] + 0.2) & (x < 0.11)
         p[snap, 1] = neckline(base.positions[used][:, 2], spec["collar"])[snap]
     if spec.get("head") is not None:
         # A cap's edge runs level round the brow and dips to the nape.

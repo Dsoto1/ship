@@ -1,0 +1,171 @@
+{
+ "characterId": "person.wat",
+ "name": "Wat Harrow",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from person.wat's description in data/port/bocana.json: \"A fair-haired Brennish seaman, cheap because no Castrenan master will have him.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Male",
+ "age": 35,
+ "apparentAge": 36,
+ "heightCm": 178,
+ "seed": 5638,
+ "looks": {
+  "build": "average",
+  "posture": {
+   "stoop": 0.1,
+   "headForward": 0.1,
+   "shoulders": 0.1
+  },
+  "face": {
+   "width": 0.1,
+   "jaw": 0.5,
+   "chin": 0.4,
+   "nose": 0.2,
+   "noseLength": 0.4,
+   "brow": 0.4,
+   "cheeks": -0.2,
+   "cheekbones": 0.4,
+   "mouth": -0.2,
+   "ears": 0.5
+  },
+  "skin": "#d0a58c",
+  "weathering": 0.6,
+  "eyes": "eyes.blue",
+  "hair": [
+   {
+    "mesh": "Hair_SimpleParted",
+    "colour": "#b39a6a",
+    "grey": 0.0
+   },
+   {
+    "mesh": "Hair_Beard",
+    "trim": 0.6,
+    "colour": "#a88c5e"
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "#a88c5e"
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "fair-haired and fair-skinned, sunburnt red",
+  "a Brennish seaman's grey wool jerkin and a blue cap",
+  "long-faced, big-eared"
+ ],
+ "marks": [],
+ "occupationVisuals": "Brennish seaman, out of work",
+ "statusVisuals": "status.sailor",
+ "clothing": [
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.69,
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.004,
+   "bandWidth": 0.02,
+   "wear": 0.6
+  },
+  {
+   "id": "garment_linen_slops_01",
+   "layer": "lower",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.079
+   ],
+   "leg": [
+    0.472,
+    1.049
+   ],
+   "material": "linen",
+   "colour": "linen.grey",
+   "thickness": 0.011,
+   "loose": 0.035,
+   "band": 0.004,
+   "bandWidth": 0.03,
+   "wear": 0.55
+  },
+  {
+   "id": "garment_leather_jerkin_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.919,
+    1.6
+   ],
+   "collar": [
+    1.47,
+    1.56
+   ],
+   "material": "wool",
+   "colour": "wool.grey",
+   "thickness": 0.02,
+   "loose": 0.01,
+   "drape": 1.0,
+   "wear": 0.6
+  },
+  {
+   "id": "garment_wool_cap_01",
+   "layer": "headwear",
+   "shape": "shell",
+   "head": [
+    1.745,
+    1.7000000000000002
+   ],
+   "material": "wool",
+   "colour": "wool.woad",
+   "thickness": 0.018,
+   "band": 0.008,
+   "bandWidth": 0.03,
+   "wear": 0.5
+  },
+  {
+   "id": "garment_leather_shoes_01",
+   "layer": "footwear",
+   "shape": "shell",
+   "feet": 0.116,
+   "material": "leather",
+   "colour": "leather.brown",
+   "thickness": 0.008,
+   "wear": 0.6
+  }
+ ],
+ "accessories": [
+  {
+   "id": "equip_sheath_knife_01",
+   "shape": "knife",
+   "side": "right",
+   "height": 0.9989999999999999,
+   "material": "leather",
+   "colour": "leather.dark"
+  }
+ ],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 1.0,
+  "work": "push",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "northern seamen's slops and woollen jerkins",
+   "source": "Pablo E. Pérez-Mallaína, Spain's Men of the Sea (1998)",
+   "region": "Andalusian ports",
+   "dates": "16th c.",
+   "confidence": "medium"
+  }
+ ]
+}

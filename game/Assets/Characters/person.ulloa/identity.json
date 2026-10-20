@@ -1,0 +1,219 @@
+{
+ "characterId": "person.ulloa",
+ "name": "Don Fernán de Ulloa",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from person.ulloa's description in data/port/bocana.json: \"A gentleman in a good cloak with no servant, and a sword he wears like a habit.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Male",
+ "age": 44,
+ "apparentAge": 46,
+ "heightCm": 176,
+ "seed": 8026,
+ "looks": {
+  "build": "average",
+  "posture": {
+   "stoop": -0.3,
+   "headForward": -0.2,
+   "shoulders": -0.2
+  },
+  "face": {
+   "width": -0.1,
+   "jaw": 0.4,
+   "chin": 0.7,
+   "chinForward": 0.5,
+   "nose": 0.6,
+   "noseLength": 0.7,
+   "noseBridge": 0.9,
+   "brow": 0.5,
+   "cheeks": -0.4,
+   "cheekbones": 0.6,
+   "mouth": -0.5,
+   "sag": 0.3
+  },
+  "skin": "#b88d70",
+  "weathering": 0.45,
+  "eyes": "eyes.grey",
+  "hair": [
+   {
+    "mesh": "Hair_SimpleParted",
+    "colour": "hair.black",
+    "grey": 0.3
+   },
+   {
+    "mesh": "Hair_Beard",
+    "trim": 0.75,
+    "colour": "hair.black",
+    "grey": 0.35
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "hair.black",
+    "grey": 0.2
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "a hidalgo's long, hawk-nosed face and pointed beard, greying",
+  "a good black cloak over a madder doublet",
+  "a sword he wears like a habit; no servant"
+ ],
+ "marks": [],
+ "occupationVisuals": "gentleman of Almara",
+ "statusVisuals": "status.gentleman",
+ "clothing": [
+  {
+   "id": "garment_wool_hose_01",
+   "layer": "lower",
+   "shape": "shell",
+   "leg": [
+    0.09,
+    1.049
+   ],
+   "material": "wool",
+   "colour": "wool.black",
+   "thickness": 0.003,
+   "wear": 0.4
+  },
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.69,
+   "material": "linen",
+   "colour": "linen.bleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.004,
+   "bandWidth": 0.02,
+   "wear": 0.2
+  },
+  {
+   "id": "garment_wool_doublet_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.9490000000000001,
+    1.6
+   ],
+   "collar": [
+    1.51,
+    1.57
+   ],
+   "material": "wool",
+   "colour": "wool.madder",
+   "thickness": 0.014,
+   "loose": 0.006,
+   "drape": 0.8,
+   "wear": 0.4,
+   "sleeve": 0.6699999999999999,
+   "band": 0.004,
+   "bandWidth": 0.025
+  },
+  {
+   "id": "garment_wool_doublet_01_skirt",
+   "layer": "outer",
+   "shape": "skirt",
+   "top": 0.9989999999999999,
+   "bottom": 0.8290000000000001,
+   "flare": 0.35,
+   "material": "wool",
+   "colour": "wool.madder",
+   "thickness": 0.022,
+   "wear": 0.4
+  },
+  {
+   "id": "garment_wool_capa_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.9490000000000001,
+    1.6
+   ],
+   "collar": [
+    1.29,
+    1.565
+   ],
+   "material": "wool",
+   "colour": "wool.black",
+   "thickness": 0.024,
+   "loose": 0.045,
+   "drape": 1.0,
+   "band": 0.008,
+   "bandWidth": 0.04,
+   "wear": 0.45
+  },
+  {
+   "id": "garment_wool_capa_01_skirt",
+   "layer": "outer",
+   "shape": "skirt",
+   "top": 0.9989999999999999,
+   "bottom": 0.472,
+   "flare": 0.6,
+   "material": "wool",
+   "colour": "wool.black",
+   "thickness": 0.034,
+   "wear": 0.45
+  },
+  {
+   "id": "garment_leather_shoes_01",
+   "layer": "footwear",
+   "shape": "shell",
+   "feet": 0.116,
+   "material": "leather",
+   "colour": "leather.dark",
+   "thickness": 0.008,
+   "wear": 0.6
+  }
+ ],
+ "accessories": [
+  {
+   "id": "acc_gorra_brim_01",
+   "shape": "brim",
+   "radius": 0.13,
+   "droop": 0.0,
+   "material": "felt",
+   "colour": "felt.black",
+   "raise": 0.02
+  },
+  {
+   "id": "acc_gorra_crown_01",
+   "shape": "crown",
+   "radius": 0.103,
+   "topRadius": 0.106,
+   "height": 0.03,
+   "material": "felt",
+   "colour": "felt.black"
+  },
+  {
+   "id": "equip_sword_01",
+   "shape": "tool",
+   "side": "left",
+   "height": 1.049,
+   "material": "metal",
+   "colour": "iron"
+  }
+ ],
+ "equipment": [],
+ "animation": {
+  "walk": "walk_formal",
+  "walkSpeed": 1.0,
+  "work": "talk",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "hidalgo dress: capa, jubón, gorra, sword",
+   "source": "Carmen Bernis, Indumentaria española en tiempos de Carlos V (1962)",
+   "region": "Castile/Andalusia",
+   "dates": "c. 1500–1530",
+   "confidence": "medium"
+  }
+ ]
+}
