@@ -97,6 +97,7 @@ public partial class CrewFigure : Node3D
     private Node3D _rolled = null!;
     private PersonModel? _person;
     private float _wet;
+    private Color _rim = new(0, 0, 0, 0);
 
     private static StandardMaterial3D? _contactShadow;
 
@@ -327,6 +328,30 @@ public partial class CrewFigure : Node3D
         _label.Text = selected && !string.IsNullOrEmpty(activity) ? $"{name}\n{activity}" : name;
         _label.Modulate = selected ? new Color(1f, 0.93f, 0.7f) : new Color(0.95f, 0.95f, 0.95f, 0.8f);
         _label.Position = new Vector3(0, pose is Pose.Resting or Pose.Lying ? 1.2f : _height + 0.3f, 0);
+    }
+
+    /// <summary>The rim round the figure (who could be recruited); clear for none.</summary>
+    public void Outline(Color colour)
+    {
+        if (colour == _rim)
+        {
+            return;
+        }
+
+        _rim = colour;
+        if (_person is not null)
+        {
+            _person.Outline(colour);
+            return;
+        }
+
+        foreach (var mesh in _model.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>())
+        {
+            if (mesh.MaterialOverride == _skinAndCloth)
+            {
+                mesh.SetInstanceShaderParameter("rim", colour);
+            }
+        }
     }
 
     /// <summary>True when the camera is far out: persistent people use their light model (§36).</summary>
@@ -609,7 +634,7 @@ public partial class CrewFigure : Node3D
 
     private void CommitPieces()
     {
-        _skinAndCloth = new StandardMaterial3D { VertexColorUseAsAlbedo = true, VertexColorIsSrgb = true, Roughness = 0.85f };
+        _skinAndCloth = new StandardMaterial3D { VertexColorUseAsAlbedo = true, VertexColorIsSrgb = true, Roughness = 0.85f, NextPass = PersonModel.Rim };
         foreach (var (parent, tool) in _pieces)
         {
             parent.AddChild(new MeshInstance3D { Mesh = tool.Commit(), MaterialOverride = _skinAndCloth });

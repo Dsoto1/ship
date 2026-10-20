@@ -58,7 +58,25 @@ public partial class PersonModel : Node3D
     private static ShaderMaterial Material => _material ??= new ShaderMaterial
     {
         Shader = GD.Load<Shader>("res://Shaders/character.gdshader"),
-    }.Also(m => m.SetShaderParameter("atlas", GD.Load<Texture2D>($"{Folder}/Shared/chr_atlas.png")));
+    }.Also(m =>
+    {
+        m.SetShaderParameter("atlas", GD.Load<Texture2D>($"{Folder}/Shared/chr_atlas.png"));
+        m.NextPass = Rim;
+    });
+
+    /// <summary>The second pass every figure carries for its recruiting rim (outline.gdshader).</summary>
+    public static ShaderMaterial Rim => _rim ??= new ShaderMaterial { Shader = GD.Load<Shader>("res://Shaders/outline.gdshader") };
+
+    private static ShaderMaterial? _rim;
+
+    /// <summary>The rim round the silhouette; clear for none.</summary>
+    public void Outline(Color colour)
+    {
+        foreach (var mesh in Meshes())
+        {
+            mesh.SetInstanceShaderParameter("rim", colour);
+        }
+    }
 
     private static AnimationLibrary Clips
     {

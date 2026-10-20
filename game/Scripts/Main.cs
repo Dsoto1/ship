@@ -481,6 +481,7 @@ public partial class Main : Node3D
                     showLabel: !_departure.Playing && (!inPort || isCaptain || id == _hovered), shownName: inPort ? PortHud.KnownName(_runner, id) : null,
                     facing: spot is null ? null : FacingAt(location, spot),
                     inRain: onPort && _runner.RainingInPort && definition?.Id != "task.shelter");
+                figure.Outline(inPort && !_departure.Playing ? RecruitRim(id) : Colors.Transparent);
             }
         }
 
@@ -964,6 +965,25 @@ public partial class Main : Node3D
             _camera.Target = _shipCentre;
             _follow = false;
         }
+    }
+
+    // The rim round people the captain could sign on, from what he knows (not from the truth): brass
+    // for someone who has said they want a berth and is still free; a pale blue for someone he has
+    // heard of but not yet spoken to, worth finding out. Crew, strangers and the gone have none.
+    private Color RecruitRim(CharacterId id)
+    {
+        if (_runner.Campaign.Port is not { } port || port.Hired.Contains(id) || port.Gone.Contains(id) || id == _runner.Campaign.CaptainId)
+        {
+            return Colors.Transparent;
+        }
+
+        var person = _runner.Campaign.Characters[id].PersonId is { } pid ? _content.Port?.People.FirstOrDefault(p => p.Id == pid) : null;
+        if (port.TalkedTo.Contains(id))
+        {
+            return person?.Seeking is not null ? Ui.Brass with { A = 0.95f } : Colors.Transparent;
+        }
+
+        return _runner.LeadsAbout(id).Any() ? Ui.Uncertain with { A = 0.8f } : Colors.Transparent;
     }
 
     // A figure for everyone placed somewhere, drawn where they are: on the waterfront or aboard. Someone

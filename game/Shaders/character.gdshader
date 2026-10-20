@@ -18,6 +18,8 @@ instance uniform float dirt = 0.0;
 instance uniform float fatigue = 0.0;
 instance uniform float highlight = 0.0;
 instance uniform float dead = 0.0;
+// The recruiting rim, drawn by the next pass (outline.gdshader); declared here so the slots agree.
+instance uniform vec4 rim = vec4(0.0);
 
 varying vec3 tint;
 varying float amount;
@@ -93,8 +95,8 @@ void fragment() {
 		spec = kind == 5 ? 0.45 : 0.3;
 		if (kind == 10) {
 			// Velvet: the pile catches the light at grazing angles.
-			float rim = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.0);
-			albedo += tint * rim * 0.6;
+			float pile = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.0);
+			albedo += tint * pile * 0.6;
 		}
 		// Dirt at hems, knees and shoes.
 		float low = 1.0 - smoothstep(0.15, 0.62, rest_height);
