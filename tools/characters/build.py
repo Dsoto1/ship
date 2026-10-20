@@ -51,7 +51,7 @@ CLIPS = {
     "kneel_work": "Fixing_Kneeling", "chop": "TreeChopping_Loop", "push": "Push_Loop", "pick_up": "PickUp_Table",
     "interact": "Interact", "fold_arms": "Idle_FoldArms_Loop", "lantern": "Idle_Lantern_Loop", "rail": "Idle_Rail_Loop",
     "drink": "Consume", "harvest": "Farm_Harvest", "lie": "LayToIdle", "crouch": "Crouch_Idle_Loop",
-    "yes": "Yes", "no": "Idle_No_Loop", "hit": "Hit_Chest", "chest_open": "Chest_Open", "torch": "Idle_Torch_Loop",
+    "yes": "Yes", "call": "Idle_Rail_Call", "no": "Idle_No_Loop", "hit": "Hit_Chest", "chest_open": "Chest_Open", "torch": "Idle_Torch_Loop",
 }
 
 BUDGET = {"LOD0": 4600, "LOD1": 1500}

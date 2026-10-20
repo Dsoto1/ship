@@ -262,6 +262,8 @@ public partial class Main : Node3D
         };
         _departure.Beat += kind =>
         {
+            // Those in the crowd who wave to this hand step to the edge; for anyone else, none do.
+            _crowd.Wave(kind == "farewell" ? _departure.Current?.Wavers ?? 0 : 0, new Vector2(0, 1));
             switch (kind)
             {
                 case "deadline":
@@ -419,6 +421,12 @@ public partial class Main : Node3D
                 var (target, size) = _departure.Subject is { } who && _figures.TryGetValue(who, out var subject) && subject.Visible
                     ? (subject.GlobalPosition, 8f)
                     : shot;
+                if (_departure.Current is { } told && (told.SeenOffBy.Count > 0 || told.Wavers > 0) && _departure.Subject is not null)
+                {
+                    // Frame the hand and those seeing them off together, across the gangway.
+                    target = target.Lerp(new Vector3(_port.Berth.X, 0, 32.9f), 0.5f);
+                    size = 11f;
+                }
                 _camera.Target = _camera.Target.Lerp(target, Mathf.Clamp((float)delta * 1.5f, 0, 1));
                 _camera.Size = Mathf.Lerp(_camera.Size, size, Mathf.Clamp((float)delta * 1.2f, 0, 1));
             }
@@ -484,7 +492,16 @@ public partial class Main : Node3D
                 var spot = task?.SpotId is { } spotId ? location.FindSpot(spotId) : null;
                 // A cask is rolled, not carried; everything else the task carries is held.
                 var carrying = definition?.Carries == "cask" ? null : definition?.Carries;
-                var pose = character.SurvivalState is SurvivalState.Incapacitated or SurvivalState.Dead ? Pose.Lying
+                // The departure's farewells, staged (R3 scene D): whoever has come to see this hand off
+                // stands at the quay edge by the gangway and waves.
+                Vector3? standAt = null;
+                if (_departure.Playing && _departure.Current is { Kind: "farewell" } beat && beat.SeenOffBy.ToList().IndexOf(id) is var giver and >= 0)
+                {
+                    standAt = new Vector3(_port.Berth.X - 1.2f + giver * 1.4f, 0, 32.9f);
+                }
+
+                var pose = standAt is not null ? Pose.Waving
+                    : character.SurvivalState is SurvivalState.Incapacitated or SurvivalState.Dead ? Pose.Lying
                     : definition?.Carries == "cask" ? (placement.IsMoving ? Pose.Rolling : Pose.Lifting)
                     : carrying is not null ? Pose.Carrying
                     : placement.IsMoving ? Pose.Walking
@@ -493,7 +510,7 @@ public partial class Main : Node3D
                     : Pose.Standing;
                 var inside = character.Membership == Membership.Local && _runner.IsIndoors(id);
                 // In the departure the captain leaves the quay when he goes up the gangway (R2e).
-                figure.Visible = character.SurvivalState != SurvivalState.Missing && !inside && !(id == _runner.Campaign.CaptainId && _departure.Boarded && _departure.Playing);
+                figure.Visible = standAt is not null || character.SurvivalState != SurvivalState.Missing && !inside && !(id == _runner.Campaign.CaptainId && _departure.Boarded && _departure.Playing);
                 var onPort = placement.LocationId == _runner.Content.Port?.Location;
                 var isCaptain = id == _runner.Campaign.CaptainId;
                 figure.Refresh(character, placement, drawTick, id == _selected, Hud.Activity(_runner, character),
@@ -501,7 +518,7 @@ public partial class Main : Node3D
                     onPort ? _port.HeightAt : null, carrying,
                     showLabel: !_departure.Playing && (!inPort || isCaptain || id == _hovered), shownName: inPort ? PortHud.KnownName(_runner, id) : null,
                     facing: spot is null ? null : FacingAt(location, spot),
-                    inRain: onPort && _runner.RainingInPort && definition?.Id != "task.shelter");
+                    inRain: onPort && _runner.RainingInPort && definition?.Id != "task.shelter", standAt: standAt);
                 figure.Outline(inPort && !_departure.Playing ? RecruitRim(id) : Colors.Transparent);
             }
         }

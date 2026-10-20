@@ -22,6 +22,11 @@ public sealed record WorldLine(CharacterId Who, string Text, bool Approach)
 /// <param name="Who">The person it is about, if any.</param>
 public sealed record DepartureBeat(string Kind, string Text, CharacterId? Who = null)
 {
+    /// <summary>For a farewell: the port's people who have come to the quay for this hand.</summary>
+    public IReadOnlyList<CharacterId> SeenOffBy { get; init; } = [];
+
+    /// <summary>For a farewell: how many others in the crowd wave to them.</summary>
+    public int Wavers { get; init; }
 }
 
 public sealed partial class SimulationRunner
@@ -346,7 +351,12 @@ public sealed partial class SimulationRunner
             }
             else if (PersonOf(hand.Id)?.Farewell is { } farewell)
             {
-                beats.Add(new DepartureBeat("farewell", farewell.Replace("{name}", hand.Name, StringComparison.Ordinal), hand.Id));
+                beats.Add(new DepartureBeat("farewell", farewell.Replace("{name}", hand.Name, StringComparison.Ordinal), hand.Id)
+                {
+                    SeenOffBy = (PersonOf(hand.Id)?.FarewellBy ?? []).Select(CharacterFor).OfType<Characters.Character>()
+                        .Where(c => Campaign.Placements.ContainsKey(c.Id) && !port.Hired.Contains(c.Id)).Select(c => c.Id).ToList(),
+                    Wavers = PersonOf(hand.Id)?.FarewellWavers ?? 0,
+                });
             }
             else
             {

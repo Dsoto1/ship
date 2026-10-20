@@ -717,6 +717,7 @@
   {
    "id": "person.tome",
    "farewell": "The guard unlocks Tomé's irons at the foot of the gangway and hands up his pardon. Tomé holds it as if it might blow away.",
+   "farewellBy": ["person.mateo"],
    "name": "Tomé Arcos",
    "age": 30,
    "sex": "Male",
@@ -785,6 +786,7 @@
   {
    "id": "person.ximena",
    "farewell": "Catalina has left the fish stalls to see Ximena off. Neither of them says much.",
+   "farewellBy": ["person.catalina"],
    "name": "Ximena Durán",
    "age": 33,
    "sex": "Female",
@@ -909,6 +911,7 @@
   {
    "id": "person.nuno",
    "farewell": "Inés stands in the tavern door with her arms folded and does not wave to Nuño. Then she does.",
+   "farewellBy": ["person.ines"],
    "name": "Nuño Pardo",
    "age": 50,
    "sex": "Male",
@@ -966,6 +969,7 @@
   {
    "id": "person.rodrigo",
    "farewell": "Two women on the quay both wave to Rodrigo. He waves back to both, and does not look at either long.",
+   "farewellWavers": 2,
    "name": "Rodrigo Alba",
    "age": 24,
    "sex": "Male",
@@ -1040,6 +1044,7 @@
   {
    "id": "person.wat",
    "farewell": "Hob the Brennish trader shouts something to Wat in their own tongue, and Wat laughs for the first time since he came ashore.",
+   "farewellBy": ["person.hob"],
    "name": "Wat Harrow",
    "age": 35,
    "sex": "Male",
@@ -1107,6 +1112,7 @@
   {
    "id": "person.pascual",
    "farewell": "Pascual's mother has come down after all. She holds his face in both hands and tells him to write, though neither of them can.",
+   "farewellWavers": 1,
    "name": "Pascual Mena",
    "age": 19,
    "sex": "Male",

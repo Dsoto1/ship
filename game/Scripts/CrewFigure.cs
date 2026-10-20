@@ -58,6 +58,9 @@ public enum Pose
 
     /// <summary>Arms out at waist height, holding something still for another worker.</summary>
     Steadying,
+
+    /// <summary>An arm up, waving: seeing someone off from the quay.</summary>
+    Waving,
 }
 
 /// <summary>
@@ -275,10 +278,15 @@ public partial class CrewFigure : Node3D
     /// <param name="animationRate">How fast to animate: faster at higher game speeds, zero when paused.</param>
     public void Refresh(Character character, CharacterPlacement placement, double drawTick, bool selected, string activity,
         bool isCaptain, Pose pose, float delta, float animationRate, Func<float, float, float>? ground = null, string? carrying = null,
-        bool showLabel = true, string? shownName = null, Vector2? facing = null, bool inRain = false)
+        bool showLabel = true, string? shownName = null, Vector2? facing = null, bool inRain = false, Vector3? standAt = null)
     {
         var (x, y) = placement.Movement?.PositionAt(drawTick) ?? (placement.Cell.X, placement.Cell.Y);
         Position = new Vector3((float)x, ground?.Invoke((float)x, (float)y) ?? 0, (float)y);
+        if (standAt is { } staged)
+        {
+            // Staged for a moment of the departure (seeing someone off): presentation only.
+            Position = staged with { Y = ground?.Invoke(staged.X, staged.Z) ?? staged.Y };
+        }
         if (carrying != _carrying)
         {
             Carry(carrying);
@@ -523,6 +531,12 @@ public partial class CrewFigure : Node3D
                 _rightArm.RotationDegrees = new Vector3(-70f, 0, -22f);
                 _leftLeg.RotationDegrees = new Vector3(-12f, 0, 6f);
                 _rightLeg.RotationDegrees = new Vector3(12f, 0, -6f);
+                break;
+            case Pose.Waving:
+                var wave = Mathf.Sin(_phase * 6f);
+                _leftArm.RotationDegrees = new Vector3(4f, 0, 5f);
+                _rightArm.RotationDegrees = new Vector3(-160f, 0, -30f + wave * 25f);
+                _body.RotationDegrees = new Vector3(-4f, 0, wave * 2f);
                 break;
             case Pose.Lying:
                 _model.RotationDegrees = new Vector3(-90f, _model.RotationDegrees.Y, 0);

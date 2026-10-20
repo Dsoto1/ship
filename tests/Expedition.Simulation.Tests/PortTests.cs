@@ -913,6 +913,11 @@ public class PortTests
         Assert.All(new[] { "person.pascual", "person.tome", "person.gil", "person.wat" }, p => Assert.Contains(runner.CharacterFor(p)!.Name, crew));
         Assert.Equal(4, plan.Count(b => b.Kind == "farewell"));
         Assert.Contains(plan, b => b.Kind == "farewell" && b.Who == Id(runner, "person.pascual") && b.Text.Contains("mother"));
+        // Staged, not only told: who comes to the quay, and how many wave.
+        Assert.Equal([Id(runner, "person.hob")], plan.Single(b => b.Kind == "farewell" && b.Who == Id(runner, "person.wat")).SeenOffBy);
+        Assert.Equal([Id(runner, "person.mateo")], plan.Single(b => b.Kind == "farewell" && b.Who == Id(runner, "person.tome")).SeenOffBy);
+        Assert.Equal(1, plan.Single(b => b.Kind == "farewell" && b.Who == Id(runner, "person.pascual")).Wavers);
+        Assert.Empty(plan.Single(b => b.Kind == "farewell" && b.Who == Id(runner, "person.gil")).SeenOffBy);
         Assert.Contains(plan, b => b.Kind == "cargo" && b.Text.Contains("cask"));
         Assert.Contains(plan, b => b.Kind == "deadline" && b.Text.Contains("hours before the convoy"));
         Assert.Equal("away", plan[^1].Kind);

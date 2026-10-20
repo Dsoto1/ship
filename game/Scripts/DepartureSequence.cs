@@ -41,6 +41,9 @@ public partial class DepartureSequence : CanvasLayer
     /// <summary>How far the Garza has moved from her berth, in metres, and turned, in degrees.</summary>
     public (Vector3 Offset, float Turn) Ship { get; private set; }
 
+    /// <summary>The beat being told, while one is (null while sailing).</summary>
+    public DepartureBeat? Current { get; private set; }
+
     /// <summary>Whom the current beat is about (a hand and their farewell, a creditor), for the camera.</summary>
     public CharacterId? Subject { get; private set; }
 
@@ -105,6 +108,7 @@ public partial class DepartureSequence : CanvasLayer
         _waiting = false;
         Boarded = false;
         Subject = null;
+        Current = null;
         Ship = (Vector3.Zero, 0);
         Camera = (gangway, 15f);
         _fade.Color = new Color(0, 0, 0, 0);
@@ -187,6 +191,7 @@ public partial class DepartureSequence : CanvasLayer
             // She is towed off and gathers way, turning her head to the bar; the camera follows, rising.
             _sailing += dt;
             Subject = null;
+            Current = null;
             var t = Mathf.Clamp(_sailing / SailSeconds, 0, 1);
             var ease = t * t * (3 - 2 * t);
             Ship = (new Vector3(12f * ease, 0, 34f * ease * ease + 4f * ease), 18f * ease);
@@ -225,6 +230,7 @@ public partial class DepartureSequence : CanvasLayer
         var beat = _beats[_index];
         _text.Text = beat.Text;
         Subject = beat.Kind is "crew" or "farewell" or "claim" ? beat.Who : null;
+        Current = beat;
         Ui.FadeIn(_panel);
         _answer.Visible = beat.Kind == "claim";
         if (beat.Kind == "claim" && _runner.OpenClaims().FirstOrDefault(c => c.Creditor == beat.Who).Claim is { } claim)

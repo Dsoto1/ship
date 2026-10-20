@@ -410,6 +410,12 @@ public sealed record PersonDefinition
 
     /// <summary>How they are seen off if they sail (R2e departure), or null for the usual.</summary>
     public string? Farewell { get; init; }
+
+    /// <summary>People of the port who come to the quay to see them off (R3 scene D: staged, not only told).</summary>
+    public IReadOnlyList<string> FarewellBy { get; init; } = [];
+
+    /// <summary>How many others on the quay wave to them (the two women who wave to Rodrigo).</summary>
+    public int FarewellWavers { get; init; }
 }
 
 /// <summary>

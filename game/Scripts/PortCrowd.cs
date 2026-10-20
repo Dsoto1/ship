@@ -21,6 +21,7 @@ public partial class PortCrowd : Node3D
     private readonly List<(GridPosition Cell, Vector2 Facing)> _stops = [];
     private readonly List<Walker> _walkers = [];
     private readonly List<(Vector3 At, float Yaw, int Pose, int Look)> _gathered = [];
+    private readonly List<(Vector3 At, int Pose)> _gatheredHome = [];
     private readonly Random _random = new(1519);
     private MultiMeshInstance3D _view = null!;
     private MultiMeshInstance3D _shadows = null!;
@@ -127,6 +128,7 @@ public partial class PortCrowd : Node3D
     public void SetGathering(Vector3? centre, int count, Vector2 facing)
     {
         _gathered.Clear();
+        _gatheredHome.Clear();
         if (centre is not { } at)
         {
             return;
@@ -145,6 +147,26 @@ public partial class PortCrowd : Node3D
 
             var yaw = Mathf.Atan2(facing.X, facing.Y) + (float)(random.NextDouble() - 0.5) * 0.8f;
             _gathered.Add((new Vector3(spot.X, _height(spot.X, spot.Y), spot.Y), yaw, random.Next(3) == 0 ? CrowdMesh.Waving : CrowdMesh.Walking, 200 + i));
+        }
+    }
+
+    /// <summary>
+    /// The departure's farewells (R3 scene D): <paramref name="count"/> of the gathered crowd step to
+    /// the quay edge and wave, the rest stand; 0 lets them all go back to how they were gathered.
+    /// </summary>
+    public void Wave(int count, Vector2 facing)
+    {
+        for (var i = 0; i < _gathered.Count; i++)
+        {
+            var (at, yaw, pose, seed) = _gathered[i];
+            (Vector3 At, int Pose) home = _gatheredHome.Count > i ? _gatheredHome[i] : (at, pose);
+            if (_gatheredHome.Count <= i)
+            {
+                _gatheredHome.Add(home);
+            }
+
+            var waving = i < count;
+            _gathered[i] = (waving ? home.At + new Vector3(facing.X, 0, facing.Y) * 1.1f : home.At, yaw, waving ? CrowdMesh.Waving : CrowdMesh.Walking, seed);
         }
     }
 

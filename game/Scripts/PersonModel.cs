@@ -19,7 +19,7 @@ public partial class PersonModel : Node3D
     private static readonly HashSet<string> Looping =
     [
         "idle", "walk", "walk_formal", "walk_carry", "talk", "sit", "sit_talk", "kneel_work", "chop", "push",
-        "fold_arms", "lantern", "rail", "harvest", "crouch", "torch", "no",
+        "fold_arms", "lantern", "rail", "call", "harvest", "crouch", "torch", "no",
     ];
 
     private static ShaderMaterial? _material;
@@ -166,6 +166,7 @@ public partial class PersonModel : Node3D
             Pose.Talking => "talk",
             Pose.Roping or Pose.Leaning => "rail",
             Pose.Watching => "fold_arms",
+            Pose.Waving => "call",
             Pose.Lifting => "pick_up",
             Pose.Inspecting or Pose.Gutting => "interact",
             _ => _identity.Animation.Idle,
