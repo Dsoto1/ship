@@ -6,6 +6,7 @@ namespace Expedition.Simulation.Port;
 public sealed class PortState
 {
     private readonly Dictionary<int, int> _stock = [];
+    private readonly Dictionary<int, string> _inspected = [];
     private readonly HashSet<CharacterId> _talkedTo = [];
     private readonly HashSet<(CharacterId Informant, CharacterId About)> _asked = [];
     private readonly HashSet<CharacterId> _hired = [];
@@ -24,6 +25,9 @@ public sealed class PortState
 
     /// <summary>People the captain has spoken with.</summary>
     public IReadOnlySet<CharacterId> TalkedTo => _talkedTo;
+
+    /// <summary>What the captain made of each lot he looked at closely: a quality, or <c>unsure</c>.</summary>
+    public IReadOnlyDictionary<int, string> Inspected => _inspected;
 
     /// <summary>Who has been asked about whom.</summary>
     public IReadOnlySet<(CharacterId Informant, CharacterId About)> Asked => _asked;
@@ -73,6 +77,8 @@ public sealed class PortState
     internal void SetStock(int lot, int lots) => _stock[lot] = Math.Max(0, lots);
 
     internal void MarkTalked(CharacterId id) => _talkedTo.Add(id);
+
+    internal void MarkInspected(int lot, string seen) => _inspected[lot] = seen;
 
     internal void MarkAsked(CharacterId informant, CharacterId about) => _asked.Add((informant, about));
 

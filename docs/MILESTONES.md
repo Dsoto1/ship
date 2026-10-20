@@ -1192,3 +1192,42 @@ longer could. Nothing on screen said how far the stores would go.
 - **The manifest** shows how full the hold is, in litres and kilograms.
 - **Tests:** a full crew can be victualled for the slow passage from first-morning stock, and each
   lot's days add up to the forecast.
+
+## Sellers of different quality (owner's request)
+
+Stores now come from three sellers, and what they sell is good, fair or poor. Quality is hidden:
+the price and the seller's own claim are all you see until you find out.
+
+- **The sellers:**
+  - **Maese Corbalán,** the chandler: everything, all sound, at full price.
+  - **Gil the cooper:** spring water in his own casks, sound and cheaper, but only 8 lots.
+  - **Hob the Brennish trader:** about half price, out in the chandler's yard in the mornings only.
+    His water is brackish (filled at the river mouth) and his biscuit has weevils. His pork and
+    wine are fair: they spoil slowly, and the pork can sicken.
+- **Finding out:**
+  - **Look closely:** walk the captain to the seller, then press *Look closely* in the stores panel.
+    For each lot he sees what it is really like, with a chance from his perception, or cannot tell.
+    A look is never wrong, and a second look at the same goods shows nothing new.
+  - **Gossip:** the guard has seen Hob fill his casks at the river mouth, and vouches for Gil's
+    water; the fishwife says Corbalán is dear but his biscuit keeps. These come as leads, like
+    those about people.
+  - **At sea:** the first time each store spoils, the chronicle says so ("Weevils and rot in the
+    ship's biscuit (Hob's sacks)…"). Anyone made ill by a bad ration is recorded too.
+- **What quality does:**
+  - **Spoiling:** each morning at sea a share is lost: Hob's biscuit 5% a day, his wine 3%, his
+    pork about 1%.
+  - **Sickness:** each litre of Hob's water has a 2% chance of giving the flux, and his pork a
+    smaller one.
+  - **The flux** costs health while it lasts. Most get over it in two or three days. (Before this,
+    illnesses had no effect at all; the events' flux and fever now run this course too.)
+- **Stores are named by where they came from,** never by how good they are. The manifest says
+  "Water (Hob's casks)", not "Foul water".
+- **Save format 20:** what was judged, which spoilage has been found, and a new random stream for
+  the stores. Older saves upgrade: nothing judged, and new lots start with full stock.
+- **Tests:** seven new, 410 in all.
+- **Developer option:** `--inspect=seller.hob` stands the captain by a seller and looks.
+
+Screenshot: `docs/screenshots/stores-sellers-quality.jpg`.
+
+**Manual test (macOS):** `git pull`, Build. Open Cargo (C). Walk the captain to Hob in the
+chandler's yard before noon and press *Look closely*.

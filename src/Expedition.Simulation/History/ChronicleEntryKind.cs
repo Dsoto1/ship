@@ -77,4 +77,13 @@ public enum ChronicleEntryKind
 
     /// <summary>The captain heard where someone worth finding might be. Parameter: <c>to</c> (the lead ID).</summary>
     LeadHeard,
+
+    /// <summary>Stores were found spoiling, the first time for that item (parameters: to = item ID, level = units lost).</summary>
+    StoresSpoiled,
+
+    /// <summary>Someone fell ill from a bad ration (parameters: condition, to = item ID; character: who).</summary>
+    SickenedByRation,
+
+    /// <summary>Someone got over an illness (parameter: condition; character: who).</summary>
+    Recovered,
 }

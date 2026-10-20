@@ -35,6 +35,16 @@ public sealed record PortRules
     /// <summary>What the chandler sells, and how fast it sells to others.</summary>
     public required IReadOnlyList<PortGoods> Goods { get; init; }
 
+    /// <summary>Who sells stores; the first is the chandler, whose lots name no seller.</summary>
+    public IReadOnlyList<PortSeller> Sellers { get; init; } = [];
+
+    /// <summary>The seller of a lot.</summary>
+    public PortSeller? SellerOf(PortGoods goods) =>
+        goods.Seller is { } id ? Sellers.FirstOrDefault(s => s.Id == id) : Sellers.FirstOrDefault();
+
+    /// <summary>The qualities a lot may have.</summary>
+    public static readonly IReadOnlyList<string> Qualities = ["good", "fair", "poor"];
+
     /// <summary>The spot where the Chamber posts its notices; read there for leads.</summary>
     public string? NoticeBoard { get; init; }
 
@@ -270,6 +280,34 @@ public sealed record PortGoods
 
     /// <summary>Lots other customers buy each day.</summary>
     public int SoldPerDay { get; init; }
+
+    /// <summary>Who sells it (<see cref="PortSeller.Id"/>); null for the first seller, the chandler.</summary>
+    public string? Seller { get; init; }
+
+    /// <summary>
+    /// What it is really like: <c>good</c>, <c>fair</c> or <c>poor</c>. Hidden: the captain learns it by
+    /// looking closely, from what people say, or at sea. The item itself carries what that means.
+    /// </summary>
+    public string Quality { get; init; } = "good";
+
+    /// <summary>What a close look shows, when the captain can tell.</summary>
+    public string Looks { get; init; } = "";
+}
+
+/// <summary>Someone who sells stores on the waterfront (R2: sellers of different quality).</summary>
+public sealed record PortSeller
+{
+    /// <summary>ID, for example <c>seller.hob</c>.</summary>
+    public required string Id { get; init; }
+
+    /// <summary>The person who sells (<see cref="PersonDefinition.Id"/>): to look closely, go to them.</summary>
+    public required string Person { get; init; }
+
+    /// <summary>How the stall is named, for example "Hob the Brennish trader".</summary>
+    public required string Name { get; init; }
+
+    /// <summary>What they say of their goods: the claim, not the truth.</summary>
+    public string Says { get; init; } = "";
 }
 
 /// <summary>

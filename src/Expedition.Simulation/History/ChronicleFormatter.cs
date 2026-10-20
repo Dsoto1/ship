@@ -44,6 +44,10 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
                 $"{who} paused {Task(entry.Get(ChronicleParameters.Task))} to {Task(entry.Get(ChronicleParameters.PausedBy))}.",
             ChronicleEntryKind.TaskDropped =>
                 $"{who} could not start {Task(entry.Get(ChronicleParameters.Task))}: {cause}",
+            ChronicleEntryKind.StoresSpoiled => Spoiled(entry),
+            ChronicleEntryKind.SickenedByRation =>
+                $"{who} is down with {Condition(entry.Get(ChronicleParameters.Condition)).ToLowerInvariant()}, from the {ItemName(entry.Get(ChronicleParameters.To)).ToLowerInvariant()}.",
+            ChronicleEntryKind.Recovered => $"{who} is over {Condition(entry.Get(ChronicleParameters.Condition)).ToLowerInvariant()}.",
             ChronicleEntryKind.SupplyShortage => entry.Get(ChronicleParameters.Need) == "water"
                 ? $"{who} went thirsty: there is nothing left to drink."
                 : $"{who} went hungry: there is no food left.",
@@ -115,6 +119,19 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
         content.Port?.People.SelectMany(p => p.Secrets).FirstOrDefault(s => s.Id == id)?.Text is { Length: > 0 } text
             ? char.ToLowerInvariant(text[0]) + text[1..]
             : "something odd.";
+
+    private string ItemName(string? id) => id is not null && content.Items.TryGetValue(id, out var item) ? item.Name : id ?? "stores";
+
+    // Found at sea: biscuit with weevils, wine gone sour, pork gone green, water gone foul.
+    private string Spoiled(ChronicleEntry entry)
+    {
+        var id = entry.Get(ChronicleParameters.To);
+        var name = ItemName(id).ToLowerInvariant();
+        var lost = entry.Get(ChronicleParameters.Level);
+        return id is not null && content.Items.TryGetValue(id, out var item) && item.ThirstRelief > 0
+            ? $"The {name} has turned: {lost} poured over the side, and more will follow."
+            : $"Weevils and rot in the {name}: {lost} thrown over the side, and more will follow.";
+    }
 
     private Port.LeadDefinition? Lead(string? id) =>
         content.Port?.AllLeads().Select(l => l.Lead).FirstOrDefault(l => l.Id == id);

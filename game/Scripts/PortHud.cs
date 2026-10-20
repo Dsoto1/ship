@@ -43,6 +43,8 @@ public partial class PortHud : CanvasLayer
     private PanelContainer _dialogue = null!;
     private Label _dialogueText = null!;
     private VBoxContainer _lots = null!;
+    private readonly List<Button> _lotButtons = [];
+    private readonly Dictionary<string, Button> _lookButtons = [];
     private VBoxContainer _expedition = null!;
     private Label _objectives = null!;
     private VBoxContainer _journalList = null!;
@@ -69,6 +71,9 @@ public partial class PortHud : CanvasLayer
 
     /// <summary>Buy a lot from the chandler.</summary>
     public event Action<int>? BuyRequested;
+
+    /// <summary>The captain wants to look closely at a seller's goods.</summary>
+    public event Action<string>? InspectRequested;
 
     /// <summary>Walk to the Chamber's board and read it.</summary>
     public event Action? NoticesRequested;
@@ -535,22 +540,14 @@ public partial class PortHud : CanvasLayer
         var section = new VBoxContainer();
         body.AddChild(section);
         body.MoveChild(section, 0);
-        section.AddChild(Ui.Heading("Maese Corbalán, chandler — delivered to the gangway"));
+        section.AddChild(Ui.Heading("Stores — delivered to the gangway"));
         // What the stores come to against the passage, so each purchase means something.
         _supplyLine = Ui.Text("", Ui.TextBody, Ui.Ink, 370);
         section.AddChild(_supplyLine);
+        // One block per seller, built when the port's sellers are known (RefreshChandler).
         _lots = new VBoxContainer();
         _lots.AddThemeConstantOverride("separation", 2);
         section.AddChild(_lots);
-        for (var lot = 0; lot < 16; lot++)
-        {
-            var index = lot;
-            var button = Ui.Button("", "", () => BuyRequested?.Invoke(index));
-            button.Alignment = HorizontalAlignment.Left;
-            button.Visible = false;
-            _lots.AddChild(button);
-        }
-
         section.AddChild(new HSeparator());
     }
 
@@ -569,25 +566,89 @@ public partial class PortHud : CanvasLayer
             + $"The passage to the Ember Coast takes {low}–{high} days. "
             + (least >= high ? "Enough, with a margin for calms." : least >= low ? "Enough for a fair passage, not for a slow one." : "Not enough to reach the coast.");
         _supplyLine.AddThemeColorOverride("font_color", Ui.Of(severity));
-        var buttons = _lots.GetChildren().OfType<Button>().ToList();
-        for (var lot = 0; lot < buttons.Count; lot++)
+        if (_lotButtons.Count != rules.Goods.Count)
         {
-            buttons[lot].Visible = lot < rules.Goods.Count;
-            if (lot >= rules.Goods.Count)
-            {
-                continue;
-            }
+            BuildSellers(rules);
+        }
 
+        foreach (var seller in rules.Sellers)
+        {
+            var why = runner.WhyCannotInspect(seller);
+            var look = _lookButtons[seller.Id];
+            var judged = rules.Goods.Select((g, lot) => (g, lot)).Where(x => rules.SellerOf(x.g) == seller).All(x => port.Inspected.ContainsKey(x.lot));
+            look.Disabled = why is not null || judged;
+            look.TooltipText = judged ? "You have looked at everything they sell." : why ?? "Turn the goods over, taste, smell, tap the casks. A sharp eye sees more (perception).";
+        }
+
+        for (var lot = 0; lot < rules.Goods.Count; lot++)
+        {
             var goods = rules.Goods[lot];
             var item = runner.Content.Items[goods.Item];
             var left = port.Stock.GetValueOrDefault(lot);
             var days = runner.DaysOf(goods.Item, goods.Quantity, sailing);
-            buttons[lot].Text = $"{goods.Quantity} {item.Name.ToLowerInvariant()} — {goods.Price} sueldos{(days > 0 ? $", +{days:0.#} days" : "")}   ({left} left)";
-            buttons[lot].Disabled = left <= 0 || port.Funds < goods.Price;
-            buttons[lot].TooltipText = left <= 0 ? "Sold out: others bought the last of it."
+            var verdict = port.Inspected.GetValueOrDefault(lot) switch
+            {
+                "good" => "  · looks sound",
+                "fair" => "  · looks fair",
+                "poor" => "  · looks poor",
+                "unsure" => "  · could not tell",
+                _ => "",
+            };
+            var button = _lotButtons[lot];
+            button.Text = $"{goods.Quantity} {item.Name.ToLowerInvariant()} — {goods.Price} sueldos{(days > 0 ? $", +{days:0.#} days" : "")}   ({left} left){verdict}";
+            button.Disabled = left <= 0 || port.Funds < goods.Price;
+            button.Modulate = port.Inspected.GetValueOrDefault(lot) == "poor" ? Ui.Of(Severity.Attention) : Colors.White;
+            button.TooltipText = left <= 0 ? "Sold out: others bought the last of it."
                 : port.Funds < goods.Price ? $"Only {port.Funds} sueldos left in the purse."
-                : $"Left on the quay by the gangway and carried aboard over the next hours. About {goods.SoldPerDay} of these sell to other ships each day.";
+                : port.Inspected.TryGetValue(lot, out var seen) && seen != "unsure" ? $"You looked: {goods.Looks}"
+                : $"Carried aboard over the next hours. About {goods.SoldPerDay} of these sell to other ships each day. You have not judged it: look closely, or ask around.";
         }
+    }
+
+    // A heading, the seller's own claim and a "Look closely" button for each seller, then their lots.
+    private void BuildSellers(Expedition.Simulation.Port.PortRules rules)
+    {
+        foreach (var child in _lots.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        _lotButtons.Clear();
+        _lookButtons.Clear();
+        var buttons = new Button[rules.Goods.Count];
+        foreach (var seller in rules.Sellers)
+        {
+            var header = new HBoxContainer();
+            header.AddThemeConstantOverride("separation", Ui.SpaceM);
+            _lots.AddChild(header);
+            var name = Ui.Text(seller.Name, Ui.TextBody, Ui.Brass, 0);
+            name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            header.AddChild(name);
+            var id = seller.Id;
+            var look = Ui.Button("Look closely", "", () => InspectRequested?.Invoke(id));
+            header.AddChild(look);
+            _lookButtons[seller.Id] = look;
+            if (seller.Says.Length > 0)
+            {
+                _lots.AddChild(Ui.Text($"\"{seller.Says}\"", Ui.TextMeta, Ui.InkSoft, 370));
+            }
+
+            for (var lot = 0; lot < rules.Goods.Count; lot++)
+            {
+                if (rules.SellerOf(rules.Goods[lot]) != seller)
+                {
+                    continue;
+                }
+
+                var index = lot;
+                var button = Ui.Button("", "", () => BuyRequested?.Invoke(index));
+                button.Alignment = HorizontalAlignment.Left;
+                _lots.AddChild(button);
+                buttons[lot] = button;
+            }
+        }
+
+        _lotButtons.AddRange(buttons);
     }
 
     /// <summary>Resets for a newly started or loaded campaign.</summary>

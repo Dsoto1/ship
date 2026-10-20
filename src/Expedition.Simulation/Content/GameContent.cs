@@ -78,6 +78,15 @@ public sealed class GameContent
         foreach (var item in Items.Values)
         {
             ContentValidator.ValidateItem(item, errors);
+            if (item.SpoilsPerDay is < 0 or > 1)
+            {
+                errors.Add($"Item '{item.Id}': spoilsPerDay must be between 0 and 1.");
+            }
+
+            if (item.Sickens is { } sickness && (!Conditions.ContainsKey(sickness.Condition) || sickness.Chance is < 0 or > 1))
+            {
+                errors.Add($"Item '{item.Id}': sickens needs a known condition and a chance between 0 and 1.");
+            }
         }
 
         foreach (var task in Tasks.Values)
@@ -226,6 +235,15 @@ public sealed class GameContent
         }
 
         var ids = rules.People.Select(p => p.Id).ToHashSet(StringComparer.Ordinal);
+        foreach (var seller in rules.Sellers.Where(s => !ids.Contains(s.Person)))
+        {
+            errors.Add($"Port: seller '{seller.Id}' is sold by '{seller.Person}', who is not one of the port's people.");
+        }
+
+        foreach (var lot in rules.Goods.Where(g => (g.Seller is { } seller && rules.Sellers.All(s => s.Id != seller)) || !Expedition.Simulation.Port.PortRules.Qualities.Contains(g.Quality)))
+        {
+            errors.Add($"Port: lot '{lot.Item}' names an unknown seller or quality '{lot.Quality}' (good, fair or poor).");
+        }
         if (ids.Count != rules.People.Count)
         {
             errors.Add("Port: person IDs must be unique.");

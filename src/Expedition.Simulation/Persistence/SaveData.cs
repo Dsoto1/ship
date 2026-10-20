@@ -76,6 +76,9 @@ public sealed record SaveData
     /// <summary>Whether the crew are on short rations. Added in format 12.</summary>
     public required bool Rationing { get; init; }
 
+    /// <summary>Items whose spoiling the crew has found. Added in format 20.</summary>
+    public IReadOnlyList<string> SpoilageNoted { get; init; } = [];
+
     /// <summary>The voyage, or null when not at sea. Added in format 11.</summary>
     public VoyageData? Voyage { get; init; }
 
@@ -477,6 +480,9 @@ public sealed record PortData
     /// <summary>Lots bought, oldest first. Added in format 17.</summary>
     public IReadOnlyList<PurchaseData> Purchases { get; init; } = [];
 
+    /// <summary>What the captain made of each lot he looked at: lot index and quality or "unsure". Added in format 20.</summary>
+    public IReadOnlyList<InspectionData> Inspected { get; init; } = [];
+
     /// <summary>Sueldos left.</summary>
     public required int Funds { get; init; }
 
@@ -520,4 +526,14 @@ public sealed record PurchaseData
 
     /// <summary>When it was bought.</summary>
     public required long Tick { get; init; }
+}
+
+/// <summary>A lot the captain looked at closely. Added in format 20.</summary>
+public sealed record InspectionData
+{
+    /// <summary>Lot index.</summary>
+    public required int Lot { get; init; }
+
+    /// <summary>What he saw: a quality, or <c>unsure</c>.</summary>
+    public required string Seen { get; init; }
 }

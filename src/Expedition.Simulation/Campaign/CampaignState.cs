@@ -95,6 +95,13 @@ public sealed class CampaignState
     /// <summary>True while the crew are on short rations.</summary>
     public bool Rationing { get; internal set; }
 
+    /// <summary>Items whose spoiling has been found and recorded: each is recorded once.</summary>
+    public IReadOnlySet<string> SpoilageNoted => _spoilageNoted;
+
+    private readonly HashSet<string> _spoilageNoted = new(StringComparer.Ordinal);
+
+    internal bool NoteSpoilage(string itemId) => _spoilageNoted.Add(itemId);
+
     /// <summary>Makes an event wait for the captain and counts it.</summary>
     internal void RaiseEvent(Events.PendingEvent pending)
     {

@@ -221,7 +221,19 @@ public partial class Main : Node3D
             _hud.ShowStatus("Walking to the Chamber's notice board…");
             CarryOutPending();
         };
-        _portHud.BuyRequested += lot => _hud.ShowResult(_runner.Buy(lot), "Bought. The chandler's boy will carry it aboard.");
+        _portHud.BuyRequested += lot => _hud.ShowResult(_runner.Buy(lot), "Bought. It will be carried aboard.");
+        _portHud.InspectRequested += seller =>
+        {
+            var (result, seen) = _runner.Inspect(seller);
+            if (result.Succeeded)
+            {
+                _portHud.Say(seen);
+            }
+            else
+            {
+                _hud.ShowResult(result, "");
+            }
+        };
         _portHud.ClaimAnswered += (creditor, pay) =>
         {
             var result = pay ? _runner.PayClaim(creditor) : _runner.RefuseClaim(creditor);
@@ -1331,6 +1343,7 @@ public partial class Main : Node3D
     private Expedition.Simulation.Voyage.SailPlan? _developerSail;
     private double? _forceBilge;
     private string? _developerSelect;
+    private string? _developerInspect;
     private string? _developerLook;
     private bool _developerTalk;
     private bool _developerJournal;
@@ -1424,6 +1437,21 @@ public partial class Main : Node3D
             _follow = false;
         }
 
+        // --inspect=seller.hob: the captain stands by that seller and looks closely at the goods.
+        if (_developerInspect is { } sellerId && _content.Port?.Sellers.FirstOrDefault(x => x.Id == sellerId) is { } seller
+            && _runner.SellerCharacter(seller) is { } sells && _runner.Campaign.Placements.TryGetValue(sells.Id, out var stall)
+            && _runner.Campaign.CaptainId is { } captainId)
+        {
+            var at = stall.CellAt(_runner.Campaign.Clock.Tick);
+            var map = _content.Locations[stall.LocationId];
+            var beside = new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }.Select(d => new GridPosition(at.X + d.Item1, at.Y + d.Item2)).FirstOrDefault(map.IsWalkable);
+            _runner.PlaceCharacter(captainId, stall.LocationId, beside);
+            var (_, seen) = _runner.Inspect(sellerId);
+            _portHud.Say(seen);
+            _camera.Target = new Vector3(at.X, 0, at.Y);
+            _follow = false;
+        }
+
         if (_developerJournal)
         {
             _portHud.ShowJournal();
@@ -1499,6 +1527,7 @@ public partial class Main : Node3D
                 case "panel" when Enum.TryParse<PanelId>(value, true, out var panel): _developerPanel = panel; break;
                 case "offer" when int.TryParse(value, out var advance): _developerOffer = advance; break;
                 case "buy": _developerBuy = value; break;
+                case "inspect": _developerInspect = value; break;
                 case "scene": _developerScene = value; break;
                 case "depart": _developerDepart = true; break;
                 case "stage": _developerStage = value; break;

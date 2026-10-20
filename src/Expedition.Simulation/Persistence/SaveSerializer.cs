@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 19;
+    public const int CurrentSchemaVersion = 20;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -143,6 +143,30 @@ public static class SaveSerializer
                 root["eventHistory"] = new JsonArray();
                 root["lastEventTick"] = long.MinValue / 2;
                 root["rationing"] = false;
+                return root;
+            },
+
+            // Format 20 added the quality of stores: a random stream for them, what the captain judged of
+            // each lot (nothing yet), and which spoilage the crew has found (none yet).
+            [19] = root =>
+            {
+                var seed = ulong.Parse(root["seed"]!.GetValue<string>(), CultureInfo.InvariantCulture);
+                var (state, increment) = new SimulationRandom(seed, RandomStreams.StreamNumber(RandomStreams.StoresName)).SaveState();
+                if (root["randomStreams"] is JsonObject streams)
+                {
+                    streams[RandomStreams.StoresName] = new JsonObject
+                    {
+                        ["state"] = state.ToString(CultureInfo.InvariantCulture),
+                        ["increment"] = increment.ToString(CultureInfo.InvariantCulture),
+                    };
+                }
+
+                if (root["port"] is JsonObject port)
+                {
+                    port["inspected"] = new JsonArray();
+                }
+
+                root["spoilageNoted"] = new JsonArray();
                 return root;
             },
 
@@ -494,6 +518,7 @@ public static class SaveSerializer
                     Warned = port.Warned,
                     Leads = port.Leads.Select(l => new HeardLeadData { Lead = l.LeadId, Tick = l.Tick }).ToList(),
                     Purchases = port.Purchases.Select(p => new PurchaseData { Lot = p.Lot, Tick = p.Tick }).ToList(),
+                    Inspected = port.Inspected.OrderBy(p => p.Key).Select(p => new InspectionData { Lot = p.Key, Seen = p.Value }).ToList(),
                     Weather = port.WeatherId,
                     WeatherUntil = port.WeatherUntil,
                     Approached = port.Approached.Select(id => id.Value).Order().ToList(),
@@ -511,6 +536,7 @@ public static class SaveSerializer
                 .Select(pair => new EventRecordData { Event = pair.Key, Count = pair.Value.Count, LastTick = pair.Value.LastTick }).ToList(),
             LastEventTick = campaign.LastEventTick,
             Rationing = campaign.Rationing,
+            SpoilageNoted = campaign.SpoilageNoted.Order(StringComparer.Ordinal).ToList(),
             Voyage = campaign.Voyage is { } voyage
                 ? new VoyageData
                 {
@@ -801,6 +827,14 @@ public static class SaveSerializer
             foreach (var greeted in savedPort.Greeted) port.MarkGreeted(Known(greeted[0]), greeted[1]);
             port.LastGreeting = savedPort.LastGreeting;
             foreach (var (lot, lots) in savedPort.Stock) port.SetStock(lot, lots);
+            // Lots added to the port since the save was made start with their full stock.
+            for (var lot = 0; lot < portRules.Goods.Count; lot++)
+            {
+                if (!savedPort.Stock.ContainsKey(lot))
+                {
+                    port.SetStock(lot, portRules.Goods[lot].Stock);
+                }
+            }
             foreach (var id in savedPort.TalkedTo) port.MarkTalked(Known(id));
             foreach (var pair in savedPort.Asked) port.MarkAsked(Known(pair[0]), Known(pair[1]));
             foreach (var id in savedPort.Hired) port.MarkHired(Known(id));
@@ -821,6 +855,17 @@ public static class SaveSerializer
                 }
 
                 port.AddPurchase(purchase.Lot, purchase.Tick);
+            }
+
+            foreach (var inspection in savedPort.Inspected)
+            {
+                if (inspection.Lot < 0 || inspection.Lot >= portRules.Goods.Count
+                    || !(inspection.Seen == "unsure" || Port.PortRules.Qualities.Contains(inspection.Seen)))
+                {
+                    throw new SaveLoadException($"The save records a look at lot {inspection.Lot} this port does not sell, or an unknown verdict '{inspection.Seen}'.");
+                }
+
+                port.MarkInspected(inspection.Lot, inspection.Seen);
             }
 
             campaign.SetPort(port);
@@ -849,6 +894,13 @@ public static class SaveSerializer
             data.EventHistory.Select(e => new KeyValuePair<string, Events.EventRecord>(e.Event, new Events.EventRecord(e.Count, e.LastTick))),
             data.LastEventTick);
         campaign.Rationing = data.Rationing;
+        foreach (var item in data.SpoilageNoted)
+        {
+            if (!content.Items.ContainsKey(item) || !campaign.NoteSpoilage(item))
+            {
+                throw new SaveLoadException($"The save notes spoilage of '{item}', which this game does not have, or twice.");
+            }
+        }
 
         if (data.Voyage is { } savedVoyage)
         {

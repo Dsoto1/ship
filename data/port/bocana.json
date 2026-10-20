@@ -291,55 +291,117 @@
    "weather": "dry"
   }
  ],
+ "sellers": [
+  { "id": "seller.corbalan", "person": "person.corbalan", "name": "Maese Corbalán, chandler", "says": "Twice-baked biscuit, sweet water, and nothing I would not sail on myself." },
+  { "id": "seller.gil", "person": "person.gil", "name": "Gil the cooper", "says": "Spring water from the convent, in my own casks. Not much of it, mind." },
+  { "id": "seller.hob", "person": "person.hob", "name": "Hob the Brennish trader", "says": "Best Brennish stores at half the chandler's price, and I'll carry them aboard myself." }
+ ],
  "goods": [
   {
    "item": "item.water",
    "quantity": 20,
    "price": 60,
    "stock": 30,
-   "soldPerDay": 3
+   "soldPerDay": 3,
+   "looks": "sweet and clear, and the casks are tight."
   },
   {
    "item": "item.biscuit",
    "quantity": 20,
    "price": 60,
    "stock": 22,
-   "soldPerDay": 2
+   "soldPerDay": 2,
+   "looks": "hard, dry and twice-baked; it will keep."
   },
   {
    "item": "item.salt_pork",
    "quantity": 10,
    "price": 70,
    "stock": 14,
-   "soldPerDay": 2
+   "soldPerDay": 2,
+   "looks": "firm and well salted."
   },
   {
    "item": "item.wine",
    "quantity": 10,
    "price": 50,
    "stock": 12,
-   "soldPerDay": 1
+   "soldPerDay": 1,
+   "looks": "rough, but sound."
   },
   {
    "item": "item.rope",
    "quantity": 2,
    "price": 80,
    "stock": 5,
-   "soldPerDay": 1
+   "soldPerDay": 1,
+   "looks": "well laid, and dry."
   },
   {
    "item": "item.oakum",
    "quantity": 4,
    "price": 40,
    "stock": 6,
-   "soldPerDay": 1
+   "soldPerDay": 1,
+   "looks": "clean and well picked."
   },
   {
    "item": "item.plank",
    "quantity": 2,
    "price": 60,
    "stock": 5,
-   "soldPerDay": 1
+   "soldPerDay": 1,
+   "looks": "seasoned oak, straight-grained."
+  },
+  {
+   "item": "item.water_gil",
+   "quantity": 20,
+   "price": 45,
+   "stock": 8,
+   "soldPerDay": 1,
+   "seller": "seller.gil",
+   "quality": "good",
+   "looks": "sweet: spring water, in casks he made himself."
+  },
+  {
+   "item": "item.water_hob",
+   "quantity": 20,
+   "price": 30,
+   "stock": 20,
+   "soldPerDay": 2,
+   "seller": "seller.hob",
+   "quality": "poor",
+   "looks": "it smells of the river and tastes of salt. Filled at the river mouth, on the ebb."
+  },
+  {
+   "item": "item.biscuit_hob",
+   "quantity": 20,
+   "price": 32,
+   "stock": 16,
+   "soldPerDay": 1,
+   "seller": "seller.hob",
+   "quality": "poor",
+   "looks": "soft at the heart; tap one on the barrow and a weevil crawls out."
+  },
+  {
+   "item": "item.salt_pork_hob",
+   "quantity": 10,
+   "price": 48,
+   "stock": 10,
+   "soldPerDay": 1,
+   "seller": "seller.hob",
+   "quality": "fair",
+   "looks": "salted well enough, but one or two pieces are on the turn."
+  },
+  {
+   "item": "item.wine_hob",
+   "quantity": 10,
+   "price": 30,
+   "stock": 10,
+   "soldPerDay": 1,
+   "seller": "seller.hob",
+   "quality": "fair",
+   "looks": "thin and already sharp: it will not last the passage."
   }
  ],
  "people": [
@@ -1380,6 +1442,12 @@
    },
    "leads": [
     {
+     "id": "lead.catalina_corbalan",
+     "about": "person.corbalan",
+     "text": "Corbalán charges like a bishop, but his biscuit's twice-baked and his casks don't leak.",
+     "where": "his counter on the quay"
+    },
+    {
      "id": "lead.catalina_pons",
      "about": "person.pons",
      "text": "Want a surgeon? Pons the barber patches up the dockers, when he isn't hiding from Grilo.",
@@ -1685,6 +1753,18 @@
     }
    ],
    "leads": [
+    {
+     "id": "lead.mateo_hob",
+     "about": "person.hob",
+     "text": "That Brennish trader filled his casks at the river mouth on the ebb. I was on the wall and watched him. Buy his water and you drink the river.",
+     "where": "his barrow in the chandler's yard, mornings"
+    },
+    {
+     "id": "lead.mateo_gil",
+     "about": "person.gil",
+     "text": "Gil fills his own casks at the convent spring. Best water in the port, if he's any left.",
+     "where": "the cooperage on the workshop street"
+    },
     {
      "id": "lead.mateo_tome",
      "about": "person.tome",

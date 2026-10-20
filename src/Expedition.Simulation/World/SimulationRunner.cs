@@ -492,6 +492,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             return;
         }
 
+        StepStores();
         var weather = rules.Weather(ship.WeatherId);
         if (Campaign.Clock.Tick >= ship.WeatherUntilTick)
         {
@@ -830,6 +831,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
 
         EatAndDrink(character);
         SufferDeprivation(character, outcomes);
+        StepIllness(character, outcomes);
 
         if (task is null || definition is null || !Campaign.ActiveTasks.ContainsKey(character.Id))
         {
@@ -936,6 +938,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             {
                 var before = character.Needs.Hunger;
                 character.Needs.Hunger = Needs.Clamp(character.Needs.Hunger - food.HungerRelief);
+                Sicken(character, food);
                 Ledger(character.Id, TrackedNeed.Hunger, food.Id, character.Needs.Hunger - before);
                 Campaign.FoodShortageRecorded = false;
             }
@@ -953,6 +956,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             {
                 var before = character.Needs.Thirst;
                 character.Needs.Thirst = Needs.Clamp(character.Needs.Thirst - drink.ThirstRelief);
+                Sicken(character, drink);
                 Ledger(character.Id, TrackedNeed.Thirst, drink.Id, character.Needs.Thirst - before);
                 Campaign.WaterShortageRecorded = false;
             }

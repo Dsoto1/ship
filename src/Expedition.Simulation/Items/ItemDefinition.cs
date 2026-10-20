@@ -33,7 +33,26 @@ public sealed record ItemDefinition
     /// <summary>Units in one cask, sack or chest.</summary>
     public int PerPackage { get; init; } = 1;
 
+    /// <summary>
+    /// Share of it lost each day at sea (weevils in biscuit, wine turning, pork going green): 0 keeps
+    /// for the voyage. How stores of different quality differ.
+    /// </summary>
+    public double SpoilsPerDay { get; init; }
+
+    /// <summary>What it may give whoever eats or drinks it (bad water, tainted pork), or null.</summary>
+    public ItemSickness? Sickens { get; init; }
+
     /// <summary>The kinds of package there are pictures for.</summary>
     public static readonly IReadOnlySet<string> Packages =
         new HashSet<string>(["cask", "barrel", "sack", "chest", "crate", "coil", "bale", "plank", "basket"], StringComparer.Ordinal);
+}
+
+/// <summary>An illness a bad ration can give: the condition, and the chance for each unit taken.</summary>
+public sealed record ItemSickness
+{
+    /// <summary>Condition ID, for example <c>condition.flux</c>.</summary>
+    public required string Condition { get; init; }
+
+    /// <summary>Chance, 0..1, for each unit eaten or drunk.</summary>
+    public required double Chance { get; init; }
 }
