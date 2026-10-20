@@ -1298,6 +1298,8 @@ adults of La Bocana have their own model and portrait.
   - all 29 share the pack's two young faces, so who they are comes from build, nose, jaw, hair,
     beard, headwear and clothes.
 
+Screenshots: `docs/screenshots/c2-portraits.jpg` (all 29), `c2-roster.jpg`.
+
 **Manual test (macOS):**
 1. `git pull`, then open the editor once (to import 23 new models), then Build.
 2. `res://Lineup.tscn -- --roster` shows everyone side by side.

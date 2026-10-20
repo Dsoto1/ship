@@ -291,8 +291,10 @@ def people(m, f):
         face={"width": -0.2, "jaw": -0.2, "chin": 0.1, "nose": 0.5, "noseLength": 0.6, "brow": 0.4, "cheeks": -0.7, "cheekbones": 0.4, "ears": 0.8, "sag": 1.0},
         skin="#b38a6e", weathering=0.7, eyes="eyes.grey",
         hair=hair({"mesh": "Hair_Buzzed", "recede": 1.0, "crown": 1.0, "colour": "hair.white", "grey": 0.9}, {"mesh": "Eyebrows_Regular", "colour": "hair.white", "grey": 0.9}),
-        clothing=flatten([shirt(m, "linen.grey"), gown(m, "wool.brown", hem="ankle", wear=0.85, open_front=0.0, iid="garment_wool_cassock_01"), shoes(m)]),
-        accessories=[{"id": "acc_skullcap_brim_01", "shape": "crown", "radius": 0.085, "topRadius": 0.06, "height": -0.03, "material": "wool", "colour": "wool.black"}],
+        clothing=flatten([shirt(m, "linen.grey"), gown(m, "wool.brown", hem="ankle", wear=0.85, open_front=0.0, iid="garment_wool_cassock_01"), shoes(m),
+                          {"id": "garment_wool_skullcap_01", "layer": "headwear", "shape": "shell", "head": [m["brow"] + 0.065, m["brow"] + 0.035],
+                           "material": "wool", "colour": "wool.black", "thickness": 0.01, "wear": 0.6}]),
+        accessories=[],
         walk="walk", work="kneel_work", walk_speed=0.75,
         features=["old, bent, bald, big-eared", "a brown cassock patched at the elbows and hem", "a black skullcap"],
         research=[("secular clergy's sotana and bonete", BERNIS)])

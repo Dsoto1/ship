@@ -118,19 +118,22 @@
    "colour": "leather.dark",
    "thickness": 0.008,
    "wear": 0.6
-  }
- ],
- "accessories": [
+  },
   {
-   "id": "acc_skullcap_brim_01",
-   "shape": "crown",
-   "radius": 0.085,
-   "topRadius": 0.06,
-   "height": -0.03,
+   "id": "garment_wool_skullcap_01",
+   "layer": "headwear",
+   "shape": "shell",
+   "head": [
+    1.788,
+    1.758
+   ],
    "material": "wool",
-   "colour": "wool.black"
+   "colour": "wool.black",
+   "thickness": 0.01,
+   "wear": 0.6
   }
  ],
+ "accessories": [],
  "equipment": [],
  "animation": {
   "walk": "walk",
