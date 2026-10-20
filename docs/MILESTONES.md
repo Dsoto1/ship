@@ -1357,7 +1357,14 @@ town going on (`PortView.BuildOutskirts`).
 Screenshots: `docs/screenshots/crowd-kits.jpg`, `crowd-market.jpg`, `edges-west.jpg`,
 `edges-east.jpg`.
 
-**Not yet:**
-- a woman's bun can show spiky strands under no headwear;
-- a leg can show through the front of a skirt in mid-stride;
-- the crowd's lanes past the ends are fixed lines, not paths.
+**Fixed after (owner: "fix the bun hair and skirt poke-through"):**
+- **Hair:** hair is reduced by dropping its smallest locks whole, not by collapsing them, which had
+  shredded long hair and buns into spikes; the servants also wear a kerchief.
+- **Skirts:**
+  - each side of a skirt's hem follows its own thigh, and the legs under a long skirt are not
+    built, so nothing comes through in the stride;
+  - an apron takes the shape of the skirt beneath and lies just outside it, and skirts are not
+    reduced, so the two no longer cross.
+- Everyone was rebuilt with these fixes.
+
+**Not yet:** the crowd's lanes past the ends are fixed lines, not paths.

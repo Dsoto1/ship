@@ -127,6 +127,22 @@
    "colour": "leather.dark",
    "thickness": 0.008,
    "wear": 0.6
+  },
+  {
+   "id": "garment_linen_toca_01",
+   "layer": "headwear",
+   "shape": "shell",
+   "head": [
+    1.698,
+    1.593
+   ],
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.016,
+   "band": 0.005,
+   "bandWidth": 0.02,
+   "wear": 0.4,
+   "slot": "head"
   }
  ],
  "accessories": [],
