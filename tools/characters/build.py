@@ -18,6 +18,7 @@ into .cache/characters (see assets.json). Needs numpy and Pillow. Everything is 
 same record always builds the same person.
 """
 import json
+import os
 import pathlib
 import sys
 
@@ -54,11 +55,11 @@ CLIPS = {
     "yes": "Yes", "call": "Idle_Rail_Call", "no": "Idle_No_Loop", "hit": "Hit_Chest", "chest_open": "Chest_Open", "torch": "Idle_Torch_Loop",
 }
 
-BUDGET = {"LOD0": 4600, "LOD1": 1500, "Crowd": 1300}
+BUDGET = {"LOD0": 4600, "LOD1": 1500, "Crowd": 2400}
 
 # Dye slots (C-2 crowd): the fraction of a cloth vertex's material number says which of the wearer's
 # dyes it takes, so one crowd kit is worn in many colours (character.gdshader).
-SLOTS = {"main": 0.1, "lower": 0.2, "head": 0.3}
+SLOTS = {"main": 0.1, "lower": 0.2, "head": 0.3, "shirt": 0.4}
 
 
 def load_base(sex):
@@ -137,7 +138,9 @@ def build_person(identity, palette, coarse=None):
     cloth_positions = bodylib.smooth(shaped, faces, np.clip(1 - shares["head"] * 0.8, 0, 1), iterations=80, ids=ids)
     cloth_normals = bodylib.vertex_normals(cloth_positions, faces, ids)
     base = g.Base(cloth_positions, faces, cloth_normals, joints, weights, region, shares, ids)
-    base.armhole = float(skeleton.world()[skeleton.index("upperarm_l")][0, 3]) - 0.025
+    shoulder = skeleton.world()[skeleton.index("upperarm_l")]
+    base.armhole = float(shoulder[0, 3]) - 0.025
+    base.armpit = float(shoulder[1, 3]) - 0.11
 
     covered_body = np.zeros(len(shaped), bool)
     layers = []
@@ -434,7 +437,7 @@ def combine(parts, name):
     return part
 
 
-def reduce_parts(parts, budget, keep_open_edges=True, strict=True):
+def reduce_parts(parts, budget, keep_open_edges=True):
     """Reduces each part in proportion to its share of the triangles, weighted by importance."""
     total = sum(len(p.faces) for p in parts)
     if total <= budget:
@@ -449,7 +452,7 @@ def reduce_parts(parts, budget, keep_open_edges=True, strict=True):
             continue
         # Hair is many small sculpted locks, each with an open edge: those may move.
         free = p.kind[0] == g.HAIR and "Eyebrows" not in p.name
-        faces = decimate.reduce(p.positions, p.faces, target, p.locked, p.importance, keep_open_edges and not free, strict)
+        faces = decimate.reduce(p.positions, p.faces, target, p.locked, p.importance, keep_open_edges and not free)
         reduced = bodylib.Part(p.name, p.positions, p.normals, p.uv, p.joints, p.weights, faces, p.kind, p.colour)
         reduced.importance = p.importance
         reduced.locked = p.locked
@@ -593,12 +596,8 @@ def main(argv):
         if identity.get("crowd"):
             # Tier C: one light mesh, no portrait (PORT_EXPERIENCE §6, CHARACTER_ART §37).
             light = [p for p in parts if p.kind[0] != g.EYE and "Eyebrows" not in p.name]
-            for p in light:
-                if p.kind[0] in (g.SKIN, g.HAIR):
-                    # Seen small and in passing: texture seams may move; garment hems may not.
-                    p.locked = np.zeros(len(p.positions), bool)
-                    p.importance = np.minimum(p.importance, 1.5)
-            lod0 = reduce_parts(light, BUDGET["Crowd"], strict=False)
+            # The seams and hems are held, so it lands a little over budget; CROWD_BUDGET overrides it for tests.
+            lod0 = reduce_parts(light, int(os.environ.get("CROWD_BUDGET", BUDGET["Crowd"])))
             write_model(skeleton, {"LOD0": lod0}, equipment, folder / "model.glb", identity)
             print(f"{folder.parent.name}/{folder.name}: {sum(len(p.faces) for p in lod0)} triangles")
             continue

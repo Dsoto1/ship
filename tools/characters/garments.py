@@ -40,6 +40,8 @@ class Base:
         self.height = positions[:, 1]
         # Where a sleeveless garment's armhole is cut: in from the shoulder joint (set by build.py).
         self.armhole = 0.19
+        # Below this the cut stops: a broad body is wider than the shoulder joint at the ribs and belly.
+        self.armpit = 1.3
 
 
 def covers(base, spec):
@@ -64,7 +66,7 @@ def covers(base, spec):
             mask |= np.isin(r, ["torso"]) & (x > 0.12) & (y >= torso[0]) & (y <= torso[1] + 0.06)
     if torso and sleeve is None:
         # A clean armhole, not the ragged line where the body's weights pass from torso to arm.
-        mask &= ~(base.reach > base.armhole)
+        mask &= ~((base.reach > base.armhole) & (base.height > base.armpit))
     if torso and spec.get("collar") is not None:
         mask &= ~(np.isin(r, ["torso", "neck"]) & (y > neckline(base.positions[:, 2], spec["collar"])))
     leg = spec.get("leg")

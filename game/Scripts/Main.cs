@@ -440,7 +440,7 @@ public partial class Main : Node3D
             // Rain and fog thin the crowd; stall covers go on, the ships at anchor vanish into fog.
             _crowd.Density = 1f - 0.7f * _portWet - 0.3f * _portFog;
             SceneryMaterial.Wind = 0.15f + _portWind;
-            _crowd.Update(hour, (float)(delta * speed), _portWet);
+            _crowd.Update(hour, (float)(delta * speed), _portWet, speed == 0 ? 0f : Mathf.Max(0.8f, 1f + Mathf.Log((float)speed) * 0.25f));
             _harbour.Update(hour, (float)(delta * speed), (float)delta, _world.Darkness, _portFog);
             _port.Covered = raining >= 0.5f;
             _ambient.Update((int)hour, _runner.RainingInPort, new Vector2(_camera.Target.X, _camera.Target.Z), (float)delta, speed == 0, speed <= 2);

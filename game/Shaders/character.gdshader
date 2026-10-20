@@ -20,6 +20,12 @@ instance uniform float highlight = 0.0;
 instance uniform float dead = 0.0;
 // The recruiting rim, drawn by the next pass (outline.gdshader); declared here so the slots agree.
 instance uniform vec4 rim = vec4(0.0);
+// Crowd dyes (PortCrowd): cloth built with a dye slot in the fraction of UV2.x (0.1 main garment,
+// 0.2 lower, 0.3 headwear, 0.4 shirt) takes this colour instead, when its alpha is 1, so one kit walks in many colours.
+instance uniform vec4 dye_main = vec4(0.0);
+instance uniform vec4 dye_lower = vec4(0.0);
+instance uniform vec4 dye_head = vec4(0.0);
+instance uniform vec4 dye_shirt = vec4(0.0);
 
 varying vec3 tint;
 varying float amount;
@@ -49,6 +55,11 @@ void vertex() {
 	// Skin keeps how sunken the surface is in the fraction (0..0.45): eye sockets, the mouth's folds.
 	crease = kind == 0 ? clamp(UV2.x / 0.45, 0.0, 1.0) : 0.0;
 	rest_height = UV2.y;
+	if (kind >= 3) {
+		int slot = int(round((UV2.x - float(kind)) * 10.0));
+		vec4 dye = slot == 1 ? dye_main : slot == 2 ? dye_lower : slot == 3 ? dye_head : slot == 4 ? dye_shirt : vec4(0.0);
+		tint = mix(tint, to_linear(dye.rgb), dye.a);
+	}
 }
 
 void fragment() {

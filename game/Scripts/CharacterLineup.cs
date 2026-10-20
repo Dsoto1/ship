@@ -8,7 +8,8 @@ namespace Expedition.Game;
 /// show: idle, walking, at their work, wet, tired, and injured. Run it with
 /// <c>Godot --path game res://Lineup.tscn</c>; add <c>-- --people=person.bartolo,person.velho</c> to
 /// choose who, <c>--view=game|close|portrait</c> for the camera, and <c>--screenshot=PATH</c> to save
-/// the view and quit. Q/E turn the camera, the wheel zooms.
+/// the view and quit. <c>--crowd</c> stands the crowd kits instead, each twice, dressed differently.
+/// Q/E turn the camera, the wheel zooms.
 /// </summary>
 public partial class CharacterLineup : Node3D
 {
@@ -34,6 +35,8 @@ public partial class CharacterLineup : Node3D
     private int _portraitState;
     private bool _far;
     private bool _roster;
+    private bool _crowd;
+    private bool _rest;
     private bool _bake;
     private List<string> _people = [];
 
@@ -52,12 +55,19 @@ public partial class CharacterLineup : Node3D
                 case "state": _portraitState = int.Parse(value); break;
                 case "lod": _far = value == "1"; break;
                 case "roster": _roster = true; break;
+                case "crowd": _crowd = true; _roster = true; break;
+                case "rest": _rest = true; break;
                 case "bake": _bake = true; break;
                 case "shotdelay": _delay = double.Parse(value, System.Globalization.CultureInfo.InvariantCulture); break;
             }
         }
 
-        if (people.Count == 0)
+        if (_crowd)
+        {
+            using var kits = DirAccess.Open("res://Assets/Characters/Crowd");
+            people = kits?.GetDirectories().Order().Select(d => $"Crowd/{d}").ToList() ?? [];
+        }
+        else if (people.Count == 0)
         {
             // Everyone with a model.
             using var folder = DirAccess.Open("res://Assets/Characters");
@@ -125,19 +135,27 @@ public partial class CharacterLineup : Node3D
             },
         });
 
-        for (var p = 0; p < people.Count; p++)
+        var dyes = new Random(7);
+        for (var p = 0; p < people.Count * (_crowd ? 2 : 1); p++)
         {
             for (var s = 0; s < (portrait || _roster ? 1 : States.Length); s++)
             {
-                var model = PersonModel.TryLoad(people[p], _view == "portrait");
+                var model = PersonModel.TryLoad(people[p % people.Count], _view == "portrait");
                 if (model is null)
                 {
-                    GD.PrintErr($"No model for {people[p]}");
+                    GD.PrintErr($"No model for {people[p % people.Count]}");
                     continue;
                 }
 
-                // --roster: everyone side by side, standing (scene A of §51).
-                model.Position = _roster
+                if (_crowd)
+                {
+                    PortCrowd.Dress(model, dyes);
+                }
+
+                // --roster: everyone side by side, standing (scene A of §51); --crowd: two rows of the kits.
+                model.Position = _crowd
+                    ? new Vector3((p % people.Count - (people.Count - 1) / 2f) * 0.9f, 0, p / people.Count * -2.4f)
+                    : _roster
                     ? new Vector3((p - (people.Count - 1) / 2f) * 1.25f, 0, 0)
                     : new Vector3((s - (States.Length - 1) / 2f) * 1.3f, 0, p * -2.2f);
                 // Three-quarters to the camera, as the game's isometric view mostly sees people.
@@ -154,7 +172,7 @@ public partial class CharacterLineup : Node3D
                 _models.Add((model, portrait ? _portraitState : s));
                 var label = new Label3D
                 {
-                    Text = _roster ? people[p].Replace("person.", "") : p == 0 ? States[s].Label : "",
+                    Text = _crowd ? (p < people.Count ? people[p].Replace("Crowd/kit_", "") : "") : _roster ? people[p].Replace("person.", "") : p == 0 ? States[s].Label : "",
                     FontSize = 28,
                     PixelSize = 0.006f,
                     OutlineSize = 8,
@@ -255,6 +273,12 @@ public partial class CharacterLineup : Node3D
             model.Condition(state.Wet, state.Dirt, state.Fatigue);
             model.Show(state.Pose, state.Moving, 1f);
             model.Detail(!_far);
+            if (_rest)
+            {
+                // --rest: the bind pose, no clip, for checking how the cloth sits on the body.
+                model.FindChild("Clips", true, false)?.Call(AnimationPlayer.MethodName.Pause);
+                (model.FindChild("Skeleton3D", true, false) as Skeleton3D)?.ResetBonePoses();
+            }
         }
 
         if (_bake && _elapsed > _delay)

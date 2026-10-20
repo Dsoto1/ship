@@ -12,6 +12,11 @@ instance uniform float fatigue = 0.0;
 instance uniform float highlight = 0.0;
 instance uniform float dead = 0.0;
 instance uniform vec4 rim = vec4(0.0);
+// Declared to keep the instance slots in step with character.gdshader; unused here.
+instance uniform vec4 dye_main = vec4(0.0);
+instance uniform vec4 dye_lower = vec4(0.0);
+instance uniform vec4 dye_head = vec4(0.0);
+instance uniform vec4 dye_shirt = vec4(0.0);
 uniform float width = 0.018;
 
 void vertex() {

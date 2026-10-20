@@ -520,6 +520,10 @@ def crowd(m, f, count=24, seed=1519):
             clothes = [shirt(a, "linen.bleached"), saya(a, "wool.black"), bodice(a, "wool.black"), toca(a, "wool.black"), shoes(a)]
         if not barefoot and not any(isinstance(c, dict) and c.get("id") == "garment_leather_shoes_01" for c in flatten(clothes)):
             clothes.append(shoes(a, "leather.brown"))
+        # The shirt is dyed at run time too: unbleached, grey, now and then a coloured one.
+        for c in flatten(clothes):
+            if isinstance(c, dict) and "shirt" in c.get("id", "") and "slot" not in c:
+                c["slot"] = "shirt"
         kid = f"kit_{n:02d}"
         kits[kid] = dict(sex="Female" if woman else "Male", age=age, apparent=age,
             height=int(rng.normal(160 if woman else 170, 6)), build=["slight", "wiry", "average", "average", "stocky", "heavy"][int(rng.integers(0, 6))],

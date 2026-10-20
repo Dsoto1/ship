@@ -78,6 +78,21 @@ public partial class PersonModel : Node3D
         }
     }
 
+    /// <summary>
+    /// Colours for a crowd kit's dye slots (the main garment, the lower one, the headwear, the shirt); a clear colour
+    /// keeps what the kit was built in. Named people have no slots, so this does nothing to them.
+    /// </summary>
+    public void Dye(Color main, Color lower, Color head, Color shirt)
+    {
+        foreach (var mesh in Meshes())
+        {
+            mesh.SetInstanceShaderParameter("dye_main", main);
+            mesh.SetInstanceShaderParameter("dye_lower", lower);
+            mesh.SetInstanceShaderParameter("dye_head", head);
+            mesh.SetInstanceShaderParameter("dye_shirt", shirt);
+        }
+    }
+
     private static AnimationLibrary Clips
     {
         get
