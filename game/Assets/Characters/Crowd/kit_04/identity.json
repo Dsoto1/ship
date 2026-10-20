@@ -1,0 +1,167 @@
+{
+ "characterId": "kit_04",
+ "name": "A craftsman",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from kit_04's description in data/port/bocana.json: \"One of the waterfront crowd: craftsman.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Male",
+ "age": 47,
+ "apparentAge": 47,
+ "heightCm": 174,
+ "seed": 1597,
+ "looks": {
+  "build": "stocky",
+  "posture": {
+   "stoop": 0.16,
+   "headForward": 0.02,
+   "shoulders": 0.14
+  },
+  "face": {
+   "width": 0.35,
+   "jaw": 0.8,
+   "chin": 0.63,
+   "nose": -0.42,
+   "noseLength": -0.54,
+   "brow": -0.26,
+   "cheeks": -0.08,
+   "cheekbones": 0.26,
+   "mouth": 0.53,
+   "ears": 0.01,
+   "sag": 0.4
+  },
+  "skin": "#9a6e52",
+  "weathering": 0.62,
+  "eyes": "eyes.hazel",
+  "hair": [
+   {
+    "mesh": "Hair_SimpleParted",
+    "colour": "#8f4626",
+    "grey": 0.23333333333333334,
+    "recede": 0.58
+   },
+   {
+    "mesh": "Hair_Beard",
+    "trim": 0.35,
+    "colour": "#8f4626",
+    "grey": 0.23333333333333334
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "#8f4626",
+    "grey": 0.18666666666666668
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "a craftsman of the waterfront"
+ ],
+ "marks": [],
+ "occupationVisuals": "craftsman",
+ "statusVisuals": "crowd",
+ "clothing": [
+  {
+   "id": "garment_wool_hose_01",
+   "layer": "lower",
+   "shape": "shell",
+   "leg": [
+    0.09,
+    0.5519999999999999
+   ],
+   "material": "wool",
+   "colour": "wool.grey",
+   "thickness": 0.003,
+   "wear": 0.4
+  },
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.47,
+   "material": "linen",
+   "colour": "linen.grey",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.007,
+   "bandWidth": 0.04,
+   "wear": 0.45
+  },
+  {
+   "id": "garment_wool_breeches_01",
+   "layer": "lower",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.079
+   ],
+   "leg": [
+    0.472,
+    1.049
+   ],
+   "material": "wool",
+   "colour": "wool.brown",
+   "thickness": 0.011,
+   "loose": 0.022,
+   "band": 0.004,
+   "bandWidth": 0.03,
+   "wear": 0.55,
+   "slot": "lower"
+  },
+  {
+   "id": "garment_apron_01",
+   "layer": "outer",
+   "shape": "skirt",
+   "arc": 62,
+   "top": 1.059,
+   "bottom": 0.492,
+   "flare": 0.25,
+   "material": "leather",
+   "colour": "leather.tan",
+   "thickness": 0.032,
+   "wear": 0.75,
+   "slot": "main"
+  },
+  {
+   "id": "garment_leather_shoes_01",
+   "layer": "footwear",
+   "shape": "shell",
+   "feet": 0.116,
+   "material": "leather",
+   "colour": "leather.dark",
+   "thickness": 0.008,
+   "wear": 0.6
+  },
+  {
+   "id": "garment_wool_cap_01",
+   "layer": "headwear",
+   "shape": "shell",
+   "head": [
+    1.745,
+    1.7000000000000002
+   ],
+   "material": "wool",
+   "colour": "wool.madder",
+   "thickness": 0.018,
+   "band": 0.008,
+   "bandWidth": 0.03,
+   "wear": 0.5,
+   "slot": "head"
+  }
+ ],
+ "accessories": [],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 1.04,
+  "work": "push",
+  "idle": "idle"
+ },
+ "research": [],
+ "crowd": true
+}

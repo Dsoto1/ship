@@ -1,0 +1,141 @@
+{
+ "characterId": "kit_23",
+ "name": "A widow",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from kit_23's description in data/port/bocana.json: \"One of the waterfront crowd: widow.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Female",
+ "age": 38,
+ "apparentAge": 38,
+ "heightCm": 161,
+ "seed": 1601,
+ "looks": {
+  "build": "heavy",
+  "posture": {
+   "stoop": 0.02,
+   "headForward": 0.06,
+   "shoulders": 0.15
+  },
+  "face": {
+   "width": -0.17,
+   "jaw": 0.53,
+   "chin": 0.24,
+   "nose": 0.53,
+   "noseLength": 0.14,
+   "brow": -0.42,
+   "cheeks": -0.15,
+   "cheekbones": 0.68,
+   "mouth": -0.19,
+   "ears": 0.73,
+   "sag": 0.1
+  },
+  "skin": "#a47a5c",
+  "weathering": 0.6,
+  "eyes": "eyes.darkbrown",
+  "hair": [
+   {
+    "mesh": "Hair_Buns",
+    "colour": "hair.darkbrown",
+    "grey": 0.0
+   },
+   {
+    "mesh": "Eyebrows_Female",
+    "colour": "hair.darkbrown"
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "a widow of the waterfront"
+ ],
+ "marks": [],
+ "occupationVisuals": "widow",
+ "statusVisuals": "crowd",
+ "clothing": [
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.862,
+    1.565
+   ],
+   "collar": [
+    1.455,
+    1.525
+   ],
+   "sleeve": 0.625,
+   "material": "linen",
+   "colour": "linen.bleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.004,
+   "bandWidth": 0.02,
+   "wear": 0.45
+  },
+  {
+   "id": "garment_wool_saya_01",
+   "layer": "outer",
+   "shape": "skirt",
+   "top": 1.022,
+   "bottom": 0.111,
+   "flare": 0.75,
+   "material": "wool",
+   "colour": "wool.black",
+   "thickness": 0.03,
+   "wear": 0.5
+  },
+  {
+   "id": "garment_wool_bodice_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.9720000000000001,
+    1.565
+   ],
+   "collar": [
+    1.395,
+    1.525
+   ],
+   "material": "wool",
+   "colour": "wool.black",
+   "thickness": 0.014,
+   "loose": 0.004,
+   "drape": 0.9,
+   "wear": 0.5
+  },
+  {
+   "id": "garment_linen_toca_01",
+   "layer": "headwear",
+   "shape": "shell",
+   "head": [
+    1.698,
+    1.593
+   ],
+   "material": "linen",
+   "colour": "wool.black",
+   "thickness": 0.016,
+   "band": 0.005,
+   "bandWidth": 0.02,
+   "wear": 0.4
+  },
+  {
+   "id": "garment_leather_shoes_01",
+   "layer": "footwear",
+   "shape": "shell",
+   "feet": 0.101,
+   "material": "leather",
+   "colour": "leather.dark",
+   "thickness": 0.008,
+   "wear": 0.6
+  }
+ ],
+ "accessories": [],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 0.96,
+  "work": "push",
+  "idle": "idle"
+ },
+ "research": [],
+ "crowd": true
+}

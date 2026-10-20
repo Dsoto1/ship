@@ -1,0 +1,146 @@
+{
+ "characterId": "kit_05",
+ "name": "A fishwife",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from kit_05's description in data/port/bocana.json: \"One of the waterfront crowd: fishwife.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Female",
+ "age": 36,
+ "apparentAge": 36,
+ "heightCm": 162,
+ "seed": 1603,
+ "looks": {
+  "build": "average",
+  "posture": {
+   "stoop": 0.0,
+   "headForward": 0.1,
+   "shoulders": 0.29
+  },
+  "face": {
+   "width": -0.34,
+   "jaw": -0.72,
+   "chin": -0.24,
+   "nose": 0.57,
+   "noseLength": 0.77,
+   "brow": 0.05,
+   "cheeks": -0.16,
+   "cheekbones": 0.43,
+   "mouth": 0.55,
+   "ears": -0.27,
+   "sag": 0.03
+  },
+  "skin": "#a47a5c",
+  "weathering": 0.73,
+  "eyes": "eyes.grey",
+  "hair": [
+   {
+    "mesh": "Hair_Buns",
+    "colour": "hair.darkbrown",
+    "grey": 0.0
+   },
+   {
+    "mesh": "Eyebrows_Female",
+    "colour": "hair.darkbrown"
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "a fishwife of the waterfront"
+ ],
+ "marks": [],
+ "occupationVisuals": "fishwife",
+ "statusVisuals": "crowd",
+ "clothing": [
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.862,
+    1.565
+   ],
+   "collar": [
+    1.455,
+    1.525
+   ],
+   "sleeve": 0.399,
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.007,
+   "bandWidth": 0.04,
+   "wear": 0.45
+  },
+  {
+   "id": "garment_wool_saya_01",
+   "layer": "outer",
+   "shape": "skirt",
+   "top": 1.022,
+   "bottom": 0.335,
+   "flare": 0.75,
+   "material": "wool",
+   "colour": "linen.unbleached",
+   "thickness": 0.03,
+   "wear": 0.5,
+   "slot": "lower"
+  },
+  {
+   "id": "garment_wool_bodice_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.9720000000000001,
+    1.565
+   ],
+   "collar": [
+    1.395,
+    1.525
+   ],
+   "material": "wool",
+   "colour": "wool.russet",
+   "thickness": 0.014,
+   "loose": 0.004,
+   "drape": 0.9,
+   "wear": 0.5,
+   "slot": "main"
+  },
+  {
+   "id": "garment_apron_01",
+   "layer": "outer",
+   "shape": "skirt",
+   "arc": 62,
+   "top": 1.042,
+   "bottom": 0.35500000000000004,
+   "flare": 0.25,
+   "material": "leather",
+   "colour": "leather.tan",
+   "thickness": 0.032,
+   "wear": 0.75
+  },
+  {
+   "id": "garment_linen_toca_01",
+   "layer": "headwear",
+   "shape": "shell",
+   "head": [
+    1.698,
+    1.593
+   ],
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.016,
+   "band": 0.005,
+   "bandWidth": 0.02,
+   "wear": 0.4
+  }
+ ],
+ "accessories": [],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 0.92,
+  "work": "push",
+  "idle": "idle"
+ },
+ "research": [],
+ "crowd": true
+}

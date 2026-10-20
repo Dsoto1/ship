@@ -1,0 +1,114 @@
+{
+ "characterId": "person.tito",
+ "name": "Tito",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from person.tito's description in data/port/bocana.json: \"A boy with a stick and a scraped knee.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Male",
+ "age": 11,
+ "apparentAge": 11,
+ "heightCm": 140,
+ "seed": 6907,
+ "looks": {
+  "build": "slight",
+  "posture": {
+   "stoop": -0.1,
+   "headForward": 0.0,
+   "shoulders": 0.0
+  },
+  "face": {
+   "width": 0.1,
+   "jaw": -0.8,
+   "chin": -0.5,
+   "nose": -0.5,
+   "noseLength": -0.5,
+   "brow": -0.6,
+   "cheeks": 0.8,
+   "mouth": 0.1,
+   "ears": 0.4
+  },
+  "skin": "#ad7f5f",
+  "weathering": 0.25,
+  "eyes": "eyes.brown",
+  "hair": [
+   {
+    "mesh": "Hair_SimpleParted",
+    "colour": "hair.brown"
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "hair.brown"
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "a skinny boy with a scraped knee",
+  "barefoot, sleeves rolled, too-big breeches",
+  "a stick he hits things with"
+ ],
+ "marks": [],
+ "occupationVisuals": "child of the waterfront",
+ "statusVisuals": "status.servant",
+ "clothing": [
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.47,
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.007,
+   "bandWidth": 0.04,
+   "wear": 0.8
+  },
+  {
+   "id": "garment_wool_breeches_01",
+   "layer": "lower",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.079
+   ],
+   "leg": [
+    0.472,
+    1.049
+   ],
+   "material": "wool",
+   "colour": "wool.brown",
+   "thickness": 0.011,
+   "loose": 0.022,
+   "band": 0.004,
+   "bandWidth": 0.03,
+   "wear": 0.85
+  }
+ ],
+ "accessories": [],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 1.2,
+  "work": "crouch",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "children of the waterfront",
+   "source": "Carmen Bernis, Indumentaria española en tiempos de Carlos V (1962)",
+   "region": "Castile/Andalusia",
+   "dates": "c. 1500–1530",
+   "confidence": "medium"
+  }
+ ],
+ "proportions": {
+  "head": 1.25
+ }
+}

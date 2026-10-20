@@ -9,7 +9,8 @@ data/port/bocana.json (their look, occupation, status, age and origin). The garm
 a small wardrobe of period pieces, and their cuts (hems, necklines, the cap's brow) are measured on
 the base body of their sex, so the same piece fits a man's body or a woman's. Records already on disk
 are left alone unless --force is given: once a person has been seen, they are not rerolled (§40).
-The children (Lucía, Tito) are not here: the base bodies are adults, and a child is not a small adult.
+The children (Lucía, Tito) are the adult base, small, with a larger head; the crowd (Tier C) is a
+seeded set of kits under Characters/Crowd, worn in many colours at run time.
 """
 import json
 import pathlib
@@ -421,11 +422,120 @@ def people(m, f):
         features=["very old and stooped, white-bearded", "a palm-thimble on his hand, needles stuck in his brown hat", "big ears, a long nose"],
         research=[("sailmakers", MALLAINA)])
 
+    # The children: the adult base, small, with a child's larger head (build.py "proportions").
+    r["person.lucia"] = dict(sex="Female", age=9, apparent=9, height=128, build="slight", proportions={"head": 1.3},
+        posture={"stoop": -0.1, "headForward": 0.0, "shoulders": -0.1},
+        face={"width": 0.2, "jaw": -0.8, "chin": -0.6, "nose": -0.6, "noseLength": -0.6, "brow": -0.6, "cheeks": 0.9, "mouth": -0.3, "ears": 0.1},
+        skin="#b5875f", weathering=0.2, eyes="eyes.darkbrown",
+        hair=hair({"mesh": "Hair_Long", "bottom": f["collarBack"] - 0.12, "colour": "hair.darkbrown"}, {"mesh": "Eyebrows_Female", "colour": "hair.darkbrown"}),
+        clothing=flatten([shirt(f, "linen.grey", wear=0.8), saya(f, "wool.natural", hem="midcalf", wear=0.8)]),
+        accessories=[], walk="walk", work="crouch", walk_speed=1.15,
+        features=["a small barefoot girl, all eyes", "a grey shift and a worn undyed skirt", "sees everything"], research=[("children of the waterfront", BERNIS)])
+    r["person.tito"] = dict(sex="Male", age=11, apparent=11, height=140, build="slight", proportions={"head": 1.25},
+        posture={"stoop": -0.1, "headForward": 0.0, "shoulders": 0.0},
+        face={"width": 0.1, "jaw": -0.8, "chin": -0.5, "nose": -0.5, "noseLength": -0.5, "brow": -0.6, "cheeks": 0.8, "mouth": 0.1, "ears": 0.4},
+        skin="#ad7f5f", weathering=0.25, eyes="eyes.brown",
+        hair=hair({"mesh": "Hair_SimpleParted", "colour": "hair.brown"}, {"mesh": "Eyebrows_Regular", "colour": "hair.brown"}),
+        clothing=flatten([shirt(m, "linen.unbleached", sleeve="elbow", wear=0.8), breeches(m, "wool.brown", wear=0.85)]),
+        accessories=[], walk="walk", work="crouch", walk_speed=1.2,
+        features=["a skinny boy with a scraped knee", "barefoot, sleeves rolled, too-big breeches", "a stick he hits things with"], research=[("children of the waterfront", BERNIS)])
     return r
 
 
+# ---------------------------------------------------------------- the crowd (Tier C)
+
+DYES_MAIN = [("wool.brown", 5), ("wool.russet", 4), ("wool.grey", 4), ("wool.natural", 4), ("wool.tawny", 3), ("wool.woad", 2),
+             ("wool.madder", 1), ("leather.brown", 2), ("leather.tan", 1), ("wool.black", 1)]
+DYES_LOWER = [("wool.brown", 4), ("wool.grey", 4), ("linen.grey", 3), ("wool.natural", 3), ("wool.russet", 2), ("linen.unbleached", 2), ("wool.woad", 1)]
+DYES_HEAD = [("wool.madder", 3), ("wool.brown", 3), ("wool.grey", 2), ("wool.woad", 2), ("felt.black", 1), ("straw", 1)]
+
+
+def crowd(m, f, count=24, seed=1519):
+    """Two dozen passers-by: workers, seamen, townsfolk and a friar, men and women. Each is worn in many
+    colours at run time (dye slots), so even two of the same kit look like different people."""
+    rng = np.random.default_rng(seed)
+    pick = lambda options: options[rng.choice(len(options), p=np.array([w for _, w in options]) / sum(w for _, w in options))][0]
+    skins = ["#c49a7e", "#b88d70", "#ad8064", "#a47a5c", "#9a6e52", "#8f6247", "#7a5039", "#d2a88d"]
+    hair_colours = ["hair.black", "hair.darkbrown", "hair.brown", "hair.grey", "#8f4626", "#b39a6a"]
+    male = ["docker", "seaman", "porter", "townsman", "craftsman", "carter", "fisherman", "friar"]
+    female = ["townswoman", "fishwife", "servant", "widow"]
+    kits = {}
+    for n in range(count):
+        woman = n % 3 == 2
+        kind = female[(n // 3) % len(female)] if woman else male[n % len(male)]
+        a = f if woman else m
+        age = int(rng.integers(18, 66))
+        grey = max(0.0, (age - 40) / 30)
+        face = {k: round(float(rng.uniform(-0.8, 0.8)), 2) for k in ("width", "jaw", "chin", "nose", "noseLength", "brow", "cheeks", "cheekbones", "mouth", "ears")}
+        face["sag"] = round(min(1.0, max(0.0, (age - 35) / 30)), 2)
+        hc = hair_colours[int(rng.integers(0, 4 if age < 45 else 6))] if not woman else hair_colours[int(rng.integers(0, 3))]
+        if woman:
+            hair_list = [{"mesh": "Hair_Buns", "colour": hc, "grey": grey}, {"mesh": "Eyebrows_Female", "colour": hc}]
+        else:
+            style = ["Hair_Buzzed", "Hair_SimpleParted", "Hair_Buzzed"][int(rng.integers(0, 3))]
+            hair_list = [{"mesh": style, "colour": hc, "grey": grey}]
+            if age > 45 and rng.random() < 0.5:
+                hair_list[0]["recede"] = round(float(rng.uniform(0.4, 1.0)), 2)
+            if rng.random() < 0.55:
+                hair_list.append({"mesh": "Hair_Beard", "trim": round(float(rng.uniform(0.2, 0.9)), 2), "colour": hc, "grey": grey})
+            hair_list.append({"mesh": "Eyebrows_Regular", "colour": hc, "grey": grey * 0.8})
+        slot = lambda garment, which: dict(garment, slot=which) if isinstance(garment, dict) else [dict(x, slot=which) for x in garment]
+        shirt_colour = ["linen.unbleached", "linen.bleached", "linen.grey"][int(rng.integers(0, 3))]
+        clothes, accessories = [], []
+        barefoot = kind in ("docker", "seaman", "fisherman", "fishwife") and rng.random() < 0.7
+        if kind == "docker":
+            clothes = [shirt(a, shirt_colour, sleeve="elbow", wear=0.7), slot(breeches(a, pick(DYES_LOWER)), "lower")]
+            if rng.random() < 0.5:
+                clothes.append(slot(cap(a, pick(DYES_HEAD)), "head"))
+        elif kind in ("seaman", "fisherman"):
+            clothes = [shirt(a, shirt_colour, wear=0.6), slot(breeches(a, "linen.grey", "linen", loose=0.035, iid="garment_linen_slops_01"), "lower"),
+                       slot(cap(a, "wool.madder" if kind == "fisherman" else pick(DYES_HEAD)), "head")]
+            if kind == "seaman" and rng.random() < 0.5:
+                clothes.append(slot(jerkin(a, "wool.grey", "wool"), "main"))
+        elif kind == "porter":
+            clothes = [shirt(a, shirt_colour, sleeve="elbow"), slot(jerkin(a, pick(DYES_MAIN), "leather" if rng.random() < 0.5 else "wool"), "main"),
+                       slot(breeches(a, pick(DYES_LOWER)), "lower"), hose(a, "wool.grey"), shoes(a)]
+        elif kind == "townsman":
+            clothes = [hose(a, "wool.grey", a["legTop"]), shirt(a, "linen.bleached"), slot(doublet(a, pick(DYES_MAIN)), "main"), shoes(a)]
+            accessories = slot(flatcap("felt.black") if rng.random() < 0.6 else hat(0.15, 0.04, "felt.brown"), "head")
+        elif kind == "craftsman":
+            clothes = [hose(a, "wool.grey"), shirt(a, shirt_colour, sleeve="elbow"), slot(breeches(a, pick(DYES_LOWER)), "lower"),
+                       slot(apron(a, "leather.tan"), "main"), shoes(a), slot(cap(a, pick(DYES_HEAD)), "head")]
+        elif kind == "carter":
+            clothes = [hose(a, "wool.grey"), shirt(a, shirt_colour), slot(jerkin(a, pick(DYES_MAIN), "wool"), "main"), slot(breeches(a, pick(DYES_LOWER)), "lower"), shoes(a)]
+            accessories = hat(0.19, 0.035, "straw", "straw", droop=0.02)
+        elif kind == "friar":
+            clothes = [shirt(a, "linen.grey"), gown(a, "wool.grey" if rng.random() < 0.5 else "wool.brown", hem="ankle", open_front=0.0, iid="garment_wool_habit_01"),
+                       belt(a, "linen.unbleached", "linen"), shoes(a, "leather.brown")]
+            hair_list = [{"mesh": "Hair_Buzzed", "recede": 1.0, "crown": 1.0, "colour": hc, "grey": grey}, {"mesh": "Eyebrows_Regular", "colour": hc}]
+        elif kind == "townswoman":
+            clothes = [shirt(a, "linen.bleached"), slot(saya(a, pick(DYES_MAIN)), "lower"), slot(bodice(a, pick(DYES_MAIN)), "main"), toca(a), shoes(a)]
+        elif kind == "fishwife":
+            clothes = [shirt(a, shirt_colour, sleeve="elbow"), slot(saya(a, pick(DYES_LOWER), hem="midcalf"), "lower"),
+                       slot(bodice(a, pick(DYES_MAIN)), "main"), apron(a, "leather.tan", "leather", "midcalf"), toca(a, "linen.unbleached")]
+        elif kind == "servant":
+            clothes = [shirt(a, shirt_colour), slot(saya(a, pick(DYES_LOWER)), "lower"), slot(bodice(a, pick(DYES_MAIN)), "main"),
+                       apron(a, "linen.bleached", "linen", "midcalf"), shoes(a)]
+        elif kind == "widow":
+            clothes = [shirt(a, "linen.bleached"), saya(a, "wool.black"), bodice(a, "wool.black"), toca(a, "wool.black"), shoes(a)]
+        if not barefoot and not any(isinstance(c, dict) and c.get("id") == "garment_leather_shoes_01" for c in flatten(clothes)):
+            clothes.append(shoes(a, "leather.brown"))
+        kid = f"kit_{n:02d}"
+        kits[kid] = dict(sex="Female" if woman else "Male", age=age, apparent=age,
+            height=int(rng.normal(160 if woman else 170, 6)), build=["slight", "wiry", "average", "average", "stocky", "heavy"][int(rng.integers(0, 6))],
+            posture={"stoop": round(float(max(0.0, (age - 40) / 40 + rng.uniform(-0.1, 0.2))), 2), "headForward": round(float(rng.uniform(0, 0.3)), 2), "shoulders": round(float(rng.uniform(-0.1, 0.3)), 2)},
+            face=face, skin=skins[int(rng.integers(0, len(skins)))], weathering=round(float(rng.uniform(0.3, 0.8)), 2),
+            eyes=["eyes.brown", "eyes.darkbrown", "eyes.hazel", "eyes.grey"][int(rng.integers(0, 4))],
+            hair=hair_list, clothing=flatten(clothes), accessories=flatten([accessories]) if accessories else [],
+            walk="walk", work="push", walk_speed=round(float(rng.uniform(0.85, 1.1)), 2),
+            features=[f"a {kind} of the waterfront"], kind=kind)
+    return kits
+
+
 def record(pid, spec, rules):
-    person = next(p for p in rules["people"] if p["id"] == pid)
+    person = next((p for p in rules["people"] if p["id"] == pid), None) or {
+        "name": f"A {spec.get('kind', 'passer-by')}", "look": f"One of the waterfront crowd: {spec.get('kind', 'a passer-by')}.",
+        "occupation": spec.get("kind", ""), "status": "crowd"}
     looks = {"build": spec["build"], "posture": spec["posture"], "face": spec["face"], "skin": spec["skin"],
              "weathering": spec["weathering"], "eyes": spec["eyes"], "hair": spec["hair"]}
     return {
@@ -448,19 +558,23 @@ def record(pid, spec, rules):
         "equipment": spec.get("equipment", []),
         "animation": {"walk": spec.get("walk", "walk"), "walkSpeed": spec.get("walk_speed", 1.0), "work": spec.get("work", "kneel_work"), "idle": "idle"},
         "research": [dict(item=item, **source) for item, source in spec.get("research", [])],
+        **({"proportions": spec["proportions"]} if "proportions" in spec else {}),
+        **({"crowd": True} if pid.startswith("kit_") else {}),
     }
 
 
 def main(argv):
     force = "--force" in argv
-    wanted = [a for a in argv if a.startswith("person.")]
+    wanted = [a for a in argv if a.startswith("person.") or a == "crowd"]
     import re
     rules = json.loads(re.sub(r"^\s*//.*$", "", (build.ROOT / "data" / "port" / "bocana.json").read_text(), flags=re.M))
-    specs = people(anchors("Male"), anchors("Female"))
+    m, f = anchors("Male"), anchors("Female")
+    specs = people(m, f)
+    specs.update(crowd(m, f))
     for pid, spec in specs.items():
-        if wanted and pid not in wanted:
+        if wanted and pid not in wanted and not (pid.startswith("kit_") and "crowd" in wanted):
             continue
-        path = OUT / pid / "identity.json"
+        path = (OUT / "Crowd" / pid if pid.startswith("kit_") else OUT / pid) / "identity.json"
         if path.exists() and not force:
             continue
         path.parent.mkdir(parents=True, exist_ok=True)

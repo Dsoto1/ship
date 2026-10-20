@@ -1,0 +1,172 @@
+{
+ "characterId": "kit_19",
+ "name": "A townsman",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from kit_19's description in data/port/bocana.json: \"One of the waterfront crowd: townsman.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Male",
+ "age": 19,
+ "apparentAge": 19,
+ "heightCm": 172,
+ "seed": 1632,
+ "looks": {
+  "build": "heavy",
+  "posture": {
+   "stoop": 0.0,
+   "headForward": 0.29,
+   "shoulders": -0.03
+  },
+  "face": {
+   "width": -0.24,
+   "jaw": 0.6,
+   "chin": 0.07,
+   "nose": -0.4,
+   "noseLength": -0.32,
+   "brow": 0.75,
+   "cheeks": 0.71,
+   "cheekbones": 0.04,
+   "mouth": -0.22,
+   "ears": -0.24,
+   "sag": 0.0
+  },
+  "skin": "#7a5039",
+  "weathering": 0.73,
+  "eyes": "eyes.grey",
+  "hair": [
+   {
+    "mesh": "Hair_Buzzed",
+    "colour": "hair.darkbrown",
+    "grey": 0.0
+   },
+   {
+    "mesh": "Hair_Beard",
+    "trim": 0.62,
+    "colour": "hair.darkbrown",
+    "grey": 0.0
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "hair.darkbrown",
+    "grey": 0.0
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "a townsman of the waterfront"
+ ],
+ "marks": [],
+ "occupationVisuals": "townsman",
+ "statusVisuals": "crowd",
+ "clothing": [
+  {
+   "id": "garment_wool_hose_01",
+   "layer": "lower",
+   "shape": "shell",
+   "leg": [
+    0.09,
+    1.049
+   ],
+   "material": "wool",
+   "colour": "wool.grey",
+   "thickness": 0.003,
+   "wear": 0.4
+  },
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.69,
+   "material": "linen",
+   "colour": "linen.bleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.004,
+   "bandWidth": 0.02,
+   "wear": 0.45
+  },
+  {
+   "id": "garment_wool_doublet_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.9490000000000001,
+    1.6
+   ],
+   "collar": [
+    1.51,
+    1.57
+   ],
+   "material": "wool",
+   "colour": "wool.natural",
+   "thickness": 0.014,
+   "loose": 0.006,
+   "drape": 0.8,
+   "wear": 0.5,
+   "sleeve": 0.6699999999999999,
+   "band": 0.004,
+   "bandWidth": 0.025,
+   "slot": "main"
+  },
+  {
+   "id": "garment_wool_doublet_01_skirt",
+   "layer": "outer",
+   "shape": "skirt",
+   "top": 0.9989999999999999,
+   "bottom": 0.8290000000000001,
+   "flare": 0.35,
+   "material": "wool",
+   "colour": "wool.natural",
+   "thickness": 0.022,
+   "wear": 0.5,
+   "slot": "main"
+  },
+  {
+   "id": "garment_leather_shoes_01",
+   "layer": "footwear",
+   "shape": "shell",
+   "feet": 0.116,
+   "material": "leather",
+   "colour": "leather.dark",
+   "thickness": 0.008,
+   "wear": 0.6
+  }
+ ],
+ "accessories": [
+  {
+   "id": "acc_hat_brim_01",
+   "shape": "brim",
+   "radius": 0.15,
+   "droop": 0.01,
+   "material": "felt",
+   "colour": "felt.brown",
+   "raise": 0.012,
+   "slot": "head"
+  },
+  {
+   "id": "acc_hat_crown_01",
+   "shape": "crown",
+   "radius": 0.1,
+   "topRadius": 0.095,
+   "height": 0.04,
+   "material": "felt",
+   "colour": "felt.brown",
+   "slot": "head"
+  }
+ ],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 0.91,
+  "work": "push",
+  "idle": "idle"
+ },
+ "research": [],
+ "crowd": true
+}

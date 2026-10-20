@@ -26,7 +26,7 @@ def _plane_quadrics(positions, faces):
     return quadrics
 
 
-def reduce(positions, faces, target_faces, locked=None, importance=None, keep_open_edges=True):
+def reduce(positions, faces, target_faces, locked=None, importance=None, keep_open_edges=True, strict=True):
     """Returns the faces (indexing the original vertices) after folding down to about target_faces.
 
     importance: optional per-vertex multiplier on the error, so faces and hands keep more detail.
@@ -91,11 +91,11 @@ def reduce(positions, faces, target_faces, locked=None, importance=None, keep_op
             pa, pb, pc = positions[corners[0]], positions[corners[1]], positions[corners[2]]
             after = np.cross(pb - pa, pc - pa)
             area = np.linalg.norm(after)
-            if area < 1e-12 or np.dot(before, after) <= 0.3 * np.linalg.norm(before) * area:
+            if area < 1e-12 or np.dot(before, after) <= (0.3 if strict else 0.0) * np.linalg.norm(before) * area:
                 ok = False
                 break
             longest = max(np.sum((pb - pa) ** 2), np.sum((pc - pb) ** 2), np.sum((pa - pc) ** 2))
-            if area * area / (longest * longest + 1e-20) < 0.0004:
+            if area * area / (longest * longest + 1e-20) < (0.0004 if strict else 0.00005):
                 ok = False
                 break
         if not ok:

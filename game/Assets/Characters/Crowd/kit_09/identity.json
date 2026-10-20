@@ -1,0 +1,123 @@
+{
+ "characterId": "kit_09",
+ "name": "A seaman",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from kit_09's description in data/port/bocana.json: \"One of the waterfront crowd: seaman.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Male",
+ "age": 29,
+ "apparentAge": 29,
+ "heightCm": 159,
+ "seed": 1627,
+ "looks": {
+  "build": "heavy",
+  "posture": {
+   "stoop": 0.0,
+   "headForward": 0.2,
+   "shoulders": 0.07
+  },
+  "face": {
+   "width": -0.68,
+   "jaw": -0.4,
+   "chin": -0.2,
+   "nose": 0.48,
+   "noseLength": -0.53,
+   "brow": 0.52,
+   "cheeks": -0.52,
+   "cheekbones": 0.76,
+   "mouth": 0.55,
+   "ears": -0.47,
+   "sag": 0.0
+  },
+  "skin": "#ad8064",
+  "weathering": 0.5,
+  "eyes": "eyes.hazel",
+  "hair": [
+   {
+    "mesh": "Hair_Buzzed",
+    "colour": "hair.darkbrown",
+    "grey": 0.0
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "hair.darkbrown",
+    "grey": 0.0
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "a seaman of the waterfront"
+ ],
+ "marks": [],
+ "occupationVisuals": "seaman",
+ "statusVisuals": "crowd",
+ "clothing": [
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.69,
+   "material": "linen",
+   "colour": "linen.bleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.004,
+   "bandWidth": 0.02,
+   "wear": 0.6
+  },
+  {
+   "id": "garment_linen_slops_01",
+   "layer": "lower",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.079
+   ],
+   "leg": [
+    0.472,
+    1.049
+   ],
+   "material": "linen",
+   "colour": "linen.grey",
+   "thickness": 0.011,
+   "loose": 0.035,
+   "band": 0.004,
+   "bandWidth": 0.03,
+   "wear": 0.55,
+   "slot": "lower"
+  },
+  {
+   "id": "garment_wool_cap_01",
+   "layer": "headwear",
+   "shape": "shell",
+   "head": [
+    1.745,
+    1.7000000000000002
+   ],
+   "material": "wool",
+   "colour": "wool.woad",
+   "thickness": 0.018,
+   "band": 0.008,
+   "bandWidth": 0.03,
+   "wear": 0.5,
+   "slot": "head"
+  }
+ ],
+ "accessories": [],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 0.95,
+  "work": "push",
+  "idle": "idle"
+ },
+ "research": [],
+ "crowd": true
+}

@@ -1,0 +1,141 @@
+{
+ "characterId": "kit_20",
+ "name": "A servant",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from kit_20's description in data/port/bocana.json: \"One of the waterfront crowd: servant.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Female",
+ "age": 50,
+ "apparentAge": 50,
+ "heightCm": 156,
+ "seed": 1583,
+ "looks": {
+  "build": "heavy",
+  "posture": {
+   "stoop": 0.19,
+   "headForward": 0.18,
+   "shoulders": -0.09
+  },
+  "face": {
+   "width": -0.66,
+   "jaw": -0.35,
+   "chin": -0.38,
+   "nose": 0.28,
+   "noseLength": -0.75,
+   "brow": 0.03,
+   "cheeks": 0.44,
+   "cheekbones": 0.28,
+   "mouth": 0.44,
+   "ears": 0.64,
+   "sag": 0.5
+  },
+  "skin": "#b88d70",
+  "weathering": 0.44,
+  "eyes": "eyes.hazel",
+  "hair": [
+   {
+    "mesh": "Hair_Buns",
+    "colour": "hair.darkbrown",
+    "grey": 0.3333333333333333
+   },
+   {
+    "mesh": "Eyebrows_Female",
+    "colour": "hair.darkbrown"
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "a servant of the waterfront"
+ ],
+ "marks": [],
+ "occupationVisuals": "servant",
+ "statusVisuals": "crowd",
+ "clothing": [
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.862,
+    1.565
+   ],
+   "collar": [
+    1.455,
+    1.525
+   ],
+   "sleeve": 0.625,
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.004,
+   "bandWidth": 0.02,
+   "wear": 0.45
+  },
+  {
+   "id": "garment_wool_saya_01",
+   "layer": "outer",
+   "shape": "skirt",
+   "top": 1.022,
+   "bottom": 0.111,
+   "flare": 0.75,
+   "material": "wool",
+   "colour": "linen.grey",
+   "thickness": 0.03,
+   "wear": 0.5,
+   "slot": "lower"
+  },
+  {
+   "id": "garment_wool_bodice_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.9720000000000001,
+    1.565
+   ],
+   "collar": [
+    1.395,
+    1.525
+   ],
+   "material": "wool",
+   "colour": "wool.grey",
+   "thickness": 0.014,
+   "loose": 0.004,
+   "drape": 0.9,
+   "wear": 0.5,
+   "slot": "main"
+  },
+  {
+   "id": "garment_apron_01",
+   "layer": "outer",
+   "shape": "skirt",
+   "arc": 62,
+   "top": 1.042,
+   "bottom": 0.35500000000000004,
+   "flare": 0.25,
+   "material": "linen",
+   "colour": "linen.bleached",
+   "thickness": 0.032,
+   "wear": 0.75
+  },
+  {
+   "id": "garment_leather_shoes_01",
+   "layer": "footwear",
+   "shape": "shell",
+   "feet": 0.101,
+   "material": "leather",
+   "colour": "leather.dark",
+   "thickness": 0.008,
+   "wear": 0.6
+  }
+ ],
+ "accessories": [],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 1.08,
+  "work": "push",
+  "idle": "idle"
+ },
+ "research": [],
+ "crowd": true
+}

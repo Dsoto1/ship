@@ -1,0 +1,145 @@
+{
+ "characterId": "kit_15",
+ "name": "A friar",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from kit_15's description in data/port/bocana.json: \"One of the waterfront crowd: friar.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Male",
+ "age": 52,
+ "apparentAge": 52,
+ "heightCm": 171,
+ "seed": 1608,
+ "looks": {
+  "build": "average",
+  "posture": {
+   "stoop": 0.39,
+   "headForward": 0.24,
+   "shoulders": 0.24
+  },
+  "face": {
+   "width": 0.04,
+   "jaw": 0.15,
+   "chin": 0.63,
+   "nose": 0.21,
+   "noseLength": -0.32,
+   "brow": 0.67,
+   "cheeks": 0.12,
+   "cheekbones": 0.09,
+   "mouth": -0.3,
+   "ears": -0.61,
+   "sag": 0.57
+  },
+  "skin": "#a47a5c",
+  "weathering": 0.44,
+  "eyes": "eyes.brown",
+  "hair": [
+   {
+    "mesh": "Hair_Buzzed",
+    "recede": 1.0,
+    "crown": 1.0,
+    "colour": "hair.brown",
+    "grey": 0.4
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "hair.brown"
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "a friar of the waterfront"
+ ],
+ "marks": [],
+ "occupationVisuals": "friar",
+ "statusVisuals": "crowd",
+ "clothing": [
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.69,
+   "material": "linen",
+   "colour": "linen.grey",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.004,
+   "bandWidth": 0.02,
+   "wear": 0.45
+  },
+  {
+   "id": "garment_wool_habit_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.9490000000000001,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.565
+   ],
+   "material": "wool",
+   "colour": "wool.grey",
+   "thickness": 0.024,
+   "loose": 0.045,
+   "drape": 1.0,
+   "band": 0.008,
+   "bandWidth": 0.04,
+   "wear": 0.3,
+   "sleeve": 0.6299999999999999
+  },
+  {
+   "id": "garment_wool_habit_01_skirt",
+   "layer": "outer",
+   "shape": "skirt",
+   "top": 0.9989999999999999,
+   "bottom": 0.126,
+   "flare": 0.6,
+   "material": "wool",
+   "colour": "wool.grey",
+   "thickness": 0.034,
+   "wear": 0.3
+  },
+  {
+   "id": "garment_leather_belt_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    1.034,
+    1.079
+   ],
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.03,
+   "hides": false,
+   "wear": 0.5
+  },
+  {
+   "id": "garment_leather_shoes_01",
+   "layer": "footwear",
+   "shape": "shell",
+   "feet": 0.116,
+   "material": "leather",
+   "colour": "leather.brown",
+   "thickness": 0.008,
+   "wear": 0.6
+  }
+ ],
+ "accessories": [],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 1.01,
+  "work": "push",
+  "idle": "idle"
+ },
+ "research": [],
+ "crowd": true
+}

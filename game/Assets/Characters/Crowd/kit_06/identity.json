@@ -1,0 +1,139 @@
+{
+ "characterId": "kit_06",
+ "name": "A fisherman",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from kit_06's description in data/port/bocana.json: \"One of the waterfront crowd: fisherman.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Male",
+ "age": 47,
+ "apparentAge": 47,
+ "heightCm": 165,
+ "seed": 1609,
+ "looks": {
+  "build": "wiry",
+  "posture": {
+   "stoop": 0.26,
+   "headForward": 0.13,
+   "shoulders": 0.25
+  },
+  "face": {
+   "width": 0.27,
+   "jaw": 0.31,
+   "chin": -0.05,
+   "nose": 0.28,
+   "noseLength": 0.22,
+   "brow": -0.16,
+   "cheeks": -0.36,
+   "cheekbones": 0.69,
+   "mouth": 0.8,
+   "ears": 0.78,
+   "sag": 0.4
+  },
+  "skin": "#8f6247",
+  "weathering": 0.5,
+  "eyes": "eyes.brown",
+  "hair": [
+   {
+    "mesh": "Hair_Buzzed",
+    "colour": "#8f4626",
+    "grey": 0.23333333333333334
+   },
+   {
+    "mesh": "Hair_Beard",
+    "trim": 0.24,
+    "colour": "#8f4626",
+    "grey": 0.23333333333333334
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "#8f4626",
+    "grey": 0.18666666666666668
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "a fisherman of the waterfront"
+ ],
+ "marks": [],
+ "occupationVisuals": "fisherman",
+ "statusVisuals": "crowd",
+ "clothing": [
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.69,
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.004,
+   "bandWidth": 0.02,
+   "wear": 0.6
+  },
+  {
+   "id": "garment_linen_slops_01",
+   "layer": "lower",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.079
+   ],
+   "leg": [
+    0.472,
+    1.049
+   ],
+   "material": "linen",
+   "colour": "linen.grey",
+   "thickness": 0.011,
+   "loose": 0.035,
+   "band": 0.004,
+   "bandWidth": 0.03,
+   "wear": 0.55,
+   "slot": "lower"
+  },
+  {
+   "id": "garment_wool_cap_01",
+   "layer": "headwear",
+   "shape": "shell",
+   "head": [
+    1.745,
+    1.7000000000000002
+   ],
+   "material": "wool",
+   "colour": "wool.madder",
+   "thickness": 0.018,
+   "band": 0.008,
+   "bandWidth": 0.03,
+   "wear": 0.5,
+   "slot": "head"
+  },
+  {
+   "id": "garment_leather_shoes_01",
+   "layer": "footwear",
+   "shape": "shell",
+   "feet": 0.116,
+   "material": "leather",
+   "colour": "leather.brown",
+   "thickness": 0.008,
+   "wear": 0.6
+  }
+ ],
+ "accessories": [],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 1.02,
+  "work": "push",
+  "idle": "idle"
+ },
+ "research": [],
+ "crowd": true
+}

@@ -1,0 +1,107 @@
+{
+ "characterId": "person.lucia",
+ "name": "Lucía",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from person.lucia's description in data/port/bocana.json: \"A barefoot girl who sees everything.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Female",
+ "age": 9,
+ "apparentAge": 9,
+ "heightCm": 128,
+ "seed": 7879,
+ "looks": {
+  "build": "slight",
+  "posture": {
+   "stoop": -0.1,
+   "headForward": 0.0,
+   "shoulders": -0.1
+  },
+  "face": {
+   "width": 0.2,
+   "jaw": -0.8,
+   "chin": -0.6,
+   "nose": -0.6,
+   "noseLength": -0.6,
+   "brow": -0.6,
+   "cheeks": 0.9,
+   "mouth": -0.3,
+   "ears": 0.1
+  },
+  "skin": "#b5875f",
+  "weathering": 0.2,
+  "eyes": "eyes.darkbrown",
+  "hair": [
+   {
+    "mesh": "Hair_Long",
+    "bottom": 1.4049999999999998,
+    "colour": "hair.darkbrown"
+   },
+   {
+    "mesh": "Eyebrows_Female",
+    "colour": "hair.darkbrown"
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "a small barefoot girl, all eyes",
+  "a grey shift and a worn undyed skirt",
+  "sees everything"
+ ],
+ "marks": [],
+ "occupationVisuals": "child of the waterfront",
+ "statusVisuals": "status.servant",
+ "clothing": [
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.862,
+    1.565
+   ],
+   "collar": [
+    1.455,
+    1.525
+   ],
+   "sleeve": 0.625,
+   "material": "linen",
+   "colour": "linen.grey",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.004,
+   "bandWidth": 0.02,
+   "wear": 0.8
+  },
+  {
+   "id": "garment_wool_saya_01",
+   "layer": "outer",
+   "shape": "skirt",
+   "top": 1.022,
+   "bottom": 0.335,
+   "flare": 0.75,
+   "material": "wool",
+   "colour": "wool.natural",
+   "thickness": 0.03,
+   "wear": 0.8
+  }
+ ],
+ "accessories": [],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 1.15,
+  "work": "crouch",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "children of the waterfront",
+   "source": "Carmen Bernis, Indumentaria española en tiempos de Carlos V (1962)",
+   "region": "Castile/Andalusia",
+   "dates": "c. 1500–1530",
+   "confidence": "medium"
+  }
+ ],
+ "proportions": {
+  "head": 1.3
+ }
+}

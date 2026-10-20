@@ -54,7 +54,11 @@ CLIPS = {
     "yes": "Yes", "call": "Idle_Rail_Call", "no": "Idle_No_Loop", "hit": "Hit_Chest", "chest_open": "Chest_Open", "torch": "Idle_Torch_Loop",
 }
 
-BUDGET = {"LOD0": 4600, "LOD1": 1500}
+BUDGET = {"LOD0": 4600, "LOD1": 1500, "Crowd": 1300}
+
+# Dye slots (C-2 crowd): the fraction of a cloth vertex's material number says which of the wearer's
+# dyes it takes, so one crowd kit is worn in many colours (character.gdshader).
+SLOTS = {"main": 0.1, "lower": 0.2, "head": 0.3}
 
 
 def load_base(sex):
@@ -144,11 +148,13 @@ def build_person(identity, palette, coarse=None):
         if shape == "skirt":
             piece = g.skirt(skeleton, base, garment["top"], garment["bottom"], garment.get("flare", 0.3), colour, kind,
                             garment["id"], garment.get("thickness", 0.02), arc=garment.get("arc"))
+            piece.kind = np.asarray(piece.kind, dtype=np.float64) + SLOTS.get(garment.get("slot"), 0.0)
             layers.append((piece, None, garment))
             continue
         piece, mask = g.shell(base, garment, colour, kind, garment["id"])
         if piece is None:
             continue
+        piece.kind = piece.kind + SLOTS.get(garment.get("slot"), 0.0)
         if garment.get("layer") == "headwear":
             piece.importance[:] = 4
         layers.append((piece, mask, garment))
@@ -203,11 +209,24 @@ def build_person(identity, palette, coarse=None):
     for extra in identity.get("accessories", []):
         part = accessory(extra, skeleton, base, marks, palette)
         if part is not None:
+            part.kind = np.asarray(part.kind, dtype=np.float64) + SLOTS.get(extra.get("slot"), 0.0)
             parts.append(part)
 
     # Equipment, held in the hand only when the work calls for it; separate meshes.
     equipment = [tool(item, skeleton, palette) for item in identity.get("equipment", [])]
-    return skeleton, parts, [e for e in equipment if e is not None]
+    equipment = [e for e in equipment if e is not None]
+
+    # A child's head is larger for their body than an adult's (Lucía, Tito): everything worn on the
+    # head grows about the head joint, by how much each vertex follows the head.
+    head_scale = float(identity.get("proportions", {}).get("head", 1.0))
+    if head_scale != 1.0:
+        pivot = skeleton.world()[skeleton.index("Head")][:3, 3] - [0, 0.03, 0]
+        head, neck = skeleton.index("Head"), skeleton.index("neck_01")
+        for part in parts + equipment:
+            follows = (part.weights * (part.joints == head)).sum(1) + 0.4 * (part.weights * (part.joints == neck)).sum(1)
+            factor = 1 + (head_scale - 1) * np.clip(follows, 0, 1)
+            part.positions = pivot + (part.positions - pivot) * factor[:, None]
+    return skeleton, parts, equipment
 
 
 def paint_marks(part, marks, shares):
@@ -415,7 +434,7 @@ def combine(parts, name):
     return part
 
 
-def reduce_parts(parts, budget, keep_open_edges=True):
+def reduce_parts(parts, budget, keep_open_edges=True, strict=True):
     """Reduces each part in proportion to its share of the triangles, weighted by importance."""
     total = sum(len(p.faces) for p in parts)
     if total <= budget:
@@ -430,7 +449,7 @@ def reduce_parts(parts, budget, keep_open_edges=True):
             continue
         # Hair is many small sculpted locks, each with an open edge: those may move.
         free = p.kind[0] == g.HAIR and "Eyebrows" not in p.name
-        faces = decimate.reduce(p.positions, p.faces, target, p.locked, p.importance, keep_open_edges and not free)
+        faces = decimate.reduce(p.positions, p.faces, target, p.locked, p.importance, keep_open_edges and not free, strict)
         reduced = bodylib.Part(p.name, p.positions, p.normals, p.uv, p.joints, p.weights, faces, p.kind, p.colour)
         reduced.importance = p.importance
         reduced.locked = p.locked
@@ -565,12 +584,24 @@ def main(argv):
     palette = json.loads((OUT / "Shared" / "palette.json").read_text())["colours"]
     build_atlas()
     build_animations()
-    folders = sorted(p.parent for p in OUT.glob("*/identity.json"))
+    folders = sorted(p.parent for p in OUT.glob("*/identity.json")) + sorted(p.parent for p in (OUT / "Crowd").glob("*/identity.json"))
     if argv:
-        folders = [f for f in folders if f.name in argv]
+        folders = [f for f in folders if f.name in argv or (f.parent.name == "Crowd" and "crowd" in argv)]
     for folder in folders:
         identity = json.loads((folder / "identity.json").read_text())
         skeleton, parts, equipment = build_person(identity, palette)
+        if identity.get("crowd"):
+            # Tier C: one light mesh, no portrait (PORT_EXPERIENCE §6, CHARACTER_ART §37).
+            light = [p for p in parts if p.kind[0] != g.EYE and "Eyebrows" not in p.name]
+            for p in light:
+                if p.kind[0] in (g.SKIN, g.HAIR):
+                    # Seen small and in passing: texture seams may move; garment hems may not.
+                    p.locked = np.zeros(len(p.positions), bool)
+                    p.importance = np.minimum(p.importance, 1.5)
+            lod0 = reduce_parts(light, BUDGET["Crowd"], strict=False)
+            write_model(skeleton, {"LOD0": lod0}, equipment, folder / "model.glb", identity)
+            print(f"{folder.parent.name}/{folder.name}: {sum(len(p.faces) for p in lod0)} triangles")
+            continue
         lod0 = reduce_parts(parts, identity.get("budget", BUDGET["LOD0"]))
         light = lod1(lod0, BUDGET["LOD1"])
         write_model(skeleton, {"LOD0": lod0, "LOD1": light}, equipment, folder / "model.glb", identity)

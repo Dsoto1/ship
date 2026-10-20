@@ -1,0 +1,156 @@
+{
+ "characterId": "kit_18",
+ "name": "A porter",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from kit_18's description in data/port/bocana.json: \"One of the waterfront crowd: porter.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Male",
+ "age": 27,
+ "apparentAge": 27,
+ "heightCm": 168,
+ "seed": 1626,
+ "looks": {
+  "build": "heavy",
+  "posture": {
+   "stoop": 0.0,
+   "headForward": 0.11,
+   "shoulders": 0.14
+  },
+  "face": {
+   "width": 0.38,
+   "jaw": 0.59,
+   "chin": 0.48,
+   "nose": -0.65,
+   "noseLength": 0.56,
+   "brow": 0.26,
+   "cheeks": -0.57,
+   "cheekbones": 0.2,
+   "mouth": -0.56,
+   "ears": -0.64,
+   "sag": 0.0
+  },
+  "skin": "#a47a5c",
+  "weathering": 0.71,
+  "eyes": "eyes.darkbrown",
+  "hair": [
+   {
+    "mesh": "Hair_Buzzed",
+    "colour": "hair.darkbrown",
+    "grey": 0.0
+   },
+   {
+    "mesh": "Hair_Beard",
+    "trim": 0.81,
+    "colour": "hair.darkbrown",
+    "grey": 0.0
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "hair.darkbrown",
+    "grey": 0.0
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "a porter of the waterfront"
+ ],
+ "marks": [],
+ "occupationVisuals": "porter",
+ "statusVisuals": "crowd",
+ "clothing": [
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.47,
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.007,
+   "bandWidth": 0.04,
+   "wear": 0.45
+  },
+  {
+   "id": "garment_leather_jerkin_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.919,
+    1.6
+   ],
+   "collar": [
+    1.47,
+    1.56
+   ],
+   "material": "leather",
+   "colour": "wool.grey",
+   "thickness": 0.02,
+   "loose": 0.01,
+   "drape": 1.0,
+   "wear": 0.7,
+   "slot": "main"
+  },
+  {
+   "id": "garment_wool_breeches_01",
+   "layer": "lower",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.079
+   ],
+   "leg": [
+    0.472,
+    1.049
+   ],
+   "material": "wool",
+   "colour": "wool.russet",
+   "thickness": 0.011,
+   "loose": 0.022,
+   "band": 0.004,
+   "bandWidth": 0.03,
+   "wear": 0.55,
+   "slot": "lower"
+  },
+  {
+   "id": "garment_wool_hose_01",
+   "layer": "lower",
+   "shape": "shell",
+   "leg": [
+    0.09,
+    0.5519999999999999
+   ],
+   "material": "wool",
+   "colour": "wool.grey",
+   "thickness": 0.003,
+   "wear": 0.4
+  },
+  {
+   "id": "garment_leather_shoes_01",
+   "layer": "footwear",
+   "shape": "shell",
+   "feet": 0.116,
+   "material": "leather",
+   "colour": "leather.dark",
+   "thickness": 0.008,
+   "wear": 0.6
+  }
+ ],
+ "accessories": [],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 0.94,
+  "work": "push",
+  "idle": "idle"
+ },
+ "research": [],
+ "crowd": true
+}
