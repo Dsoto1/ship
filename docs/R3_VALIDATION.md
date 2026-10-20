@@ -5,7 +5,7 @@
 **Status:**
 - **Part one** (2026-10-19): scenes A and C are judged; all four are staged; the profiling baseline
   is taken here.
-- **Part two,** after the character slice C-1: scenes B and D, and the owner's Mac profile.
+- **Part two** (2026-10-20): scenes B and D are judged, now with the six characters of C-1 in place. The owner's Mac profile is still outstanding.
 
 The brief asks that these scenes be proved *before* asset production is scaled. Each verdict below
 is honest: **Yes**, **Partly** or **No**, against the tests the brief names.
@@ -76,11 +76,79 @@ Day 1, 15:33, in rain, on the yard and the workshops (cooperage, smithy, sail lo
 - Craftsmen moving to work under cover, not only stopping.
 - Puddles, and drips from the eaves.
 
-## Scenes B and D — *after C-1*
+## Scene B: the market at midday — *Partly*
 
-Both scenes are about people: crowd readability and persistent identities. They are staged and
-profiled now, and judged once the six characters of C-1 exist. Scene D's departure itself is built
-(R2e) and is shown in `docs/screenshots/r2e-departure-*.jpg`.
+![Scene B](screenshots/r3-scene-b-midday-market.jpg)
+
+Day 1, 11:18, fair, on the market square between the quay and the church.
+
+The stage first ran at noon, the one hour the market is empty of anyone named: at noon every named
+person goes indoors to eat and drink. It now runs late in the morning.
+
+| Test | Verdict | Notes |
+|---|---|---|
+| Crowd readability | **Partly** | 40-odd people read as individuals at the default zoom. Each is doing something you can name: selling, carrying, walking a route, standing at a stall. But the simple figures are all one height, one build and the same few colours, so the crowd reads as a pattern. Of the six with models, only Pons is in frame (his tawny coat, top left), and he stands out from the crowd as a different kind of figure. |
+| Props | **Partly** | Stalls, awnings, a well, a cook-fire, cask stacks and handcarts. But the stall tables are nearly bare: the goods for sale (fish, bread, cloth, pots) are a few blocks, not piles. |
+| Colour hierarchy | **Yes** | Warm stone and white limewash, terracotta roofs, pale awnings. People are the strongest colour, as the art bible asks, and nothing in the UI competes with the world. |
+| NPC activity | **Partly** | Sellers at their stalls, porters, idlers and walkers on routes, the captain greeted in passing. But there is little exchange to see: no one hands anything over, haggles or carries a purchase away. |
+| UI legibility | **Yes** | The clock, departure countdown, crew, purse and weather read at a glance. Labels appear only for the captain and whoever is pointed at. The new recruiting rim marks the people who matter without labels. |
+
+**Still to do:**
+- Goods piled on the stalls: the props kit for market wares.
+- Visible exchange between sellers and buyers.
+- Models for every recruitable person (C-2, below), so the people the player is choosing between
+  stand out as people, not as box figures.
+
+## Scene D: departure morning — *Partly*
+
+![Scene D, Rodrigo](screenshots/r3-scene-d-rodrigo.jpg)
+![Scene D, Wat](screenshots/r3-scene-d-wat.jpg)
+
+Day 3, 05:40, fair. Seven signed on: Velho, Pons, Bartolo and Rodrigo (with models), and Gil, Wat and
+Pascual. The departure plays as soon as the scene is staged.
+
+| Test | Verdict | Notes |
+|---|---|---|
+| Emotional readability | **Partly** | The words carry it: Rodrigo's two women, Pascual's mother, Hob shouting to Wat in Brennish, Velho touching the stones. The pictures carry less. People who come to see someone off now walk to the quay edge and wave, and the camera frames the hand and them together. But the figures are small, their gestures are few (a wave, a talk), and no one embraces, hands something up or turns away. |
+| Persistent identities | **Partly** | When a farewell is about one of the six, the camera closes on them and they are recognisably themselves: Bartolo bent over, Rodrigo barefoot in his red cap, Pons in his long coat. The other hands (Gil, Wat, Pascual) are simple figures and do not. |
+| Crowd tiers | **No** | The six with models, the simple figures for everyone else named, and the crowd walkers are three different looks side by side. A recruitable man like Gil, whom the player may have chosen over Bartolo, looks like a box. CHARACTER_ART §37: recruitable people must never use disposable identity. |
+| Ship state | **Yes** | The stores still on the quay go up in their kinds and numbers (sacks, casks, coils, planks), the hold is read out, the lanterns are lit, the gangway comes in and the lines are cast off. The Garza is visibly ready, and visibly loaded with what was bought. |
+| Procedural farewell staging | **Partly** | Built from the expedition as it is: who sailed, who has come for them (named people walk to the quay: Hob for Wat, the guard for Tomé, Catalina for Ximena, Inés for Nuño), how many wave, who sails alone, and Varzi coming down to sign. But the gathering is a static crowd with a few wavers, not people arriving, pressing forward and dispersing. |
+
+**Fixed in this pass:**
+- **Sunrise at six:** the convoy sails at dawn. The departure was playing in pre-dawn dark (sunrise
+  was at 06:30), and is now a low gold light.
+- **Camera:** it closes on each hand while their farewell is told, and frames them with whoever
+  came to see them off.
+- **Farewells staged:** the people named in a farewell come to the quay edge and wave, and
+  anonymous wavers step out of the crowd. This comes from the data (`farewellBy`,
+  `farewellWavers`).
+- **Varzi** comes down to the gangway to sign the clearance, and the camera is on him. After the
+  convoy has gone, he sends a clerk instead.
+- **The stage** now signs on the crew by name, so the six are in it.
+
+**Still to do:**
+- **C-2:** models for all recruitable people, and a matching style for named locals and the crowd.
+  This is the largest gap the four scenes show.
+- **Gestures:** an embrace, handing up a bundle, turning away. The animation library has none of
+  these; they need clips.
+- **The gathering:** arriving through the dawn, pressing to the edge as the gangway comes in, and
+  breaking up once she is away.
+
+## What the four scenes say
+
+None of the four is a clean *Yes*. Each shows the world working, and something specific missing.
+In order of what would most improve the port:
+
+1. **People (C-2):** models for every recruitable person, and a matching style for named locals
+   and the crowd. Scenes B and D both fail on this: the six of C-1 look like people, and everyone
+   beside them looks like a box. The pipeline from C-1 can build them; the gap is identity
+   records.
+2. **Open-fronted workshops (scene C):** craft visible from the street.
+3. **Goods and exchange (scene B):** piled wares on the stalls, and buying you can see.
+4. **Farewell gestures and a living gathering (scene D):** new clips, and the crowd arriving and
+   dispersing.
+5. **Mist banks and dawn sound (scene A).**
 
 ## Profiling
 
