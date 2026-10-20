@@ -495,12 +495,15 @@ public partial class Main : Node3D
                 // The departure's farewells, staged (R3 scene D): whoever has come to see this hand off
                 // stands at the quay edge by the gangway and waves.
                 Vector3? standAt = null;
-                if (_departure.Playing && _departure.Current is { Kind: "farewell" } beat && beat.SeenOffBy.ToList().IndexOf(id) is var giver and >= 0)
+                var signing = false;
+                if (_departure.Playing && _departure.Current is { Kind: "farewell" or "sponsor" } beat && beat.SeenOffBy.ToList().IndexOf(id) is var giver and >= 0)
                 {
                     standAt = new Vector3(_port.Berth.X - 1.2f + giver * 1.4f, 0, 32.9f);
+                    signing = beat.Kind == "sponsor";
                 }
 
-                var pose = standAt is not null ? Pose.Waving
+                var pose = signing ? Pose.Talking
+                    : standAt is not null ? Pose.Waving
                     : character.SurvivalState is SurvivalState.Incapacitated or SurvivalState.Dead ? Pose.Lying
                     : definition?.Carries == "cask" ? (placement.IsMoving ? Pose.Rolling : Pose.Lifting)
                     : carrying is not null ? Pose.Carrying

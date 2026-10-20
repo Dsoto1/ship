@@ -382,9 +382,15 @@ public sealed partial class SimulationRunner
         }
 
         var sponsor = rules.People.FirstOrDefault(p => p.Id == "person.varzi");
+        var factor = sponsor is null ? null : CharacterFor(sponsor.Id);
+        var inPerson = port.LateFeesCharged == 0 && factor is not null && Campaign.Placements.ContainsKey(factor.Id);
         beats.Add(new DepartureBeat("sponsor", port.LateFeesCharged > 0
             ? $"A clerk brings a letter from {sponsor?.Name ?? "the factor"}: the Company has paid {port.LateFeesCharged * rules.LateFeePerHalfDay} sueldos in harbour dues for the delay, and will remember it."
-            : $"{sponsor?.Name ?? "The factor"} signs the clearance for the Company and wishes you a fair wind."));
+            : $"{sponsor?.Name ?? "The factor"} signs the clearance for the Company and wishes you a fair wind.", inPerson ? factor!.Id : null)
+        {
+            // He comes down to the gangway himself to sign.
+            SeenOffBy = inPerson ? [factor!.Id] : [],
+        });
         beats.Add(new DepartureBeat("board", "You go up the gangway last."));
         beats.Add(new DepartureBeat("gangway", "The gangway comes in."));
         beats.Add(new DepartureBeat("lines", "Bow and stern lines are cast off; the boats tow her head round to the bar."));

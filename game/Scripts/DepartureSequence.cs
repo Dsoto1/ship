@@ -229,7 +229,7 @@ public partial class DepartureSequence : CanvasLayer
 
         var beat = _beats[_index];
         _text.Text = beat.Text;
-        Subject = beat.Kind is "crew" or "farewell" or "claim" ? beat.Who : null;
+        Subject = beat.Kind is "crew" or "farewell" or "claim" or "sponsor" ? beat.Who : null;
         Current = beat;
         Ui.FadeIn(_panel);
         _answer.Visible = beat.Kind == "claim";
