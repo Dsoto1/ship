@@ -48,6 +48,9 @@ public partial class PortSound : Node
     /// <summary>0 still .. 1 a strong breeze: the wind bed rises with it.</summary>
     public float Wind { get; set; }
 
+    /// <summary>True while the captain is inside the Three Anchors: its room loud and close, the port muffled.</summary>
+    public bool Inside { get; set; }
+
     private sealed class Layer
     {
         public AudioStreamPlayer Player = null!;
@@ -154,6 +157,16 @@ public partial class PortSound : Node
         _layers["tavern"].Target = Near(_tavern, 14) * (0.25f + 0.6f * night);
         _layers["street"].Target = 0.12f + Wind * 0.35f;
         _layers["rain"].Target = rain * 0.55f;
+        if (Inside)
+        {
+            // Through the walls the port is a murmur; the room is all round.
+            foreach (var name in new[] { "surf", "market", "street", "rain" })
+            {
+                _layers[name].Target *= 0.3f;
+            }
+
+            _layers["tavern"].Target = 0.55f + 0.4f * night;
+        }
 
         foreach (var (name, layer) in _layers)
         {
@@ -170,7 +183,7 @@ public partial class PortSound : Node
         // The sounds of work, each at its own rhythm and as loud as the listener is near it.
         Now("mallet", delta, workers > 0 ? Mathf.Max(0.6f, 2.2f / workers) : -1, 0.8f, Near(_workshop, 20) * 0.6f);
         Now("anvil", delta, smiths > 0 ? 1.1f : -1, 0.5f, Near(_smithy, 16) * 0.7f);
-        Now("cup", delta, 3.5f, 2f, Near(_tavern, 14) * (0.25f + 0.5f * night) * 0.8f);
+        Now("cup", delta, Inside ? 2.2f : 3.5f, 2f, (Inside ? 1f : Near(_tavern, 14)) * (0.25f + 0.5f * night) * 0.8f);
         Now("coins", delta, market > 0 ? 18f / market : -1, 4f, Near(_market, 14) * day * 0.6f);
         Now("knife", delta, fish > 0 ? 3f : -1, 2f, Near(_fish, 10) * day * 0.55f);
         Now("creak", delta, 6f, 5f, Mathf.Clamp(1f - Mathf.Abs(listener.Y - _waterline) / 10f, 0, 1) * 0.45f);

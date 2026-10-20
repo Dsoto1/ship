@@ -60,6 +60,15 @@ feature("balustrade", 0, 24, 18, 24, solid=False)
 
 # ---- tavern and chapel along the north of the square, the chandler, the alley between
 feature("building", 23, 3, 34, 13, style="tavern")
+# The Three Anchors' common room (y 6-12 inside the walls; the kitchen behind stays solid), its door on
+# the square at (28, 13). Inside: the hearth on the back wall, the counter, two long tables.
+block(24, 6, 33, 12, '.')
+g[13][28] = '.'
+block(24, 6, 25, 6)            # hearth
+block(30, 8, 33, 8)            # counter
+block(25, 10, 27, 10)          # long table
+block(31, 11, 32, 11)          # small table
+rooms = [{"id": "room.three_anchors", "name": "the Three Anchors", "x0": 24, "y0": 6, "x1": 33, "y1": 12, "round": 30}]
 feature("building", 37, 3, 44, 13, style="chapel")
 feature("building", 47, 3, 54, 13, style="warehouse")
 feature("building", 20, 3, 21, 13, style="house")
@@ -127,16 +136,17 @@ for i, (x, y) in enumerate([(24, 14), (27, 14), (32, 14), (39, 14), (42, 14), (4
                             (60, 4), (66, 4), (72, 4), (3, 30), (12, 30), (15, 30)]):
     spot(f"spot.shelter_{i + 1}", x, y, ["task.shelter"], "ShelterPoint", face="S")
 
-# Three Anchors
-spot("spot.tavern_door", 28, 14, ["task.drink"], "DrinkPoint", True)
+# Three Anchors: benches outside on the square, and the common room inside
 for i, x in enumerate([24, 26, 31, 33]):
     spot(f"spot.tavern_bench_{i + 1}", x, 16, ["task.drink", "task.gamble"], "SitPoint", face="S")
-spot("spot.tavern_serving", 30, 15, ["task.serve_drinks"], "WorkBench")
-for i in range(10):
-    spot(f"spot.tavern_inside_{i + 1}", 28, 14, ["task.drink", "task.gamble"], "DrinkPoint", True)
+spot("spot.tavern_serving", 31, 7, ["task.serve_drinks"], "WorkBench", face="S")
+seats = [(25, 9, "S"), (26, 9, "S"), (27, 9, "S"), (25, 11, "N"), (26, 11, "N"), (27, 11, "N"), (31, 10, "S"), (32, 10, "S"), (31, 12, "N"), (32, 12, "N")]
+for i, (x, y, face) in enumerate(seats):
+    spot(f"spot.tavern_inside_{i + 1}", x, y, ["task.drink", "task.gamble"], "SitPoint", face=face)
+spot("spot.tavern_bar_1", 30, 9, ["task.drink"], "DrinkPoint", face="N"); spot("spot.tavern_bar_2", 32, 9, ["task.drink"], "DrinkPoint", face="N")
 for i, (x, y) in enumerate([(24, 18), (26, 18), (31, 18), (33, 18), (23, 16), (34, 16)]):
     spot(f"spot.tavern_table_{i + 1}", x, y, ["task.drink", "task.gamble"], "SitPoint", face="N" if y == 18 else ("E" if x < 28 else "W"))
-spot("spot.tavern_fire", 35, 16, ["task.port_cooking"], "WorkBench")
+spot("spot.tavern_fire", 25, 7, ["task.port_cooking"], "WorkBench", face="N")
 # chapel
 spot("spot.chapel_door", 40, 14, ["task.pray"], "PrayerPoint", True)
 spot("spot.chapel_steps_1", 38, 15, ["task.pray"], "PrayerPoint"); spot("spot.chapel_steps_2", 42, 15, ["task.pray"], "PrayerPoint")
@@ -212,7 +222,7 @@ ground = [
     {"x0": 6, "y0": 25, "x1": 9, "y1": 29, "height": 2.6, "toHeight": 0, "along": "y"},
 ]
 loc = [{"id": "location.bocana", "name": "The Bocana waterfront", "sightRange": 14, "walkCellsPerMinute": 2.5,
-        "rows": rows, "spots": spots, "ground": ground, "features": features}]
+        "rows": rows, "spots": spots, "ground": ground, "rooms": rooms, "features": features}]
 here = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(here, '..', 'data', 'locations', 'bocana.json'), 'w') as f:
     f.write("// The Bocana waterfront at La Bocana (SETTING.md §7) in five districts (PORT_EXPERIENCE.md §3, R2a).\n"

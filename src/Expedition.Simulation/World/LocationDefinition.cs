@@ -43,6 +43,16 @@ public sealed record LocationDefinition
     /// <summary>What stands where (buildings, stalls, cargo), for drawing. The simulation ignores these.</summary>
     public IReadOnlyList<LocationFeature> Features { get; init; } = [];
 
+    /// <summary>
+    /// Rooms that can be walked into, such as a tavern's common room. Walls hide what goes on inside: only
+    /// someone in the same room sees and speaks with those in it.
+    /// </summary>
+    public IReadOnlyList<RoomDefinition> Rooms { get; init; } = [];
+
+    /// <summary>The room <paramref name="cell"/> is in, or null outdoors.</summary>
+    public RoomDefinition? RoomAt(GridPosition cell) =>
+        Rooms.FirstOrDefault(r => cell.X >= r.X0 && cell.X <= r.X1 && cell.Y >= r.Y0 && cell.Y <= r.Y1);
+
     /// <summary>Number of columns.</summary>
     public int Width => Rows.Count == 0 ? 0 : Rows[0].Length;
 
@@ -55,6 +65,31 @@ public sealed record LocationDefinition
 
     /// <summary>The spot with <paramref name="spotId"/>, or null.</summary>
     public WorkSpotDefinition? FindSpot(string spotId) => Spots.FirstOrDefault(s => s.Id == spotId);
+}
+
+/// <summary>A room inside a building, inclusive of both corners: walls all round, and a way in.</summary>
+public sealed record RoomDefinition
+{
+    /// <summary>ID, for example <c>room.three_anchors</c>.</summary>
+    public required string Id { get; init; }
+
+    /// <summary>What it is called in a sentence: "the Three Anchors".</summary>
+    public required string Name { get; init; }
+
+    /// <summary>West edge.</summary>
+    public required int X0 { get; init; }
+
+    /// <summary>North edge.</summary>
+    public required int Y0 { get; init; }
+
+    /// <summary>East edge.</summary>
+    public required int X1 { get; init; }
+
+    /// <summary>South edge.</summary>
+    public required int Y1 { get; init; }
+
+    /// <summary>What it costs to stand everyone here a round, or null where no drink is sold.</summary>
+    public int? Round { get; init; }
 }
 
 /// <summary>A cell where one or more kinds of task are done, such as the pump or the galley fire.</summary>

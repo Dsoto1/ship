@@ -153,6 +153,15 @@ internal static class ContentValidator
             errors.Add($"{where}: duplicate spot ID '{duplicate.Key}'.");
         }
 
+        foreach (var room in location.Rooms)
+        {
+            if (room.X0 < 0 || room.Y0 < 0 || room.X1 >= location.Width || room.Y1 >= location.Height || room.X0 > room.X1 || room.Y0 > room.Y1
+                || room.Round is <= 0 || location.Rooms.Count(r => r.Id == room.Id) > 1)
+            {
+                errors.Add($"{where}: room '{room.Id}' must lie inside the map, have a unique ID, and a round costs more than nothing.");
+            }
+        }
+
         foreach (var spot in location.Spots)
         {
             if (!location.IsWalkable(spot.Cell))

@@ -246,6 +246,11 @@ public partial class Main : Node3D
             var result = _runner.Offer(id, advance);
             _portHud.Say(result.Succeeded ? $"{name} spits in a palm and shakes on it, and goes to stow a sea chest aboard the Garza." : result.Reason);
         });
+        _portHud.RoundRequested += () =>
+        {
+            var (result, said) = _runner.BuyRound();
+            _portHud.Say(result.Succeeded ? said : result.Reason);
+        };
         _portHud.NoticesRequested += () =>
         {
             if (_content.Port?.NoticeBoard is not { } board || _content.Locations[_content.Port.Location].FindSpot(board) is not { } spot)
@@ -476,6 +481,7 @@ public partial class Main : Node3D
                 FollowCaptain((float)delta);
             }
             _port.UpdateLook(_world.Darkness, t, _portWet);
+            _port.OpenRoom(_runner.CaptainRoom?.Id);
             FadeForeground((float)delta);
             ListenToThePort(hour, (float)delta);
             // Rain and fog thin the crowd; stall covers go on, the ships at anchor vanish into fog.
@@ -522,6 +528,7 @@ public partial class Main : Node3D
         var drawTick = _runner.Campaign.Clock.Tick + (speed > 0 ? _tickFraction : 0);
         var animationRate = speed == 0 ? 0f : Mathf.Max(0.8f, 1f + Mathf.Log((float)speed) * 0.25f);
         CrewFigure.FarView = _camera.Size > 26f;
+        var captainRoom = _runner.CaptainRoom;
         foreach (var (id, figure) in _figures)
         {
             var character = _runner.Campaign.Characters[id];
@@ -552,7 +559,8 @@ public partial class Main : Node3D
                     : definition is { IsRest: true } ? Pose.Resting
                     : definition is not null ? WorkPose(definition.Id, spot?.Kind)
                     : Pose.Standing;
-                var inside = character.Membership == Membership.Local && _runner.IsIndoors(id);
+                // Indoors out of sight, or in a room the captain is not in (the roof is on).
+                var inside = character.Membership == Membership.Local && (_runner.IsIndoors(id) || (_runner.RoomOf(id) is { } room && room != captainRoom));
                 // In the departure the captain leaves the quay when he goes up the gangway (R2e).
                 figure.Visible = standAt is not null || character.SurvivalState != SurvivalState.Missing && !inside && !(id == _runner.Campaign.CaptainId && _departure.Boarded && _departure.Playing);
                 var onPort = placement.LocationId == _runner.Content.Port?.Location;
@@ -646,6 +654,7 @@ public partial class Main : Node3D
 
         _portSound.Activity = (market, workers, smiths, fish);
         _portSound.Wind = _portWind;
+        _portSound.Inside = _runner.CaptainRoom is not null;
         _portSound.Update(new Vector2(_camera.Target.X, _camera.Target.Z), hour, _portWet, delta, (float)TicksPerSecond[_speedIndex]);
     }
 
@@ -1425,6 +1434,7 @@ public partial class Main : Node3D
     private string? _developerLook;
     private bool _developerTalk;
     private string? _developerTopics;
+    private GridPosition? _developerCaptainAt;
     private bool _developerJournal;
     private bool _developerPerf;
     private PanelId? _developerPanel;
@@ -1468,6 +1478,15 @@ public partial class Main : Node3D
         if (_developerAfter > 0)
         {
             _runner.Advance(_developerAfter);
+        }
+
+        // --captain=x,y walks the captain there first (into the Three Anchors: --captain=28,9).
+        if (_developerCaptainAt is { } walkTo && _runner.Campaign.CaptainId is { } walker && _runner.MoveCharacter(walker, walkTo).Succeeded)
+        {
+            for (var i = 0; i < 180 && _runner.Campaign.Placements[walker].IsMoving; i++)
+            {
+                _runner.Advance(1);
+            }
         }
 
         if (_developerSelect is { } person && _runner.CharacterFor(person) is { } character)
@@ -1612,6 +1631,7 @@ public partial class Main : Node3D
                 case "look": _developerLook = value; break;
                 case "talk": _developerTalk = true; break;
                 case "topics": _developerTopics = value; break;
+                case "captain" when value.Split(',') is [var cx, var cy] && int.TryParse(cx, out var x) && int.TryParse(cy, out var y): _developerCaptainAt = new GridPosition(x, y); break;
                 case "journal": _developerJournal = true; break;
                 case "perf": _developerPerf = true; break;
                 case "panel" when Enum.TryParse<PanelId>(value, true, out var panel): _developerPanel = panel; break;

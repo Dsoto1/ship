@@ -510,6 +510,9 @@ public sealed record PortData
     /// <summary>Half days of late fees charged.</summary>
     public required int LateFeesCharged { get; init; }
 
+    /// <summary>The day the captain last stood a room a round, or -1. Added in format 23.</summary>
+    public long LastRound { get; init; } = -1;
+
     /// <summary>Whether the eve-of-sailing warning was given.</summary>
     public required bool Warned { get; init; }
 }

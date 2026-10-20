@@ -83,6 +83,9 @@ public partial class PortHud : CanvasLayer
     /// <summary>The captain settles what the expedition owes a seller.</summary>
     public event Action<string>? SettleRequested;
 
+    /// <summary>Stand the room the captain is in a round.</summary>
+    public event Action? RoundRequested;
+
     /// <summary>Walk to the Chamber's board and read it.</summary>
     public event Action? NoticesRequested;
 
@@ -102,6 +105,7 @@ public partial class PortHud : CanvasLayer
         AddChild(_root);
         BuildCard();
         BuildDialogue();
+        BuildRoomBar();
         _confirmSail = new ConfirmationDialog { Title = "Set sail?", OkButtonText = "Sail", CancelButtonText = "Not yet" };
         _confirmSail.Confirmed += () => SetSailRequested?.Invoke();
         AddChild(_confirmSail);
@@ -172,6 +176,22 @@ public partial class PortHud : CanvasLayer
         }
 
         RefreshCard(runner, shown);
+        if (runner.CaptainRoom is { } room)
+        {
+            _roomName.Text = char.ToUpperInvariant(room.Name[0]) + room.Name[1..];
+            _roundButton.Visible = room.Round is not null;
+            _roundButton.Text = $"Stand the room a round ({room.Round})";
+            _roundButton.Disabled = runner.Campaign.Port?.LastRound == runner.Campaign.Clock.Day;
+            _roundButton.TooltipText = _roundButton.Disabled ? "You have already stood them a round today." : "Drink to the Garza with everyone here: they will think better of you. Once a day";
+            if (!_roomBar.Visible)
+            {
+                Ui.FadeIn(_roomBar);
+            }
+        }
+        else
+        {
+            _roomBar.Visible = false;
+        }
         if (_hud?.PanelBody(PanelId.Expedition).Visible == true && _hud.PanelOpen)
         {
             RefreshExpedition(runner);
@@ -419,6 +439,31 @@ public partial class PortHud : CanvasLayer
         _claimRow.AddChild(Ui.Button("Pay the debt", "Pay it from the purse: the debtor sails with his name clear", () => { if (_shown is { } id) ClaimAnswered?.Invoke(id, true); }));
         _claimRow.AddChild(Ui.Button("Refuse", "He sails anyway; the creditor will not forget it", () => { if (_shown is { } id) ClaimAnswered?.Invoke(id, false); }));
     }
+
+    // Across the top while the captain is inside somewhere: where he is, and a round if drink is sold.
+    private void BuildRoomBar()
+    {
+        _roomBar = Ui.PanelOf(Ui.Panel, Ui.Rule, Ui.SpaceL, Ui.SpaceS);
+        _roomBar.AnchorLeft = 0.5f;
+        _roomBar.AnchorRight = 0.5f;
+        _roomBar.OffsetLeft = -230;
+        _roomBar.OffsetRight = 230;
+        _roomBar.OffsetTop = 58;
+        _roomBar.Visible = false;
+        _root.AddChild(_roomBar);
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", Ui.SpaceM);
+        _roomBar.AddChild(row);
+        _roomName = Ui.Text("", Ui.TextHeading, Ui.Brass);
+        _roomName.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        row.AddChild(_roomName);
+        _roundButton = Ui.Button("Stand the room a round", "Drink to the Garza with everyone here: they will think better of you. Once a day", () => RoundRequested?.Invoke());
+        row.AddChild(_roundButton);
+    }
+
+    private PanelContainer _roomBar = null!;
+    private Label _roomName = null!;
+    private Button _roundButton = null!;
 
     private void BuildDialogue()
     {

@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 22;
+    public const int CurrentSchemaVersion = 23;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -162,6 +162,16 @@ public static class SaveSerializer
                 if (root["port"] is JsonObject port)
                 {
                     port["discussed"] = new JsonArray();
+                }
+
+                return root;
+            },
+            // Format 23 added rounds stood in the tavern.
+            [22] = root =>
+            {
+                if (root["port"] is JsonObject port)
+                {
+                    port["lastRound"] = -1;
                 }
 
                 return root;
@@ -538,6 +548,7 @@ public static class SaveSerializer
                     Hired = port.Hired.Select(id => id.Value).Order().ToList(),
                     Gone = port.Gone.Select(id => id.Value).Order().ToList(),
                     LateFeesCharged = port.LateFeesCharged,
+                    LastRound = port.LastRound,
                     Warned = port.Warned,
                     Leads = port.Leads.Select(l => new HeardLeadData { Lead = l.LeadId, Tick = l.Tick }).ToList(),
                     Purchases = port.Purchases.Select(p => new PurchaseData { Lot = p.Lot, Tick = p.Tick }).ToList(),
@@ -830,7 +841,7 @@ public static class SaveSerializer
                 throw new SaveLoadException("The port preparations have invalid stock, fees or inquiries, or the content has no port.");
             }
 
-            var port = new Port.PortState { Funds = savedPort.Funds, LateFeesCharged = savedPort.LateFeesCharged, Warned = savedPort.Warned };
+            var port = new Port.PortState { Funds = savedPort.Funds, LateFeesCharged = savedPort.LateFeesCharged, Warned = savedPort.Warned, LastRound = savedPort.LastRound };
             if (savedPort.Weather is { } weather && portRules.Weather?.Find(weather) is null)
             {
                 throw new SaveLoadException($"The save's port weather '{weather}' is not in this game.");

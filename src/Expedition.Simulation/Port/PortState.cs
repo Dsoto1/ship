@@ -70,6 +70,9 @@ public sealed class PortState
     /// <summary>Who has greeted the captain, and on which day.</summary>
     public IReadOnlySet<(CharacterId Who, int Day)> Greeted => _greeted;
 
+    /// <summary>The day the captain last stood a room a round, or -1.</summary>
+    public long LastRound { get; internal set; } = -1;
+
     /// <summary>Half days of late fees already charged.</summary>
     public int LateFeesCharged { get; internal set; }
 

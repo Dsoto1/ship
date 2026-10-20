@@ -153,3 +153,68 @@ public sealed class ConversationTests
         Assert.All(seeking, p => Assert.Contains(p.Conversation!.Topics, t => t.Terms));
     }
 }
+
+/// <summary>The Three Anchors: a room with walls, and a round stood in it.</summary>
+public sealed class TavernTests
+{
+    private static readonly GameContent Shipped = ContentLoader.LoadFromDirectory(Path.Combine(AppContext.BaseDirectory, "data"));
+
+    private static SimulationRunner Port() => ExpeditionScenario.Create(Shipped, CampaignState.DefaultSeed);
+
+    private static CharacterId Captain(SimulationRunner runner) => runner.Campaign.CaptainId!.Value;
+
+    private static void WalkTo(SimulationRunner runner, int x, int y)
+    {
+        Assert.True(runner.MoveCharacter(Captain(runner), new World.GridPosition(x, y)).Succeeded);
+        for (var minute = 0; minute < 120 && runner.Campaign.Placements[Captain(runner)].IsMoving; minute++)
+        {
+            runner.Advance(1);
+        }
+    }
+
+    [Fact]
+    public void TheCommonRoomIsARoomYouCanWalkInto()
+    {
+        var bocana = Shipped.Locations[Shipped.Port!.Location];
+        var room = bocana.Rooms.Single(r => r.Id == "room.three_anchors");
+        Assert.True(bocana.IsWalkable(new World.GridPosition(28, 13)));
+        Assert.All(bocana.Spots.Where(s => s.Id.StartsWith("spot.tavern_inside", StringComparison.Ordinal)), s => Assert.Equal(room, bocana.RoomAt(s.Cell)));
+
+        var runner = Port();
+        WalkTo(runner, 28, 9);
+        Assert.Equal(room, runner.CaptainRoom);
+    }
+
+    [Fact]
+    public void WallsHideWhoIsInsideAndWhoIsOutside()
+    {
+        var runner = Port();
+        WalkTo(runner, 28, 9);
+        var outside = runner.Campaign.Characters.Values.Where(c => c.Membership == Membership.Local && runner.RoomOf(c.Id) is null).ToList();
+        Assert.NotEmpty(outside);
+        Assert.All(outside, c => Assert.False(runner.CaptainSees(c.Id)));
+        Assert.All(outside, c => Assert.NotNull(runner.WhyCannotSpeak(c.Id)));
+    }
+
+    [Fact]
+    public void ARoundWarmsTheRoomOnceADay()
+    {
+        var runner = Port();
+        Assert.False(runner.BuyRound().Result.Succeeded);
+        runner.Advance(11 * 60);
+        WalkTo(runner, 28, 9);
+        var drinking = runner.Campaign.Characters.Values.Where(c => c.PersonId is not null && runner.RoomOf(c.Id) == runner.CaptainRoom).Select(c => c.Id).ToList();
+        var funds = runner.Campaign.Port!.Funds;
+
+        var (result, said) = runner.BuyRound();
+
+        Assert.True(result.Succeeded, result.Reason);
+        Assert.Equal(funds - 30, runner.Campaign.Port.Funds);
+        Assert.All(drinking, id => Assert.Equal(4, runner.Campaign.Relationships[(id, Captain(runner))].Affection));
+        Assert.Contains("round", said);
+        Assert.False(runner.BuyRound().Result.Succeeded);
+
+        var loaded = SaveSerializer.Deserialize(SaveSerializer.Serialize(runner.Campaign), Shipped);
+        Assert.Equal(runner.Campaign.Port.LastRound, loaded.Port!.LastRound);
+    }
+}

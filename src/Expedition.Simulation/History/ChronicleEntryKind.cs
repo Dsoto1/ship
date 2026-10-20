@@ -86,4 +86,7 @@ public enum ChronicleEntryKind
 
     /// <summary>Someone got over an illness (parameter: condition; character: who).</summary>
     Recovered,
+
+    /// <summary>The captain stood a room a round (parameters: to = room name, level = sueldos; characters: who drank).</summary>
+    RoundBought,
 }

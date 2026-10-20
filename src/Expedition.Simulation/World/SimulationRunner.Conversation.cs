@@ -1,5 +1,6 @@
 using Expedition.Simulation.Characters;
 using Expedition.Simulation.Core;
+using Expedition.Simulation.History;
 using Expedition.Simulation.Knowledge;
 using Expedition.Simulation.Port;
 
@@ -157,5 +158,60 @@ public sealed partial class SimulationRunner
             ( < 0, _, _) => "Wary of you.",
             _ => "Polite, no more.",
         };
+    }
+}
+
+/// <summary>Rooms in port: buying a round where drink is sold.</summary>
+public sealed partial class SimulationRunner
+{
+    /// <summary>The room the captain is in, or null outdoors.</summary>
+    public RoomDefinition? CaptainRoom =>
+        Campaign.CaptainId is { } captain && Campaign.Placements.TryGetValue(captain, out var here)
+            ? Content.Locations[here.LocationId].RoomAt(here.CellAt(Campaign.Clock.Tick))
+            : null;
+
+    /// <summary>The room someone is in, or null outdoors.</summary>
+    public RoomDefinition? RoomOf(CharacterId id) =>
+        Campaign.Placements.TryGetValue(id, out var there) ? Content.Locations[there.LocationId].RoomAt(there.CellAt(Campaign.Clock.Tick)) : null;
+
+    /// <summary>
+    /// Stands everyone in the room a round, once a day: the cheapest way in port to be thought well of.
+    /// Each named person drinking there likes and trusts the captain a little more.
+    /// </summary>
+    public (CommandResult Result, string Said) BuyRound()
+    {
+        if (CaptainRoom is not { Round: { } price } room || Campaign.Port is not { } port || Campaign.CaptainId is not { } captain)
+        {
+            return (CommandResult.Rejected("There is no one selling drink here."), "");
+        }
+
+        if (port.LastRound == Campaign.Clock.Day)
+        {
+            return (CommandResult.Rejected($"You have already stood {room.Name} a round today."), "");
+        }
+
+        if (port.Funds < price)
+        {
+            return (CommandResult.Rejected($"A round is {price} sueldos, and there are only {port.Funds} in the purse."), "");
+        }
+
+        var drinkers = Campaign.Characters.Values
+            .Where(c => c.Membership == Membership.Local && c.PersonId is not null && RoomOf(c.Id) == room && !IsIndoors(c.Id))
+            .OrderBy(c => c.Id).ToList();
+        port.Funds -= price;
+        port.LastRound = Campaign.Clock.Day;
+        foreach (var drinker in drinkers)
+        {
+            Campaign.ChangeRelationship(drinker.Id, captain, RelationshipDimension.Affection, 4, "drank to the Garza");
+            Campaign.ChangeRelationship(drinker.Id, captain, RelationshipDimension.Trust, 2, "drank to the Garza");
+        }
+
+        Campaign.Record(ChronicleEntryKind.RoundBought,
+            [new(ChronicleParameters.To, room.Name), new(ChronicleParameters.Level, price.ToString(System.Globalization.CultureInfo.InvariantCulture))],
+            drinkers.Select(d => d.Id).ToArray());
+        var names = drinkers.Select(d => d.Name).ToList();
+        return (CommandResult.Ok(), names.Count == 0
+            ? $"You stand a round for an empty room. The pot-boy drinks it, and thanks you. ({price} sueldos)"
+            : $"You stand the room a round ({price} sueldos). Cups go up to the Garza: {Join(names)} drink with you, and the talk is easier after.");
     }
 }

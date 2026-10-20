@@ -80,6 +80,12 @@ public sealed partial class SimulationRunner
         }
 
         var location = Content.Locations[watched.LocationId];
+        // Walls: inside a room one sees only who else is in it, and from outside no one in it.
+        if (location.RoomAt(watcher.CellAt(Campaign.Clock.Tick)) != location.RoomAt(watched.CellAt(Campaign.Clock.Tick)))
+        {
+            return false;
+        }
+
         // Fog shortens how far one can see on the waterfront (R2d).
         var sight = watched.LocationId == Content.Port?.Location ? PortWeather?.Sight ?? 1 : 1;
         return location.SightRange is not { } range || Distance(watcher.CellAt(Campaign.Clock.Tick), watched.CellAt(Campaign.Clock.Tick)) <= range * sight;
@@ -375,6 +381,13 @@ public sealed partial class SimulationRunner
         if (IsIndoors(id))
         {
             return $"{person.Name} is indoors.";
+        }
+
+        var location = Content.Locations[here.LocationId];
+        var theirs = location.RoomAt(there.CellAt(Campaign.Clock.Tick));
+        if (theirs != location.RoomAt(here.CellAt(Campaign.Clock.Tick)))
+        {
+            return theirs is null ? $"{person.Name} is outside." : $"{person.Name} is inside {theirs.Name}. Go in.";
         }
 
         return Distance(here.CellAt(Campaign.Clock.Tick), there.CellAt(Campaign.Clock.Tick)) > SpeakingDistance

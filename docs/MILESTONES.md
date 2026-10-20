@@ -1424,3 +1424,40 @@ Tests: 425 (9 new in `ConversationTests`). Screenshots: `docs/screenshots/talk-v
 - the other named townsfolk (Corbalán, Varzi, Catalina, the dockers, the smith, the ropemaker and
   others) still pass the time of day in one line;
 - talking takes no game time.
+
+## The Three Anchors: a room to walk into (owner: "there are no buildings to go in")
+
+The tavern was a solid box, and anyone who went "indoors" vanished at its door. Now its common room is
+part of the map, and walking in lifts the roof off.
+
+- **The map** (`tools/gen_bocana_map.py`): the common room (cells x 24–33, y 6–12), with the door
+  on the square at (28, 13). Inside are the hearth, the counter, two long tables with seats, and two
+  standing places at the bar. Inés serves behind the counter, Nuño cooks at the hearth, and drinkers
+  and gamblers take the seats. The kitchen behind stays solid.
+- **Rooms in the simulation** (`LocationDefinition.Rooms`):
+  - walls hide what goes on inside: the captain sees and speaks only with people in the same room
+    as him, and from outside sees no one in it;
+  - "Ilario Pons is inside the Three Anchors. Go in.";
+  - nothing is noticed through a wall.
+- **A round:** "Stand the room a round" (30 sueldos, once a day). Everyone named who is drinking
+  there likes the captain a little more (+4) and trusts him a little more (+2), and it goes in the
+  chronicle. Inside, a bar across the top of the screen names the room and offers the round.
+- **Save format 23** keeps the day of the last round.
+- **The view** (`PortView.Tavern`):
+  - from outside, the tavern looks as it did, lit from within at night;
+  - with the captain inside, its upper floor, roof and the front and east walls above the sill lift
+    away, showing the plank floor, the hearth and its fire, the counter with casks racked behind and
+    cups on the shelf, the tables and benches with candles, and whoever is in there;
+  - people inside are drawn only while the captain is in there too.
+- **Sound:** inside, the port outside drops to a murmur and the room's voices and cups come close.
+- **Developer:** `--captain=28,9` walks the captain in before the screenshot.
+
+Tests: 428 (3 new in `TavernTests`). Screenshots: `docs/screenshots/tavern-inside.jpg`,
+`tavern-outside.jpg`.
+
+**Not yet:**
+- only the tavern opens; the chandlery, the Chamber and a workshop could follow the same way;
+- the cutaway is drawn for the camera's usual angle: turned to look from the north or west, the
+  back walls stay up;
+- nothing yet happens in the tavern that happens nowhere else (a game of dice, a song, a fight at
+  closing).

@@ -62,6 +62,7 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
             ChronicleEntryKind.LeadHeard => Lead(entry.Get(ChronicleParameters.To)) is { } lead
                 ? $"Heard of someone worth finding: \"{lead.Text}\" ({lead.Where})"
                 : "Heard of someone worth finding.",
+            ChronicleEntryKind.RoundBought => $"You stood {entry.Get(ChronicleParameters.To)} a round, {entry.Get(ChronicleParameters.Level)} sueldos.",
             ChronicleEntryKind.LateFee => $"The convoy has gone without {Ship()}. Harbour fees and the Company's displeasure: {entry.Get(ChronicleParameters.Level)} sueldos.",
             ChronicleEntryKind.CrewHired => int.TryParse(entry.Get(ChronicleParameters.Level), out var paid) && paid < 0
                 ? $"{who} signed on, paying {-paid} sueldos for the passage."
