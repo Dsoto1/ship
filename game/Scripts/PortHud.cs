@@ -217,6 +217,7 @@ public partial class PortHud : CanvasLayer
         var talked = port.TalkedTo.Contains(id);
         _cardSeeking.Text = port.Gone.Contains(id) ? "Gone from the port."
             : port.Hired.Contains(id) ? "Signed on."
+            : person?.Seeking is not null && talked && !runner.TermsHeard(id) ? "Looking for a berth. Ask what they would want."
             : person?.Seeking is { } seeking && talked
                 ? seeking.Asks < 0 ? $"Wants passage. Offers to pay {-seeking.Asks} sueldos." : $"Wants a berth. Asks an advance of {seeking.Asks} sueldos."
             : talked ? "Not looking for a berth."
@@ -249,9 +250,9 @@ public partial class PortHud : CanvasLayer
             {
                 var row = new VBoxContainer();
                 row.AddThemeConstantOverride("separation", 0);
-                var fact = line.Name == "Seen";
+                var fact = line.Name is "Seen" or "Heard";
                 var headline = fact
-                    ? $"Seen: {person?.Secrets.FirstOrDefault(s => s.Id == line.Value)?.Text ?? line.Value}"
+                    ? $"{line.Name}: {person?.FactText(line.Value) ?? line.Value}"
                     : line.Status is "Observed" or "Confirmed" ? $"{line.Name} — {Capital(line.Value)}" : $"{line.Name} — {line.Status} {line.Value}";
                 var certain = line.Confidence is "High" or "Very High";
                 row.AddChild(Ui.Text(headline, Ui.TextBody, certain ? Ui.Ink : Ui.Uncertain, 290));
@@ -374,10 +375,11 @@ public partial class PortHud : CanvasLayer
 
         _pending = Ui.Text("", Ui.TextMeta, Ui.Brass, 290);
         column.AddChild(_pending);
-        column.AddChild(Ui.Button("Talk", "Walk over and talk: they say what they do, whether they want work, and whom they know",
+        column.AddChild(Ui.Button("Talk", "Walk over and talk with them. What you can ask opens up as you learn about them and they come to trust you",
             () => { if (_shown is { } id) TalkRequested?.Invoke(id); }));
 
-        var ask = new HBoxContainer();
+        // Asking about others and offering a berth are done in conversation (ConversationView).
+        var ask = new HBoxContainer { Visible = false };
         column.AddChild(ask);
         ask.AddChild(Ui.Button("Ask about", "What does this person know of someone else? Those who work with someone know them best", () =>
         {
@@ -402,7 +404,7 @@ public partial class PortHud : CanvasLayer
         _demonstrate = new OptionButton { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, FocusMode = Control.FocusModeEnum.None };
         demo.AddChild(_demonstrate);
 
-        var offer = new HBoxContainer();
+        var offer = new HBoxContainer { Visible = false };
         column.AddChild(offer);
         _offerButton = Ui.Button("Offer a berth", "", () => { if (_shown is { } id) OfferRequested?.Invoke(id, (int)_offer.Value); });
         offer.AddChild(_offerButton);

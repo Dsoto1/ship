@@ -416,6 +416,111 @@ public sealed record PersonDefinition
 
     /// <summary>How many others on the quay wave to them (the two women who wave to Rodrigo).</summary>
     public int FarewellWavers { get; init; }
+
+    /// <summary>Things about them the captain can be told (by them, or by others): fact ID to text.</summary>
+    public IReadOnlyList<PersonFact> Facts { get; init; } = [];
+
+    /// <summary>What there is to talk about with them, and what it takes (the conversation), or null.</summary>
+    public ConversationDefinition? Conversation { get; init; }
+
+    /// <summary>The text of a fact about them, seen (a secret) or told, or null.</summary>
+    public string? FactText(string id) =>
+        Secrets.FirstOrDefault(s => s.Id == id)?.Text ?? Facts.FirstOrDefault(f => f.Id == id)?.Text;
+}
+
+/// <summary>Something about a person that can be told rather than seen.</summary>
+public sealed record PersonFact
+{
+    /// <summary>Fact ID, also the knowledge topic.</summary>
+    public required string Id { get; init; }
+
+    /// <summary>What it is, as the captain would note it.</summary>
+    public required string Text { get; init; }
+}
+
+/// <summary>
+/// A conversation with someone: how they meet the captain, and what there is to ask them. Topics open
+/// as the captain learns things and as they come to trust him; what he asks, and when, changes what
+/// they think of him. Nothing here is generated: every line is written for the person.
+/// </summary>
+public sealed record ConversationDefinition
+{
+    /// <summary>What they say the first time the captain comes up to them.</summary>
+    public required string First { get; init; }
+
+    /// <summary>What they say when he comes back.</summary>
+    public string? Again { get; init; }
+
+    /// <summary>What there is to ask them, in the order offered.</summary>
+    public IReadOnlyList<TopicDefinition> Topics { get; init; } = [];
+}
+
+/// <summary>Something the captain can ask, and what comes of asking it.</summary>
+public sealed record TopicDefinition
+{
+    /// <summary>ID, unique within the person, for example <c>topic.velho.coast</c>.</summary>
+    public required string Id { get; init; }
+
+    /// <summary>What the captain asks or says.</summary>
+    public required string Ask { get; init; }
+
+    /// <summary>What they answer.</summary>
+    public required string Says { get; init; }
+
+    /// <summary>Topics of theirs that must have been talked over first.</summary>
+    public IReadOnlyList<string> After { get; init; } = [];
+
+    /// <summary>Facts about them the captain must already know (seen or heard), for example a secret.</summary>
+    public IReadOnlyList<string> Known { get; init; } = [];
+
+    /// <summary>Offered only while they look for a berth and are not yet signed on.</summary>
+    public bool Seeking { get; init; }
+
+    /// <summary>If their trust in the captain is below <see cref="Guard"/>'s level, they say that instead.</summary>
+    public TopicGuard? Guard { get; init; }
+
+    /// <summary>
+    /// Someone else the answer is about (a person ID), or null for themselves: what it tells and claims is
+    /// then the captain's knowledge of that person, heard from this one.
+    /// </summary>
+    public string? About { get; init; }
+
+    /// <summary>What they claim for themselves in answering (or say of <see cref="About"/>): topic to level.</summary>
+    public IReadOnlyDictionary<string, int> Claims { get; init; } = new Dictionary<string, int>();
+
+    /// <summary>Facts about them the answer tells.</summary>
+    public IReadOnlyList<string> Tells { get; init; } = [];
+
+    /// <summary>Their leads (by ID) the answer gives.</summary>
+    public IReadOnlyList<string> Leads { get; init; } = [];
+
+    /// <summary>How the asking changes their trust in the captain.</summary>
+    public int Trust { get; init; }
+
+    /// <summary>How it changes their respect for him.</summary>
+    public int Respect { get; init; }
+
+    /// <summary>How it changes their liking for him.</summary>
+    public int Affection { get; init; }
+
+    /// <summary>True when this is where they say what they want for a berth: an offer needs it first.</summary>
+    public bool Terms { get; init; }
+
+    /// <summary>True when they end the conversation after answering.</summary>
+    public bool Ends { get; init; }
+}
+
+/// <summary>What someone says to a question they do not yet trust the captain enough to answer.</summary>
+public sealed record TopicGuard
+{
+    /// <summary>The trust needed for the real answer.</summary>
+    public required int Trust { get; init; }
+
+    /// <summary>What they say instead.</summary>
+    public required string Says { get; init; }
+
+    /// <summary>How pressing them on it changes their trust.</summary>
+    public int Change { get; init; }
 }
 
 /// <summary>
@@ -470,6 +575,9 @@ public sealed record PersonReference
 
     /// <summary>True for gossip rather than first-hand knowledge.</summary>
     public bool Rumour { get; init; }
+
+    /// <summary>A fact about the person it is about (theirs, by ID) that it tells, or null.</summary>
+    public string? Fact { get; init; }
 }
 
 /// <summary>Something about a person the captain can notice by watching.</summary>
@@ -508,6 +616,12 @@ public sealed record BerthTerms
 
     /// <summary>People they will not sail with.</summary>
     public IReadOnlyList<Aversion> WontSailWith { get; init; } = [];
+
+    /// <summary>How far they must trust the captain before they will sign at all (0: no more than not distrust him).</summary>
+    public int Trust { get; init; }
+
+    /// <summary>What they say when he asks before they trust him that far.</summary>
+    public string? NotYet { get; init; }
 }
 
 /// <summary>When and why someone stops waiting for a berth.</summary>

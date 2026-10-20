@@ -502,6 +502,11 @@ public sealed partial class SimulationRunner
             Campaign.Learn(about, topic, level, reference.Rumour ? KnowledgeSource.Rumour : KnowledgeSource.Reference, informant);
         }
 
+        if (reference.Fact is { } fact)
+        {
+            Campaign.Learn(about, fact, 1, reference.Rumour ? KnowledgeSource.Rumour : KnowledgeSource.Reference, informant);
+        }
+
         return (CommandResult.Ok(), $"{speaker.Name}: \"{reference.Text}\"");
     }
 
@@ -581,14 +586,27 @@ public sealed partial class SimulationRunner
             }
         }
 
+        if (!TermsHeard(id))
+        {
+            return CommandResult.Rejected($"{character.Name} has not said yet what they want. Talk with them first.");
+        }
+
         if (Campaign.CaptainId is { } captain && Campaign.Relationships.TryGetValue((id, captain), out var view) && view.Trust <= -25)
         {
             return CommandResult.Rejected($"{character.Name}: \"I'll not sail under you, Captain.\"");
         }
 
-        if (advance < seeking.Lowest)
+        if (seeking.Trust > 0 && TrustOf(id) < seeking.Trust)
         {
-            var insulting = seeking.Lowest > 0 && advance < seeking.Lowest * 0.75;
+            const string notYet = "\"I do not know you well enough yet, Captain.\"";
+            return CommandResult.Rejected($"{character.Name}: {seeking.NotYet ?? notYet}");
+        }
+
+        // Someone who has come to trust the captain will settle for less (a tenth, at most).
+        var lowest = TrustOf(id) >= 15 ? (int)Math.Round(seeking.Lowest * (seeking.Lowest > 0 ? 0.9 : 1.1) / 50.0) * 50 : seeking.Lowest;
+        if (advance < lowest)
+        {
+            var insulting = seeking.Lowest > 0 && advance < lowest * 0.75;
             if (insulting && Campaign.CaptainId is { } offended)
             {
                 Campaign.ChangeRelationship(id, offended, RelationshipDimension.Respect, -10, "offered an insulting advance");
@@ -598,7 +616,7 @@ public sealed partial class SimulationRunner
                 ? $"{character.Name}: \"I will pay my way, Captain, but not that much.\""
                 : insulting
                     ? $"{character.Name}: \"Is that a joke? I asked {seeking.Asks}.\""
-                    : $"{character.Name}: \"Not for that. I might come for {(seeking.Asks + seeking.Lowest) / 2}.\"");
+                    : $"{character.Name}: \"Not for that. I might come for {(seeking.Asks + lowest) / 2}.\"");
         }
 
         port.Funds -= advance;

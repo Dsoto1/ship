@@ -114,6 +114,8 @@ public partial class Main : Node3D
     }
     private CharacterId? _selected;
     private int _speedIndex = 1;
+    private ConversationView _conversation = null!;
+    private int? _speedBeforeTalk;
     private int _lastRunningSpeed = 1;
     private double _tickFraction;
     private double _elapsed;
@@ -187,11 +189,47 @@ public partial class Main : Node3D
         _portHud.Attach(_hud);
         _hud.FocusRequested += Focus;
         _portHud.CardClosed += () => _selected = _runner.Campaign.CaptainId;
+        // Talking: walk over, then the conversation, with the port standing still until it is done.
+        _conversation = new ConversationView { Name = "Conversation" };
+        var talkLayer = new CanvasLayer { Name = "ConversationLayer", Layer = 6 };
+        AddChild(talkLayer);
+        talkLayer.AddChild(_conversation);
         _portHud.TalkRequested += id => WalkOverTo(id, "talk", () =>
         {
-            var (result, said) = _runner.TalkTo(id);
-            _portHud.Say(result.Succeeded ? said : result.Reason);
+            var (result, said) = _runner.BeginConversation(id);
+            if (!result.Succeeded)
+            {
+                _portHud.Say(result.Reason);
+                return;
+            }
+
+            _portHud.Say("");
+            _speedBeforeTalk ??= _speedIndex;
+            SetSpeed(0);
+            _conversation.Open(_runner, id, said);
         });
+        _conversation.TopicChosen += (id, topic, asked) =>
+        {
+            var (result, said, ends) = _runner.Discuss(id, topic);
+            _conversation.Add(_runner, asked, result.Succeeded ? said : result.Reason, ends);
+        };
+        _conversation.AskAboutChosen += (informant, about) =>
+        {
+            var (result, said) = _runner.AskAbout(informant, about);
+            _conversation.Add(_runner, $"What do you know of {_runner.Campaign.Characters[about].Name}?", result.Succeeded ? said : result.Reason);
+        };
+        _conversation.OfferChosen += (id, advance) =>
+        {
+            var name = _runner.Campaign.Characters[id].Name;
+            var result = _runner.Offer(id, advance);
+            _conversation.Add(_runner, advance < 0 ? $"Passage for {-advance} sueldos." : $"A berth, for {advance} sueldos in advance.",
+                result.Succeeded ? $"{name} spits in a palm and shakes on it, and goes to stow a sea chest aboard the Garza." : result.Reason, result.Succeeded);
+        };
+        _conversation.Closed += () =>
+        {
+            SetSpeed(_speedBeforeTalk ?? 1);
+            _speedBeforeTalk = null;
+        };
         _portHud.AskRequested += (informant, about) => WalkOverTo(informant, $"ask about {_runner.Campaign.Characters[about].Name}", () =>
         {
             var (result, said) = _runner.AskAbout(informant, about);
@@ -1386,6 +1424,7 @@ public partial class Main : Node3D
     private string? _developerInspect;
     private string? _developerLook;
     private bool _developerTalk;
+    private string? _developerTopics;
     private bool _developerJournal;
     private bool _developerPerf;
     private PanelId? _developerPanel;
@@ -1452,8 +1491,18 @@ public partial class Main : Node3D
                     _runner.Advance(1);
                 }
 
-                var (_, said) = _runner.TalkTo(character.Id);
-                _portHud.Say(said);
+                // --talk opens the conversation; --topics=a,b asks those, in order.
+                var (_, said) = _runner.BeginConversation(character.Id);
+                _speedBeforeTalk ??= _speedIndex;
+                SetSpeed(0);
+                _conversation.Open(_runner, character.Id, said);
+                foreach (var topic in _developerTopics?.Split(',') ?? [])
+                {
+                    var asked = _runner.Topics(character.Id).FirstOrDefault(t => t.Id == topic)?.Ask ?? topic;
+                    var (_, answer, ends) = _runner.Discuss(character.Id, topic);
+                    _conversation.Add(_runner, asked, answer, ends);
+                }
+
                 if (_developerOffer is { } advance)
                 {
                     var offered = _runner.Offer(character.Id, advance);
@@ -1562,6 +1611,7 @@ public partial class Main : Node3D
                 case "select": _developerSelect = value; break;
                 case "look": _developerLook = value; break;
                 case "talk": _developerTalk = true; break;
+                case "topics": _developerTopics = value; break;
                 case "journal": _developerJournal = true; break;
                 case "perf": _developerPerf = true; break;
                 case "panel" when Enum.TryParse<PanelId>(value, true, out var panel): _developerPanel = panel; break;

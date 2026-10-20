@@ -486,6 +486,9 @@ public sealed record PortData
     /// <summary>What the expedition owes sellers for stores bought on credit. Added in format 21.</summary>
     public IReadOnlyList<DebtData> Owed { get; init; } = [];
 
+    /// <summary>What the captain has talked over with whom. Added in format 22.</summary>
+    public IReadOnlyList<DiscussedData> Discussed { get; init; } = [];
+
     /// <summary>Sueldos left.</summary>
     public required int Funds { get; init; }
 
@@ -539,6 +542,16 @@ public sealed record InspectionData
 
     /// <summary>What he saw: a quality, or <c>unsure</c>.</summary>
     public required string Seen { get; init; }
+}
+
+/// <summary>A topic talked over with someone. Added in format 22.</summary>
+public sealed record DiscussedData
+{
+    /// <summary>Character ID number.</summary>
+    public required int Who { get; init; }
+
+    /// <summary>Topic ID from their conversation.</summary>
+    public required string Topic { get; init; }
 }
 
 /// <summary>What the expedition owes a seller. Added in format 21.</summary>

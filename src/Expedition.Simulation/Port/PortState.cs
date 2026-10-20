@@ -17,6 +17,7 @@ public sealed class PortState
     private readonly HashSet<CharacterId> _approached = [];
     private readonly Dictionary<CharacterId, bool> _claims = [];
     private readonly HashSet<(CharacterId Who, int Day)> _greeted = [];
+    private readonly HashSet<(CharacterId Who, string Topic)> _discussed = [];
 
     /// <summary>Sueldos left.</summary>
     public int Funds { get; internal set; }
@@ -101,6 +102,11 @@ public sealed class PortState
     internal void SettleClaim(CharacterId creditor, bool paid) => _claims[creditor] = paid;
 
     internal void MarkGreeted(CharacterId id, int day) => _greeted.Add((id, day));
+
+    /// <summary>What the captain has talked over with whom: person and topic ID.</summary>
+    public IReadOnlySet<(CharacterId Who, string Topic)> Discussed => _discussed;
+
+    internal bool MarkDiscussed(CharacterId id, string topic) => _discussed.Add((id, topic));
 
     internal bool AddLead(string leadId, long tick)
     {

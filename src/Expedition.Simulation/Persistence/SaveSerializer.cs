@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 21;
+    public const int CurrentSchemaVersion = 22;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -152,6 +152,16 @@ public static class SaveSerializer
                 if (root["port"] is JsonObject port)
                 {
                     port["owed"] = new JsonArray();
+                }
+
+                return root;
+            },
+            // Format 22 added conversations: what has been talked over with whom.
+            [21] = root =>
+            {
+                if (root["port"] is JsonObject port)
+                {
+                    port["discussed"] = new JsonArray();
                 }
 
                 return root;
@@ -523,6 +533,8 @@ public static class SaveSerializer
                     Stock = new SortedDictionary<int, int>(port.Stock.ToDictionary()),
                     TalkedTo = port.TalkedTo.Select(id => id.Value).Order().ToList(),
                     Asked = port.Asked.OrderBy(p => p.Informant).ThenBy(p => p.About).Select(p => new[] { p.Informant.Value, p.About.Value }).ToList(),
+                    Discussed = port.Discussed.OrderBy(p => p.Who).ThenBy(p => p.Topic, StringComparer.Ordinal)
+                        .Select(p => new DiscussedData { Who = p.Who.Value, Topic = p.Topic }).ToList(),
                     Hired = port.Hired.Select(id => id.Value).Order().ToList(),
                     Gone = port.Gone.Select(id => id.Value).Order().ToList(),
                     LateFeesCharged = port.LateFeesCharged,
@@ -878,6 +890,16 @@ public static class SaveSerializer
                 }
 
                 port.MarkInspected(inspection.Lot, inspection.Seen);
+            }
+
+            foreach (var talk in savedPort.Discussed)
+            {
+                var who = Known(talk.Who);
+                var person = campaign.Characters[who].PersonId is { } pid ? portRules.People.FirstOrDefault(p => p.Id == pid) : null;
+                if (person?.Conversation?.Topics.Any(t => t.Id == talk.Topic) != true || !port.MarkDiscussed(who, talk.Topic))
+                {
+                    throw new SaveLoadException($"The save says the captain talked over '{talk.Topic}' with character {talk.Who}: they have no such topic, or it is listed twice.");
+                }
             }
 
             foreach (var debt in savedPort.Owed)

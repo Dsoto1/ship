@@ -66,8 +66,8 @@ public static class KnowledgeText
             }
             else
             {
-                // A fact, such as something seen: the person's definition holds its text.
-                name = "Seen";
+                // A fact, seen or told: the person's definition holds its text.
+                name = belief.Source == KnowledgeSource.Observation ? "Seen" : "Heard";
                 value = topic;
             }
 

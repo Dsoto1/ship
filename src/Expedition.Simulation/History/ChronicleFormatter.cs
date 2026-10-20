@@ -116,7 +116,7 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
     }
 
     private string Secret(string? id) =>
-        content.Port?.People.SelectMany(p => p.Secrets).FirstOrDefault(s => s.Id == id)?.Text is { Length: > 0 } text
+        id is not null && content.Port?.People.Select(p => p.FactText(id)).FirstOrDefault(t => t is not null) is { Length: > 0 } text
             ? char.ToLowerInvariant(text[0]) + text[1..]
             : "something odd.";
 

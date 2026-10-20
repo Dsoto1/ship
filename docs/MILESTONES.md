@@ -1368,3 +1368,59 @@ Screenshots: `docs/screenshots/crowd-kits.jpg`, `crowd-market.jpg`, `edges-west.
 - Everyone was rebuilt with these fixes.
 
 **Not yet:** the crowd's lanes past the ends are fixed lines, not paths.
+
+## Conversations, and a calmer port (owner: "I don't feel the connection, the need to speak to anyone")
+
+Talking used to be one line: a pitch and a name or two, and you could sign anyone from their card.
+Now it is a conversation, and what you learn and earn in it decides whom you can sign and on what
+terms.
+
+**Simulation** (`SimulationRunner.Conversation.cs`, `PortRules.ConversationDefinition`):
+- **Meeting and topics:** each person has a first-meeting line, a line for coming back, and topics:
+  things the captain can ask.
+- **What opens a topic:**
+  - something talked over first;
+  - a fact the captain already holds about them, seen with his own eyes or heard from someone else;
+  - looking for a berth.
+- **Answers:** they carry claims (skills and languages), facts and leads, and they move the
+  person's trust, respect and liking for the captain.
+- **Guarded topics** need trust first. Before that you get put off, and pressing costs trust
+  ("That is my business, Captain."). You can come back when they know you better.
+- **Facts heard from others** are noted as hearsay from that person and open topics with the person
+  they concern. Example: Hernando says Ximena was at Mahenu "a season, not a year"; ask Ximena about
+  it, once she trusts you, and she tells you about the son she left there.
+- **Terms first:** no offer until they have said what they want. Velho and Ximena will not sign at
+  all with a captain they do not yet trust. Anyone who trusts you well settles for about a tenth less.
+- **Save format 22** keeps what was talked over with whom.
+- **Content checks:** content loading checks every topic's needs and gifts.
+
+**Writing** (`data/port/bocana.json`), 20 people, built on what the data already said of them:
+- **The twelve recruits,** each with a past that can be found out: Velho and the Santa Clara, Pons
+  and Almara, Tomé and the Caridad, Ximena's son, Ulloa's son at Corvera, Pascual's lie, Gil's
+  family, Bartolo and the Garza's soft plank.
+- **The people who know them:** Inés, Hernando, Quintana, Grilo, Andrés, Father Anselmo, Mateo and
+  Hob.
+
+**Game** (`ConversationView.cs`):
+- Talking opens a conversation screen: their portrait, how they take you ("Wary of you", "Warming to
+  you", "Trusts you"), what has been said, what you can ask now (already answered dimmed, to ask
+  again), ask-about, and the offer once you have heard their terms.
+- The port stands still while you talk.
+- The person card no longer shows the asking price before they have told you.
+- Developer: `--select=person.velho --talk --topics=topic.velho.charts,topic.velho.coast`.
+
+**Calmer port** (`PortCrowd`):
+- passers-by walk slower, stop more often and stay longer at stalls and the well, and fewer are on
+  the move at once (30, from 40);
+- small groups stand about the quay and market, two or three together, one talking and the others
+  listening or watching. They stay half an hour to an hour and a half and then break up, and another
+  group forms elsewhere.
+
+Tests: 425 (9 new in `ConversationTests`). Screenshots: `docs/screenshots/talk-velho.jpg`,
+`calm-market.jpg`.
+
+**Not yet:**
+- interiors (the tavern first);
+- the other named townsfolk (Corbalán, Varzi, Catalina, the dockers, the smith, the ropemaker and
+  others) still pass the time of day in one line;
+- talking takes no game time.

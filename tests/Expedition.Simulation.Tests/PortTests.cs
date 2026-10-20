@@ -18,7 +18,7 @@ public class PortTests
 
     private static SimulationRunner Port(ulong seed = CampaignState.DefaultSeed) => ExpeditionScenario.Create(Shipped, seed);
 
-    private static CharacterId Id(SimulationRunner runner, string person) => runner.CharacterFor(person)!.Id;
+    internal static CharacterId Id(SimulationRunner runner, string person) => runner.CharacterFor(person)!.Id;
 
     private static CharacterId Captain(SimulationRunner runner) => runner.Campaign.CaptainId!.Value;
 
@@ -43,7 +43,7 @@ public class PortTests
     }
 
     // People at work move about (a docker carries his crate away), so keep after them until close.
-    private static void ApproachPerson(SimulationRunner runner, string person)
+    internal static void ApproachPerson(SimulationRunner runner, string person)
     {
         for (var attempt = 0; attempt < 6; attempt++)
         {
@@ -55,6 +55,34 @@ public class PortTests
         }
 
         Assert.Fail(runner.WhyCannotSpeak(Id(runner, person)) ?? person);
+    }
+
+    // Walks over and talks someone through to what they want for a berth: the terms topic and what it needs.
+    internal static void HearTerms(SimulationRunner runner, string person)
+    {
+        ApproachPerson(runner, person);
+        var id = Id(runner, person);
+        var topics = runner.CharacterFor(person)!.PersonId is { } pid ? Shipped.Port!.People.Single(p => p.Id == pid).Conversation?.Topics ?? [] : [];
+        void Discuss(Port.TopicDefinition topic)
+        {
+            foreach (var before in topic.After)
+            {
+                Discuss(topics.Single(t => t.Id == before));
+            }
+
+            if (!runner.Campaign.Port!.Discussed.Contains((id, topic.Id)))
+            {
+                Assert.True(runner.Discuss(id, topic.Id).Result.Succeeded, topic.Id);
+            }
+        }
+
+        runner.BeginConversation(id);
+        foreach (var terms in topics.Where(t => t.Terms))
+        {
+            Discuss(terms);
+        }
+
+        Assert.True(runner.TermsHeard(id), person);
     }
 
     private static void AdvanceTo(SimulationRunner runner, int day, int hour, int minute = 0) =>
@@ -223,6 +251,9 @@ public class PortTests
         var runner = Port();
         var bartolo = Id(runner, "person.bartolo");
         ApproachPerson(runner, "person.bartolo");
+        Assert.Contains("Talk with them first", runner.Offer(bartolo, 1000).Reason);
+        HearTerms(runner, "person.bartolo");
+        var respect = runner.Campaign.Relationships[(bartolo, Captain(runner))].Respect;
 
         var low = runner.Offer(bartolo, 900);
         Assert.False(low.Succeeded);
@@ -230,7 +261,7 @@ public class PortTests
 
         var insult = runner.Offer(bartolo, 300);
         Assert.False(insult.Succeeded);
-        Assert.Equal(-10, runner.Campaign.Relationships[(bartolo, Captain(runner))].Respect);
+        Assert.Equal(respect - 10, runner.Campaign.Relationships[(bartolo, Captain(runner))].Respect);
 
         Assert.True(runner.Offer(bartolo, 1000).Succeeded);
         var hired = runner.Campaign.Characters[bartolo];
@@ -244,10 +275,10 @@ public class PortTests
     public void SomeWillNotSailWithOthers()
     {
         var runner = Port();
-        ApproachPerson(runner, "person.wat");
+        HearTerms(runner, "person.wat");
         Assert.True(runner.Offer(Id(runner, "person.wat"), 600).Succeeded);
 
-        ApproachPerson(runner, "person.rodrigo");
+        HearTerms(runner, "person.rodrigo");
         var refusal = runner.Offer(Id(runner, "person.rodrigo"), 850);
 
         Assert.False(refusal.Succeeded);
@@ -338,12 +369,12 @@ public class PortTests
         var hires = new[] { ("person.tome", 150), ("person.gil", 800), ("person.pascual", 450) };
         foreach (var (person, advance) in hires)
         {
-            ApproachPerson(runner, person);
+            HearTerms(runner, person);
             Assert.True(runner.Offer(Id(runner, person), advance).Succeeded, person);
         }
 
         Assert.False(ExpeditionScenario.SetSail(runner).Succeeded);
-        ApproachPerson(runner, "person.wat");
+        HearTerms(runner, "person.wat");
         Assert.True(runner.Offer(Id(runner, "person.wat"), 600).Succeeded);
 
         Assert.True(ExpeditionScenario.SetSail(runner).Succeeded);
@@ -360,7 +391,7 @@ public class PortTests
     {
         var runner = Port(3);
         ApproachPerson(runner, "person.bartolo");
-        runner.TalkTo(Id(runner, "person.bartolo"));
+        HearTerms(runner, "person.bartolo");
         runner.Offer(Id(runner, "person.bartolo"), 1000);
         runner.Buy(1);
         runner.Advance(5 * 60 + 13);
@@ -931,7 +962,7 @@ public class PortTests
         var runner = Port();
         AdvanceTo(runner, 1, 10);
         ApproachPerson(runner, "person.bartolo");
-        runner.TalkTo(Id(runner, "person.bartolo"));
+        HearTerms(runner, "person.bartolo");
         Assert.True(runner.Offer(Id(runner, "person.bartolo"), 1000).Succeeded);
         Hire(runner, "person.tome", "person.gil", "person.wat");
         runner.Buy(0);

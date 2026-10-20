@@ -17,8 +17,8 @@ namespace Expedition.Game;
 /// </summary>
 public partial class PortCrowd : Node3D
 {
-    private const int Capacity = 72;
-    private const int MostWalking = 40;
+    private const int Capacity = 84;
+    private const int MostWalking = 30;
     private const string Kits = "res://Assets/Characters/Crowd";
 
     // The dyes of a working port (identities.py DYES_*): sRGB, with how common each is.
@@ -60,6 +60,15 @@ public partial class PortCrowd : Node3D
     private readonly List<Vector3[]> _lanes = [];
     private readonly List<(int Lane, float Along, int Way, float Speed, PersonModel Figure)> _onLanes = [];
     private readonly List<(Vector3 At, float Yaw, Pose Pose, PersonModel? Figure)> _idlers = [];
+    private readonly List<GridPosition> _openGround = [];
+    private readonly List<Group> _groups = [];
+
+    // People standing together a while (two or three, talking, listening, watching), then going on.
+    private sealed class Group
+    {
+        public readonly List<(Vector3 At, float Yaw, Pose Pose, PersonModel Figure)> People = [];
+        public float Left;
+    }
     private Node3D? _figures;
     private float _rate = 1f;
     private float _wetness;
@@ -92,7 +101,7 @@ public partial class PortCrowd : Node3D
     public float Density { get; set; } = 1f;
 
     /// <summary>How many are about just now.</summary>
-    public int Count => _walkers.Count + _gathered.Count + _onLanes.Count + _idlers.Count(i => i.Figure?.Visible == true);
+    public int Count => _walkers.Count + _gathered.Count + _onLanes.Count + _idlers.Count(i => i.Figure?.Visible == true) + _groups.Sum(g => g.People.Count);
 
     /// <summary>
     /// The walks and the people at work beyond the ends of the map (PortView.BuildOutskirts): there is no
@@ -181,6 +190,66 @@ public partial class PortCrowd : Node3D
 
     private bool _lanesStarted;
 
+    // Keeps a few groups standing about by day; each stays half an hour to an hour and a half, then
+    // breaks up and another forms somewhere else.
+    private void Gather(float hour, float minutes)
+    {
+        if (_figures is null || _openGround.Count == 0)
+        {
+            return;
+        }
+
+        for (var i = _groups.Count - 1; i >= 0; i--)
+        {
+            _groups[i].Left -= minutes;
+            if (_groups[i].Left <= 0)
+            {
+                foreach (var person in _groups[i].People)
+                {
+                    Give(person.Figure);
+                }
+
+                _groups.RemoveAt(i);
+            }
+        }
+
+        var wanted = Mathf.RoundToInt(7f * Busy(hour) * Density);
+        if (_groups.Count >= wanted)
+        {
+            return;
+        }
+
+        var cell = _openGround[_random.Next(_openGround.Count)];
+        if (_groups.Any(g => g.People[0].At.DistanceTo(new Vector3(cell.X, 0, cell.Y)) < 6f))
+        {
+            return;
+        }
+
+        var group = new Group { Left = 30f + (float)_random.NextDouble() * 60f };
+        var size = _random.NextDouble() < 0.6 ? 2 : 3;
+        var start = (float)(_random.NextDouble() * Mathf.Tau);
+        for (var k = 0; k < size && Take(false) is { } figure; k++)
+        {
+            // Round a point, each facing it: close enough to talk.
+            var angle = start + k * Mathf.Tau / size;
+            var at = new Vector2(cell.X + Mathf.Cos(angle) * 0.55f, cell.Y + Mathf.Sin(angle) * 0.55f);
+            var pose = k == 0 ? Pose.Talking : _random.NextDouble() < 0.5 ? Pose.Standing : Pose.Watching;
+            group.People.Add((new Vector3(at.X, _height(at.X, at.Y), at.Y), Mathf.Atan2(-Mathf.Cos(angle), -Mathf.Sin(angle)), pose, figure));
+        }
+
+        if (group.People.Count < 2)
+        {
+            foreach (var person in group.People)
+            {
+                Give(person.Figure);
+            }
+
+            return;
+        }
+
+        _groups.Add(group);
+    }
+
     /// <summary>Finds the street ends, doors, piers and stalls of <paramref name="location"/>.</summary>
     public void Build(LocationDefinition location, Func<float, float, float> height)
     {
@@ -201,6 +270,21 @@ public partial class PortCrowd : Node3D
         _walkers.Clear();
         _ends.Clear();
         BuildFigures();
+        _groups.Clear();
+        _openGround.Clear();
+        // Open ground: walkable with room all round, away from where the named people work.
+        for (var y = 12; y < location.Height - 10; y++)
+        {
+            for (var x = 2; x < location.Width - 2; x++)
+            {
+                var cell = new GridPosition(x, y);
+                var open = Enumerable.Range(-1, 3).All(dx => Enumerable.Range(-1, 3).All(dy => location.IsWalkable(new GridPosition(x + dx, y + dy))));
+                if (open && location.Spots.All(s => Math.Abs(s.Cell.X - x) + Math.Abs(s.Cell.Y - y) > 2))
+                {
+                    _openGround.Add(cell);
+                }
+            }
+        }
         _stops.Clear();
 
         // Street ends: walkable cells on the edge of the map, a few to each opening.
@@ -430,6 +514,7 @@ public partial class PortCrowd : Node3D
         }
 
         WalkLanes(hour, minutes);
+        Gather(hour, minutes);
         _hour = hour;
         foreach (var walker in _walkers.ToList())
         {
@@ -471,7 +556,7 @@ public partial class PortCrowd : Node3D
         }
 
         var market = hour is >= 7 and < 14;
-        (GridPosition Cell, Vector2 Facing)? stop = _stops.Count > 0 && _random.NextDouble() < (market ? 0.45 : 0.12)
+        (GridPosition Cell, Vector2 Facing)? stop = _stops.Count > 0 && _random.NextDouble() < (market ? 0.6 : 0.3)
             ? _stops[_random.Next(_stops.Count)]
             : null;
 
@@ -517,14 +602,15 @@ public partial class PortCrowd : Node3D
         var walker = new Walker
         {
             Path = path,
-            Speed = (float)((_location.WalkCellsPerMinute ?? 2.5) * (0.85 + _random.NextDouble() * 0.3)),
+            // An unhurried pace: nobody on a quay walks as if late, except the boy with the message.
+            Speed = (float)((_location.WalkCellsPerMinute ?? 2.5) * (_random.NextDouble() < 0.1 ? 1.1 : 0.62 + _random.NextDouble() * 0.28)),
             Phase = (float)_random.NextDouble() * Mathf.Tau,
             Pose = carrying ? CrowdMesh.Carrying : CrowdMesh.Walking,
             Look = _random.Next(1000),
             Scale = 0.9f + (float)_random.NextDouble() * 0.15f,
             // A load is carried straight through, not set down at a stall.
             StopAt = carrying ? -1 : stopAt,
-            Pause = 2f + (float)_random.NextDouble() * 6f,
+            Pause = 5f + (float)_random.NextDouble() * 13f,
             Facing = facing,
             Figure = _figures is null ? null : Take(carrying),
         };
@@ -640,6 +726,18 @@ public partial class PortCrowd : Node3D
             Place(figure, at, Mathf.Atan2(heading.X, heading.Z), figure == null ? Pose.Walking : _sacks[figure.GetMeta("sack").AsInt32()].Visible ? Pose.Carrying : Pose.Walking,
                 true, _rate * speed / (float)(_location.WalkCellsPerMinute ?? 2.5));
             _shadows.Multimesh.SetInstanceTransform(index++, new Transform3D(Basis.Identity, at + new Vector3(0, 0.025f, 0)));
+        }
+
+        foreach (var group in _groups)
+        {
+            foreach (var (at, yaw, pose, figure) in group.People)
+            {
+                if (index < Capacity)
+                {
+                    Place(figure, at, yaw, pose, false, _rate);
+                    _shadows.Multimesh.SetInstanceTransform(index++, new Transform3D(Basis.Identity, at + new Vector3(0, 0.025f, 0)));
+                }
+            }
         }
 
         // The people at work out there keep the day's hours.

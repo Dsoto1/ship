@@ -320,6 +320,39 @@ public sealed class GameContent
                 errors.Add($"{where}: unknown {string.Join(", ", unknown)}.");
             }
 
+            // Conversations: every topic's needs and gifts must exist, so nothing opens on a typo.
+            if (person.Conversation is { } conversation)
+            {
+                var topics = conversation.Topics.Select(t => t.Id).ToList();
+                if (topics.Distinct(StringComparer.Ordinal).Count() != topics.Count)
+                {
+                    errors.Add($"{where}: conversation topic IDs must be unique.");
+                }
+
+                foreach (var topic in conversation.Topics)
+                {
+                    var wrong = topic.After.Where(t => !topics.Contains(t))
+                        .Concat(topic.Known.Where(f => person.FactText(f) is null))
+                        .Concat(topic.Tells.Where(f => (topic.About is { } about ? rules.People.FirstOrDefault(p => p.Id == about) : person)?.FactText(f) is null))
+                        .Concat(topic.About is { } other && !ids.Contains(other) ? [other] : [])
+                        .Concat(topic.Leads.Where(l => person.Leads.All(lead => lead.Id != l)))
+                        .Concat(topic.Claims.Keys.Where(k => !KnownTopic(k)))
+                        .ToList();
+                    if (wrong.Count > 0 || string.IsNullOrWhiteSpace(topic.Ask) || string.IsNullOrWhiteSpace(topic.Says) || topic.Claims.Values.Any(v => v is < 0 or > 5))
+                    {
+                        errors.Add($"{where}: topic '{topic.Id}' needs words and known things{(wrong.Count > 0 ? $"; unknown {string.Join(", ", wrong)}" : "")}.");
+                    }
+                }
+            }
+
+            foreach (var reference in person.Knows.Where(k => k.Fact is not null))
+            {
+                if (rules.People.FirstOrDefault(p => p.Id == reference.About)?.FactText(reference.Fact!) is null)
+                {
+                    errors.Add($"{where}: what they know of '{reference.About}' tells '{reference.Fact}', which is not one of that person's facts.");
+                }
+            }
+
             var levels = person.Skills.Concat(person.Attributes).Concat(person.Languages)
                 .Concat(person.Seeking?.Claims ?? new Dictionary<string, int>()).Concat(person.Knows.SelectMany(k => k.Levels));
             if (levels.Any(pair => pair.Value is < 0 or > 5))
