@@ -1,0 +1,158 @@
+{
+ "characterId": "person.rodrigo",
+ "name": "Rodrigo Alba",
+ "sex": "Male",
+ "age": 24,
+ "apparentAge": 24,
+ "heightCm": 176,
+ "heightClass": "tall",
+ "seed": 1519031,
+ "looks": {
+  "build": "average",
+  "posture": {
+   "stoop": -0.5,
+   "headForward": -0.3,
+   "shoulders": -0.4
+  },
+  "face": {
+   "width": 0.0,
+   "jaw": 0.3,
+   "chin": 0.5,
+   "nose": -0.2,
+   "noseLength": -0.2,
+   "noseBend": 0,
+   "noseBridge": 0,
+   "brow": 0.1,
+   "cheeks": 0.2,
+   "cheekbones": 0.3,
+   "mouth": 0.3,
+   "ears": -0.2,
+   "sag": 0
+  },
+  "skin": "#a7795a",
+  "weathering": 0.35,
+  "eyes": "eyes.brown",
+  "hairColour": "hair.black",
+  "hair": [
+   {
+    "mesh": "Hair_SimpleParted",
+    "colour": "hair.black",
+    "grey": 0
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "hair.black",
+    "grey": 0
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "young, square-chinned, carries himself with a swagger",
+  "bare feet: a topman aloft goes barefoot",
+  "tar under his nails",
+  "a madder-red wool cap"
+ ],
+ "marks": [],
+ "occupationVisuals": "A sheath knife on his belt; no shoes, the slops of a seaman.",
+ "statusVisuals": "A common sailor proud of his trade.",
+ "clothing": [
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.88,
+    1.6
+   ],
+   "collar": [
+    1.46,
+    1.55
+   ],
+   "sleeve": 0.6,
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.008,
+   "loose": 0.04,
+   "drape": 0.9,
+   "band": 0.004,
+   "bandWidth": 0.02,
+   "wear": 0.55
+  },
+  {
+   "id": "garment_linen_slops_01",
+   "layer": "lower",
+   "shape": "shell",
+   "torso": [
+    0.88,
+    1.07
+   ],
+   "leg": [
+    0.44,
+    1.05
+   ],
+   "material": "linen",
+   "colour": "linen.grey",
+   "thickness": 0.012,
+   "loose": 0.035,
+   "band": 0.003,
+   "bandWidth": 0.02,
+   "wear": 0.6
+  },
+  {
+   "id": "garment_wool_sash_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    1.0,
+    1.06
+   ],
+   "material": "wool",
+   "colour": "wool.woad",
+   "thickness": 0.03,
+   "hides": false,
+   "wear": 0.5
+  },
+  {
+   "id": "garment_wool_cap_01",
+   "layer": "headwear",
+   "shape": "shell",
+   "head": [
+    1.755,
+    1.71
+   ],
+   "material": "wool",
+   "colour": "wool.madder",
+   "thickness": 0.02,
+   "band": 0.008,
+   "bandWidth": 0.025,
+   "wear": 0.4
+  }
+ ],
+ "accessories": [
+  {
+   "id": "equip_sheath_knife_01",
+   "shape": "knife",
+   "side": "right",
+   "height": 1.0,
+   "material": "leather",
+   "colour": "leather.dark"
+  }
+ ],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 1.12,
+  "work": "push",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "seamen's loose linen shirts, slops, and red caps; barefoot aboard",
+   "source": "Pablo E. Pérez-Mallaína, Spain's Men of the Sea (1998)",
+   "region": "Carrera de Indias",
+   "dates": "16th c.",
+   "confidence": "medium"
+  }
+ ],
+ "about": "Visual identity record (CHARACTER_ART §2). The simulation's person.rodrigo (data/port/bocana.json) is the truth for who he is; this says how he looks, and every representation is built from it. Never reroll it (§40)."
+}

@@ -33,6 +33,7 @@ public partial class CharacterLineup : Node3D
     private bool _paint = true;
     private int _portraitState;
     private bool _far;
+    private bool _roster;
     private bool _bake;
     private List<string> _people = [];
 
@@ -50,6 +51,7 @@ public partial class CharacterLineup : Node3D
                 case "paint": _paint = value != "0"; break;
                 case "state": _portraitState = int.Parse(value); break;
                 case "lod": _far = value == "1"; break;
+                case "roster": _roster = true; break;
                 case "bake": _bake = true; break;
                 case "shotdelay": _delay = double.Parse(value, System.Globalization.CultureInfo.InvariantCulture); break;
             }
@@ -125,7 +127,7 @@ public partial class CharacterLineup : Node3D
 
         for (var p = 0; p < people.Count; p++)
         {
-            for (var s = 0; s < (portrait ? 1 : States.Length); s++)
+            for (var s = 0; s < (portrait || _roster ? 1 : States.Length); s++)
             {
                 var model = PersonModel.TryLoad(people[p], _view == "portrait");
                 if (model is null)
@@ -134,7 +136,10 @@ public partial class CharacterLineup : Node3D
                     continue;
                 }
 
-                model.Position = new Vector3((s - (States.Length - 1) / 2f) * 1.3f, 0, p * -2.2f);
+                // --roster: everyone side by side, standing (scene A of §51).
+                model.Position = _roster
+                    ? new Vector3((p - (people.Count - 1) / 2f) * 1.25f, 0, 0)
+                    : new Vector3((s - (States.Length - 1) / 2f) * 1.3f, 0, p * -2.2f);
                 // Three-quarters to the camera, as the game's isometric view mostly sees people.
                 model.RotationDegrees = new Vector3(0, 20, 0);
                 AddChild(model);
@@ -149,7 +154,7 @@ public partial class CharacterLineup : Node3D
                 _models.Add((model, portrait ? _portraitState : s));
                 var label = new Label3D
                 {
-                    Text = p == 0 ? States[s].Label : "",
+                    Text = _roster ? people[p].Replace("person.", "") : p == 0 ? States[s].Label : "",
                     FontSize = 28,
                     PixelSize = 0.006f,
                     OutlineSize = 8,
@@ -195,7 +200,7 @@ public partial class CharacterLineup : Node3D
         _camera.Size = _view == "close" ? 4.5f : _size;
         var forward = new Vector3(Mathf.Sin(Mathf.DegToRad(_yaw)), 0, Mathf.Cos(Mathf.DegToRad(_yaw)));
         var pitch = Mathf.DegToRad(35.264f);
-        var target = new Vector3(0, 0.9f, -1.1f * Math.Max(0, _models.Count / States.Length - 1));
+        var target = _roster ? new Vector3(0, 0.9f, 0) : new Vector3(0, 0.9f, -1.1f * Math.Max(0, _models.Count / States.Length - 1));
         _camera.Position = target + (forward * Mathf.Cos(pitch) + Vector3.Up * Mathf.Sin(pitch)) * 60;
         _camera.LookAt(target);
     }

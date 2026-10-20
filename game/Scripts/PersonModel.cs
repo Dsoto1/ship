@@ -143,6 +143,7 @@ public partial class PersonModel : Node3D
             Stoop = _identity.Looks.Posture.Stoop,
             HeadForward = _identity.Looks.Posture.HeadForward,
             Shoulders = _identity.Looks.Posture.Shoulders,
+            Limp = _identity.Looks.Posture.Limp switch { "left" => -1, "right" => 1, _ => 0 },
         };
         _skeleton.AddChild(Posture);
         Play(_identity.Animation.Idle, 1f);
@@ -276,6 +277,7 @@ public partial class PersonModel : Node3D
         public float Stoop { get; set; }
         public float HeadForward { get; set; }
         public float Shoulders { get; set; }
+        public string? Limp { get; set; }
     }
 
     public sealed class EquipmentRecord
@@ -315,8 +317,12 @@ public partial class Posture : SkeletonModifier3D
     /// <summary>-1 the left arm, 1 the right, 0 neither: held bent against the body.</summary>
     public int InjuredArm { get; set; }
 
+    /// <summary>-1 the left leg, 1 the right, 0 neither: a stiff knee that will not bend (an old injury
+    /// in the record, like Andrés's, or a sprain): the walk shortens on that side and the hip hitches.</summary>
+    public int Limp { get; set; }
+
     private int[]? _spine;
-    private int _neck, _head, _clavicleL, _clavicleR, _upperL, _upperR, _lowerL, _lowerR;
+    private int _neck, _head, _clavicleL, _clavicleR, _upperL, _upperR, _lowerL, _lowerR, _thighL, _thighR, _calfL, _calfR, _pelvis;
 
     public override void _ProcessModificationWithDelta(double delta)
     {
@@ -337,6 +343,27 @@ public partial class Posture : SkeletonModifier3D
             _upperR = skeleton.FindBone("upperarm_r");
             _lowerL = skeleton.FindBone("lowerarm_l");
             _lowerR = skeleton.FindBone("lowerarm_r");
+            _thighL = skeleton.FindBone("thigh_l");
+            _thighR = skeleton.FindBone("thigh_r");
+            _calfL = skeleton.FindBone("calf_l");
+            _calfR = skeleton.FindBone("calf_r");
+            _pelvis = skeleton.FindBone("pelvis");
+        }
+
+        if (Limp != 0)
+        {
+            // The bad knee stays nearly straight and that thigh swings less; the hip hitches to clear the foot.
+            var left = Limp < 0;
+            var calf = left ? _calfL : _calfR;
+            var thigh = left ? _thighL : _thighR;
+            var bend = skeleton.GetBonePoseRotation(calf);
+            var rest = skeleton.GetBoneRest(calf).Basis.GetRotationQuaternion();
+            skeleton.SetBonePoseRotation(calf, rest.Slerp(bend, 0.25f));
+            var swing = skeleton.GetBonePoseRotation(thigh);
+            var thighRest = skeleton.GetBoneRest(thigh).Basis.GetRotationQuaternion();
+            var lift = 1f - rest.Slerp(bend, 1f).AngleTo(rest) / Mathf.Pi;
+            skeleton.SetBonePoseRotation(thigh, thighRest.Slerp(swing, 0.6f));
+            Bend(skeleton, _pelvis, new Vector3(0, 0, 1), Mathf.DegToRad((left ? -1 : 1) * 4f * (1f - lift)));
         }
 
         var tired = Fatigue * Fatigue;

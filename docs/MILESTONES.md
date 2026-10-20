@@ -1128,10 +1128,52 @@ Screenshots: `docs/screenshots/c1-bartolo-{states,portrait,yard}.jpg`.
 - **Light model:** about 3,000 triangles, not 1,500. Reducing further tore the clothes, so the clean
   version was kept.
 - **Shoulders:** they still read broader than a 61-year-old's.
-- **Not yet built:** Velho, Pons, Rodrigo, Andrés and Varzi; rain at sea (only port rain wets
-  people); the portrait in the person card.
+- **Not yet built:** rain at sea (only port rain wets
+  people). (The other five and the card portrait followed in the second stage.)
 
 **Manual test (macOS):**
 1. `git pull`, open the project in the editor once (to import the models), then Build.
 2. Run `res://Lineup.tscn`.
 3. In the game, at 08:00, find Bartolo in the shipwright's yard.
+
+## C-1 (second stage) — The six, and who can be signed on
+
+- **The other five**, each built from their own identity record:
+  - **Velho:** woad doublet with short skirts, a black brimmed felt hat, and brass dividers on a cord.
+  - **Pons:** a long tawny coat over a brown doublet, a flat black cap, and the surgeon's case. He
+    walks quick and hunched.
+  - **Rodrigo:** loose shirt and slops, a woad sash, a madder-red cap, a knife on the belt. He is
+    barefoot and walks with a swagger.
+  - **Andrés:** a leather jerkin, a full dark beard, a nose broken flat and a scar down the left
+    cheek. He walks with a stiff right knee, and carries a cargo hook at work.
+  - **Varzi:** black velvet doublet, a long black gown, hair cut level at the jaw and a black
+    berretta. He walks the formal walk.
+
+  All six are 4,650–4,950 triangles, with a light model of 2,600–3,050.
+- **New in the builder:**
+  - painted scars;
+  - hair cut away under caps and hats;
+  - a knife and dividers;
+  - long hair cut to a bob.
+- **New in the game:** a limp in the posture layer, from the identity record, for an old injury.
+- **Portraits** for all six (`portraits/neutral.png`, `thumbnails/face.png`). Each person's card now
+  shows their portrait.
+- **Recruiting rim** (owner's request):
+  - **brass** round anyone who has told you they want a berth and is still free;
+  - **pale blue** round someone you have heard of (a lead) but not yet spoken to.
+
+  It goes by what the captain knows, not by the truth. Crew and those who have left have none.
+- **Lineup:** `--roster` shows everyone side by side.
+
+Screenshots: `docs/screenshots/c1-six-{roster,portraits}.jpg`, `c1-card-portrait-rim.jpg`.
+
+**Known limits:**
+- **Faces:** all six share the pack's one young face. Who they are comes from build, nose, jaw,
+  hair, beard, headwear and clothes; age shows only through grey, lines and posture.
+- **Rim:** on the simple figures it breaks at their sharp corners.
+- **Scenes B and D** (R3 part two) are still to do with the six in place.
+
+**Manual test (macOS):**
+1. `git pull`, open the editor once (to import), then Build.
+2. Run `res://Lineup.tscn` with `-- --roster`.
+3. In the game, talk to Bartolo or Velho: the brass rim appears and their portraits show in the card.

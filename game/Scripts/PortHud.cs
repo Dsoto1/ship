@@ -24,6 +24,7 @@ public partial class PortHud : CanvasLayer
     private Control _root = null!;
     private PanelContainer _card = null!;
     private Label _cardTitle = null!;
+    private TextureRect _cardPortrait = null!;
     private Label _cardSubtitle = null!;
     private Label _cardLook = null!;
     private Label _cardDoing = null!;
@@ -188,6 +189,12 @@ public partial class PortHud : CanvasLayer
         var person = runner.PersonOf(id);
         var name = KnownName(runner, id);
         _cardTitle.Text = name;
+        var portrait = person is null ? null : $"res://Assets/Characters/{person.Id}/portraits/neutral.png";
+        _cardPortrait.Visible = portrait is not null && ResourceLoader.Exists(portrait);
+        if (_cardPortrait.Visible && _cardPortrait.Texture?.ResourcePath != portrait)
+        {
+            _cardPortrait.Texture = GD.Load<Texture2D>(portrait);
+        }
         _cardSubtitle.Text = name == character.Name && person is not null ? Capital(person.Occupation) : "You have not spoken.";
         _cardLook.Text = person?.Look ?? "";
         _cardDoing.Text = runner.IsIndoors(id) ? "Indoors, out of sight." : $"Now: {Hud.Activity(runner, character)}.";
@@ -317,7 +324,17 @@ public partial class PortHud : CanvasLayer
         scroll.AddChild(column);
 
         var header = new HBoxContainer();
+        header.AddThemeConstantOverride("separation", Ui.SpaceM);
         column.AddChild(header);
+        // The person's own portrait, rendered from the model you see walking (CHARACTER_ART §34).
+        _cardPortrait = new TextureRect
+        {
+            CustomMinimumSize = new Vector2(88, 110),
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
+            Visible = false,
+        };
+        header.AddChild(_cardPortrait);
         _cardTitle = Ui.Text("", Ui.TextDisplay - 2, Ui.Brass, 0);
         _cardTitle.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         _cardTitle.AutowrapMode = TextServer.AutowrapMode.WordSmart;

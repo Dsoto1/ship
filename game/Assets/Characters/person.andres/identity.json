@@ -1,0 +1,225 @@
+{
+ "characterId": "person.andres",
+ "name": "Andrés",
+ "sex": "Male",
+ "age": 31,
+ "apparentAge": 36,
+ "heightCm": 170,
+ "heightClass": "average",
+ "seed": 1519041,
+ "looks": {
+  "build": "stocky",
+  "posture": {
+   "stoop": 0.25,
+   "headForward": 0.2,
+   "shoulders": 0.2,
+   "limp": "right"
+  },
+  "face": {
+   "width": 0.5,
+   "jaw": 0.9,
+   "chin": 0.1,
+   "nose": 0.6,
+   "noseLength": 0.0,
+   "noseBend": -0.9,
+   "noseBridge": 0.9,
+   "brow": 0.7,
+   "cheeks": 0.1,
+   "cheekbones": 0.0,
+   "mouth": 0.2,
+   "ears": 0.6,
+   "sag": 0.3
+  },
+  "skin": "#9b6f52",
+  "weathering": 0.65,
+  "eyes": "eyes.darkbrown",
+  "hairColour": "hair.darkbrown",
+  "hair": [
+   {
+    "mesh": "Hair_Buzzed",
+    "colour": "hair.darkbrown",
+    "grey": 0.05
+   },
+   {
+    "mesh": "Hair_Beard",
+    "trim": 0.1,
+    "colour": "hair.darkbrown",
+    "grey": 0.08
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "hair.darkbrown",
+    "grey": 0
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "broad and heavy-jawed, a nose broken flat to one side",
+  "a scar from the left brow down the cheek",
+  "walks with a stiff right knee (the injury that ended his time as bosun)",
+  "a full, short dark beard"
+ ],
+ "marks": [
+  {
+   "kind": "scar",
+   "points": [
+    [
+     0.03,
+     1.725
+    ],
+    [
+     0.045,
+     1.69
+    ],
+    [
+     0.05,
+     1.655
+    ]
+   ],
+   "width": 0.004
+  }
+ ],
+ "occupationVisuals": "A docker's leather jerkin over his shirt; a cargo hook in hand at work.",
+ "statusVisuals": "A labourer who was once more.",
+ "clothing": [
+  {
+   "id": "garment_wool_hose_01",
+   "layer": "lower",
+   "shape": "shell",
+   "leg": [
+    0.09,
+    0.62
+   ],
+   "material": "wool",
+   "colour": "wool.brown",
+   "thickness": 0.003,
+   "wear": 0.4
+  },
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.88,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.5,
+   "material": "linen",
+   "colour": "linen.grey",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.007,
+   "bandWidth": 0.04,
+   "wear": 0.7
+  },
+  {
+   "id": "garment_wool_breeches_01",
+   "layer": "lower",
+   "shape": "shell",
+   "torso": [
+    0.88,
+    1.07
+   ],
+   "leg": [
+    0.48,
+    1.05
+   ],
+   "material": "wool",
+   "colour": "wool.natural",
+   "thickness": 0.011,
+   "loose": 0.018,
+   "band": 0.004,
+   "bandWidth": 0.03,
+   "wear": 0.75
+  },
+  {
+   "id": "garment_leather_jerkin_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.92,
+    1.6
+   ],
+   "collar": [
+    1.47,
+    1.56
+   ],
+   "material": "leather",
+   "colour": "leather.brown",
+   "thickness": 0.02,
+   "loose": 0.01,
+   "drape": 1.0,
+   "wear": 0.8
+  },
+  {
+   "id": "garment_leather_belt_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    1.0,
+    1.045
+   ],
+   "material": "leather",
+   "colour": "leather.dark",
+   "thickness": 0.028,
+   "hides": false,
+   "wear": 0.6
+  },
+  {
+   "id": "garment_leather_shoes_01",
+   "layer": "footwear",
+   "shape": "shell",
+   "feet": 0.115,
+   "material": "leather",
+   "colour": "leather.dark",
+   "thickness": 0.008,
+   "wear": 0.5
+  }
+ ],
+ "accessories": [],
+ "equipment": [
+  {
+   "id": "equip_cargo_hook_01",
+   "shape": "axe",
+   "socket": "hand_r",
+   "length": 0.32,
+   "handle": "oak",
+   "head": "iron",
+   "when": [
+    "Carrying",
+    "Lifting",
+    "Rolling",
+    "Working",
+    "Hammering"
+   ]
+  }
+ ],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 0.82,
+  "work": "push",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "coleto: the leather jerkin of working men",
+   "source": "Carmen Bernis, Indumentaria española en tiempos de Carlos V (1962)",
+   "region": "Castile/Andalusia",
+   "dates": "c. 1500–1530",
+   "confidence": "medium"
+  },
+  {
+   "item": "dock labour and the bosun's place",
+   "source": "Pablo E. Pérez-Mallaína, Spain's Men of the Sea (1998)",
+   "region": "Carrera de Indias",
+   "dates": "16th c.",
+   "confidence": "medium"
+  }
+ ],
+ "about": "Visual identity record (CHARACTER_ART §2). The simulation's person.andres (data/port/bocana.json) is the truth for who he is; this says how he looks, and every representation is built from it. Never reroll it (§40)."
+}

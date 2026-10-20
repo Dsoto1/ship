@@ -189,7 +189,7 @@ def shell(base, spec, colour, kind, name):
         # A cap's edge runs level round the brow and dips to the nape.
         front, back = spec["head"]
         t = np.clip((base.positions[used][:, 2] + 0.1) / 0.2, 0, 1)
-        snap = hem & (y < max(front, back) + 0.03)
+        snap = hem  # a cap has one edge, its brim
         p[snap, 1] = (back + (front - back) * t)[snap] - spec.get("thickness", 0.006) * 0.5
     normals = bodylib.vertex_normals(p, part_faces, ids)
     part = bodylib.Part(name, p, normals, cylinder_uv(p), base.joints[used], base.weights[used], part_faces, kind, colour)

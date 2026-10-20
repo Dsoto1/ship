@@ -1,0 +1,223 @@
+{
+ "characterId": "person.pons",
+ "name": "Ilario Pons",
+ "sex": "Male",
+ "age": 38,
+ "apparentAge": 40,
+ "heightCm": 168,
+ "heightClass": "average",
+ "seed": 1519019,
+ "looks": {
+  "build": "slight",
+  "posture": {
+   "stoop": 0.1,
+   "headForward": 0.45,
+   "shoulders": 0.35
+  },
+  "face": {
+   "width": -0.3,
+   "jaw": -0.5,
+   "chin": -0.3,
+   "nose": 0.2,
+   "noseLength": 0.5,
+   "noseBend": 0,
+   "noseBridge": 0.2,
+   "brow": -0.2,
+   "cheeks": -0.3,
+   "cheekbones": 0.2,
+   "mouth": -0.4,
+   "ears": 0.3,
+   "sag": 0.2
+  },
+  "skin": "#b88d6f",
+  "weathering": 0.4,
+  "eyes": "eyes.hazel",
+  "hairColour": "hair.black",
+  "hair": [
+   {
+    "mesh": "Hair_SimpleParted",
+    "colour": "hair.black",
+    "grey": 0.1
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "hair.black",
+    "grey": 0.05
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "narrow, clean-shaven, a town face out of the sun",
+  "a long nose and a small anxious mouth",
+  "a good coat gone shiny at the elbows",
+  "forever glancing over his shoulder"
+ ],
+ "marks": [],
+ "occupationVisuals": "The barber-surgeon's leather case at his hip.",
+ "statusVisuals": "A professional who has come down: good black cloth, worn thin.",
+ "clothing": [
+  {
+   "id": "garment_wool_hose_01",
+   "layer": "lower",
+   "shape": "shell",
+   "leg": [
+    0.09,
+    0.7
+   ],
+   "material": "wool",
+   "colour": "wool.black",
+   "thickness": 0.003,
+   "wear": 0.4
+  },
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.88,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.69,
+   "material": "linen",
+   "colour": "linen.bleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.004,
+   "bandWidth": 0.02,
+   "wear": 0.4
+  },
+  {
+   "id": "garment_wool_doublet_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.95,
+    1.6
+   ],
+   "collar": [
+    1.52,
+    1.58
+   ],
+   "sleeve": 0.68,
+   "material": "wool",
+   "colour": "wool.brown",
+   "thickness": 0.012,
+   "loose": 0.005,
+   "drape": 0.8,
+   "wear": 0.5
+  },
+  {
+   "id": "garment_wool_coat_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.95,
+    1.6
+   ],
+   "collar": [
+    1.47,
+    1.56
+   ],
+   "sleeve": 0.66,
+   "material": "wool",
+   "colour": "wool.tawny",
+   "thickness": 0.022,
+   "loose": 0.03,
+   "drape": 1.0,
+   "band": 0.004,
+   "bandWidth": 0.03,
+   "wear": 0.85
+  },
+  {
+   "id": "garment_wool_coat_skirt_01",
+   "layer": "outer",
+   "shape": "skirt",
+   "top": 1.0,
+   "bottom": 0.55,
+   "flare": 0.55,
+   "material": "wool",
+   "colour": "wool.tawny",
+   "thickness": 0.03,
+   "wear": 0.85
+  },
+  {
+   "id": "garment_leather_shoes_01",
+   "layer": "footwear",
+   "shape": "shell",
+   "feet": 0.115,
+   "material": "leather",
+   "colour": "leather.dark",
+   "thickness": 0.008,
+   "wear": 0.5
+  }
+ ],
+ "accessories": [
+  {
+   "id": "acc_felt_cap_brim_01",
+   "shape": "brim",
+   "radius": 0.13,
+   "droop": 0.0,
+   "material": "felt",
+   "colour": "felt.black",
+   "raise": 0.02
+  },
+  {
+   "id": "acc_felt_cap_crown_01",
+   "shape": "crown",
+   "radius": 0.104,
+   "topRadius": 0.106,
+   "height": 0.03,
+   "material": "felt",
+   "colour": "felt.black"
+  },
+  {
+   "id": "equip_surgeon_case_01",
+   "shape": "pouch",
+   "side": "right",
+   "height": 0.98,
+   "size": [
+    0.16,
+    0.13,
+    0.05
+   ],
+   "material": "leather",
+   "colour": "leather.brown"
+  }
+ ],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 1.08,
+  "work": "kneel_work",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "ropa / sayo: the knee-length coat of townsmen and professionals",
+   "source": "Carmen Bernis, Indumentaria española en tiempos de Carlos V (1962)",
+   "region": "Castile/Andalusia",
+   "dates": "c. 1500–1530",
+   "confidence": "medium"
+  },
+  {
+   "item": "gorra: the flat cap of the period",
+   "source": "Carmen Bernis, Indumentaria española en tiempos de Carlos V (1962)",
+   "region": "Castile/Andalusia",
+   "dates": "c. 1500–1530",
+   "confidence": "medium"
+  },
+  {
+   "item": "barbers and surgeons aboard and their chests",
+   "source": "Pablo E. Pérez-Mallaína, Spain's Men of the Sea (1998)",
+   "region": "Carrera de Indias",
+   "dates": "16th c.",
+   "confidence": "medium"
+  }
+ ],
+ "about": "Visual identity record (CHARACTER_ART §2). The simulation's person.pons (data/port/bocana.json) is the truth for who he is; this says how he looks, and every representation is built from it. Never reroll it (§40)."
+}

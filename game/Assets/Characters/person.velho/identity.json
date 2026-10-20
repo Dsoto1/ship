@@ -1,0 +1,227 @@
+{
+ "characterId": "person.velho",
+ "name": "Duarte Velho",
+ "sex": "Male",
+ "age": 47,
+ "apparentAge": 52,
+ "heightCm": 172,
+ "heightClass": "average",
+ "seed": 1519011,
+ "looks": {
+  "build": "average",
+  "posture": {
+   "stoop": 0.2,
+   "headForward": 0.15,
+   "shoulders": 0.1
+  },
+  "face": {
+   "width": 0.1,
+   "jaw": 0.6,
+   "chin": 0.2,
+   "nose": 0.3,
+   "noseLength": 0.3,
+   "noseBend": 0,
+   "noseBridge": 0.4,
+   "brow": 0.8,
+   "cheeks": -0.4,
+   "cheekbones": 0.8,
+   "mouth": 0.1,
+   "ears": 0.2,
+   "sag": 0.4
+  },
+  "skin": "#8a6046",
+  "weathering": 0.8,
+  "eyes": "eyes.grey",
+  "hairColour": "hair.darkbrown",
+  "hair": [
+   {
+    "mesh": "Hair_SimpleParted",
+    "colour": "hair.darkbrown",
+    "grey": 0.45
+   },
+   {
+    "mesh": "Hair_Beard",
+    "trim": 0.45,
+    "colour": "hair.darkbrown",
+    "grey": 0.5
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "hair.darkbrown",
+    "grey": 0.3
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "a sea-weathered Lusaran face, deep lines at the eyes from looking at horizons",
+  "heavy brow, high cheekbones",
+  "a pilot's brass dividers on a cord round his neck",
+  "a black felt hat with a brim against the sun"
+ ],
+ "marks": [],
+ "occupationVisuals": "Brass dividers on a cord; a good doublet a pilot can afford, worn hard.",
+ "statusVisuals": "A skilled man between ships: decent cloth, nothing new.",
+ "clothing": [
+  {
+   "id": "garment_wool_hose_01",
+   "layer": "lower",
+   "shape": "shell",
+   "leg": [
+    0.09,
+    0.62
+   ],
+   "material": "wool",
+   "colour": "wool.grey",
+   "thickness": 0.003,
+   "wear": 0.4
+  },
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.88,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.69,
+   "material": "linen",
+   "colour": "linen.bleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.004,
+   "bandWidth": 0.02,
+   "wear": 0.4
+  },
+  {
+   "id": "garment_wool_breeches_01",
+   "layer": "lower",
+   "shape": "shell",
+   "torso": [
+    0.88,
+    1.07
+   ],
+   "leg": [
+    0.5,
+    1.05
+   ],
+   "material": "wool",
+   "colour": "wool.black",
+   "thickness": 0.011,
+   "loose": 0.012,
+   "wear": 0.5
+  },
+  {
+   "id": "garment_wool_doublet_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.95,
+    1.6
+   ],
+   "collar": [
+    1.5,
+    1.57
+   ],
+   "sleeve": 0.67,
+   "material": "wool",
+   "colour": "wool.woad",
+   "thickness": 0.014,
+   "loose": 0.008,
+   "drape": 0.8,
+   "band": 0.004,
+   "bandWidth": 0.025,
+   "wear": 0.65
+  },
+  {
+   "id": "garment_wool_doublet_skirt_01",
+   "layer": "outer",
+   "shape": "skirt",
+   "top": 1.0,
+   "bottom": 0.84,
+   "flare": 0.35,
+   "material": "wool",
+   "colour": "wool.woad",
+   "thickness": 0.022,
+   "wear": 0.65
+  },
+  {
+   "id": "garment_leather_belt_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    1.0,
+    1.04
+   ],
+   "material": "leather",
+   "colour": "leather.brown",
+   "thickness": 0.03,
+   "hides": false,
+   "wear": 0.5
+  },
+  {
+   "id": "garment_leather_shoes_01",
+   "layer": "footwear",
+   "shape": "shell",
+   "feet": 0.115,
+   "material": "leather",
+   "colour": "leather.dark",
+   "thickness": 0.008,
+   "wear": 0.5
+  }
+ ],
+ "accessories": [
+  {
+   "id": "acc_felt_hat_brim_01",
+   "shape": "brim",
+   "radius": 0.17,
+   "droop": 0.012,
+   "material": "felt",
+   "colour": "felt.black",
+   "raise": 0.012
+  },
+  {
+   "id": "acc_felt_hat_crown_01",
+   "shape": "crown",
+   "radius": 0.1,
+   "topRadius": 0.09,
+   "height": 0.045,
+   "material": "felt",
+   "colour": "felt.black"
+  },
+  {
+   "id": "equip_pilot_dividers_01",
+   "shape": "dividers",
+   "material": "metal",
+   "colour": "brass"
+  }
+ ],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 0.95,
+  "work": "interact",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "jubón (doublet) with short skirts over the shirt",
+   "source": "Carmen Bernis, Indumentaria española en tiempos de Carlos V (1962)",
+   "region": "Castile/Andalusia",
+   "dates": "c. 1500–1530",
+   "confidence": "medium"
+  },
+  {
+   "item": "a pilot's dividers and the felt hat of a seaman of standing",
+   "source": "Pablo E. Pérez-Mallaína, Spain's Men of the Sea (1998)",
+   "region": "Carrera de Indias",
+   "dates": "16th c.",
+   "confidence": "medium"
+  }
+ ],
+ "about": "Visual identity record (CHARACTER_ART §2). The simulation's person.velho (data/port/bocana.json) is the truth for who he is; this says how he looks, and every representation is built from it. Never reroll it (§40)."
+}

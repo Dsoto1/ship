@@ -122,6 +122,7 @@ def build_person(identity, palette, coarse=None):
     body_part = bodylib.Part("body", shaped, normals, atlas_uv(a["TEXCOORD_0"], "skin_female" if sex == "Female" else "skin_male"),
                              joints, weights, faces, g.SKIN, np.array([*skin, weathering]))
     body_part.locked = decimate.seam_vertices(shaped)
+    paint_marks(body_part, looks.get("marks", []), shares)
     # Sunken places of the face and hands, in the fraction of the material channel (character.gdshader).
     body_part.kind = body_part.kind + 0.45 * bodylib.cavity(shaped, faces, ids) * np.clip(shares["head"] + shares["hand_l"] + shares["hand_r"], 0, 1)
     # The face and hands carry identity and contact: keep more of them (§15, §49).
@@ -189,10 +190,11 @@ def build_person(identity, palette, coarse=None):
 
     # Hair, brows and beard from the pack's sculpted pieces, fitted to the changed head.
     hair_colour = colour_of(looks.get("hairColour", "#3a2a1c"), palette)
+    covered = headwear_cover(identity, marks)
     for piece in looks.get("hair", []):
         if coarse and "Eyebrows" in piece["mesh"]:
             continue
-        part = hair_piece(piece, skeleton, marks, looks.get("face", {}), hair_colour, palette, coarse)
+        part = hair_piece(piece, skeleton, marks, looks.get("face", {}), hair_colour, palette, coarse, covered)
         if part is not None:
             parts.append(part)
 
@@ -205,6 +207,28 @@ def build_person(identity, palette, coarse=None):
     # Equipment, held in the hand only when the work calls for it; separate meshes.
     equipment = [tool(item, skeleton, palette) for item in identity.get("equipment", [])]
     return skeleton, parts, [e for e in equipment if e is not None]
+
+
+def paint_marks(part, marks, shares):
+    """Scars (CHARACTER_ART §24): a pale, slightly pink line on the skin along a stroke given in face
+    coordinates (x across, y up, metres on the base head), painted into the vertex colours so it is the
+    person's own and follows them into every representation."""
+    p = part.positions
+    front = (shares["head"] > 0.5) & (p[:, 2] > 0.0)
+    for mark in marks:
+        if mark.get("kind") != "scar":
+            continue
+        points = np.asarray(mark["points"], dtype=np.float64)
+        width = mark.get("width", 0.004)
+        q = p[:, :2]
+        distance = np.full(len(p), np.inf)
+        for a, b in zip(points[:-1], points[1:]):
+            ab = b - a
+            t = np.clip(((q - a) @ ab) / max(ab @ ab, 1e-12), 0, 1)
+            distance = np.minimum(distance, np.linalg.norm(q - (a + t[:, None] * ab), axis=1))
+        w = np.clip(1 - distance / width, 0, 1) * front
+        scar = np.clip(part.colour[:, :3] * [1.1, 0.93, 0.9] + [0.07, 0.04, 0.04], 0, 1)
+        part.colour[:, :3] = part.colour[:, :3] * (1 - w[:, None]) + scar * w[:, None]
 
 
 def _hem_zone(base, garment):
@@ -221,7 +245,24 @@ def _hem_zone(base, garment):
     return zone
 
 
-def hair_piece(piece, skeleton, marks, face, colour, palette, coarse=None):
+def headwear_cover(identity, marks):
+    """Where a cap or hat sits, as a test on points: hair there is under it and is cut away, so the
+    cap sits on the head and no lock pokes through."""
+    tests = []
+    for garment in identity.get("clothing", []):
+        if garment.get("head") is not None:
+            front, back = garment["head"]
+            tests.append(lambda p, f=front, b=back: p[:, 1] > b + (f - b) * np.clip((p[:, 2] + 0.1) / 0.2, 0, 1) - 0.004)
+    for extra in identity.get("accessories", []):
+        if extra["shape"] == "crown":
+            bottom = marks.brow[1] + 0.04
+            tests.append(lambda p, y=bottom: p[:, 1] > y)
+    if not tests:
+        return None
+    return lambda p: np.any([t(p) for t in tests], axis=0)
+
+
+def hair_piece(piece, skeleton, marks, face, colour, palette, coarse=None, covered=None):
     doc = gltf.Document(HAIRS / f"{piece['mesh']}.gltf")
     source = doc.skeleton().names
     for node, mesh, material, a, faces in doc.primitives():
@@ -244,6 +285,8 @@ def hair_piece(piece, skeleton, marks, face, colour, palette, coarse=None):
             centre = marks.centre + [0, -0.03, 0.02]
             d = p - centre
             p = centre + d * (1 - piece["trim"] * 0.12)
+        if covered is not None and "Eyebrows" not in piece["mesh"] and "Beard" not in piece["mesh"]:
+            keep &= ~covered(p[faces].mean(1))
         if "bottom" in piece:
             centre = p[faces].mean(1)
             keep &= centre[:, 1] > piece["bottom"]
@@ -256,7 +299,8 @@ def hair_piece(piece, skeleton, marks, face, colour, palette, coarse=None):
                             np.array([*tint, piece.get("grey", 0.0)]))
         part = part.subset(np.ones(len(part.faces), bool))
         part.importance[:] = 3.0 if "Eyebrows" in piece["mesh"] else 2.0
-        part.locked = decimate.seam_vertices(part.positions)
+        # The hair texture is a noise of strands: its seams do not show, so only the brows keep theirs.
+        part.locked = decimate.seam_vertices(part.positions) if "Eyebrows" in piece["mesh"] else np.zeros(len(part.positions), bool)
         if coarse:
             faces = decimate.reduce(part.positions, part.faces, max(len(part.faces) // 5, 40), keep_open_edges=False)
             part = part.subset_faces(faces)
@@ -301,6 +345,24 @@ def accessory(extra, skeleton, base, marks, palette):
         head = g.box([hx, y - 0.21, 0.02], [0.03, 0.04, 0.09])
         p, f = g.merge(handle, head)
         return g.rigid(skeleton, "pelvis", p, f, colour, g.KINDS[extra.get("material", "wood")], extra["id"])
+    if shape == "knife":
+        # A sheath knife on the belt: the sailor's tool for everything.
+        side = 1 if extra.get("side", "right") == "left" else -1
+        y = extra.get("height", 1.0)
+        x = 0.16 * side
+        sheath = g.box([x, y - 0.09, 0.04], [0.035, 0.16, 0.02], rotation_y=0.3 * side)
+        grip = g.box([x, y + 0.03, 0.04], [0.025, 0.08, 0.025], rotation_y=0.3 * side)
+        p, f = g.merge(sheath, grip)
+        return g.rigid(skeleton, "pelvis", p, f, colour, g.KINDS[extra.get("material", "leather")], extra["id"])
+    if shape == "dividers":
+        # A pilot's brass dividers hanging on a cord at the chest (Velho).
+        top = marks.chin[1] - 0.1
+        cord_l = g.cylinder([-0.05, top + 0.05, 0.06], [0.0, top - 0.06, 0.125], 0.003, segments=4)
+        cord_r = g.cylinder([0.05, top + 0.05, 0.06], [0.0, top - 0.06, 0.125], 0.003, segments=4)
+        leg_l = g.cylinder([0.0, top - 0.06, 0.128], [-0.018, top - 0.17, 0.13], 0.004, segments=4)
+        leg_r = g.cylinder([0.0, top - 0.06, 0.128], [0.018, top - 0.17, 0.13], 0.004, segments=4)
+        p, f = g.merge(cord_l, cord_r, leg_l, leg_r)
+        return g.rigid(skeleton, "spine_03", p, f, colour, g.METAL, extra["id"])
     if shape == "cord":
         # A cord round the neck with something hanging from it (Velho's dividers).
         y = extra.get("height", 1.36)
@@ -365,7 +427,9 @@ def reduce_parts(parts, budget, keep_open_edges=True):
         if len(p.faces) <= target:
             result.append(p)
             continue
-        faces = decimate.reduce(p.positions, p.faces, target, p.locked, p.importance, keep_open_edges)
+        # Hair is many small sculpted locks, each with an open edge: those may move.
+        free = p.kind[0] == g.HAIR and "Eyebrows" not in p.name
+        faces = decimate.reduce(p.positions, p.faces, target, p.locked, p.importance, keep_open_edges and not free)
         reduced = bodylib.Part(p.name, p.positions, p.normals, p.uv, p.joints, p.weights, faces, p.kind, p.colour)
         reduced.importance = p.importance
         reduced.locked = p.locked
