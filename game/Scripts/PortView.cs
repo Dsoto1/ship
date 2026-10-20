@@ -122,6 +122,9 @@ public partial class PortView : Node3D
         }
 
         BuildTownBehind();
+        Lanes.Clear();
+        Idlers.Clear();
+        BuildOutskirts();
         BuildLights();
         _batch.Commit(this);
         _coverNode = new Node3D { Name = "RainCovers", Visible = false };
@@ -169,28 +172,28 @@ public partial class PortView : Node3D
     private void BuildGround()
     {
         // The town's ground, from well behind the back lane down to the quay edge, and the terrace top.
-        GroundQuad(-40, -40, 100, 34.5f, 0f);
-        GroundQuad(-40, -40, 18.5f, 24.5f, 2.6f);
+        GroundQuad(-72, -40, 100, 34.5f, 0f);
+        GroundQuad(-72, -40, 18.5f, 24.5f, 2.6f);
 
         // The terrace: a stone mass with its retaining walls, broken by two flights of steps.
-        AddBox(Box(-40, 18.5f, -40, 24.5f, 0, 2.58f), DarkStone);
+        AddBox(Box(-72, 18.5f, -40, 24.5f, 0, 2.58f), DarkStone);
         AddBox(Box(18.5f, 19.5f, -40, 14.5f, 0, 2.6f), Stone);
         AddBox(Box(18.5f, 19.5f, 18.5f, 25.5f, 0, 2.6f), Stone);
-        AddBox(Box(-40, 5.5f, 24.5f, 25.5f, 0, 2.6f), Stone);
+        AddBox(Box(-72, 5.5f, 24.5f, 25.5f, 0, 2.6f), Stone);
         AddBox(Box(9.5f, 18.5f, 24.5f, 25.5f, 0, 2.6f), Stone);
         Steps(18.5f, 22.5f, 14.5f, 18.5f, alongX: true);
         Steps(5.5f, 9.5f, 24.5f, 29.5f, alongX: false);
 
         // A balustrade round the terrace edge, looking out over the harbour (§3.5, §4).
-        Balustrade(new Vector3(-40, 2.6f, 24.6f), new Vector3(5.5f, 2.6f, 24.6f));
+        Balustrade(new Vector3(-72, 2.6f, 24.6f), new Vector3(5.5f, 2.6f, 24.6f));
         Balustrade(new Vector3(9.5f, 2.6f, 24.6f), new Vector3(19.4f, 2.6f, 24.6f));
         Balustrade(new Vector3(19.4f, 2.6f, 18.5f), new Vector3(19.4f, 2.6f, 24.6f));
         Balustrade(new Vector3(19.4f, 2.6f, -1f), new Vector3(19.4f, 2.6f, 14.5f));
 
         // The quay wall dropping to the water, with its coping, and a stretch of shingle beyond the yard.
-        AddBox(Box(-40, 100, 34.5f, 34.9f, -2.8f, 0f), DarkStone);
-        AddBox(Box(-40, 100, 34.45f, 35f, -0.02f, 0.12f), Stone);
-        AddBox(Box(-40, 100, 34.9f, 35.2f, -1.3f, -0.9f), new Color(0.2f, 0.3f, 0.22f));
+        AddBox(Box(-72, 100, 34.5f, 34.9f, -2.8f, 0f), DarkStone);
+        AddBox(Box(-72, 100, 34.45f, 35f, -0.02f, 0.12f), Stone);
+        AddBox(Box(-72, 100, 34.9f, 35.2f, -1.3f, -0.9f), new Color(0.2f, 0.3f, 0.22f));
     }
 
     private void GroundQuad(float x0, float z0, float x1, float z1, float y)
@@ -1049,7 +1052,7 @@ public partial class PortView : Node3D
         {
             var z = -1f - row * 7.5f;
             var rise = row * 2.2f;
-            for (var x = -34f; x < 100f; x += 5.5f + rng.Randf() * 1.5f)
+            for (var x = -72f; x < 150f; x += 5.5f + rng.Randf() * 1.5f)
             {
                 var onTerrace = x < 18f;
                 var width = 4.5f + rng.Randf() * 1.5f;
@@ -1069,8 +1072,231 @@ public partial class PortView : Node3D
         Roof(new Vector3(41.5f, 19f, -21.5f), new Vector3(46.5f, 19f, -21.5f), 22.5f, -24f);
         Roof(new Vector3(46.5f, 19f, -26.5f), new Vector3(41.5f, 19f, -26.5f), 22.5f, -24f);
 
-        // Beyond the west end, the terrace runs on into the old town; beyond the east, a shingle beach.
-        AddBox(Box(80f, 140f, 34.5f, 46f, -2.2f, -0.9f), new Color(0.62f, 0.56f, 0.45f));
+    }
+
+    // ---- beyond the ends of the map: the old town to the west, the fishermen's shore to the east
+
+    /// <summary>Walks the crowd takes beyond the ends of the map, where nobody else can go (PortCrowd).</summary>
+    public List<Vector3[]> Lanes { get; } = [];
+
+    /// <summary>People at something beyond the ends of the map: mending nets, talking at the fountain.</summary>
+    public List<(Vector3 At, float Yaw, Pose Pose)> Idlers { get; } = [];
+
+    // Not walkable and not simulated: the town goes on past where the player can walk, so the port does
+    // not end in an empty plain at one end and open water at the other.
+    private void BuildOutskirts()
+    {
+        const float Terrace = 2.6f;
+        var rng = new RandomNumberGenerator { Seed = 1492 };
+        Color[] walls = [Plaster, Ochre, Lime, new Color(0.8f, 0.72f, 0.62f), new Color(0.86f, 0.77f, 0.68f), new Color(0.74f, 0.66f, 0.55f)];
+        Color Wall() => walls[rng.RandiRange(0, walls.Length - 1)];
+
+        // West, on the terrace: a lane of houses running off into the old town, and a row facing the
+        // harbour along the promenade, with a small plaza and its fountain where they meet the map.
+        for (var x = -72f; x < -12.5f; x += 5f + rng.Randf() * 1.6f)
+        {
+            var width = Mathf.Min(4.4f + rng.Randf() * 1.6f, -12.5f - x);
+            House(x, x + width, 0.5f, 6.8f, Wall(), Stone, 2 + rng.RandiRange(0, 1), 3f, rng.Randf() > 0.4f, Terrace);
+            House(x, x + width, 11.6f, 18.6f, Wall(), Stone, 2 + rng.RandiRange(0, 1), 3f, rng.Randf() > 0.4f, Terrace);
+            if (rng.Randf() > 0.6f)
+            {
+                AddChild(Smoke(new Vector3(x + width * 0.7f, Terrace + 9.8f, 3.5f), dark: false));
+            }
+        }
+
+        // The old fish market on the plaza: an open arcade under a tiled roof.
+        House(-12f, -3f, 0.5f, 6.8f, Stone.Lightened(0.1f), Stone, 2, 3.6f, frame: false, Terrace);
+        for (var x = -10.5f; x < -3.5f; x += 2.4f)
+        {
+            Arch(new Vector3(x, Terrace, 6.82f), 1.7f, 2.9f);
+        }
+
+        House(-12f, -6f, 11.6f, 18.6f, Ochre, Stone, 3, 3f, frame: true, Terrace);
+        Well(new Vector3(-3.5f, Terrace, 14.5f));
+        Tree(new Vector3(-9f, Terrace, 21.5f), cypress: false);
+        Tree(new Vector3(-2.5f, Terrace, 20.5f), cypress: false);
+        Tree(new Vector3(-30f, Terrace, 21.8f), cypress: false);
+        Tree(new Vector3(-48f, Terrace, 21.8f), cypress: false);
+        AddBox(new Vector3(-6.5f, Terrace + 0.25f, 22.6f), new Vector3(3f, 0.5f, 0.6f), Stone);
+        Lantern(new Vector3(-7f, Terrace + 2.4f, 19.6f), onPost: true);
+
+        // Below the terrace: vaults in its wall, boats along the quay, and the sea tower that closes it.
+        for (var x = -44f; x < -2f; x += 4.6f)
+        {
+            Arch(new Vector3(x, 0, 25.52f), 1.9f, 2.2f);
+        }
+
+        Cargo(new Vector3(-8f, 0, 28.5f), 2f, 1.4f, "casks");
+        Cargo(new Vector3(-17f, 0, 27.5f), 2.4f, 1f, "bales");
+        Cargo(new Vector3(-26f, 0, 28f), 2f, 2f, "crates");
+        ShearLegs(new Vector3(-21f, 0, 33.6f), 6f);
+        foreach (var (x, mast) in new[] { (-9f, false), (-15f, true), (-24f, false), (-31f, true), (-38f, false) })
+        {
+            Boat(new Vector3(x, SeaAndSky.WaterLevel + 0.45f, 37.2f), 4.5f + rng.Randf() * 1.5f, mast);
+        }
+
+        // Fish stores leaning on the terrace wall by the tower, nets and pots before them.
+        Shed(-43.5f, -35f, 25.5f, 29.5f);
+        Cargo(new Vector3(-12.5f, 0, 31.5f), 1.6f, 1.4f, "crates");
+        Cargo(new Vector3(-33f, 0, 31f), 2f, 1.4f, "casks");
+        NetFrame(new Vector3(-38f, 0, 31.5f), 3f);
+        foreach (var x in new[] { -58f, -40f, -22f })
+        {
+            AddBox(new Vector3(x, Terrace + 0.25f, 23.6f), new Vector3(2.6f, 0.5f, 0.6f), Stone);
+            Lantern(new Vector3(x + 3f, Terrace + 2.4f, 23.4f), onPost: true);
+        }
+
+        Tree(new Vector3(-62f, Terrace, 21.8f), cypress: false);
+        Tree(new Vector3(-16f, Terrace, 22.2f), cypress: false);
+        Idlers.Add((new Vector3(-40f, Terrace + 0.3f, 23.2f), 0f, Pose.Sitting));
+        Idlers.Add((new Vector3(-37.6f, 0, 30.6f), Mathf.Pi, Pose.Praying));
+        Idlers.Add((new Vector3(-30f, 0, 33.8f), 0f, Pose.Leaning));
+        Idlers.Add((new Vector3(-25f, Terrace, 23.9f), 0f, Pose.Leaning));
+
+        AddCylinder(new Vector3(-48f, 3.5f, 30f), 4f, 11f, DarkStone.Lightened(0.08f));
+        for (var a = 0; a < 12; a++)
+        {
+            var angle = a * Mathf.Tau / 12f;
+            AddBox(new Vector3(-48f + Mathf.Cos(angle) * 3.8f, 9.4f, 30f + Mathf.Sin(angle) * 3.8f), new Vector3(1f, 0.8f, 1f), DarkStone.Lightened(0.08f));
+        }
+
+        Arch(new Vector3(-48f, 0, 34.02f), 1.5f, 2.4f);
+        Banner(new Vector3(-48f, 12f, 30f), new Color(0.62f, 0.13f, 0.12f), new Color(0.85f, 0.7f, 0.25f));
+        AddBox(Box(-52f, -44f, 33f, 60f, -2.8f, 0.6f), DarkStone);
+        AddBox(Box(-52f, -44f, 33f, 60f, 0.6f, 0.9f), Stone);
+
+        // East of the yard: a warehouse and a boat shed, and a slip with a boat on it.
+        House(80.5f, 91f, 19f, 25f, new Color(0.7f, 0.62f, 0.5f), Stone, 2, 3.4f, frame: true, 0f);
+        AddBox(new Vector3(85.8f, 1.5f, 25.06f), new Vector3(2.6f, 3f, 0.08f), Timber);
+        Shed(92f, 100f, 16f, 25f);
+        Boat(new Vector3(96f, 0.45f, 20.5f), 6.5f, false);
+        AddBox(Box(84f, 91f, 26f, 40f, -1.6f, -0.05f), WetWood.Lightened(0.1f));
+        Boat(new Vector3(87.5f, 0.4f, 29.5f), 5.5f, false);
+        Cargo(new Vector3(82.5f, 0, 28.5f), 1.6f, 1.6f, "crates");
+        Cargo(new Vector3(95f, 0, 30f), 2f, 1.4f, "casks");
+
+        // Past the end of the quay, a shingle beach going down into the water, the fishermen's huts
+        // above it, their boats drawn up and their nets on frames, and a headland with a watchtower.
+        float Shore(float z) => 0.15f - Mathf.Max(0f, z - 6f) * 0.06f;
+        // Grey enough to take the scenery's stone grain; a darker wet band where the sea reaches.
+        var shingle = new Color(0.58f, 0.55f, 0.49f);
+        _batch.AddTriangles(_batch.Coloured,
+            [new Vector3(100f, Shore(6f), 6f), new Vector3(175f, Shore(6f), 6f), new Vector3(175f, Shore(52f), 52f),
+             new Vector3(100f, Shore(6f), 6f), new Vector3(175f, Shore(52f), 52f), new Vector3(100f, Shore(52f), 52f)], colour: shingle);
+        _batch.AddTriangles(_batch.Coloured,
+            [new Vector3(100f, Shore(24f) + 0.02f, 24f), new Vector3(175f, Shore(24f) + 0.02f, 24f), new Vector3(175f, Shore(32f) + 0.02f, 32f),
+             new Vector3(100f, Shore(24f) + 0.02f, 24f), new Vector3(175f, Shore(32f) + 0.02f, 32f), new Vector3(100f, Shore(32f) + 0.02f, 32f)], colour: new Color(0.4f, 0.38f, 0.34f));
+        for (var i = 0; i < 40; i++)
+        {
+            var z = 7f + rng.Randf() * 22f;
+            AddBox(new Vector3(101f + rng.Randf() * 44f, Shore(z) + 0.06f, z), new Vector3(0.3f + rng.Randf() * 0.6f, 0.2f, 0.3f + rng.Randf() * 0.5f),
+                DarkStone.Lightened(rng.Randf() * 0.15f), rotation: new Vector3(0, rng.Randf() * 90f, 0));
+        }
+
+        AddBox(Box(100f, 175f, -40f, 6.2f, -0.6f, 0.15f), new Color(0.5f, 0.49f, 0.4f));
+        AddBox(Box(99.8f, 100.4f, 6f, 34.9f, -2.8f, 0.12f), DarkStone);
+        AddBox(new Vector3(102.2f, -0.12f, 10f), new Vector3(3.6f, 0.35f, 4f), Stone, rotation: new Vector3(-8f, 0, 0));
+        for (var x = 104f; x < 140f; x += 6.5f + rng.Randf() * 2f)
+        {
+            House(x, x + 4f, -2f, 3.5f, Wall(), Stone, 1, 2.8f, frame: false, 0.15f);
+            if (rng.Randf() > 0.4f)
+            {
+                AddChild(Smoke(new Vector3(x + 3f, 5.2f, 0.7f), dark: false));
+            }
+        }
+
+        foreach (var (x, z, turn) in new[] { (106f, 17f, 80f), (112f, 19f, 95f), (119f, 16.5f, 70f), (127f, 20f, 100f), (134f, 18f, 85f) })
+        {
+            BeachedBoat(new Vector3(x, Shore(z) + 0.3f, z), 4.5f, turn);
+        }
+
+        NetFrame(new Vector3(109f, Shore(10f), 10f), 3f);
+        NetFrame(new Vector3(123f, Shore(10.5f), 10.5f), 3.4f);
+        AddCylinder(new Vector3(116f, Shore(12f) + 0.45f, 12f), 0.35f, 0.9f, Wood);
+        AddBox(new Vector3(116f, Shore(12f) + 0.75f, 12f), new Vector3(2.2f, 0.08f, 0.08f), Timber);
+
+        for (var i = 0; i < 9; i++)
+        {
+            var at = new Vector3(146f + rng.Randf() * 22f, -1f, 4f + i * 4.5f + rng.Randf() * 2f);
+            var height = 4f + (8 - i) * 1.1f + rng.Randf() * 2f;
+            AddBox(at + new Vector3(0, height / 2f, 0), new Vector3(7f + rng.Randf() * 5f, height, 6f + rng.Randf() * 3f),
+                DarkStone.Lightened(rng.Randf() * 0.1f), rotation: new Vector3(rng.Randf() * 10f - 5f, rng.Randf() * 60f, rng.Randf() * 10f - 5f));
+        }
+
+        AddCylinder(new Vector3(156f, 15.5f, 10f), 2.2f, 7f, Stone.Lightened(0.05f));
+        AddCylinder(new Vector3(156f, 19.3f, 10f), 2.6f, 0.6f, Stone);
+        Tree(new Vector3(142f, 0.15f, -3f), cypress: true);
+        Tree(new Vector3(138f, 0.15f, 2f), cypress: false);
+        Tree(new Vector3(102f, 0.15f, -6f), cypress: true);
+
+        // Where the crowd walks out there, and who is at work.
+        Lanes.Add([new Vector3(-62f, Terrace, 9.2f), new Vector3(-1f, Terrace, 9.2f)]);
+        Lanes.Add([new Vector3(-66f, Terrace, 21f), new Vector3(-13f, Terrace, 21f), new Vector3(-5f, Terrace, 17.5f), new Vector3(-1f, Terrace, 17.5f)]);
+        Lanes.Add([new Vector3(-43f, 0, 30.5f), new Vector3(-1f, 0, 30.5f)]);
+        Lanes.Add([new Vector3(80f, 0, 31.5f), new Vector3(99f, 0, 31.5f), new Vector3(101f, 0.15f, 9.5f), new Vector3(140f, 0.15f, 5.5f)]);
+        Lanes.Add([new Vector3(80.5f, 0, 14f), new Vector3(101f, 0.15f, 5f), new Vector3(141f, 0.15f, 4.5f)]);
+        Idlers.Add((new Vector3(108.5f, Shore(11.2f), 11.2f), Mathf.Pi, Pose.Praying));
+        Idlers.Add((new Vector3(122.5f, Shore(11.7f), 11.7f), Mathf.Pi, Pose.Praying));
+        Idlers.Add((new Vector3(113f, Shore(17.5f), 17.5f), -1.2f, Pose.Working));
+        Idlers.Add((new Vector3(-4.8f, Terrace, 15.6f), 0.6f, Pose.Talking));
+        Idlers.Add((new Vector3(-3.2f, Terrace, 16.2f), -2.6f, Pose.Talking));
+        Idlers.Add((new Vector3(-6.5f, Terrace + 0.3f, 22.2f), 0f, Pose.Sitting));
+        Idlers.Add((new Vector3(-16.5f, 0, 28.6f), Mathf.Pi * 0.5f, Pose.Working));
+        Idlers.Add((new Vector3(88f, 0, 27.5f), 0f, Pose.Hammering));
+    }
+
+    // An open shed for a boat: a tiled roof on posts, closed at the back.
+    private void Shed(float left, float right, float back, float front)
+    {
+        for (var x = left + 0.2f; x <= right; x += 2.6f)
+        {
+            AddBox(new Vector3(x, 1.6f, front - 0.2f), new Vector3(0.18f, 3.2f, 0.18f), Timber);
+        }
+
+        AddBox(Box(left, right, back, back + 0.3f, 0, 3.2f), Wood.Darkened(0.2f));
+        Gable(left, 3.2f, 5.2f, back, front, (back + front) / 2f, Wood.Darkened(0.2f));
+        Gable(right, 3.2f, 5.2f, back, front, (back + front) / 2f, Wood.Darkened(0.2f));
+        Roof(new Vector3(left - 0.3f, 3.2f, front + 0.4f), new Vector3(right + 0.3f, 3.2f, front + 0.4f), 5.2f, (back + front) / 2f);
+        Roof(new Vector3(right + 0.3f, 3.2f, back - 0.4f), new Vector3(left - 0.3f, 3.2f, back - 0.4f), 5.2f, (back + front) / 2f);
+    }
+
+    // A boat drawn up on the shingle, heeled a little, bow up the beach: a hull with its sides and
+    // thwarts, a pointed stem, and the oars laid across it.
+    private void BeachedBoat(Vector3 at, float length, float turn)
+    {
+        var hull = new Color(0.32f, 0.26f, 0.2f);
+        var angles = new Vector3(0, turn, 8f);
+        var basis = Basis.FromEuler(angles * Mathf.Pi / 180f);
+        void Piece(Vector3 offset, Vector3 size, Color colour, float yaw = 0f) =>
+            AddBox(at + basis * offset, size, colour, rotation: angles + new Vector3(0, yaw, 0));
+        Piece(new Vector3(0, -0.15f, 0), new Vector3(length * 0.8f, 0.3f, 1.1f), hull);
+        Piece(new Vector3(0, 0.12f, 0.62f), new Vector3(length * 0.8f, 0.5f, 0.1f), hull);
+        Piece(new Vector3(0, 0.12f, -0.62f), new Vector3(length * 0.8f, 0.5f, 0.1f), hull);
+        Piece(new Vector3(0, 0.37f, 0.66f), new Vector3(length * 0.8f, 0.08f, 0.06f), new Color(0.55f, 0.22f, 0.16f));
+        Piece(new Vector3(-length * 0.4f, 0.12f, 0), new Vector3(0.12f, 0.6f, 1.3f), hull);
+        Piece(new Vector3(length * 0.45f, 0.1f, 0.28f), new Vector3(0.95f, 0.55f, 0.1f), hull, -30f);
+        Piece(new Vector3(length * 0.45f, 0.1f, -0.28f), new Vector3(0.95f, 0.55f, 0.1f), hull, 30f);
+        Piece(new Vector3(0, 0.05f, 0), new Vector3(length * 0.78f, 0.04f, 1.12f), Shadow);
+        for (var x = -0.25f; x < 0.3f; x += 0.5f)
+        {
+            Piece(new Vector3(x * length, 0.2f, 0), new Vector3(0.22f, 0.06f, 1.2f), Wood);
+        }
+
+        Piece(new Vector3(0.1f, 0.3f, 0.2f), new Vector3(length * 0.9f, 0.05f, 0.08f), Wood.Lightened(0.1f), 4f);
+    }
+
+    // An orange tree on the plaza, or a dark cypress on the hill.
+    private void Tree(Vector3 at, bool cypress)
+    {
+        AddCylinder(at + new Vector3(0, 1f, 0), 0.16f, 2f, Timber);
+        if (cypress)
+        {
+            AddShape(new CylinderMesh { TopRadius = 0.05f, BottomRadius = 1f, Height = 7f, RadialSegments = 8, Rings = 1 }, at + new Vector3(0, 4.6f, 0), new Color(0.16f, 0.24f, 0.15f));
+            return;
+        }
+
+        AddShape(new SphereMesh { Radius = 1.6f, Height = 2.6f, RadialSegments = 10, Rings = 5 }, at + new Vector3(0, 2.9f, 0), new Color(0.22f, 0.34f, 0.18f));
+        AddShape(new SphereMesh { Radius = 1.1f, Height = 1.8f, RadialSegments = 8, Rings = 4 }, at + new Vector3(0.7f, 3.5f, 0.4f), new Color(0.26f, 0.38f, 0.2f));
     }
 
     private void BuildLights()

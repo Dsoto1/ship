@@ -71,7 +71,8 @@
    "drape": 0.9,
    "band": 0.004,
    "bandWidth": 0.02,
-   "wear": 0.6
+   "wear": 0.6,
+   "slot": "shirt"
   },
   {
    "id": "garment_linen_slops_01",

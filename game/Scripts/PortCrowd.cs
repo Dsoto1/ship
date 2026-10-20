@@ -17,7 +17,7 @@ namespace Expedition.Game;
 /// </summary>
 public partial class PortCrowd : Node3D
 {
-    private const int Capacity = 56;
+    private const int Capacity = 72;
     private const int MostWalking = 40;
     private const string Kits = "res://Assets/Characters/Crowd";
 
@@ -57,9 +57,13 @@ public partial class PortCrowd : Node3D
     private readonly List<PersonModel> _free = [];
     private readonly List<PersonModel?> _gatheredFigures = [];
     private readonly List<MeshInstance3D> _sacks = [];
+    private readonly List<Vector3[]> _lanes = [];
+    private readonly List<(int Lane, float Along, int Way, float Speed, PersonModel Figure)> _onLanes = [];
+    private readonly List<(Vector3 At, float Yaw, Pose Pose, PersonModel? Figure)> _idlers = [];
     private Node3D? _figures;
     private float _rate = 1f;
     private float _wetness;
+    private float _hour = 12f;
     private MultiMeshInstance3D _view = null!;
     private MultiMeshInstance3D _shadows = null!;
     private LocationDefinition _location = null!;
@@ -88,7 +92,94 @@ public partial class PortCrowd : Node3D
     public float Density { get; set; } = 1f;
 
     /// <summary>How many are about just now.</summary>
-    public int Count => _walkers.Count + _gathered.Count;
+    public int Count => _walkers.Count + _gathered.Count + _onLanes.Count + _idlers.Count(i => i.Figure?.Visible == true);
+
+    /// <summary>
+    /// The walks and the people at work beyond the ends of the map (PortView.BuildOutskirts): there is no
+    /// map to find a path on, so they keep to the lanes they are given, end to end.
+    /// </summary>
+    public void SetOutskirts(IEnumerable<Vector3[]> lanes, IEnumerable<(Vector3 At, float Yaw, Pose Pose)> idlers)
+    {
+        foreach (var (_, _, _, _, figure) in _onLanes)
+        {
+            Give(figure);
+        }
+
+        foreach (var idler in _idlers)
+        {
+            Give(idler.Figure);
+        }
+
+        _onLanes.Clear();
+        _idlers.Clear();
+        _lanes.Clear();
+        _lanes.AddRange(lanes.Where(l => l.Length > 1));
+        foreach (var (at, yaw, pose) in idlers)
+        {
+            _idlers.Add((at, yaw, pose, _figures is null ? null : Take(false)));
+        }
+    }
+
+    private static float Length(Vector3[] lane) => Enumerable.Range(1, lane.Length - 1).Sum(i => lane[i - 1].DistanceTo(lane[i]));
+
+    // Where along a lane someone is, and which way the lane runs there.
+    private static (Vector3 At, Vector3 Heading) Along(Vector3[] lane, float distance)
+    {
+        for (var i = 1; i < lane.Length; i++)
+        {
+            var length = lane[i - 1].DistanceTo(lane[i]);
+            if (distance <= length || i == lane.Length - 1)
+            {
+                var t = Mathf.Clamp(distance / Mathf.Max(length, 0.001f), 0, 1);
+                return (lane[i - 1].Lerp(lane[i], t), lane[i] - lane[i - 1]);
+            }
+
+            distance -= length;
+        }
+
+        return (lane[0], Vector3.Forward);
+    }
+
+    // Keeps a few people on each outlying lane, fewer at night; each walks it end to end and is gone.
+    private void WalkLanes(float hour, float minutes)
+    {
+        if (_figures is null)
+        {
+            return;
+        }
+
+        var wanted = Mathf.RoundToInt(3f * Busy(hour) * Density);
+        for (var lane = 0; lane < _lanes.Count; lane++)
+        {
+            var count = _onLanes.Count(w => w.Lane == lane);
+            if (count < wanted && _random.NextDouble() < (count == 0 ? 1.0 : minutes * 0.25) && Take(_random.NextDouble() < 0.25) is { } figure)
+            {
+                var length = Length(_lanes[lane]);
+                var way = _random.Next(2) == 0 ? 1 : -1;
+                // At the start, anywhere along it, as if they had been walking a while.
+                var along = !_lanesStarted ? (float)_random.NextDouble() * length : 0f;
+                _onLanes.Add((lane, along, way, (float)((_location.WalkCellsPerMinute ?? 2.5) * (0.85 + _random.NextDouble() * 0.3)), figure));
+            }
+        }
+
+        _lanesStarted = true;
+        for (var i = _onLanes.Count - 1; i >= 0; i--)
+        {
+            var (lane, along, way, speed, figure) = _onLanes[i];
+            along += speed * minutes;
+            var length = Length(_lanes[lane]);
+            if (along >= length)
+            {
+                Give(figure);
+                _onLanes.RemoveAt(i);
+                continue;
+            }
+
+            _onLanes[i] = (lane, along, way, speed, figure);
+        }
+    }
+
+    private bool _lanesStarted;
 
     /// <summary>Finds the street ends, doors, piers and stalls of <paramref name="location"/>.</summary>
     public void Build(LocationDefinition location, Func<float, float, float> height)
@@ -338,6 +429,8 @@ public partial class PortCrowd : Node3D
             StartTrip(hour);
         }
 
+        WalkLanes(hour, minutes);
+        _hour = hour;
         foreach (var walker in _walkers.ToList())
         {
             if (!Walk(walker, minutes))
@@ -531,6 +624,39 @@ public partial class PortCrowd : Node3D
             }
 
             CrowdMesh.Set(multimesh, index++, at, yaw, 0.95f, (float)Time.GetTicksMsec() / 900f + look, 0f, pose, look, _shadows.Multimesh);
+        }
+
+        foreach (var (lane, along, way, speed, figure) in _onLanes)
+        {
+            if (index >= Capacity)
+            {
+                break;
+            }
+
+            var path = _lanes[lane];
+            var length = Length(path);
+            var (at, heading) = Along(path, way > 0 ? along : length - along);
+            heading *= way;
+            Place(figure, at, Mathf.Atan2(heading.X, heading.Z), figure == null ? Pose.Walking : _sacks[figure.GetMeta("sack").AsInt32()].Visible ? Pose.Carrying : Pose.Walking,
+                true, _rate * speed / (float)(_location.WalkCellsPerMinute ?? 2.5));
+            _shadows.Multimesh.SetInstanceTransform(index++, new Transform3D(Basis.Identity, at + new Vector3(0, 0.025f, 0)));
+        }
+
+        // The people at work out there keep the day's hours.
+        var working = _hour is >= 6.5f and < 20.5f;
+        foreach (var (at, yaw, pose, figure) in _idlers)
+        {
+            if (figure is null)
+            {
+                continue;
+            }
+
+            figure.Visible = working;
+            if (working && index < Capacity)
+            {
+                Place(figure, at, yaw, pose, false, _rate);
+                _shadows.Multimesh.SetInstanceTransform(index++, new Transform3D(Basis.Identity, at + new Vector3(0, 0.025f, 0)));
+            }
         }
 
         multimesh.VisibleInstanceCount = _figures is null ? index : 0;

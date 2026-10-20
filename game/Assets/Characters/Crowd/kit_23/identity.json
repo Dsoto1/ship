@@ -65,11 +65,12 @@
    "material": "linen",
    "colour": "linen.bleached",
    "thickness": 0.008,
-   "loose": 0.03,
+   "loose": 0.0,
    "drape": 0.9,
    "band": 0.004,
    "bandWidth": 0.02,
-   "wear": 0.45
+   "wear": 0.45,
+   "slot": "shirt"
   },
   {
    "id": "garment_wool_saya_01",

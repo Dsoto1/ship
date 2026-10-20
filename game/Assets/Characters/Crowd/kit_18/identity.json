@@ -76,7 +76,8 @@
    "drape": 0.9,
    "band": 0.007,
    "bandWidth": 0.04,
-   "wear": 0.45
+   "wear": 0.45,
+   "slot": "shirt"
   },
   {
    "id": "garment_leather_jerkin_01",

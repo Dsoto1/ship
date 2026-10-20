@@ -509,17 +509,18 @@ def crowd(m, f, count=24, seed=1519):
                        belt(a, "linen.unbleached", "linen"), shoes(a, "leather.brown")]
             hair_list = [{"mesh": "Hair_Buzzed", "recede": 1.0, "crown": 1.0, "colour": hc, "grey": grey}, {"mesh": "Eyebrows_Regular", "colour": hc}]
         elif kind == "townswoman":
-            clothes = [shirt(a, "linen.bleached"), slot(saya(a, pick(DYES_MAIN)), "lower"), slot(bodice(a, pick(DYES_MAIN)), "main"), toca(a), shoes(a)]
+            clothes = [shirt(a, "linen.bleached", loose=0.0), slot(saya(a, pick(DYES_MAIN)), "lower"), slot(bodice(a, pick(DYES_MAIN)), "main"), toca(a), shoes(a)]
         elif kind == "fishwife":
-            clothes = [shirt(a, shirt_colour, sleeve="elbow"), slot(saya(a, pick(DYES_LOWER), hem="midcalf"), "lower"),
+            clothes = [shirt(a, shirt_colour, sleeve="elbow", loose=0.0), slot(saya(a, pick(DYES_LOWER), hem="midcalf"), "lower"),
                        slot(bodice(a, pick(DYES_MAIN)), "main"), apron(a, "leather.tan", "leather", "midcalf"), toca(a, "linen.unbleached")]
         elif kind == "servant":
-            clothes = [shirt(a, shirt_colour), slot(saya(a, pick(DYES_LOWER)), "lower"), slot(bodice(a, pick(DYES_MAIN)), "main"),
+            clothes = [shirt(a, shirt_colour, loose=0.0), slot(saya(a, pick(DYES_LOWER)), "lower"), slot(bodice(a, pick(DYES_MAIN)), "main"),
                        apron(a, "linen.bleached", "linen", "midcalf"), shoes(a)]
         elif kind == "widow":
-            clothes = [shirt(a, "linen.bleached"), saya(a, "wool.black"), bodice(a, "wool.black"), toca(a, "wool.black"), shoes(a)]
+            clothes = [shirt(a, "linen.bleached", loose=0.0), saya(a, "wool.black"), bodice(a, "wool.black"), toca(a, "wool.black"), shoes(a)]
         if not barefoot and not any(isinstance(c, dict) and c.get("id") == "garment_leather_shoes_01" for c in flatten(clothes)):
             clothes.append(shoes(a, "leather.brown"))
+        # Under a bodice the shirt lies close, or its looser cloth breaks through the bodice.
         # The shirt is dyed at run time too: unbleached, grey, now and then a coloured one.
         for c in flatten(clothes):
             if isinstance(c, dict) and "shirt" in c.get("id", "") and "slot" not in c:

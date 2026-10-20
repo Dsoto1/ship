@@ -18,6 +18,9 @@ public partial class CameraRig : Camera3D
     /// <summary>World point the camera looks at.</summary>
     public Vector3 Target { get; set; }
 
+    /// <summary>The ground (x, z) the point looked at must stay within; null for anywhere.</summary>
+    public Rect2? Bounds { get; set; }
+
     /// <summary>True once the player has panned by hand since this was last cleared.</summary>
     public bool Panned { get; set; }
 
@@ -86,6 +89,11 @@ public partial class CameraRig : Camera3D
 
     private void Apply()
     {
+        if (Bounds is { } bounds)
+        {
+            Target = new Vector3(Mathf.Clamp(Target.X, bounds.Position.X, bounds.End.X), Target.Y, Mathf.Clamp(Target.Z, bounds.Position.Y, bounds.End.Y));
+        }
+
         RotationDegrees = new Vector3(IsometricPitch, _yaw, 0);
         Position = Target + Basis.Z * Distance;
     }

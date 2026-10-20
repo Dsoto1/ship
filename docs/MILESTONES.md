@@ -1304,3 +1304,60 @@ Screenshots: `docs/screenshots/c2-portraits.jpg` (all 29), `c2-roster.jpg`.
 1. `git pull`, then open the editor once (to import 23 new models), then Build.
 2. `res://Lineup.tscn -- --roster` shows everyone side by side.
 3. In the game, every named adult is drawn as themselves, with their portrait in their card.
+
+## Crowd — the waterfront's passers-by as people (owner: "multiples of the same guys by the docks")
+
+The Tier C crowd was one MultiMesh of simple walkers in a handful of colours, so the same figure
+kept coming past. Now it is drawn from 24 crowd kits built by the character pipeline, and each
+passer-by is dressed again every time they set out.
+
+- **Kits** (`tools/characters/identities.py`, `crowd()`): docker, seaman, porter, townsman,
+  craftsman, carter, fisherman and friar; townswoman, fishwife, servant and widow, every third a
+  woman. They are built at about 2,500–3,000 triangles, with no portrait, eyes or brows (seen small).
+  They live in `Assets/Characters/Crowd/kit_NN`.
+- **Dyes:** cloth is built with a dye slot in the fraction of its material number: main garment,
+  lower garment, headwear and shirt. `character.gdshader` swaps in a per-figure colour from four
+  period palettes (madder, woad, russet, tawny, the browns and greys, unbleached and greyed linen),
+  each a shade lighter or darker. Two of the same kit no longer look like the same man.
+- **PortCrowd** keeps a pool of 72 figures. Walkers take one when a trip starts and give it back
+  when they are gone. Porters carry a load, people stop at stalls and the well, and the departure
+  crowd waves with the `call` clip. Without the kits it falls back to the old MultiMesh.
+- **Lineup:** `res://Lineup.tscn -- --crowd` stands every kit twice, dressed differently;
+  `--rest` shows the bind pose for checking how cloth sits.
+- **Builder fixes:**
+  - the clean armhole cut stopped at the shoulder joint's width, so it cut away the sides of a broad
+    torso; it now stops at the armpit, which mended the bodices and jerkins of heavy builds;
+  - under a bodice the crowd's shirt lies close, so it no longer breaks through.
+
+## The ends of the port (owner: "the edges feel strange and empty")
+
+Past the west end of the map the terrace ran on as a bare plain. Past the east end the quay
+stopped over open water beside a flat sandbar. Neither is walkable, but both now look like the
+town going on (`PortView.BuildOutskirts`).
+- **West, on the terrace:**
+  - a lane of houses running off into the old town;
+  - a row facing the harbour along the promenade, with benches, lanterns and orange trees;
+  - the old fish market's arcade, and a plaza with a fountain.
+- **West, below the terrace:** vaults in the wall, cargo, shear legs, boats along the quay, fish
+  stores, and a round sea tower with a mole closing the harbour.
+- **East:**
+  - a warehouse and a boat shed, and a slip with a boat on it;
+  - then a shingle beach going down into the water, with a wet band and stones;
+  - fishermen's huts with smoke, boats drawn up, nets on frames, a capstan;
+  - a rocky headland with a watchtower;
+  - the town behind runs on along the hill.
+- **Life:** five crowd lanes run out there, people walking them end to end, more by day. Twelve
+  people are at work: mending nets, caulking, talking at the fountain, sitting on the benches.
+- **The camera** keeps to the port and about ten metres past its ends, except during the departure
+  and the profiler's circle.
+- **Cost** in the midday market (software renderer here, so frame time says nothing): about 115k
+  more primitives, 7 more draw calls and about 49 MB more video memory. On the owner's Mac, the
+  profile is the one to check.
+
+Screenshots: `docs/screenshots/crowd-kits.jpg`, `crowd-market.jpg`, `edges-west.jpg`,
+`edges-east.jpg`.
+
+**Not yet:**
+- a woman's bun can show spiky strands under no headwear;
+- a leg can show through the front of a skirt in mid-stride;
+- the crowd's lanes past the ends are fixed lines, not paths.

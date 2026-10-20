@@ -404,6 +404,9 @@ public partial class Main : Node3D
         var hull = inPort
             ? new Vector4(9999, 9999, 0.1f, 0.1f)
             : new Vector4(_deck.CentreX, (_deck.Length.Bow + _deck.Length.Stern) / 2f, _deck.HalfBeam, (_deck.Length.Stern - _deck.Length.Bow) / 2f);
+        // The camera keeps to the port and a little past its ends, but not off into the country; the
+        // departure and the profiler's circle are free to go where they need.
+        _camera.Bounds = inPort && _departure.Camera is null && !_profiler.Capturing ? new Rect2(-10, -6, 100, 54) : null;
         if (inPort)
         {
             _seaState = 0.35f;
@@ -952,6 +955,7 @@ public partial class Main : Node3D
             _port.Build(_content.Locations[rules.Location], _content.Tasks);
             _portSound.Build(_content.Locations[rules.Location]);
             _crowd.Build(_content.Locations[rules.Location], _port.HeightAt);
+            _crowd.SetOutskirts(_port.Lanes, _port.Idlers);
             _harbour.Build();
             _ambient.Build(_content.Locations[rules.Location], rules.Ambient, _port.HeightAt);
             _portBuilt = true;
