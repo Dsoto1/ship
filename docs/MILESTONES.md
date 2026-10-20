@@ -1083,3 +1083,55 @@ See `docs/R3_VALIDATION.md` for the verdicts, the screenshots and what is still 
 - **Also fixed:** the departure's course out of the harbour no longer runs through the nao at anchor.
 
 **Manual test (macOS):** run the four profiles in `R3_VALIDATION.md` and send the reports.
+
+## C-1 (first stage) — The character pipeline, shown on Bartolo
+
+The character slice (CHARACTER_ART §50) starts with one person carried all the way through, for the
+owner to judge before the other five are converted (D-029).
+
+- **Identity record:** `game/Assets/Characters/person.bartolo/identity.json`. It covers build,
+  height, posture, face parameters, skin, eyes, hair and beard, distinctive features, garments with
+  their historical sources and confidence, accessories, equipment and when it shows, and
+  animations. Colours come from the shared palette, `Characters/Shared/palette.json`.
+- **Model:** `model.glb`, about 4,750 triangles plus a light model of about 3,000. It is one draw call,
+  plus the adze when it is in his hand. Its parts:
+  - wiry body;
+  - bent posture;
+  - hollow cheeks and a long broken nose;
+  - grey beard and brows;
+  - linen shirt with rolled sleeves;
+  - russet wool breeches, grey hose, leather shoes;
+  - a leather apron, belt and pouch, and a mallet at the belt;
+  - a brown wool bonete.
+- **Animation:** idle, walk and work (the adze, from the chopping clip) all play. Each other pose
+  maps to a clip: sawing pushes, carrying, sitting, kneeling, drinking, talking, lifting.
+- **States:**
+  - *Wet* darkens and glosses the cloth from the shoulders down and the hems up. Outdoors in port
+    rain, figures soak in and dry out.
+  - *Tired* comes from the fatigue need: a slumped back, a dropped head, a slower walk.
+  - *Injured arm* comes from a sprain, bruise or rope burn: the arm is held across the body and two-handed
+    work stops.
+- **Portrait and thumbnail:** `portraits/neutral.png` (512×640) and `thumbnails/face.png` (128),
+  rendered from his own head (`--bake`).
+- **In the game:** a persistent person with a model is drawn with it. Everyone else keeps the
+  low-poly figure.
+- **Lineup:** `Godot --path game res://Lineup.tscn` shows the states side by side. Options:
+  `-- --view=close|portrait`, `--lod=1`, `--people=ID`.
+
+Screenshots: `docs/screenshots/c1-bartolo-{states,portrait,yard}.jpg`.
+
+**Known limits:**
+- **Face:** the base face is still young under the age work. The age lines and creases help, but
+  forehead lines hide under his cap. Better ageing needs a sculpted older head or per-person texture
+  work.
+- **Beard:** the pack's beard has a ragged sculpted edge.
+- **Light model:** about 3,000 triangles, not 1,500. Reducing further tore the clothes, so the clean
+  version was kept.
+- **Shoulders:** they still read broader than a 61-year-old's.
+- **Not yet built:** Velho, Pons, Rodrigo, Andrés and Varzi; rain at sea (only port rain wets
+  people); the portrait in the person card.
+
+**Manual test (macOS):**
+1. `git pull`, open the project in the editor once (to import the models), then Build.
+2. Run `res://Lineup.tscn`.
+3. In the game, at 08:00, find Bartolo in the shipwright's yard.

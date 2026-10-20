@@ -134,5 +134,35 @@
   "folder": "Audio/ambience",
   "file": "rain.ogg",
   "use": "Rain"
+ },
+ {
+  "source": "itch",
+  "name": "Universal Base Characters [Standard]",
+  "page": "https://quaternius.itch.io/universal-base-characters",
+  "file": "Universal Base Characters[Standard].zip",
+  "folder": "Universal Base Characters[Standard]",
+  "author": "Quaternius",
+  "use": "The bodies, heads, hair and beards persistent people are built on (C-1)",
+  "files": "`Characters/*/model.glb`, `Characters/Shared/chr_atlas.png`"
+ },
+ {
+  "source": "itch",
+  "name": "Universal Animation Library [Standard]",
+  "page": "https://quaternius.itch.io/universal-animation-library",
+  "file": "Universal Animation Library[Standard].zip",
+  "folder": "Universal Animation Library[Standard]",
+  "author": "Quaternius",
+  "use": "Walking, standing, sitting, kneeling work, pushing, lifting, talking",
+  "files": "`Characters/Shared/animations.glb`"
+ },
+ {
+  "source": "itch",
+  "name": "Universal Animation Library 2 [Standard]",
+  "page": "https://quaternius.itch.io/universal-animation-library-2",
+  "file": "Universal Animation Library 2[Standard].zip",
+  "folder": "Universal Animation Library 2[Standard]",
+  "author": "Quaternius",
+  "use": "Carrying, chopping (the adze), folded arms, the rail, drinking, lying",
+  "files": "`Characters/Shared/animations.glb`"
  }
 ]

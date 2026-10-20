@@ -1,0 +1,246 @@
+{
+ "characterId": "person.bartolo",
+ "name": "Bartolo Ruiz",
+ "about": "Visual identity record (CHARACTER_ART §2). The simulation's person.bartolo (data/port/bocana.json) is the truth for who he is; this says how he looks, and every representation (portrait, thumbnail, model, condition states) is built from it. Never reroll it (§40).",
+ "sex": "Male",
+ "age": 61,
+ "apparentAge": 64,
+ "heightCm": 165,
+ "heightClass": "short",
+ "seed": 1519027,
+ "looks": {
+  "build": "wiry",
+  "posture": {
+   "stoop": 0.75,
+   "headForward": 0.5,
+   "shoulders": 0.3
+  },
+  "face": {
+   "width": -0.2,
+   "jaw": 0.4,
+   "chin": 0.3,
+   "nose": 0.8,
+   "noseLength": 0.7,
+   "noseBend": 0.5,
+   "noseBridge": 0.8,
+   "brow": 0.6,
+   "cheeks": -0.9,
+   "cheekbones": 0.6,
+   "mouth": -0.2,
+   "ears": 0.7,
+   "sag": 0.9
+  },
+  "skin": "#916650",
+  "weathering": 0.85,
+  "eyes": "eyes.brown",
+  "hairColour": "hair.darkbrown",
+  "hair": [
+   {
+    "mesh": "Hair_Buzzed",
+    "recede": 0.9,
+    "crown": 0.5,
+    "colour": "hair.darkbrown",
+    "grey": 0.75
+   },
+   {
+    "mesh": "Hair_Beard",
+    "trim": 0.25,
+    "colour": "hair.darkbrown",
+    "grey": 0.8
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "hair.darkbrown",
+    "grey": 0.6
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "bent back and a forward head from forty years over a plank",
+  "big hands, knotted at the knuckles",
+  "a long nose broken once and set crooked",
+  "hollow cheeks, short white beard, bald crown under the cap"
+ ],
+ "marks": [],
+ "occupationVisuals": "A shipwright's leather apron, a mallet and gouge on the belt, the adze in hand at work.",
+ "statusVisuals": "A craftsman: sound, plain, much-mended working clothes; no colour he did not need.",
+ "clothing": [
+  {
+   "id": "garment_wool_hose_01",
+   "layer": "lower",
+   "shape": "shell",
+   "leg": [
+    0.09,
+    0.62
+   ],
+   "material": "wool",
+   "colour": "wool.grey",
+   "thickness": 0.003,
+   "wear": 0.5
+  },
+  {
+   "id": "garment_linen_shirt_rolled_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.88,
+    1.6
+   ],
+   "sleeve": 0.47,
+   "material": "linen",
+   "colour": "linen.unbleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "band": 0.007,
+   "bandWidth": 0.04,
+   "wear": 0.55,
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "drape": 0.9
+  },
+  {
+   "id": "garment_wool_breeches_01",
+   "layer": "lower",
+   "shape": "shell",
+   "torso": [
+    0.88,
+    1.07
+   ],
+   "leg": [
+    0.47,
+    1.05
+   ],
+   "material": "wool",
+   "colour": "wool.russet",
+   "thickness": 0.011,
+   "loose": 0.022,
+   "band": 0.005,
+   "bandWidth": 0.03,
+   "wear": 0.6,
+   "drape": 0.0
+  },
+  {
+   "id": "garment_leather_apron_01",
+   "layer": "outer",
+   "shape": "skirt",
+   "arc": 62,
+   "top": 1.06,
+   "bottom": 0.56,
+   "flare": 0.25,
+   "material": "leather",
+   "colour": "leather.tan",
+   "thickness": 0.03,
+   "wear": 0.75
+  },
+  {
+   "id": "garment_leather_belt_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    1.03,
+    1.075
+   ],
+   "material": "leather",
+   "colour": "leather.dark",
+   "thickness": 0.026,
+   "hides": false,
+   "wear": 0.5
+  },
+  {
+   "id": "garment_leather_shoes_01",
+   "layer": "footwear",
+   "shape": "shell",
+   "feet": 0.115,
+   "material": "leather",
+   "colour": "leather.dark",
+   "thickness": 0.008,
+   "wear": 0.7
+  },
+  {
+   "id": "garment_wool_bonete_01",
+   "layer": "headwear",
+   "shape": "shell",
+   "head": [
+    1.745,
+    1.7
+   ],
+   "material": "wool",
+   "colour": "wool.brown",
+   "thickness": 0.016,
+   "band": 0.009,
+   "wear": 0.5,
+   "bandWidth": 0.03
+  }
+ ],
+ "accessories": [
+  {
+   "id": "acc_leather_pouch_01",
+   "shape": "pouch",
+   "side": "left",
+   "height": 1.02,
+   "material": "leather",
+   "colour": "leather.brown"
+  },
+  {
+   "id": "equip_carpenter_mallet_belt_01",
+   "shape": "tool",
+   "side": "right",
+   "height": 1.0,
+   "material": "wood",
+   "colour": "oak"
+  }
+ ],
+ "equipment": [
+  {
+   "id": "equip_carpenter_adze_01",
+   "shape": "adze",
+   "socket": "hand_r",
+   "length": 0.6,
+   "handle": "ash",
+   "head": "iron",
+   "when": [
+    "Hammering",
+    "Working",
+    "Sawing"
+   ]
+  }
+ ],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 0.85,
+  "work": "chop",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "camisa (linen shirt) worn as the outer working layer, sleeves rolled",
+   "source": "Carmen Bernis, Indumentaria española en tiempos de Carlos V (1962); shipyard accounts of the period",
+   "region": "Castile/Andalusia",
+   "dates": "c. 1500–1530",
+   "confidence": "medium"
+  },
+  {
+   "item": "zaragüelles / calzones: loose knee breeches of working men and sailors",
+   "source": "Bernis 1962; Pérez-Mallaína, Spain's Men of the Sea (1998)",
+   "region": "Andalusian ports",
+   "dates": "16th c.",
+   "confidence": "medium"
+  },
+  {
+   "item": "bonete: soft wool cap",
+   "source": "Bernis 1962",
+   "region": "Castile",
+   "dates": "c. 1500–1530",
+   "confidence": "medium"
+  },
+  {
+   "item": "leather apron, adze (azuela) and mallet of the ship's carpenter",
+   "source": "Pérez-Mallaína 1998 (carpenters and caulkers aboard)",
+   "region": "Carrera de Indias",
+   "dates": "16th c.",
+   "confidence": "medium"
+  }
+ ]
+}

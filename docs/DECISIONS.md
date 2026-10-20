@@ -716,3 +716,45 @@ building avoids redoing every figure (CHARACTER_ART §53).
 
 **Why.** A and C test the world, which can be judged now; B and D test people, who are still
 primitive figures. Profiling first gives the baseline the character budgets need.
+
+## D-029 — How persistent people are built (C-1)
+
+**Date:** 2026-10-20
+**Status:** Proposed with the first sample figure (Bartolo); for the owner's review before the other
+five are built.
+
+**Decision.**
+- **Offline build, committed output.** `tools/characters/build.py` makes each person from their
+  identity record (`game/Assets/Characters/<person id>/identity.json`, CHARACTER_ART §2, §38). The
+  Quaternius sources stay in `.cache/` (fetched by `tools/fetch_assets.py`). The game loads only the
+  built files, so the Mac needs neither Python nor the packs.
+- **Bodies.** The pack's athletic sculpt is relaxed (smoothed, narrower chest and shoulders) and then
+  shaped by build. Faces vary through bounded, named parameters (jaw, chin, nose, brow, cheeks, ears,
+  sag), applied as smooth displacements around landmarks found on the head. Hair, beard and brows
+  are moved with the face, so they still fit.
+- **Clothing** is made on each person's own body: shells cut from a heavily smoothed copy, with clean
+  hems, looseness, rolled cuffs, a gathered neck, and cloth that bridges hollows. A few pieces
+  (aprons, skirts, hat brims, pouches, tools) are simple solids skinned to the bones. Anything that
+  clothing hides is removed.
+- **One draw call per person:**
+  - one mesh, one shared material (`character.gdshader`);
+  - one shared texture sheet: skin and hair detail as ratios to a typical colour, so each record's
+    colour is the colour, plus age lines in the sheet's alpha;
+  - cloth is untextured: a mottle, fading where worn.
+- **Animation:**
+  - the pack's clips are reduced to rotations (plus the pelvis), so each body keeps its own
+    proportions;
+  - a posture layer over every clip adds age and build from the record, and fatigue and an injured
+    arm from the simulation (CHARACTER_ART §29);
+  - the injured cannot take two-handed work (§24).
+- **Condition** (wet, dirt, fatigue) is per-instance shader state read from the simulation every
+  frame. Nothing is stored in the view.
+- **Portraits** are rendered from a full-detail copy of the same person (`portrait.glb`), under fixed
+  portrait lighting, through a painterly (Kuwahara) pass. The thumbnail is cut from the portrait.
+- **Budgets measured on Bartolo:**
+  - about 4,750 triangles at gameplay distance;
+  - about 3,000 in the light model, not 1,500 (see MILESTONES C-1).
+
+**Why.** The approved rig (D-028) has no morph targets and no clothing, so both had to be made.
+Making them from the person's own body keeps every build fitted without hand modelling, and
+building offline keeps the game simple and deterministic.

@@ -2,7 +2,8 @@
 """Fetches the game's CC0 assets into game/Assets and records where each came from.
 
 The list is game/Assets/assets.json: Poly Haven textures by ID (at 1K, colour, OpenGL normal and
-roughness maps), Kenney packs by URL with the files to keep, and Freesound recordings by ID (the
+roughness maps), Kenney packs by URL with the files to keep, Quaternius packs from itch.io (into
+.cache/characters, for tools/characters/build.py), and Freesound recordings by ID (the
 high-quality Ogg preview; the API needs FREESOUND_API_KEY unless a proxy supplies it). Everything is CC0 (public domain);
 the script still writes game/Assets/CREDITS.md naming authors and sources, as a courtesy and so the
 provenance of every file is on record (D-021). Re-running skips files already present.
@@ -90,6 +91,40 @@ def freesound(entry, credits):
                    f"https://freesound.org/s/{entry['id']}/ | CC0 | `{entry['folder']}/{entry['file']}` |")
 
 
+def itch(entry, credits):
+    """A free pack from itch.io, into .cache/characters/ (the sources are large and stay out of the
+    repository; tools/characters/build.py makes the game's files from them). itch has no public API
+    for free downloads, so this does what the page does: ask for a download page, then for the file
+    marked as the pack's free edition. Refuses a pack whose licence file is not CC0."""
+    import http.cookiejar
+    import re
+    import time
+    import urllib.parse
+    folder = ROOT / ".cache" / "characters"
+    if not (folder / entry["folder"]).exists():
+        jar = http.cookiejar.CookieJar()
+        opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+        opener.addheaders = [("User-Agent", "the-expedition-asset-fetch/1")]
+        page = entry["page"]
+        token = re.search(r'csrf_token" value="([^"]+)"', opener.open(page).read().decode()).group(1)
+        form = urllib.parse.urlencode({"csrf_token": token}).encode()
+        listing = json.loads(opener.open(page + "/download_url", form).read())["url"]
+        time.sleep(2)
+        html = opener.open(listing).read().decode()
+        uploads = dict(zip(re.findall(r'<strong title="([^"]+)" class="name"', html), re.findall(r'data-upload_id="(\d+)"', html)))
+        upload = uploads.get(entry["file"]) or sys.exit(f"{entry['name']}: no {entry['file']} on {page}")
+        time.sleep(2)
+        request = urllib.request.Request(f"{page}/file/{upload}?source=view_game&as_props=1&after_download_lightbox=true", data=form)
+        url = json.loads(opener.open(request).read())["url"]
+        with zipfile.ZipFile(io.BytesIO(opener.open(url, timeout=600).read())) as archive:
+            licence = next((n for n in archive.namelist() if "license" in n.lower()), None)
+            if licence is None or "CC0" not in archive.read(licence).decode(errors="ignore"):
+                sys.exit(f"{entry['name']}: not CC0")
+            archive.extractall(folder)
+        print("fetched", entry["name"], "into", folder.relative_to(ROOT))
+    credits.append(f"| {entry['name']} | {entry['use']} | {entry['author']} | {entry['page']} | CC0 | {entry['files']} |")
+
+
 def stack_arrays(manifest):
     """Stacks the scenery textures into one image per map, for a Texture2DArray: one material for
     plaster, stone and timber, so built scenery stays one draw call per chunk."""
@@ -111,7 +146,7 @@ def main():
     manifest = json.loads((ASSETS / "assets.json").read_text())
     credits = []
     for entry in manifest:
-        {"polyhaven": polyhaven, "kenney": kenney, "freesound": freesound}[entry["source"]](entry, credits)
+        {"polyhaven": polyhaven, "kenney": kenney, "freesound": freesound, "itch": itch}[entry["source"]](entry, credits)
 
     stack_arrays(manifest)
     (ASSETS / "CREDITS.md").write_text(
@@ -120,7 +155,9 @@ def main():
         "`tools/fetch_assets.py` from the list in `assets.json`; nothing here was generated or altered\n"
         "except by the game's shaders at run time; `Textures/scenery_array/`, which only stacks the\n"
         "layered textures (plaster, stone, timber) into one image per map; and `Audio/ambience/`, Freesound\n"
-        "previews levelled to the same loudness with their ends crossfaded into their starts to loop.\n\n"
+        "previews levelled to the same loudness with their ends crossfaded into their starts to loop; and\n"
+        "`Characters/`, built by `tools/characters/build.py` from the Quaternius packs (bodies reshaped,\n"
+        "clothing made on them, textures divided into one shared sheet, clips reduced to rotations).\n\n"
         "| Asset | Used for | Author | Source | Licence | Files |\n|---|---|---|---|---|---|\n"
         + "\n".join(credits) + "\n")
 

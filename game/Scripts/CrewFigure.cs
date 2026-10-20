@@ -95,6 +95,8 @@ public partial class CrewFigure : Node3D
     private Node3D _load = null!;
     private string? _carrying;
     private Node3D _rolled = null!;
+    private PersonModel? _person;
+    private float _wet;
 
     private static StandardMaterial3D? _contactShadow;
 
@@ -116,10 +118,12 @@ public partial class CrewFigure : Node3D
     /// <param name="looks">Their appearance, or null for a plain figure.</param>
     /// <param name="options">The appearance options, for colours.</param>
     /// <param name="officer">True for officers and gentlemen, who wear a brimmed hat.</param>
-    public static CrewFigure Create(Appearance? looks, AppearanceOptions options, bool officer)
+    /// <param name="personId">Their person ID: a persistent person with their own model (C-1) is drawn with it.</param>
+    public static CrewFigure Create(Appearance? looks, AppearanceOptions options, bool officer, string? personId = null)
     {
         var figure = new CrewFigure();
-        var h = (looks?.HeightCm ?? 170) / 100f;
+        figure._person = PersonModel.TryLoad(personId);
+        var h = figure._person?.Height ?? (looks?.HeightCm ?? 170) / 100f;
         figure._height = h;
         var bulk = looks?.Build switch
         {
@@ -146,57 +150,13 @@ public partial class CrewFigure : Node3D
         figure.AddChild(figure._model);
         figure._body = new Node3D { Position = new Vector3(0, figure._legLength, 0) };
         figure._model.AddChild(figure._body);
-
-        // Legs hang from the hips: breeches, hose and shoes.
-        figure._leftLeg = figure.Limb(figure._body, new Vector3(-0.07f * bulk, 0, 0));
-        figure._rightLeg = figure.Limb(figure._body, new Vector3(0.07f * bulk, 0, 0));
-        foreach (var leg in new[] { figure._leftLeg, figure._rightLeg })
+        if (figure._person is not null)
         {
-            figure.AddPart(leg, new CylinderMesh { TopRadius = 0.075f * bulk, BottomRadius = 0.05f, Height = figure._legLength - 0.06f, RadialSegments = 8, Rings = 1 }, new Vector3(0, -(figure._legLength - 0.06f) / 2f, 0), Breeches);
-            figure.AddPart(leg, new BoxMesh { Size = new Vector3(0.09f, 0.06f, 0.2f) }, new Vector3(0, -figure._legLength + 0.03f, 0.04f), Shoes);
-        }
-
-        // Body: a doublet or shirt in the clothing dye, a belt or sash in the accent colour.
-        figure.AddPart(figure._body, new CylinderMesh { TopRadius = shoulder, BottomRadius = 0.15f * bulk, Height = torso, RadialSegments = 8, Rings = 1 }, new Vector3(0, torso / 2f, 0), clothing);
-        figure.AddPart(figure._body, new CylinderMesh { TopRadius = 0.152f * bulk, BottomRadius = 0.155f * bulk, Height = 0.05f, RadialSegments = 8, Rings = 1 }, new Vector3(0, 0.04f, 0), accent);
-        figure.AddPart(figure._body, new CylinderMesh { TopRadius = 0.05f, BottomRadius = 0.06f, Height = 0.08f, RadialSegments = 8, Rings = 1 }, new Vector3(0, torso + 0.03f, 0), skin);
-
-        // Arms hang from the shoulders, sleeves in the clothing colour, bare hands.
-        var armLength = h * 0.34f;
-        figure._leftArm = figure.Limb(figure._body, new Vector3(-shoulder - 0.03f, torso - 0.03f, 0));
-        figure._rightArm = figure.Limb(figure._body, new Vector3(shoulder + 0.03f, torso - 0.03f, 0));
-        foreach (var arm in new[] { figure._leftArm, figure._rightArm })
-        {
-            figure.AddPart(arm, new CylinderMesh { TopRadius = 0.05f * bulk, BottomRadius = 0.04f, Height = armLength - 0.05f, RadialSegments = 8, Rings = 1 }, new Vector3(0, -(armLength - 0.05f) / 2f, 0), clothing.Darkened(0.08f));
-            figure.AddPart(arm, new SphereMesh { Radius = 0.038f, Height = 0.076f, RadialSegments = 10, Rings = 5 }, new Vector3(0, -armLength + 0.02f, 0), skin);
-        }
-
-        // Head, hair, beard.
-        var headCentre = torso + 0.07f + headRadius;
-        figure.AddPart(figure._body, new SphereMesh { Radius = headRadius, Height = headRadius * 2.1f, RadialSegments = 10, Rings = 5 }, new Vector3(0, headCentre, 0), skin);
-        figure.AddPart(figure._body, new BoxMesh { Size = new Vector3(0.03f, 0.04f, 0.03f) }, new Vector3(0, headCentre - 0.005f, headRadius * 0.95f), skin.Darkened(0.08f));
-        if (looks is not null && looks.HairStyle != "style.bald")
-        {
-            var back = looks.HairStyle == "style.receding" ? -0.035f : -0.012f;
-            figure.AddPart(figure._body, new SphereMesh { Radius = headRadius * 1.07f, Height = headRadius * 1.5f, RadialSegments = 10, Rings = 5 }, new Vector3(0, headCentre + 0.03f, back), hair);
-        }
-
-        if (looks is not null && looks.FacialHair is "beard.short" or "beard.full")
-        {
-            var size = looks.FacialHair == "beard.full" ? 0.085f : 0.05f;
-            figure.AddPart(figure._body, new BoxMesh { Size = new Vector3(headRadius * 1.5f, size, 0.07f) }, new Vector3(0, headCentre - headRadius * 0.6f, headRadius * 0.6f), hair);
-        }
-
-        // Hat: standing shown by headgear rather than colour coding (ART_BIBLE.md 11).
-        if (officer)
-        {
-            var black = new Color(0.08f, 0.07f, 0.07f);
-            figure.AddPart(figure._body, new CylinderMesh { TopRadius = headRadius * 1.9f, BottomRadius = headRadius * 1.9f, Height = 0.02f, RadialSegments = 8, Rings = 1 }, new Vector3(0, headCentre + headRadius * 0.7f, 0), black);
-            figure.AddPart(figure._body, new CylinderMesh { TopRadius = headRadius * 0.95f, BottomRadius = headRadius * 1.05f, Height = 0.09f, RadialSegments = 8, Rings = 1 }, new Vector3(0, headCentre + headRadius * 0.7f + 0.05f, 0), black);
+            figure._model.AddChild(figure._person);
         }
         else
         {
-            figure.AddPart(figure._body, new SphereMesh { Radius = headRadius * 1.1f, Height = headRadius * 1.3f, RadialSegments = 10, Rings = 5 }, new Vector3(0, headCentre + headRadius * 0.55f, -0.01f), accent.Lerp(new Color(0.55f, 0.15f, 0.12f), 0.5f));
+            figure.BuildPrimitive(looks, h, bulk, torso, headRadius, shoulder, clothing, accent, skin, hair, officer);
         }
 
         figure._ring = new MeshInstance3D
@@ -245,6 +205,63 @@ public partial class CrewFigure : Node3D
         return figure;
     }
 
+    // The low-poly figure of rigid pieces, for everyone without a model of their own yet.
+    private void BuildPrimitive(Appearance? looks, float h, float bulk, float torso, float headRadius, float shoulder,
+        Color clothing, Color accent, Color skin, Color hair, bool officer)
+    {
+        // Legs hang from the hips: breeches, hose and shoes.
+        _leftLeg = Limb(_body, new Vector3(-0.07f * bulk, 0, 0));
+        _rightLeg = Limb(_body, new Vector3(0.07f * bulk, 0, 0));
+        foreach (var leg in new[] { _leftLeg, _rightLeg })
+        {
+            AddPart(leg, new CylinderMesh { TopRadius = 0.075f * bulk, BottomRadius = 0.05f, Height = _legLength - 0.06f, RadialSegments = 8, Rings = 1 }, new Vector3(0, -(_legLength - 0.06f) / 2f, 0), Breeches);
+            AddPart(leg, new BoxMesh { Size = new Vector3(0.09f, 0.06f, 0.2f) }, new Vector3(0, -_legLength + 0.03f, 0.04f), Shoes);
+        }
+
+        // Body: a doublet or shirt in the clothing dye, a belt or sash in the accent colour.
+        AddPart(_body, new CylinderMesh { TopRadius = shoulder, BottomRadius = 0.15f * bulk, Height = torso, RadialSegments = 8, Rings = 1 }, new Vector3(0, torso / 2f, 0), clothing);
+        AddPart(_body, new CylinderMesh { TopRadius = 0.152f * bulk, BottomRadius = 0.155f * bulk, Height = 0.05f, RadialSegments = 8, Rings = 1 }, new Vector3(0, 0.04f, 0), accent);
+        AddPart(_body, new CylinderMesh { TopRadius = 0.05f, BottomRadius = 0.06f, Height = 0.08f, RadialSegments = 8, Rings = 1 }, new Vector3(0, torso + 0.03f, 0), skin);
+
+        // Arms hang from the shoulders, sleeves in the clothing colour, bare hands.
+        var armLength = h * 0.34f;
+        _leftArm = Limb(_body, new Vector3(-shoulder - 0.03f, torso - 0.03f, 0));
+        _rightArm = Limb(_body, new Vector3(shoulder + 0.03f, torso - 0.03f, 0));
+        foreach (var arm in new[] { _leftArm, _rightArm })
+        {
+            AddPart(arm, new CylinderMesh { TopRadius = 0.05f * bulk, BottomRadius = 0.04f, Height = armLength - 0.05f, RadialSegments = 8, Rings = 1 }, new Vector3(0, -(armLength - 0.05f) / 2f, 0), clothing.Darkened(0.08f));
+            AddPart(arm, new SphereMesh { Radius = 0.038f, Height = 0.076f, RadialSegments = 10, Rings = 5 }, new Vector3(0, -armLength + 0.02f, 0), skin);
+        }
+
+        // Head, hair, beard.
+        var headCentre = torso + 0.07f + headRadius;
+        AddPart(_body, new SphereMesh { Radius = headRadius, Height = headRadius * 2.1f, RadialSegments = 10, Rings = 5 }, new Vector3(0, headCentre, 0), skin);
+        AddPart(_body, new BoxMesh { Size = new Vector3(0.03f, 0.04f, 0.03f) }, new Vector3(0, headCentre - 0.005f, headRadius * 0.95f), skin.Darkened(0.08f));
+        if (looks is not null && looks.HairStyle != "style.bald")
+        {
+            var back = looks.HairStyle == "style.receding" ? -0.035f : -0.012f;
+            AddPart(_body, new SphereMesh { Radius = headRadius * 1.07f, Height = headRadius * 1.5f, RadialSegments = 10, Rings = 5 }, new Vector3(0, headCentre + 0.03f, back), hair);
+        }
+
+        if (looks is not null && looks.FacialHair is "beard.short" or "beard.full")
+        {
+            var size = looks.FacialHair == "beard.full" ? 0.085f : 0.05f;
+            AddPart(_body, new BoxMesh { Size = new Vector3(headRadius * 1.5f, size, 0.07f) }, new Vector3(0, headCentre - headRadius * 0.6f, headRadius * 0.6f), hair);
+        }
+
+        // Hat: standing shown by headgear rather than colour coding (ART_BIBLE.md 11).
+        if (officer)
+        {
+            var black = new Color(0.08f, 0.07f, 0.07f);
+            AddPart(_body, new CylinderMesh { TopRadius = headRadius * 1.9f, BottomRadius = headRadius * 1.9f, Height = 0.02f, RadialSegments = 8, Rings = 1 }, new Vector3(0, headCentre + headRadius * 0.7f, 0), black);
+            AddPart(_body, new CylinderMesh { TopRadius = headRadius * 0.95f, BottomRadius = headRadius * 1.05f, Height = 0.09f, RadialSegments = 8, Rings = 1 }, new Vector3(0, headCentre + headRadius * 0.7f + 0.05f, 0), black);
+        }
+        else
+        {
+            AddPart(_body, new SphereMesh { Radius = headRadius * 1.1f, Height = headRadius * 1.3f, RadialSegments = 10, Rings = 5 }, new Vector3(0, headCentre + headRadius * 0.55f, -0.01f), accent.Lerp(new Color(0.55f, 0.15f, 0.12f), 0.5f));
+        }
+    }
+
     /// <summary>Redraws from simulation state.</summary>
     /// <param name="character">The character.</param>
     /// <param name="placement">Where they are.</param>
@@ -257,7 +274,7 @@ public partial class CrewFigure : Node3D
     /// <param name="animationRate">How fast to animate: faster at higher game speeds, zero when paused.</param>
     public void Refresh(Character character, CharacterPlacement placement, double drawTick, bool selected, string activity,
         bool isCaptain, Pose pose, float delta, float animationRate, Func<float, float, float>? ground = null, string? carrying = null,
-        bool showLabel = true, string? shownName = null, Vector2? facing = null)
+        bool showLabel = true, string? shownName = null, Vector2? facing = null, bool inRain = false)
     {
         var (x, y) = placement.Movement?.PositionAt(drawTick) ?? (placement.Cell.X, placement.Cell.Y);
         Position = new Vector3((float)x, ground?.Invoke((float)x, (float)y) ?? 0, (float)y);
@@ -288,9 +305,16 @@ public partial class CrewFigure : Node3D
             _rolled.Rotation = new Vector3(_phase * 3f, 0, 0);
         }
 
-        Animate(pose);
-
         var dead = character.SurvivalState == SurvivalState.Dead;
+        if (_person is not null)
+        {
+            ShowPerson(character, pose, placement.IsMoving, delta, animationRate, inRain, dead);
+        }
+        else
+        {
+            Animate(pose);
+        }
+
         if (dead != _shownDead)
         {
             _shownDead = dead;
@@ -303,6 +327,29 @@ public partial class CrewFigure : Node3D
         _label.Text = selected && !string.IsNullOrEmpty(activity) ? $"{name}\n{activity}" : name;
         _label.Modulate = selected ? new Color(1f, 0.93f, 0.7f) : new Color(0.95f, 0.95f, 0.95f, 0.8f);
         _label.Position = new Vector3(0, pose is Pose.Resting or Pose.Lying ? 1.2f : _height + 0.3f, 0);
+    }
+
+    /// <summary>True when the camera is far out: persistent people use their light model (§36).</summary>
+    public static bool FarView { get; set; }
+
+    // A persistent person's own model: the clip for the pose, and their condition read from the
+    // simulation (CHARACTER_ART §48): tiredness from the fatigue need, an injured arm from a sprain,
+    // bruising or rope burn, wet from standing out in the rain (it soaks in and dries out over a few
+    // seconds of play, so a shower does not flicker).
+    private void ShowPerson(Character character, Pose pose, bool moving, float delta, float animationRate, bool inRain, bool dead)
+    {
+        var person = _person!;
+        var conditions = character.Health.Conditions;
+        person.Posture.InjuredArm = conditions.Contains("condition.sprain") || conditions.Contains("condition.bruised")
+            || conditions.Contains("condition.rope_burn") ? -1 : 0;
+        var ill = conditions.Contains("condition.fever") || conditions.Contains("condition.flux") ? 0.4f : 0f;
+        var tired = Mathf.Clamp((float)character.Needs.Fatigue / 100f + ill, 0, 1);
+        var soaked = inRain || conditions.Contains("condition.near_drowned") ? 1f : 0f;
+        var rate = Mathf.Max(animationRate, 0.2f) * delta;
+        _wet = Mathf.MoveToward(_wet, soaked, rate * (soaked > _wet ? 0.12f : 0.025f));
+        person.Condition(_wet, 0.15f + tired * 0.25f, Mathf.SmoothStep(0.35f, 0.95f, tired), dead);
+        person.Show(pose, moving, animationRate);
+        person.Detail(!FarView);
     }
 
     private void Animate(Pose pose)

@@ -4,7 +4,9 @@ Every asset here is CC0 (public domain): no attribution is required, but it is g
 `tools/fetch_assets.py` from the list in `assets.json`; nothing here was generated or altered
 except by the game's shaders at run time; `Textures/scenery_array/`, which only stacks the
 layered textures (plaster, stone, timber) into one image per map; and `Audio/ambience/`, Freesound
-previews levelled to the same loudness with their ends crossfaded into their starts to loop.
+previews levelled to the same loudness with their ends crossfaded into their starts to loop; and
+`Characters/`, built by `tools/characters/build.py` from the Quaternius packs (bodies reshaped,
+clothing made on them, textures divided into one shared sheet, clips reduced to rotations).
 
 | Asset | Used for | Author | Source | Licence | Files |
 |---|---|---|---|---|---|
@@ -21,3 +23,6 @@ previews levelled to the same loudness with their ends crossfaded into their sta
 | Small Town Bar 007 | Voices in the tavern | conleec | https://freesound.org/s/212094/ | CC0 | `Audio/ambience/tavern.ogg` |
 | Strong Steady Wind | Wind in the streets | craigsmith | https://freesound.org/s/438878/ | CC0 | `Audio/ambience/wind.ogg` |
 | Rain under a stone bridge | Rain | WilliamJMeyer | https://freesound.org/s/467169/ | CC0 | `Audio/ambience/rain.ogg` |
+| Universal Base Characters [Standard] | The bodies, heads, hair and beards persistent people are built on (C-1) | Quaternius | https://quaternius.itch.io/universal-base-characters | CC0 | `Characters/*/model.glb`, `Characters/Shared/chr_atlas.png` |
+| Universal Animation Library [Standard] | Walking, standing, sitting, kneeling work, pushing, lifting, talking | Quaternius | https://quaternius.itch.io/universal-animation-library | CC0 | `Characters/Shared/animations.glb` |
+| Universal Animation Library 2 [Standard] | Carrying, chopping (the adze), folded arms, the rail, drinking, lying | Quaternius | https://quaternius.itch.io/universal-animation-library-2 | CC0 | `Characters/Shared/animations.glb` |

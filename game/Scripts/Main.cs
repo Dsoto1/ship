@@ -451,6 +451,7 @@ public partial class Main : Node3D
 
         var drawTick = _runner.Campaign.Clock.Tick + (speed > 0 ? _tickFraction : 0);
         var animationRate = speed == 0 ? 0f : Mathf.Max(0.8f, 1f + Mathf.Log((float)speed) * 0.25f);
+        CrewFigure.FarView = _camera.Size > 26f;
         foreach (var (id, figure) in _figures)
         {
             var character = _runner.Campaign.Characters[id];
@@ -478,7 +479,8 @@ public partial class Main : Node3D
                     isCaptain, pose, (float)delta, animationRate,
                     onPort ? _port.HeightAt : null, carrying,
                     showLabel: !_departure.Playing && (!inPort || isCaptain || id == _hovered), shownName: inPort ? PortHud.KnownName(_runner, id) : null,
-                    facing: spot is null ? null : FacingAt(location, spot));
+                    facing: spot is null ? null : FacingAt(location, spot),
+                    inRain: onPort && _runner.RainingInPort && definition?.Id != "task.shelter");
             }
         }
 
@@ -980,7 +982,7 @@ public partial class Main : Node3D
             {
                 var character = _runner.Campaign.Characters[id];
                 var officer = id == _runner.Campaign.CaptainId || character.StatusId is "status.officer" or "status.gentleman";
-                figure = CrewFigure.Create(character.Appearance, _content.Appearance, officer);
+                figure = CrewFigure.Create(character.Appearance, _content.Appearance, officer, character.PersonId);
                 _figures[id] = figure;
             }
 
@@ -1326,7 +1328,8 @@ public partial class Main : Node3D
     private double _shotDelay = 3.0;
 
     // For screenshots of the port: --select=person.velho opens their card (and --talk walks the captain
-    // over and talks, at once; --offer=N then offers that advance); --look=x,z points the camera; --yaw=degrees turns it.
+    // over and talks, at once; --offer=N then offers that advance); --look=x,z points the camera (--look=selected at
+    // the one selected); --yaw=degrees turns it.
     private void DeveloperPort()
     {
         // For the preparation stages (R2c): --hire=N signs on the first N who want a berth, --buy=0,0,4
@@ -1391,6 +1394,13 @@ public partial class Main : Node3D
             && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var lookZ))
         {
             _camera.Target = new Vector3(lookX, 0, lookZ);
+            _follow = false;
+        }
+        else if (_developerLook == "selected" && _selected is { } chosen && _runner.Campaign.Placements.TryGetValue(chosen, out var at))
+        {
+            // --look=selected: the camera on whoever --select chose.
+            var cell = at.CellAt(_runner.Campaign.Clock.Tick);
+            _camera.Target = new Vector3(cell.X, 0, cell.Y);
             _follow = false;
         }
 
