@@ -514,8 +514,9 @@ def crowd(m, f, count=24, seed=1519):
             clothes = [shirt(a, shirt_colour, sleeve="elbow", loose=0.0), slot(saya(a, pick(DYES_LOWER), hem="midcalf"), "lower"),
                        slot(bodice(a, pick(DYES_MAIN)), "main"), apron(a, "leather.tan", "leather", "midcalf"), toca(a, "linen.unbleached")]
         elif kind == "servant":
+            # A kerchief over the hair, as any woman at work in the street wore one.
             clothes = [shirt(a, shirt_colour, loose=0.0), slot(saya(a, pick(DYES_LOWER)), "lower"), slot(bodice(a, pick(DYES_MAIN)), "main"),
-                       apron(a, "linen.bleached", "linen", "midcalf"), shoes(a)]
+                       apron(a, "linen.bleached", "linen", "midcalf"), shoes(a), slot(toca(a, "linen.unbleached"), "head")]
         elif kind == "widow":
             clothes = [shirt(a, "linen.bleached", loose=0.0), saya(a, "wool.black"), bodice(a, "wool.black"), toca(a, "wool.black"), shoes(a)]
         if not barefoot and not any(isinstance(c, dict) and c.get("id") == "garment_leather_shoes_01" for c in flatten(clothes)):

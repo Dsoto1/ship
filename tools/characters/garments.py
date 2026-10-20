@@ -331,12 +331,13 @@ def cylinder_uv(p):
     return np.stack([angle * 0.15 + p[:, 0] * 0.0, p[:, 1]], axis=1)
 
 
-def skirt(skeleton, base, top, bottom, flare, colour, kind, name, thickness=0.014, segments=28, arc=None):
+def skirt(skeleton, base, top, bottom, flare, colour, kind, name, thickness=0.014, segments=28, arc=None, over=None):
     """A skirt (a sayo's or a coat's below the belt) as a flared tube hung from the pelvis; with an
     arc (degrees either side of the front) it is an open panel instead: a waist apron.
 
     Its radius at each angle follows the body's own section at the waist, so it sits on any build;
-    the lower edge is weighted towards the thighs so it moves with the stride.
+    the lower edge is weighted towards the thighs so it moves with the stride. Over another skirt
+    (`over`, the one beneath), it takes that one's shape and lies just outside it, angle by angle.
     """
     p = base.positions
     ring = (np.abs(p[:, 1] - top) < 0.02) & np.isin(base.region, ["torso"])
@@ -353,6 +354,12 @@ def skirt(skeleton, base, top, bottom, flare, colour, kind, name, thickness=0.01
         d = (p[ring] - centre) @ direction
         radius.append(max(d.max() if ring.any() else 0.15, 0.05) + thickness)
     radius = np.array(radius)
+    beneath = None
+    if over is not None:
+        # The skirt beneath, as it is at each of this one's angles: its radius, its flare, and where it
+        # starts and ends, so at every height this one lies outside it and moves with it.
+        centre, under_angles, under_radius, under_flare, under_top, under_bottom = over
+        beneath = np.interp(angles, under_angles, under_radius, period=2 * np.pi)
     rows = 5
     positions, joints, weights = [], [], []
     names = skeleton.names
@@ -364,10 +371,16 @@ def skirt(skeleton, base, top, bottom, flare, colour, kind, name, thickness=0.01
         y = top + (bottom - top) * t
         for i, a in enumerate(angles):
             r = radius[i] * (1 + flare * t * t) + 0.01 * t
+            reach = t
+            if beneath is not None:
+                reach = float(np.clip((y - under_top) / (under_bottom - under_top), 0, 1))
+                r = max(r, beneath[i] * (1 + under_flare * reach * reach) + 0.01 * reach + thickness)
             positions.append([centre[0] + np.sin(a) * r, y, centre[2] + np.cos(a) * r])
             side = np.sin(a)
-            leg_share = 0.65 * t
-            left = leg_share * np.clip(0.5 + side * 0.9, 0, 1)
+            # Each side follows its own thigh, the front too (+x is the left): halved between the
+            # thighs, the front stays put while the stepping knee goes through it.
+            leg_share = 0.85 * reach ** 0.8
+            left = leg_share * np.clip(0.5 + side * 1.6, 0, 1)
             right = leg_share - left
             joints.append([pelvis, thigh_l, thigh_r, 0])
             weights.append([1 - leg_share, left, right, 0])
@@ -383,6 +396,9 @@ def skirt(skeleton, base, top, bottom, flare, colour, kind, name, thickness=0.01
     faces = np.array(faces)
     normals = bodylib.vertex_normals(positions, faces)
     part = bodylib.Part(name, positions, normals, cylinder_uv(positions), joints, weights, faces, kind, colour)
+    part.profile = (centre, angles, radius, flare, top, bottom)
+    # A skirt is a couple of hundred triangles; reduced, its facets cut across an apron's over it.
+    part.keep = True
     part.locked[:] = False
     part.locked[:segments] = True
     part.locked[-segments:] = True
@@ -399,6 +415,8 @@ def skirt(skeleton, base, top, bottom, flare, colour, kind, name, thickness=0.01
                               np.concatenate([part.weights, inner.weights]), np.concatenate([part.faces, back + count]),
                               kind, np.concatenate([part.colour, inner.colour]))
         merged.locked = np.concatenate([part.locked, inner.locked])
+        merged.profile = part.profile
+        merged.keep = True
         return merged
     return part
 

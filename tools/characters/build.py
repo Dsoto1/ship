@@ -141,18 +141,29 @@ def build_person(identity, palette, coarse=None):
     shoulder = skeleton.world()[skeleton.index("upperarm_l")]
     base.armhole = float(shoulder[0, 3]) - 0.025
     base.armpit = float(shoulder[1, 3]) - 0.11
+    base_knee = float(skeleton.world()[skeleton.index("calf_l")][1, 3])
 
     covered_body = np.zeros(len(shaped), bool)
     layers = []
+    under_skirt = None
     for garment in identity.get("clothing", []):
         colour = np.array([*colour_of(garment.get("colour"), palette), float(garment.get("wear", 0.3))])
         kind = g.KINDS[garment.get("material", "linen")]
         shape = garment["shape"]
         if shape == "skirt":
+            # An apron over a skirt hangs outside it all the way down, or the two cross and show
+            # through each other.
+            over = under_skirt.profile if garment.get("arc") is not None and under_skirt is not None else None
             piece = g.skirt(skeleton, base, garment["top"], garment["bottom"], garment.get("flare", 0.3), colour, kind,
-                            garment["id"], garment.get("thickness", 0.02), arc=garment.get("arc"))
+                            garment["id"], garment.get("thickness", 0.02), arc=garment.get("arc"), over=over)
+            if garment.get("arc") is None:
+                under_skirt = piece
             piece.kind = np.asarray(piece.kind, dtype=np.float64) + SLOTS.get(garment.get("slot"), 0.0)
             layers.append((piece, None, garment))
+            if garment.get("arc") is None and garment["bottom"] < base_knee:
+                # Under a long skirt the legs are never seen, down to a hand above the hem; without them
+                # nothing can come through it in the stride.
+                covered_body |= base.leg & (base.height > garment["bottom"] + 0.12) & (base.height < garment["top"])
             continue
         piece, mask = g.shell(base, garment, colour, kind, garment["id"])
         if piece is None:
@@ -442,12 +453,14 @@ def reduce_parts(parts, budget, keep_open_edges=True):
     total = sum(len(p.faces) for p in parts)
     if total <= budget:
         return parts
+    # Skirts and aprons stay whole (garments.skirt); the rest share what is left.
+    budget -= sum(len(p.faces) for p in parts if getattr(p, "keep", False))
     # Each part's share of the budget grows with how much it matters (face, hands, hair, headwear).
     shares = np.array([len(p.faces) * np.sqrt(p.importance.mean()) for p in parts])
     result = []
     for p, share in zip(parts, shares):
         target = max(int(budget * share / shares.sum()), 12)
-        if len(p.faces) <= target:
+        if len(p.faces) <= target or getattr(p, "keep", False):
             result.append(p)
             continue
         # Hair is many small sculpted locks, each with an open edge: those may move.
@@ -470,6 +483,7 @@ def lod1(parts, budget):
         q = bodylib.Part(p.name, p.positions, p.normals, p.uv, p.joints, p.weights, p.faces, p.kind, p.colour)
         q.importance = np.minimum(p.importance, 2.0)
         q.locked = p.locked
+        q.keep = getattr(p, "keep", False)
         simpler.append(q)
     return reduce_parts(simpler, budget)
 
