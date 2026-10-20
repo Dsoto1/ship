@@ -86,14 +86,17 @@ public partial class Main : Node3D
 
     // The four validation scenes of PORT_EXPERIENCE §21 (R3), each staged the same way every time: a
     // fixed seed, the hour, the weather, the hands and stores, and where the camera looks.
-    private sealed record Stage(string Id, string Title, int Minutes, string Weather, Vector2 Look, float Zoom, int Hire, string Buy);
+    // Hire: person IDs signed on; Depart: play the departure once staged (scene D is the departure).
+    private sealed record Stage(string Id, string Title, int Minutes, string Weather, Vector2 Look, float Zoom, string Hire, string Buy, bool Depart = false);
 
     private static readonly Stage[] Stages =
     [
-        new("dawn-quay", "Scene A: the quay at dawn", 1335, "mist", new Vector2(42, 34), 22f, 0, ""),
-        new("midday-market", "Scene B: the market at midday", 240, "fair", new Vector2(40, 23), 22f, 2, "0,1"),
-        new("rainy-workshops", "Scene C: the workshop street in rain", 450, "rain", new Vector2(65, 17), 18f, 0, ""),
-        new("departure-morning", "Scene D: departure morning", 2740, "fair", new Vector2(32, 33), 16f, 7, "0,0,1,2,3"),
+        new("dawn-quay", "Scene A: the quay at dawn", 1335, "mist", new Vector2(42, 34), 22f, "", ""),
+        // Late morning, not noon: at noon everyone named goes indoors to eat and drink.
+        new("midday-market", "Scene B: the market at midday", 195, "fair", new Vector2(40, 23), 22f, "person.leonor,person.tome", "0,1"),
+        new("rainy-workshops", "Scene C: the workshop street in rain", 450, "rain", new Vector2(65, 17), 18f, "", ""),
+        new("departure-morning", "Scene D: departure morning", 2740, "fair", new Vector2(32, 33), 14f,
+            "person.velho,person.pons,person.bartolo,person.rodrigo,person.gil,person.wat,person.pascual", "0,0,0,0,0,1,1,1,1,2,2,3,3,4,5,6", Depart: true),
     ];
     private PreparationView _preparation = null!;
     private bool _farewells;
@@ -412,8 +415,12 @@ public partial class Main : Node3D
             {
                 // The departure moves the camera itself: to the gangway, then after the ship.
                 _follow = false;
-                _camera.Target = _camera.Target.Lerp(shot.Target, Mathf.Clamp((float)delta * 1.5f, 0, 1));
-                _camera.Size = Mathf.Lerp(_camera.Size, shot.Size, Mathf.Clamp((float)delta * 1.2f, 0, 1));
+                // While a beat is about someone (a hand and who came to see them off), close in on them.
+                var (target, size) = _departure.Subject is { } who && _figures.TryGetValue(who, out var subject) && subject.Visible
+                    ? (subject.GlobalPosition, 8f)
+                    : shot;
+                _camera.Target = _camera.Target.Lerp(target, Mathf.Clamp((float)delta * 1.5f, 0, 1));
+                _camera.Size = Mathf.Lerp(_camera.Size, size, Mathf.Clamp((float)delta * 1.2f, 0, 1));
             }
             else
             {
@@ -845,9 +852,12 @@ public partial class Main : Node3D
 
         StartCampaign(ExpeditionScenario.Create(_content, 1519UL), stage.Title);
         _runner.Advance(stage.Minutes);
-        foreach (var seeker in rules.People.Where(p => p.Seeking is not null && _runner.CharacterFor(p.Id) is { } c && _runner.Campaign.Placements.ContainsKey(c.Id)).Take(stage.Hire))
+        foreach (var person in stage.Hire.Split(',', StringSplitOptions.RemoveEmptyEntries))
         {
-            _runner.DeveloperHire(_runner.CharacterFor(seeker.Id)!.Id);
+            if (_runner.CharacterFor(person) is { } hand && _runner.Campaign.Placements.ContainsKey(hand.Id))
+            {
+                _runner.DeveloperHire(hand.Id);
+            }
         }
 
         foreach (var lot in stage.Buy.Split(',', StringSplitOptions.RemoveEmptyEntries))
@@ -872,6 +882,10 @@ public partial class Main : Node3D
         if (profile)
         {
             StartProfile();
+        }
+        else if (stage.Depart)
+        {
+            BeginDeparture();
         }
     }
 
