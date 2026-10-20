@@ -463,7 +463,12 @@ def reduce_parts(parts, budget, keep_open_edges=True):
         if len(p.faces) <= target or getattr(p, "keep", False):
             result.append(p)
             continue
-        # Hair is many small sculpted locks, each with an open edge: those may move.
+        if p.kind[0] == g.HAIR and "Eyebrows" not in p.name and "Beard" not in p.name:
+            # Hair is many sculpted locks, each all open edge: collapsing them shreds them into
+            # spikes. Drop the smallest whole instead, and keep the masses that make the shape.
+            result.append(p.subset(_largest_locks(p, target)))
+            continue
+        # A beard's locks are small and close; their open edges may move.
         free = p.kind[0] == g.HAIR and "Eyebrows" not in p.name
         faces = decimate.reduce(p.positions, p.faces, target, p.locked, p.importance, keep_open_edges and not free)
         reduced = bodylib.Part(p.name, p.positions, p.normals, p.uv, p.joints, p.weights, faces, p.kind, p.colour)
@@ -471,6 +476,37 @@ def reduce_parts(parts, budget, keep_open_edges=True):
         reduced.locked = p.locked
         result.append(reduced.subset(np.ones(len(faces), bool)))
     return result
+
+
+def _largest_locks(part, target):
+    """The faces of a hair part's biggest locks (by surface), as many as fit in target."""
+    parent = np.arange(len(part.positions))
+
+    def find(v):
+        while parent[v] != v:
+            parent[v] = parent[parent[v]]
+            v = parent[v]
+        return v
+
+    for a, b, c in part.faces:
+        for x, y in ((a, b), (b, c)):
+            rx, ry = find(x), find(y)
+            if rx != ry:
+                parent[rx] = ry
+    lock = np.array([find(f[0]) for f in part.faces])
+    p = part.positions
+    area = 0.5 * np.linalg.norm(np.cross(p[part.faces[:, 1]] - p[part.faces[:, 0]], p[part.faces[:, 2]] - p[part.faces[:, 0]]), axis=1)
+    locks, inverse = np.unique(lock, return_inverse=True)
+    surface = np.bincount(inverse, area)
+    count = np.bincount(inverse)
+    keep = np.zeros(len(locks), bool)
+    total = 0
+    for i in np.argsort(-surface):
+        if total + count[i] > target and keep.any():
+            continue
+        keep[i] = True
+        total += count[i]
+    return keep[inverse]
 
 
 def lod1(parts, budget):
