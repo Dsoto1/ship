@@ -235,6 +235,12 @@ public sealed class GameContent
         }
 
         var ids = rules.People.Select(p => p.Id).ToHashSet(StringComparer.Ordinal);
+        if (rules.Prices is { RiseHours: <= 0 } or { Rise: < 0 } or { Scarcity: < 0 } || rules.Prices.StandingDiscount.Any(d => d is < 0 or >= 1)
+            || rules.Prices.CreditLimit.Any(c => c < 0))
+        {
+            errors.Add("Port prices: riseHours must be positive; rise and scarcity not negative; discounts from 0 to under 1; credit not negative.");
+        }
+
         foreach (var seller in rules.Sellers.Where(s => !ids.Contains(s.Person)))
         {
             errors.Add($"Port: seller '{seller.Id}' is sold by '{seller.Person}', who is not one of the port's people.");

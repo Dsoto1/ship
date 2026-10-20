@@ -45,6 +45,11 @@ public partial class PortHud : CanvasLayer
     private VBoxContainer _lots = null!;
     private readonly List<Button> _lotButtons = [];
     private readonly Dictionary<string, Button> _lookButtons = [];
+    private readonly Dictionary<string, (Label Name, Button Settle)> _accounts = [];
+    private CheckButton _onCredit = null!;
+
+    /// <summary>True when purchases go on the seller's account instead of being paid in coin.</summary>
+    public bool OnCredit => _onCredit.ButtonPressed && !_onCredit.Disabled;
     private VBoxContainer _expedition = null!;
     private Label _objectives = null!;
     private VBoxContainer _journalList = null!;
@@ -74,6 +79,9 @@ public partial class PortHud : CanvasLayer
 
     /// <summary>The captain wants to look closely at a seller's goods.</summary>
     public event Action<string>? InspectRequested;
+
+    /// <summary>The captain settles what the expedition owes a seller.</summary>
+    public event Action<string>? SettleRequested;
 
     /// <summary>Walk to the Chamber's board and read it.</summary>
     public event Action? NoticesRequested;
@@ -265,7 +273,8 @@ public partial class PortHud : CanvasLayer
         var claim = runner.OpenClaims().FirstOrDefault(c => c.Creditor == id);
         _claimRow.Visible = claim.Claim is not null && runner.Campaign.Port?.Approached.Contains(id) == true;
         _claimText.Visible = _claimRow.Visible;
-        _claimText.Text = claim.Claim is { } open && runner.CharacterFor(open.Debtor) is { } debtor
+        _claimText.Text = claim.Claim is { Debtor.Length: 0 } account ? $"The Garza owes him {account.Amount} sueldos for stores."
+            : claim.Claim is { } open && runner.CharacterFor(open.Debtor) is { } debtor
             ? $"Claims {open.Amount} sueldos that {debtor.Name} owes him."
             : "";
         _offerButton.Disabled = !seekingNow;
@@ -544,6 +553,8 @@ public partial class PortHud : CanvasLayer
         // What the stores come to against the passage, so each purchase means something.
         _supplyLine = Ui.Text("", Ui.TextBody, Ui.Ink, 370);
         section.AddChild(_supplyLine);
+        _onCredit = new CheckButton { Text = "Buy on credit, where they give it", FocusMode = Control.FocusModeEnum.None };
+        section.AddChild(_onCredit);
         // One block per seller, built when the port's sellers are known (RefreshChandler).
         _lots = new VBoxContainer();
         _lots.AddThemeConstantOverride("separation", 2);
@@ -565,7 +576,31 @@ public partial class PortHud : CanvasLayer
         _supplyLine.Text = $"{Ui.IconOf(severity)} For {sailing} aboard (every berth filled): water lasts {water:0} days, food {food:0}. "
             + $"The passage to the Ember Coast takes {low}–{high} days. "
             + (least >= high ? "Enough, with a margin for calms." : least >= low ? "Enough for a fair passage, not for a slow one." : "Not enough to reach the coast.");
+        // Prices: the convoy buying, and what the port thinks of the Garza.
+        var reference = rules.Goods.ToList().FindIndex(g => g.Seller is null && runner.Content.Items[g.Item].ThirstRelief > 0);
+        var factor = reference >= 0 ? runner.PriceFactor(reference) : 1;
+        var hours = (rules.Departure.Tick - runner.Campaign.Clock.Tick) / 60.0;
+        if (factor >= 1.05)
+        {
+            _supplyLine.Text += hours <= rules.Prices.RiseHours
+                ? $"\nPrices are up {(factor - 1) * 100:0}%: every ship in the convoy is buying."
+                : $"\nPrices are up {(factor - 1) * 100:0}%: stock is running low.";
+        }
+        else if (factor <= 0.97)
+        {
+            _supplyLine.Text += $"\nThe port knows the Garza: {(1 - factor) * 100:0}% off.";
+        }
+        else if (hours > rules.Prices.RiseHours)
+        {
+            _supplyLine.Text += $"\nPrices will climb in the last {rules.Prices.RiseHours} hours before the convoy sails.";
+        }
+
         _supplyLine.AddThemeColorOverride("font_color", Ui.Of(severity));
+        var anyCredit = rules.Sellers.Any(s => runner.CreditLimit(s) > 0);
+        _onCredit.Disabled = !anyCredit;
+        _onCredit.TooltipText = anyCredit
+            ? "Put it on the seller's account. Settle before sailing, or they will be waiting at the gangway."
+            : "No one gives credit yet: the port must know the Garza better (hire hands, buy stores).";
         if (_lotButtons.Count != rules.Goods.Count)
         {
             BuildSellers(rules);
@@ -573,6 +608,13 @@ public partial class PortHud : CanvasLayer
 
         foreach (var seller in rules.Sellers)
         {
+            var owed = port.Owed.GetValueOrDefault(seller.Id);
+            var limit = runner.CreditLimit(seller);
+            var (title, settle) = _accounts[seller.Id];
+            title.Text = owed > 0 ? $"{seller.Name} — owed {owed}" : limit > 0 ? $"{seller.Name} — credit to {limit}" : seller.Name;
+            settle.Visible = owed > 0;
+            settle.Disabled = port.Funds < owed;
+            settle.Text = $"Settle {owed}";
             var why = runner.WhyCannotInspect(seller);
             var look = _lookButtons[seller.Id];
             var judged = rules.Goods.Select((g, lot) => (g, lot)).Where(x => rules.SellerOf(x.g) == seller).All(x => port.Inspected.ContainsKey(x.lot));
@@ -595,8 +637,12 @@ public partial class PortHud : CanvasLayer
                 _ => "",
             };
             var button = _lotButtons[lot];
-            button.Text = $"{goods.Quantity} {item.Name.ToLowerInvariant()} — {goods.Price} sueldos{(days > 0 ? $", +{days:0.#} days" : "")}   ({left} left){verdict}";
-            button.Disabled = left <= 0 || port.Funds < goods.Price;
+            var price = runner.PriceOf(lot);
+            var trend = runner.PriceFactor(lot) switch { >= 1.03 => " ▲", <= 0.97 => " ▼", _ => "" };
+            var seller = rules.SellerOf(goods);
+            var credit = OnCredit && seller is not null && runner.CreditLeft(seller) >= price;
+            button.Text = $"{goods.Quantity} {item.Name.ToLowerInvariant()} — {price} sueldos{trend}{(days > 0 ? $", +{days:0.#} days" : "")}   ({left} left){verdict}";
+            button.Disabled = left <= 0 || (!credit && port.Funds < price);
             button.Modulate = port.Inspected.GetValueOrDefault(lot) == "poor" ? Ui.Of(Severity.Attention) : Colors.White;
             button.TooltipText = left <= 0 ? "Sold out: others bought the last of it."
                 : port.Funds < goods.Price ? $"Only {port.Funds} sueldos left in the purse."
@@ -615,6 +661,7 @@ public partial class PortHud : CanvasLayer
 
         _lotButtons.Clear();
         _lookButtons.Clear();
+        _accounts.Clear();
         var buttons = new Button[rules.Goods.Count];
         foreach (var seller in rules.Sellers)
         {
@@ -625,6 +672,9 @@ public partial class PortHud : CanvasLayer
             name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
             header.AddChild(name);
             var id = seller.Id;
+            var settle = Ui.Button("", "Pay what the Garza owes them, from the purse", () => SettleRequested?.Invoke(id));
+            header.AddChild(settle);
+            _accounts[seller.Id] = (name, settle);
             var look = Ui.Button("Look closely", "", () => InspectRequested?.Invoke(id));
             header.AddChild(look);
             _lookButtons[seller.Id] = look;

@@ -1231,3 +1231,31 @@ Screenshot: `docs/screenshots/stores-sellers-quality.jpg`.
 
 **Manual test (macOS):** `git pull`, Build. Open Cargo (C). Walk the captain to Hob in the
 chandler's yard before noon and press *Look closely*.
+
+## Prices that move, and credit for a captain the port knows (owner's request)
+
+- **Prices climb as the convoy's sailing nears:** up to a third more by the morning it sails,
+  rising over the last 36 hours as every ship buys at once.
+- **Scarcity:** as a seller's stock runs down, the last lots cost up to 40% more.
+- **Standing:** once the expedition is talked of, the port knocks 5% off; once everyone knows the
+  Garza, 10%.
+- **Credit:** at the same two standings, Corbalán and Gil let the Garza buy on account, up to 600
+  and then 1,500 sueldos each. Hob wants coin.
+- **What's owed** shows by each seller's name, with *Settle* to pay it off from the purse. Owing
+  sends nobody after you in port. But anything still owed at sailing is waiting at the foot of the
+  gangway, in the departure's claim beat:
+  - **pay**, and the seller respects you for it;
+  - **refuse**, and he trusts you much less ("sailed owing him for stores").
+- **The stores panel:**
+  - each lot shows today's price, ▲ when it is up and ▼ when it is down;
+  - a line says why prices have moved, and warns before the rise begins;
+  - *Buy on credit* turns on once someone gives it.
+- **Save format 21:** what is owed. Older saves owe nothing.
+- **Tests:** six new, 416 in all.
+
+Screenshot: `docs/screenshots/stores-prices-credit.jpg`.
+
+**Manual test (macOS):**
+1. `git pull`, Build.
+2. Hire four hands: the Cargo panel offers credit.
+3. Buy on credit and sail without settling: Corbalán is at the gangway.

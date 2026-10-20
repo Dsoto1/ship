@@ -221,7 +221,9 @@ public partial class Main : Node3D
             _hud.ShowStatus("Walking to the Chamber's notice board…");
             CarryOutPending();
         };
-        _portHud.BuyRequested += lot => _hud.ShowResult(_runner.Buy(lot), "Bought. It will be carried aboard.");
+        _portHud.BuyRequested += lot => _hud.ShowResult(_runner.Buy(lot, _portHud.OnCredit),
+            _portHud.OnCredit ? "Bought on the account. It will be carried aboard." : "Bought. It will be carried aboard.");
+        _portHud.SettleRequested += seller => _hud.ShowResult(_runner.PayDebt(seller), "Account settled.");
         _portHud.InspectRequested += seller =>
         {
             var (result, seen) = _runner.Inspect(seller);

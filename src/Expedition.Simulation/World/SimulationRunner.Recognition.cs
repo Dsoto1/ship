@@ -81,6 +81,11 @@ public sealed partial class SimulationRunner
                 yield return (creditor.Id, person.Claim);
             }
         }
+
+        foreach (var debt in StoreDebts(rules, port))
+        {
+            yield return debt;
+        }
     }
 
     /// <summary>Pays a creditor what someone signed on owes him, from the purse.</summary>
@@ -98,6 +103,22 @@ public sealed partial class SimulationRunner
 
         port.Funds -= claim.Amount;
         port.SettleClaim(creditor, true);
+        if (claim.Debtor.Length == 0)
+        {
+            // A store debt: the account is settled.
+            if (Content.Port?.Sellers.FirstOrDefault(s => CharacterFor(s.Person)?.Id == creditor) is { } seller)
+            {
+                port.ClearDebt(seller.Id);
+            }
+
+            if (Campaign.CaptainId is { } payer)
+            {
+                Campaign.ChangeRelationship(creditor, payer, RelationshipDimension.Respect, 5, "paid what the Garza owed");
+            }
+
+            return CommandResult.Ok();
+        }
+
         if (Campaign.CaptainId is { } captain && CharacterFor(claim.Debtor) is { } debtor)
         {
             var creditorName = Campaign.Characters[creditor].Name;
@@ -117,6 +138,12 @@ public sealed partial class SimulationRunner
         }
 
         port.SettleClaim(creditor, false);
+        if (claim.Debtor.Length == 0 && Campaign.CaptainId is { } owing)
+        {
+            Campaign.ChangeRelationship(creditor, owing, RelationshipDimension.Trust, -25, "sailed owing him for stores");
+            return CommandResult.Ok();
+        }
+
         if (Campaign.CaptainId is { } captain && CharacterFor(claim.Debtor) is { } debtor)
         {
             Campaign.ChangeRelationship(creditor, captain, RelationshipDimension.Trust, -15, $"refused to pay {debtor.Name}'s debt");
@@ -141,9 +168,10 @@ public sealed partial class SimulationRunner
         // A creditor comes as soon as his debtor is signed on, whatever the expedition's standing.
         if (port.Approaching is null)
         {
-            foreach (var (creditor, _) in OpenClaims())
+            // (A seller the Garza owes for stores waits for her at the gangway instead.)
+            foreach (var (creditor, claim) in OpenClaims())
             {
-                if (!port.Approached.Contains(creditor) && Available(creditor, rules))
+                if (claim.Debtor.Length > 0 && !port.Approached.Contains(creditor) && Available(creditor, rules))
                 {
                     StartApproach(port, creditor);
                     break;

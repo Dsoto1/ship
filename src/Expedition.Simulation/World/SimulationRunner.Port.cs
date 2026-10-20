@@ -633,8 +633,8 @@ public sealed partial class SimulationRunner
         Campaign.Record(ChronicleEntryKind.CrewHired, [new(ChronicleParameters.Level, advance.ToString(CultureInfo.InvariantCulture))], id);
     }
 
-    /// <summary>Buys a lot from the chandler, if there is stock and money.</summary>
-    public CommandResult Buy(int lot)
+    /// <summary>Buys a lot at today's price, if there is stock and money, or on credit with a seller who gives it.</summary>
+    public CommandResult Buy(int lot, bool onCredit = false)
     {
         if (Content.Port is not { } rules || Campaign.Port is not { } port)
         {
@@ -652,9 +652,18 @@ public sealed partial class SimulationRunner
             return CommandResult.Rejected($"The chandler has sold the last of the {ItemName(goods.Item).ToLowerInvariant()}.");
         }
 
-        if (port.Funds < goods.Price)
+        var price = PriceOf(lot);
+        var seller = rules.SellerOf(goods);
+        if (onCredit && seller is not null && CreditLeft(seller) < price)
         {
-            return CommandResult.Rejected($"That costs {goods.Price} sueldos and only {port.Funds} are left.");
+            return CommandResult.Rejected(seller.Credit && CreditLimit(seller) > 0
+                ? $"{seller.Name} will not let the Garza owe more than {CreditLimit(seller)} sueldos."
+                : seller.Credit ? $"{seller.Name} gives credit only to a captain the port knows." : $"{seller.Name} wants coin, not promises.");
+        }
+
+        if (!onCredit && port.Funds < price)
+        {
+            return CommandResult.Rejected($"That costs {price} sueldos and only {port.Funds} are left.");
         }
 
         var stowed = Campaign.SharedStore.TryAdd(goods.Item, goods.Quantity, Content.Items);
@@ -663,7 +672,15 @@ public sealed partial class SimulationRunner
             return stowed;
         }
 
-        port.Funds -= goods.Price;
+        if (onCredit && seller is not null)
+        {
+            port.AddDebt(seller.Id, price);
+        }
+        else
+        {
+            port.Funds -= price;
+        }
+
         port.SetStock(lot, port.Stock[lot] - 1);
         port.AddPurchase(lot, Campaign.Clock.Tick);
         return CommandResult.Ok();

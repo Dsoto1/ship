@@ -483,6 +483,9 @@ public sealed record PortData
     /// <summary>What the captain made of each lot he looked at: lot index and quality or "unsure". Added in format 20.</summary>
     public IReadOnlyList<InspectionData> Inspected { get; init; } = [];
 
+    /// <summary>What the expedition owes sellers for stores bought on credit. Added in format 21.</summary>
+    public IReadOnlyList<DebtData> Owed { get; init; } = [];
+
     /// <summary>Sueldos left.</summary>
     public required int Funds { get; init; }
 
@@ -536,4 +539,14 @@ public sealed record InspectionData
 
     /// <summary>What he saw: a quality, or <c>unsure</c>.</summary>
     public required string Seen { get; init; }
+}
+
+/// <summary>What the expedition owes a seller. Added in format 21.</summary>
+public sealed record DebtData
+{
+    /// <summary>Seller ID.</summary>
+    public required string Seller { get; init; }
+
+    /// <summary>Sueldos owed.</summary>
+    public required int Amount { get; init; }
 }

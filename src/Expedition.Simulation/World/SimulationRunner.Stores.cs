@@ -173,4 +173,93 @@ public sealed partial class SimulationRunner
             }
         }
     }
+
+    /// <summary>
+    /// What a lot costs now: its price, more as the convoy's sailing nears (every ship buying at once)
+    /// and as the seller's stock runs low, less for a captain the port knows (standing).
+    /// </summary>
+    public int PriceOf(int lot)
+    {
+        if (Content.Port is not { } rules || Campaign.Port is not { } port || lot < 0 || lot >= rules.Goods.Count)
+        {
+            return 0;
+        }
+
+        var goods = rules.Goods[lot];
+        return (int)Math.Round(goods.Price * PriceFactor(lot, rules, port), MidpointRounding.AwayFromZero);
+    }
+
+    /// <summary>How far a lot's price is above (or below) its usual price: 1.2 is a fifth more.</summary>
+    public double PriceFactor(int lot) =>
+        Content.Port is { } rules && Campaign.Port is { } port && lot >= 0 && lot < rules.Goods.Count ? PriceFactor(lot, rules, port) : 1;
+
+    private double PriceFactor(int lot, PortRules rules, PortState port)
+    {
+        var prices = rules.Prices;
+        var goods = rules.Goods[lot];
+        var hoursLeft = (rules.Departure.Tick - Campaign.Clock.Tick) / (double)SimulationClock.TicksPerHour;
+        var rush = Math.Clamp(1 - hoursLeft / Math.Max(prices.RiseHours, 1), 0, 1);
+        rush = rush * rush * (3 - 2 * rush);
+        var left = goods.Stock <= 0 ? 0 : 1 - Math.Clamp(port.Stock.GetValueOrDefault(lot) / (double)goods.Stock, 0, 1);
+        var standing = Math.Clamp(Standing, 0, prices.StandingDiscount.Count - 1);
+        var discount = prices.StandingDiscount.Count > 0 ? prices.StandingDiscount[standing] : 0;
+        return (1 + prices.Rise * rush) * (1 + prices.Scarcity * Math.Pow(left, 1.5)) * (1 - discount);
+    }
+
+    /// <summary>How much credit a seller extends to the expedition at its standing (0 if none).</summary>
+    public int CreditLimit(PortSeller seller)
+    {
+        if (!seller.Credit || Content.Port is not { } rules || rules.Prices.CreditLimit.Count == 0)
+        {
+            return 0;
+        }
+
+        return rules.Prices.CreditLimit[Math.Clamp(Standing, 0, rules.Prices.CreditLimit.Count - 1)];
+    }
+
+    /// <summary>Credit left with a seller: the limit less what is owed.</summary>
+    public int CreditLeft(PortSeller seller) => Math.Max(0, CreditLimit(seller) - (Campaign.Port?.Owed.GetValueOrDefault(seller.Id) ?? 0));
+
+    /// <summary>Pays a seller what the expedition owes them.</summary>
+    public CommandResult PayDebt(string sellerId)
+    {
+        if (Campaign.Port is not { } port || Content.Port is not { } rules || !port.Owed.TryGetValue(sellerId, out var owed))
+        {
+            return CommandResult.Rejected("Nothing is owed.");
+        }
+
+        if (port.Funds < owed)
+        {
+            return CommandResult.Rejected($"That is {owed} sueldos and only {port.Funds} are left.");
+        }
+
+        port.Funds -= owed;
+        port.ClearDebt(sellerId);
+        if (rules.Sellers.FirstOrDefault(s => s.Id == sellerId) is { } seller && SellerCharacter(seller) is { } person && Campaign.CaptainId is { } captain)
+        {
+            Campaign.ChangeRelationship(person.Id, captain, Characters.RelationshipDimension.Trust, 5, "settled the Garza's account");
+        }
+
+        return CommandResult.Ok();
+    }
+
+    // What the Garza still owes sellers, as claims at the gangway (the debtor is the expedition itself).
+    private IEnumerable<(CharacterId Creditor, CreditorClaim Claim)> StoreDebts(PortRules rules, PortState port)
+    {
+        foreach (var (sellerId, owed) in port.Owed.OrderBy(o => o.Key, StringComparer.Ordinal))
+        {
+            if (owed > 0 && rules.Sellers.FirstOrDefault(s => s.Id == sellerId) is { } seller && SellerCharacter(seller) is { } person
+                && !port.Claims.ContainsKey(person.Id))
+            {
+                var amount = owed.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                yield return (person.Id, new CreditorClaim
+                {
+                    Debtor = "",
+                    Amount = owed,
+                    Says = seller.AtGangway.Replace("{amount}", amount, StringComparison.Ordinal),
+                    AtGangway = seller.AtGangway.Replace("{amount}", amount, StringComparison.Ordinal),
+                });
+            }
+        }
+    }
 }

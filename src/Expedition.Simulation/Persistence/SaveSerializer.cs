@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 20;
+    public const int CurrentSchemaVersion = 21;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -143,6 +143,17 @@ public static class SaveSerializer
                 root["eventHistory"] = new JsonArray();
                 root["lastEventTick"] = long.MinValue / 2;
                 root["rationing"] = false;
+                return root;
+            },
+
+            // Format 21 added credit with sellers. Older ports owe nothing.
+            [20] = root =>
+            {
+                if (root["port"] is JsonObject port)
+                {
+                    port["owed"] = new JsonArray();
+                }
+
                 return root;
             },
 
@@ -519,6 +530,7 @@ public static class SaveSerializer
                     Leads = port.Leads.Select(l => new HeardLeadData { Lead = l.LeadId, Tick = l.Tick }).ToList(),
                     Purchases = port.Purchases.Select(p => new PurchaseData { Lot = p.Lot, Tick = p.Tick }).ToList(),
                     Inspected = port.Inspected.OrderBy(p => p.Key).Select(p => new InspectionData { Lot = p.Key, Seen = p.Value }).ToList(),
+                    Owed = port.Owed.OrderBy(p => p.Key, StringComparer.Ordinal).Select(p => new DebtData { Seller = p.Key, Amount = p.Value }).ToList(),
                     Weather = port.WeatherId,
                     WeatherUntil = port.WeatherUntil,
                     Approached = port.Approached.Select(id => id.Value).Order().ToList(),
@@ -866,6 +878,16 @@ public static class SaveSerializer
                 }
 
                 port.MarkInspected(inspection.Lot, inspection.Seen);
+            }
+
+            foreach (var debt in savedPort.Owed)
+            {
+                if (debt.Amount <= 0 || portRules.Sellers.All(s => s.Id != debt.Seller) || port.Owed.ContainsKey(debt.Seller))
+                {
+                    throw new SaveLoadException($"The save says the Garza owes '{debt.Seller}' {debt.Amount}: no such seller, a bad amount, or twice.");
+                }
+
+                port.AddDebt(debt.Seller, debt.Amount);
             }
 
             campaign.SetPort(port);

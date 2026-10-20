@@ -291,9 +291,12 @@
    "weather": "dry"
   }
  ],
+ // How prices move: up as the convoy's sailing nears and stock runs low, down for a captain the port
+ // knows; credit with Corbalán and Gil once the expedition is talked of (standing 2 and 3).
+ "prices": { "riseHours": 36, "rise": 0.35, "scarcity": 0.4, "standingDiscount": [0, 0, 0.05, 0.1], "creditLimit": [0, 0, 600, 1500] },
  "sellers": [
-  { "id": "seller.corbalan", "person": "person.corbalan", "name": "Maese Corbalán, chandler", "says": "Twice-baked biscuit, sweet water, and nothing I would not sail on myself." },
-  { "id": "seller.gil", "person": "person.gil", "name": "Gil the cooper", "says": "Spring water from the convent, in my own casks. Not much of it, mind." },
+  { "id": "seller.corbalan", "person": "person.corbalan", "name": "Maese Corbalán, chandler", "says": "Twice-baked biscuit, sweet water, and nothing I would not sail on myself.", "credit": true, "atGangway": "\"{amount} sueldos on the Garza's account, Captain. I'll have it now, or the Chamber will hear of it.\"" },
+  { "id": "seller.gil", "person": "person.gil", "name": "Gil the cooper", "says": "Spring water from the convent, in my own casks. Not much of it, mind.", "credit": true, "atGangway": "\"The water, Captain. {amount} sueldos. I've a family.\"" },
   { "id": "seller.hob", "person": "person.hob", "name": "Hob the Brennish trader", "says": "Best Brennish stores at half the chandler's price, and I'll carry them aboard myself." }
  ],
  "goods": [

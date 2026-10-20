@@ -7,6 +7,7 @@ public sealed class PortState
 {
     private readonly Dictionary<int, int> _stock = [];
     private readonly Dictionary<int, string> _inspected = [];
+    private readonly Dictionary<string, int> _owed = new(StringComparer.Ordinal);
     private readonly HashSet<CharacterId> _talkedTo = [];
     private readonly HashSet<(CharacterId Informant, CharacterId About)> _asked = [];
     private readonly HashSet<CharacterId> _hired = [];
@@ -79,6 +80,13 @@ public sealed class PortState
     internal void MarkTalked(CharacterId id) => _talkedTo.Add(id);
 
     internal void MarkInspected(int lot, string seen) => _inspected[lot] = seen;
+
+    /// <summary>What the expedition owes each seller who gave it credit, by seller ID.</summary>
+    public IReadOnlyDictionary<string, int> Owed => _owed;
+
+    internal void AddDebt(string seller, int amount) => _owed[seller] = _owed.GetValueOrDefault(seller) + amount;
+
+    internal void ClearDebt(string seller) => _owed.Remove(seller);
 
     internal void MarkAsked(CharacterId informant, CharacterId about) => _asked.Add((informant, about));
 

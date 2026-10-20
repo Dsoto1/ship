@@ -174,11 +174,129 @@ public class StoresTests
         root["schemaVersion"] = 19;
         root["randomStreams"]!.AsObject().Remove("stores");
         root["port"]!.AsObject().Remove("inspected");
+        root["port"]!.AsObject().Remove("owed");
         root.Remove("spoilageNoted");
 
         var loaded = SaveSerializer.Deserialize(root.ToJsonString(), runner.Content);
 
         Assert.Empty(loaded.Port!.Inspected);
         Assert.Empty(loaded.SpoilageNoted);
+    }
+
+    private static void Hire(SimulationRunner runner, int count)
+    {
+        foreach (var seeker in runner.Content.Port!.People.Where(p => p.Seeking is not null).Take(count))
+        {
+            runner.DeveloperHire(runner.CharacterFor(seeker.Id)!.Id);
+        }
+    }
+
+    [Fact]
+    public void PricesClimbAsTheConvoySailingNears()
+    {
+        var runner = Port();
+        var water = Lot(runner, "item.water");
+        var first = runner.PriceOf(water);
+        Assert.Equal(runner.Content.Port!.Goods[water].Price, first);
+
+        var departure = runner.Content.Port.Departure.Tick;
+        runner.Advance((int)(departure - 12 * SimulationClock.TicksPerHour - runner.Campaign.Clock.Tick));
+        var late = runner.PriceOf(water);
+
+        Assert.True(late > first, $"{first} then {late}");
+        Assert.True(runner.PriceFactor(water) <= (1 + runner.Content.Port.Prices.Rise) * (1 + runner.Content.Port.Prices.Scarcity));
+    }
+
+    [Fact]
+    public void ScarceGoodsCostMoreAndYouPayWhatTheyCost()
+    {
+        var runner = Port();
+        var gil = Lot(runner, "item.water_gil");
+        var before = runner.PriceOf(gil);
+        var funds = runner.Campaign.Port!.Funds;
+        Assert.True(runner.Buy(gil).Succeeded);
+        Assert.Equal(funds - before, runner.Campaign.Port.Funds);
+        for (var i = 0; i < 5; i++)
+        {
+            runner.Buy(gil);
+        }
+
+        Assert.True(runner.PriceOf(gil) > before);
+    }
+
+    [Fact]
+    public void AKnownCaptainPaysLessAndIsGivenCredit()
+    {
+        var runner = Port();
+        var corbalan = runner.Content.Port!.Sellers.Single(s => s.Id == "seller.corbalan");
+        var hob = runner.Content.Port.Sellers.Single(s => s.Id == "seller.hob");
+        var pork = Lot(runner, "item.salt_pork");
+        var usual = runner.PriceOf(pork);
+        Assert.Equal(0, runner.CreditLimit(corbalan));
+        Assert.False(runner.Buy(pork, onCredit: true).Succeeded);
+
+        Hire(runner, 4);
+        Assert.True(runner.Standing >= 2);
+
+        Assert.True(runner.PriceOf(pork) < usual);
+        Assert.True(runner.CreditLimit(corbalan) > 0);
+        Assert.Equal(0, runner.CreditLimit(hob));
+        var funds = runner.Campaign.Port!.Funds;
+        var price = runner.PriceOf(pork);
+        Assert.True(runner.Buy(pork, onCredit: true).Succeeded);
+        Assert.Equal(funds, runner.Campaign.Port.Funds);
+        Assert.Equal(price, runner.Campaign.Port.Owed["seller.corbalan"]);
+        Assert.Contains("wants coin", runner.Buy(Lot(runner, "item.water_hob"), onCredit: true).Reason);
+    }
+
+    [Fact]
+    public void ADebtUnpaidMeetsTheCaptainAtTheGangway()
+    {
+        var runner = Port();
+        Hire(runner, 4);
+        var water = Lot(runner, "item.water");
+        Assert.True(runner.Buy(water, onCredit: true).Succeeded);
+        var owed = runner.Campaign.Port!.Owed["seller.corbalan"];
+        var corbalan = runner.CharacterFor("person.corbalan")!.Id;
+
+        var (creditor, claim) = Assert.Single(runner.OpenClaims(), c => c.Creditor == corbalan);
+        Assert.Equal(owed, claim.Amount);
+        Assert.Contains(runner.DeparturePlan(), b => b.Kind == "claim" && b.Who == corbalan && b.Text.Contains(owed.ToString()));
+
+        var funds = runner.Campaign.Port.Funds;
+        Assert.True(runner.PayClaim(creditor).Succeeded);
+        Assert.Equal(funds - owed, runner.Campaign.Port.Funds);
+        Assert.Empty(runner.Campaign.Port.Owed);
+        Assert.DoesNotContain(runner.OpenClaims(), c => c.Creditor == corbalan);
+    }
+
+    [Fact]
+    public void SailingOwingCostsTheSellersTrust()
+    {
+        var runner = Port();
+        Hire(runner, 4);
+        Assert.True(runner.Buy(Lot(runner, "item.biscuit"), onCredit: true).Succeeded);
+        var corbalan = runner.CharacterFor("person.corbalan")!.Id;
+        var captain = runner.Campaign.CaptainId!.Value;
+        var before = (runner.Campaign.Relationships.TryGetValue((corbalan, captain), out var r1) ? r1.Trust : 0);
+
+        Assert.True(runner.RefuseClaim(corbalan).Succeeded);
+
+        Assert.True((runner.Campaign.Relationships.TryGetValue((corbalan, captain), out var r2) ? r2.Trust : 0) < before);
+        Assert.DoesNotContain(runner.OpenClaims(), c => c.Creditor == corbalan);
+    }
+
+    [Fact]
+    public void PayingOffTheAccountInPortSettlesIt()
+    {
+        var runner = Port();
+        Hire(runner, 4);
+        Assert.True(runner.Buy(Lot(runner, "item.wine"), onCredit: true).Succeeded);
+        var json = SaveSerializer.Serialize(runner.Campaign);
+        Assert.Equal(runner.Campaign.Port!.Owed, SaveSerializer.Deserialize(json, runner.Content).Port!.Owed);
+
+        Assert.True(runner.PayDebt("seller.corbalan").Succeeded);
+        Assert.Empty(runner.Campaign.Port.Owed);
+        Assert.False(runner.PayDebt("seller.corbalan").Succeeded);
     }
 }

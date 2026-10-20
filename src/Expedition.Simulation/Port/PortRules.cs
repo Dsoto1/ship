@@ -35,6 +35,9 @@ public sealed record PortRules
     /// <summary>What the chandler sells, and how fast it sells to others.</summary>
     public required IReadOnlyList<PortGoods> Goods { get; init; }
 
+    /// <summary>How prices move.</summary>
+    public PortPrices Prices { get; init; } = new();
+
     /// <summary>Who sells stores; the first is the chandler, whose lots name no seller.</summary>
     public IReadOnlyList<PortSeller> Sellers { get; init; } = [];
 
@@ -308,6 +311,35 @@ public sealed record PortSeller
 
     /// <summary>What they say of their goods: the claim, not the truth.</summary>
     public string Says { get; init; } = "";
+
+    /// <summary>Whether they give credit to a captain the port knows (Corbalán does; Hob does not).</summary>
+    public bool Credit { get; init; }
+
+    /// <summary>What they say at the gangway if the Garza sails owing them; {amount} is the debt.</summary>
+    public string AtGangway { get; init; } = "\"You owe me {amount} sueldos, Captain.\"";
+}
+
+/// <summary>
+/// How prices move in port (owner's request): they climb as the convoy's sailing nears and every ship
+/// buys at once, and as a seller's stock runs low; a captain the port knows pays less, and is trusted
+/// on credit with those who give it.
+/// </summary>
+public sealed record PortPrices
+{
+    /// <summary>Hours before the convoy's sailing over which prices climb.</summary>
+    public int RiseHours { get; init; } = 36;
+
+    /// <summary>How much more a lot costs at the convoy's sailing (0.35: a third more).</summary>
+    public double Rise { get; init; } = 0.35;
+
+    /// <summary>How much more the last lot costs than the first (0.4).</summary>
+    public double Scarcity { get; init; } = 0.4;
+
+    /// <summary>Discount at each standing, 0 to 3 (the port's knowledge of the expedition).</summary>
+    public IReadOnlyList<double> StandingDiscount { get; init; } = [0, 0, 0.05, 0.1];
+
+    /// <summary>Credit each seller who gives it will extend, at each standing.</summary>
+    public IReadOnlyList<int> CreditLimit { get; init; } = [0, 0, 600, 1500];
 }
 
 /// <summary>
