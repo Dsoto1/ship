@@ -271,18 +271,51 @@ public class PortTests
     public void TheChandlerSellsOut()
     {
         var runner = Port();
-        Assert.Equal(16, runner.Campaign.Port!.Stock[0]);
+        Assert.Equal(30, runner.Campaign.Port!.Stock[0]);
 
         Assert.True(runner.Buy(0).Succeeded);
         AdvanceTo(runner, 2, 0, 1);
 
-        Assert.Equal(16 - 1 - 3, runner.Campaign.Port.Stock[0]);
+        Assert.Equal(30 - 1 - 3, runner.Campaign.Port.Stock[0]);
         for (var i = 0; i < 5; i++)
         {
             Assert.True(runner.Buy(4).Succeeded || i >= 4);
         }
 
         Assert.False(runner.Buy(4).Succeeded);
+    }
+
+    [Fact]
+    public void AFullCrewCanBeVictualledForTheLongPassage()
+    {
+        // The chandler's stock, bought on the first morning, must be able to carry every berth filled
+        // through the slow end of the passage: the limit should be the purse and the days, not the shop.
+        var runner = Port();
+        var rules = runner.Content.Port!;
+        var aboard = rules.Berths + 1;
+        for (var lot = 0; lot < rules.Goods.Count; lot++)
+        {
+            if (runner.DaysOf(rules.Goods[lot].Item, 1, aboard) > 0)
+            {
+                while (runner.Buy(lot).Succeeded)
+                {
+                }
+            }
+        }
+
+        var (food, water) = runner.SupplyForecast(aboard);
+        Assert.True(Math.Min(food, water) > ExpeditionScenario.PassageDays.High, $"food {food:0}, water {water:0} days");
+    }
+
+    [Fact]
+    public void EachLotSaysHowManyDaysItAdds()
+    {
+        var runner = Port();
+        var before = runner.SupplyForecast(8).WaterDays;
+        var adds = runner.DaysOf("item.water", runner.Content.Port!.Goods[0].Quantity, 8);
+        Assert.True(runner.Buy(0).Succeeded);
+        Assert.Equal(before + adds, runner.SupplyForecast(8).WaterDays, 3);
+        Assert.Equal(0, runner.DaysOf("item.rope", 2, 8));
     }
 
     [Fact]

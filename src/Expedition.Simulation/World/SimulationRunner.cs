@@ -632,9 +632,10 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
     /// Roughly how many days the food and the drink in the shared store will last the living crew at
     /// their everyday rate (work makes them hungrier and thirstier, so this errs on the long side).
     /// </summary>
-    public (double FoodDays, double WaterDays) SupplyForecast()
+    /// <param name="feeding">How many to feed, if not the crew as it is (in port: a full crew).</param>
+    public (double FoodDays, double WaterDays) SupplyForecast(int? feeding = null)
     {
-        var mouths = Campaign.Crew.Count(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated);
+        var mouths = feeding ?? Campaign.Crew.Count(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated);
         if (mouths == 0)
         {
             return (0, 0);
@@ -646,6 +647,20 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         var hungerPerDay = Math.Max(Content.Rules.BaselineNeedsPerHour.Hunger * 24 * 1.15, 0.01) * mouths;
         var thirstPerDay = Math.Max(Content.Rules.BaselineNeedsPerHour.Thirst * 24 * 1.15, 0.01) * mouths;
         return (food / hungerPerDay, drink / thirstPerDay);
+    }
+
+    /// <summary>How many days <paramref name="quantity"/> of an item feeds or waters <paramref name="mouths"/> people (0 for neither).</summary>
+    public double DaysOf(string itemId, int quantity, int mouths)
+    {
+        if (mouths <= 0 || !Content.Items.TryGetValue(itemId, out var item))
+        {
+            return 0;
+        }
+
+        var rates = Content.Rules.BaselineNeedsPerHour;
+        return item.ThirstRelief > 0 ? quantity * item.ThirstRelief / (Math.Max(rates.Thirst * 24 * 1.15, 0.01) * mouths)
+            : item.HungerRelief > 0 ? quantity * item.HungerRelief / (Math.Max(rates.Hunger * 24 * 1.15, 0.01) * mouths)
+            : 0;
     }
 
     /// <summary>Puts a character on a location's grid, for example when a scenario starts. Ends any walk.</summary>

@@ -1177,3 +1177,18 @@ Screenshots: `docs/screenshots/c1-six-{roster,portraits}.jpg`, `c1-card-portrait
 1. `git pull`, open the editor once (to import), then Build.
 2. Run `res://Lineup.tscn` with `-- --roster`.
 3. In the game, talk to Bartolo or Velho: the brass rim appears and their portraits show in the card.
+
+## Stores that mean something (owner: "didn't have enough room for enough supplies")
+
+The hold was never the limit: a full purchase fills about a third of it. The chandler's stock was.
+Bought on the first morning it just covered a full crew; a day later, as other ships bought, it no
+longer could. Nothing on screen said how far the stores would go.
+
+- **Stock raised** (water 30 lots, biscuit 22, pork 14, wine 12). Others still buy 1–3 lots a day,
+  so waiting costs you; the purse is now the real limit.
+- **The chandler's panel** gives the verdict for a full crew: how many days the water and food last,
+  against the passage (22–30 days). It is red when short, amber when only enough for a fair passage,
+  green with a margin. Each lot shows the days it adds.
+- **The manifest** shows how full the hold is, in litres and kilograms.
+- **Tests:** a full crew can be victualled for the slow passage from first-morning stock, and each
+  lot's days add up to the forecast.

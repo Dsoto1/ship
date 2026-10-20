@@ -25,6 +25,7 @@ public partial class PortHud : CanvasLayer
     private PanelContainer _card = null!;
     private Label _cardTitle = null!;
     private TextureRect _cardPortrait = null!;
+    private Label _supplyLine = null!;
     private Label _cardSubtitle = null!;
     private Label _cardLook = null!;
     private Label _cardDoing = null!;
@@ -535,6 +536,9 @@ public partial class PortHud : CanvasLayer
         body.AddChild(section);
         body.MoveChild(section, 0);
         section.AddChild(Ui.Heading("Maese Corbalán, chandler — delivered to the gangway"));
+        // What the stores come to against the passage, so each purchase means something.
+        _supplyLine = Ui.Text("", Ui.TextBody, Ui.Ink, 370);
+        section.AddChild(_supplyLine);
         _lots = new VBoxContainer();
         _lots.AddThemeConstantOverride("separation", 2);
         section.AddChild(_lots);
@@ -554,6 +558,17 @@ public partial class PortHud : CanvasLayer
     {
         var rules = runner.Content.Port!;
         var port = runner.Campaign.Port!;
+        // Feed the crew the Garza will sail with: everyone signed on, or every berth if more are coming.
+        var aboard = runner.Campaign.Crew.Count();
+        var sailing = Math.Max(aboard, rules.Berths + 1);
+        var (food, water) = runner.SupplyForecast(sailing);
+        var (low, high) = Expedition.Simulation.Scenarios.ExpeditionScenario.PassageDays;
+        var least = Math.Min(food, water);
+        var severity = least >= high ? Severity.Positive : least >= low ? Severity.Attention : Severity.Critical;
+        _supplyLine.Text = $"{Ui.IconOf(severity)} For {sailing} aboard (every berth filled): water lasts {water:0} days, food {food:0}. "
+            + $"The passage to the Ember Coast takes {low}–{high} days. "
+            + (least >= high ? "Enough, with a margin for calms." : least >= low ? "Enough for a fair passage, not for a slow one." : "Not enough to reach the coast.");
+        _supplyLine.AddThemeColorOverride("font_color", Ui.Of(severity));
         var buttons = _lots.GetChildren().OfType<Button>().ToList();
         for (var lot = 0; lot < buttons.Count; lot++)
         {
@@ -566,7 +581,8 @@ public partial class PortHud : CanvasLayer
             var goods = rules.Goods[lot];
             var item = runner.Content.Items[goods.Item];
             var left = port.Stock.GetValueOrDefault(lot);
-            buttons[lot].Text = $"{goods.Quantity} {item.Name.ToLowerInvariant()} — {goods.Price} sueldos   ({left} left)";
+            var days = runner.DaysOf(goods.Item, goods.Quantity, sailing);
+            buttons[lot].Text = $"{goods.Quantity} {item.Name.ToLowerInvariant()} — {goods.Price} sueldos{(days > 0 ? $", +{days:0.#} days" : "")}   ({left} left)";
             buttons[lot].Disabled = left <= 0 || port.Funds < goods.Price;
             buttons[lot].TooltipText = left <= 0 ? "Sold out: others bought the last of it."
                 : port.Funds < goods.Price ? $"Only {port.Funds} sueldos left in the purse."

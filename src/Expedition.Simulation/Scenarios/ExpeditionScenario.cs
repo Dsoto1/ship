@@ -79,6 +79,12 @@ public static class ExpeditionScenario
         return runner;
     }
 
+    /// <summary>
+    /// How long the passage to the Ember Coast usually takes, in days: the shortest fair-weather runs and
+    /// the longer ones with calms and a storm or two, from simulated voyages. Shown when buying stores.
+    /// </summary>
+    public static (int Low, int High) PassageDays => (22, 30);
+
     /// <summary>Sails with the convoy once the crew is hired.</summary>
     public static Core.CommandResult SetSail(SimulationRunner runner) =>
         runner.SetSail(TestDeckScenario.ShipName, TestDeckScenario.Destination, TestDeckScenario.VoyageLeagues);

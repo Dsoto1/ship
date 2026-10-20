@@ -296,28 +296,28 @@
    "item": "item.water",
    "quantity": 20,
    "price": 60,
-   "stock": 16,
+   "stock": 30,
    "soldPerDay": 3
   },
   {
    "item": "item.biscuit",
    "quantity": 20,
    "price": 60,
-   "stock": 12,
+   "stock": 22,
    "soldPerDay": 2
   },
   {
    "item": "item.salt_pork",
    "quantity": 10,
    "price": 70,
-   "stock": 8,
+   "stock": 14,
    "soldPerDay": 2
   },
   {
    "item": "item.wine",
    "quantity": 10,
    "price": 50,
-   "stock": 8,
+   "stock": 12,
    "soldPerDay": 1
   },
   {

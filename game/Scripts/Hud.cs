@@ -1232,7 +1232,11 @@ public partial class Hud : CanvasLayer
             ("Tools", store.Where(p => tools.Contains(p.Key) && !materials.Contains(p.Key)), "needed for some work, not used up"),
             ("Other", store.Where(p => !tools.Contains(p.Key) && !materials.Contains(p.Key) && content.Items[p.Key].HungerRelief <= 0 && content.Items[p.Key].ThirstRelief <= 0), ""),
         };
-        _manifest.Text = "The Garza's hold\n" + string.Join("\n", groups.Where(g => g.Item2.Any())
+        var hold = runner.Campaign.SharedStore;
+        var room = hold.Capacity.MaxVolumeLitres is { } litres
+            ? $" — {hold.TotalVolumeLitres(content.Items):0} of {litres:0} litres, {hold.TotalWeightKg(content.Items):0} of {hold.Capacity.MaxWeightKg ?? 0:0} kg"
+            : "";
+        _manifest.Text = $"The Garza's hold{room}\n" + string.Join("\n", groups.Where(g => g.Item2.Any())
             .Select(g => $"\n{g.Item1}{(g.Item3.Length > 0 ? $" — {g.Item3}" : "")}\n" + string.Join("\n", g.Item2.OrderBy(p => content.Items[p.Key].Name).Select(Line))));
     }
 
