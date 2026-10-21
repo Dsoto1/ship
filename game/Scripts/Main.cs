@@ -75,6 +75,7 @@ public partial class Main : Node3D
     private PortHud _portHud = null!;
     private PortView _port = null!;
     private PortSound _portSound = null!;
+    private ShipSound _shipSound = null!;
     private Node3D _portFigures = null!;
     private PortCrowd _crowd = null!;
     private HarbourView _harbour = null!;
@@ -460,6 +461,16 @@ public partial class Main : Node3D
 
         var clock = _runner.Campaign.Clock;
         var hour = (float)((clock.Tick + (speed > 0 ? _tickFraction : 0)) % SimulationClock.TicksPerDay / SimulationClock.TicksPerHour);
+        // The ship's bell strikes the half hours at sea, while time goes slowly enough to hear it.
+        if (inPort)
+        {
+            _shipSound.Reset();
+        }
+        else
+        {
+            _shipSound.Clock(hour, speed switch { <= 0 => ShipSound.Bells.None, <= 1 => ShipSound.Bells.All, <= 10 => ShipSound.Bells.Watches, _ => ShipSound.Bells.None });
+        }
+
         var hull = inPort
             ? new Vector4(9999, 9999, 0.1f, 0.1f)
             : new Vector4(_deck.CentreX, (_deck.Length.Bow + _deck.Length.Stern) / 2f, _deck.HalfBeam, (_deck.Length.Stern - _deck.Length.Bow) / 2f);
@@ -1229,6 +1240,18 @@ public partial class Main : Node3D
         for (; _chronicleSeen < entries.Count; _chronicleSeen++)
         {
             var entry = entries[_chronicleSeen];
+            if (entry.Kind == ChronicleEntryKind.RiggingCarriedAway)
+            {
+                if (entry.Get(ChronicleParameters.To) == "yard")
+                {
+                    _shipSound.YardSprung();
+                }
+                else
+                {
+                    _shipSound.LineParted();
+                }
+            }
+
             (Severity Severity, AutoPause Category, string Title)? alert = entry.Kind switch
             {
                 ChronicleEntryKind.WeatherChanged when entry.Get(ChronicleParameters.To) is "weather.storm" => (Severity.Critical, AutoPause.Weather, "A storm breaks"),
@@ -1460,6 +1483,8 @@ public partial class Main : Node3D
         AddChild(_port);
         _portSound = new PortSound { Name = "PortSound" };
         AddChild(_portSound);
+        _shipSound = new ShipSound { Name = "ShipSound" };
+        AddChild(_shipSound);
         _portFigures = new Node3D { Name = "PortFigures" };
         AddChild(_portFigures);
         _crowd = new PortCrowd { Name = "PortCrowd" };

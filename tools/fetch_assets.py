@@ -156,10 +156,13 @@ def stack_arrays(manifest):
 # The props are not CC0 downloads: they were generated, so they are credited apart (tools/props).
 PROPS_NOTE = (
     "\n## Generated props\n\n"
-    "`Props/` (capstan, bell, gun) were made with Artlist's AI tools on the project's AI Suite plan: a\n"
-    "concept image (Nano Banana 2), then image-to-3D (Hyper3D Rodin v2.5 Fast), then reduced and\n"
-    "recoloured into the ship's palette by `tools/props/import_prop.py`. Their sources are listed in\n"
-    "`tools/props/props.json`; check Artlist's licence terms before shipping them.\n")
+    "`Props/` were made with Artlist's AI tools on the project's AI Suite plan, then reduced and recoloured\n"
+    "into the ship's palette by `tools/props/import_prop.py`. The capstan, bell and gun come from Artlist\n"
+    "concept images (Nano Banana 2). The galley, stall, table and bench come from reference sheets the\n"
+    "user supplied, whose source is not yet recorded, so they are prototype-only until it is cleared.\n"
+    "All were turned into models with Hyper3D Rodin v2.5 Fast. Sources are in `tools/props/props.json`;\n"
+    "check Artlist's licence terms before shipping them.\n"
+)
 
 
 def main():

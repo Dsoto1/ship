@@ -17,7 +17,7 @@ clothing made on them, textures divided into one shared sheet, clips reduced to 
 | Clay Roof Tiles 02 | Roof tiles | Amal Kumar | https://polyhaven.com/a/clay_roof_tiles_02 | CC0 | `Textures/clay_roof_tiles_02/` (2.5×2.5 m) |
 | Wood Floor Deck | The Garza's deck | Dimitrios Savva | https://polyhaven.com/a/wood_floor_deck | CC0 | `Textures/wood_floor_deck/` (1.8×1.8 m) |
 | Impact Sounds | Mallets, planks, the anvil, the chapel bell, cups set down | Kenney | https://kenney.nl/assets/impact-sounds | CC0 | `Audio/impact/` (30 files) |
-| RPG Audio | Coins at the stalls, the fishwife's knife, the adze, ship's timbers creaking | Kenney | https://kenney.nl/assets/rpg-audio | CC0 | `Audio/rpg/` (8 files) |
+| RPG Audio | Coins at the stalls, the fishwife's knife, the adze, ship's timbers creaking, a line parting aloft | Kenney | https://kenney.nl/assets/rpg-audio | CC0 | `Audio/rpg/` (12 files) |
 | Sea waves and rock splash, Málaga | Surf against the quay | soundandmelodies | https://freesound.org/s/784465/ | CC0 | `Audio/ambience/surf.ogg` |
 | Outdoors Walla | The crowd at the market | IENBA | https://freesound.org/s/834339/ | CC0 | `Audio/ambience/market.ogg` |
 | Small Town Bar 007 | Voices in the tavern | conleec | https://freesound.org/s/212094/ | CC0 | `Audio/ambience/tavern.ogg` |
@@ -38,7 +38,9 @@ clothing made on them, textures divided into one shared sheet, clips reduced to 
 
 ## Generated props
 
-`Props/` (capstan, bell, gun) were made with Artlist's AI tools on the project's AI Suite plan: a
-concept image (Nano Banana 2), then image-to-3D (Hyper3D Rodin v2.5 Fast), then reduced and
-recoloured into the ship's palette by `tools/props/import_prop.py`. Their sources are listed in
-`tools/props/props.json`; check Artlist's licence terms before shipping them.
+`Props/` were made with Artlist's AI tools on the project's AI Suite plan, then reduced and recoloured
+into the ship's palette by `tools/props/import_prop.py`. The capstan, bell and gun come from Artlist
+concept images (Nano Banana 2). The galley, stall, table and bench come from reference sheets the
+user supplied, whose source is not yet recorded, so they are prototype-only until it is cleared.
+All were turned into models with Hyper3D Rodin v2.5 Fast. Sources are in `tools/props/props.json`;
+check Artlist's licence terms before shipping them.

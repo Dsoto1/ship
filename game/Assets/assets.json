@@ -78,7 +78,7 @@
   "page": "https://kenney.nl/assets/rpg-audio",
   "folder": "Audio/rpg",
   "url": "https://kenney.nl/media/pages/assets/rpg-audio/8e99002d76-1677590336/kenney_rpg-audio.zip",
-  "use": "Coins at the stalls, the fishwife's knife, the adze, ship's timbers creaking",
+  "use": "Coins at the stalls, the fishwife's knife, the adze, ship's timbers creaking, a line parting aloft",
   "keep": [
    "handleCoins.ogg",
    "handleCoins2.ogg",
@@ -87,7 +87,11 @@
    "chop.ogg",
    "creak1.ogg",
    "creak2.ogg",
-   "creak3.ogg"
+   "creak3.ogg",
+   "clothBelt.ogg",
+   "clothBelt2.ogg",
+   "cloth1.ogg",
+   "cloth2.ogg"
   ]
  },
  {

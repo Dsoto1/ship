@@ -1811,3 +1811,22 @@ is cleared (`docs/ASSETS.md`). Screenshots: `docs/screenshots/port-stalls-furls.
 
   People sit at the right height on them, and the cups and candles stand on the new tops.
   Screenshot: `docs/screenshots/tavern-tables-benches.jpg`.
+
+### The Garza's sounds
+
+Freesound is still refused by this session's network proxy ("upstream denied") even after it was
+allowed; a new session may pick it up. Meanwhile the sounds use CC0 clips from the Kenney packs the
+game already credits: four more clips from RPG Audio (`clothBelt`, `cloth`), fetched by
+`tools/fetch_assets.py` as before.
+
+`ShipSound` (new; PortSound is switched off at sea):
+- **The ship's bell** (`impactBell_heavy`) strikes the watch: one bell at half past, up to eight at
+  the change of watch (four, eight and twelve o'clock), struck in pairs. Every half hour at 1x; only
+  the change of watch at 10x; silent faster than that.
+- **A line parting** (on the chronicle's RiggingCarriedAway, line): the crack of it going (`clothBelt`),
+  then its end flogging (`cloth`).
+- **The topsail yard springing** (RiggingCarriedAway, yard): the split of the timber
+  (`impactWood_heavy`, `impactPlank_medium`) and the creak of what is left working loose.
+
+**Not yet:** these are stand-ins from foley packs. Real recordings of a ship's bell and a parting
+line from Freesound would be better, once it can be reached.
