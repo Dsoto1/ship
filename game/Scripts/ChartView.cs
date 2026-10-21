@@ -269,7 +269,8 @@ public partial class ChartView : Control
         var bound = call is null ? null : islands.FirstOrDefault(i => i.Id == call.Island);
         if (bound is not null && call is not null)
         {
-            lines.Add(call.Anchored ? $"At anchor off {bound.Name}. Send the boat in: Water the ship ashore, Forage ashore."
+            lines.Add(call.Anchored ? $"At anchor off {bound.Name}. Send the boat in: Water the ship ashore, Forage ashore." +
+                                      (bound.Sells.Count > 0 ? $" Its people will sell to her: the purse holds {ship.Funds} sueldos." : "")
                 : call.Sighted ? $"{Capitalise(bound.Name)} in sight: running in to anchor."
                 : $"Making for {bound.Name}, about {navigation.Reckoned.DistanceTo(bound.Charted):0} leagues by the reckoning" +
                   (bound.Reported ? ". It is only reported: it may not be there." : "."));
@@ -288,7 +289,8 @@ public partial class ChartView : Control
 
         _islands.Text = string.Join("\n", lines);
         // Rebuild the buttons only when what they offer changes.
-        var state = call is null ? "passage" : $"{call.Island}:{call.Anchored}";
+        var state = call is null ? "passage"
+            : $"{call.Island}:{call.Anchored}:{ship.Funds}:{string.Join(",", bound?.Sells.Select(g => _runner.LotsLeft(g)) ?? [])}";
         if (state == _islandState)
         {
             return;
@@ -311,6 +313,24 @@ public partial class ChartView : Control
         }
         else
         {
+            if (call.Anchored && bound is not null)
+            {
+                foreach (var goods in bound.Sells)
+                {
+                    var item = goods.Item;
+                    var name = _runner.Content.Items.TryGetValue(item, out var definition) ? definition.Name.ToLowerInvariant() : item;
+                    var left = _runner.LotsLeft(goods);
+                    var buy = Ui.Button($"Buy {goods.Quantity} {name}: {goods.Price} sueldos ({left} left)", goods.Looks, () =>
+                    {
+                        _runner?.BuyFromIslanders(item);
+                        _islandState = "";
+                        Refresh();
+                    });
+                    buy.Disabled = left <= 0 || ship.Funds < goods.Price;
+                    _islandButtons.AddChild(buy);
+                }
+            }
+
             _islandButtons.AddChild(Ui.Button(call.Anchored ? "Weigh anchor: back to the passage" : "Give it up: back to the passage",
                 "Steer for the Ember Coast again", () => { _runner?.ResumePassage(); Refresh(); }));
         }

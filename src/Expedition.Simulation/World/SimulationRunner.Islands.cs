@@ -178,6 +178,46 @@ public sealed partial class SimulationRunner
         return MakeForIsland(islandId);
     }
 
+    /// <summary>How many lots of this the islanders where she lies still have, or 0.</summary>
+    public int LotsLeft(IslandGoods goods) =>
+        AnchoredAt is { } island && Campaign.Voyage is { } ship ? goods.Stock - ship.Bought.GetValueOrDefault($"{island.Id}|{goods.Item}") : 0;
+
+    /// <summary>
+    /// Buys a lot from the islanders where she lies at anchor, from the purse: rafted out to her and stowed.
+    /// Recorded in the chronicle.
+    /// </summary>
+    public CommandResult BuyFromIslanders(string itemId)
+    {
+        if (AnchoredAt is not { } island || Campaign.Voyage is not { } ship || island.Sells.FirstOrDefault(g => g.Item == itemId) is not { } goods)
+        {
+            return CommandResult.Rejected("There is no one here selling that.");
+        }
+
+        if (LotsLeft(goods) <= 0)
+        {
+            return CommandResult.Rejected("They have no more of that to sell.");
+        }
+
+        if (ship.Funds < goods.Price)
+        {
+            return CommandResult.Rejected($"That is {goods.Price} sueldos, and the purse holds {ship.Funds}.");
+        }
+
+        var stowed = Campaign.SharedStore.TryAdd(goods.Item, goods.Quantity, Content.Items);
+        if (!stowed.Succeeded)
+        {
+            return CommandResult.Rejected($"There is no room for it below: {stowed.Reason}");
+        }
+
+        ship.Funds -= goods.Price;
+        ship.Buy($"{island.Id}|{goods.Item}");
+        Campaign.Record(ChronicleEntryKind.IslandTrade, [
+            new(ChronicleParameters.To, goods.Item), new(ChronicleParameters.Level, goods.Quantity.ToString(CultureInfo.InvariantCulture)),
+            new(ChronicleParameters.Need, goods.Price.ToString(CultureInfo.InvariantCulture)), new(ChronicleParameters.From, island.Id),
+        ]);
+        return CommandResult.Ok();
+    }
+
     /// <summary>Back to the passage: from making for an island, or weighing anchor off one.</summary>
     public CommandResult ResumePassage()
     {

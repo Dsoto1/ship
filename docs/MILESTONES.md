@@ -2289,3 +2289,27 @@ Screenshot: `docs/screenshots/heavy-weather.jpg`.
 - steering damage;
 - sails torn, as their own part;
 - the pumps themselves failing.
+
+### The purse at sea, and buying at the Aguada
+
+The purse used to stay with the port when she sailed. It now goes aboard with the captain: the sueldos
+left in port when she sails, saved with the voyage.
+
+**Buying from the islanders.** At anchor off Isla de la Aguada its people will sell to her, rafted out
+and stowed if there is room:
+
+| Lot | Price | Lots this call |
+|---|---|---|
+| 40 litres of water | 90 sueldos | 4 |
+| 24 island fruit and greens | 60 sueldos | 3 |
+| 15 fresh fish | 40 sueldos | 2 |
+
+Island water costs a little more than in port (90 against 60 for 40 litres), but it is quicker than
+sending the boat in to the spring, which is still free.
+
+*Where to buy.* The chart's Islands section has a button per lot ("Buy 40 fresh water: 90 sueldos (4
+left)"), and the Ship panel shows the purse. Each purchase goes in the chronicle with what it was like.
+`Island.Sells` in data lists what an island sells.
+
+Saved in format 32: the purse, and the lots bought. Test: in `IslandTests`. Screenshot:
+`docs/screenshots/island-trade.jpg`.

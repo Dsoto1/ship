@@ -561,6 +561,12 @@ public sealed record VoyageData
     /// <summary>True while the watch below is turned out (format 30).</summary>
     public bool TurnedOut { get; init; }
 
+    /// <summary>The purse carried to sea, sueldos (format 32).</summary>
+    public int Funds { get; init; }
+
+    /// <summary>Lots bought from islanders, by "island|item" (format 32).</summary>
+    public IReadOnlyDictionary<string, int> Bought { get; init; } = new SortedDictionary<string, int>(StringComparer.Ordinal);
+
     /// <summary>The weather foreseen to follow this spell, or null (format 31).</summary>
     public string? NextWeather { get; init; }
 

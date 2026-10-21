@@ -43,6 +43,9 @@ public sealed record Island
     /// <summary>What it looks like when raised.</summary>
     public required string Looks { get; init; }
 
+    /// <summary>What its people will sell a ship at anchor, for coin: lots of so many, at so much, so many lots in all.</summary>
+    public IReadOnlyList<IslandGoods> Sells { get; init; } = [];
+
     /// <summary>Where the chart puts it.</summary>
     public ChartPoint Charted => new(X, Y);
 
@@ -54,6 +57,25 @@ public sealed record Island
             yield return $"Island '{Id}': chances and spring/forage 0..1, sighting positive; only a reported island may be missing or misplaced.";
         }
     }
+}
+
+/// <summary>A lot the islanders sell: so many of an item for so many sueldos, and how many such lots they have.</summary>
+public sealed record IslandGoods
+{
+    /// <summary>The item.</summary>
+    public required string Item { get; init; }
+
+    /// <summary>Units in a lot.</summary>
+    public required int Quantity { get; init; }
+
+    /// <summary>Sueldos for a lot.</summary>
+    public required int Price { get; init; }
+
+    /// <summary>Lots they have to sell this call.</summary>
+    public int Stock { get; init; } = 3;
+
+    /// <summary>What it is like, said when it is bought.</summary>
+    public string Looks { get; init; } = "";
 }
 
 /// <summary>Where a ship is with an island she has made for.</summary>

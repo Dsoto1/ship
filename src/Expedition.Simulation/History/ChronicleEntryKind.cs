@@ -117,6 +117,9 @@ public enum ChronicleEntryKind
     /// <summary>Stores wetted below open hatches (parameters: to = item, level = lost).</summary>
     StoresWetted,
 
+    /// <summary>Bought from islanders (parameters: to = item, level = quantity, need = price, from = island).</summary>
+    IslandTrade,
+
     /// <summary>The captain made for an island (parameter: to = island ID).</summary>
     MakingForIsland,
 

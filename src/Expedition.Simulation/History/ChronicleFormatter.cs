@@ -130,6 +130,9 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
             ChronicleEntryKind.LeakReopened => $"The plug {entry.Get(ChronicleParameters.To)} burst in the seas: the leak is open again.",
             ChronicleEntryKind.CargoShifted => $"Cargo not lashed broke loose in the hold and shifted: {entry.Get(ChronicleParameters.Level)} of {ItemWord(entry.Get(ChronicleParameters.To))} lost, the hull strained.",
             ChronicleEntryKind.StoresWetted => $"Water down the open hatches wetted the stores: {entry.Get(ChronicleParameters.Level)} of {ItemWord(entry.Get(ChronicleParameters.To))} spoiled.",
+            ChronicleEntryKind.IslandTrade =>
+                $"Bought from the people of {Island(entry.Get(ChronicleParameters.From))?.Name ?? "the island"}: {entry.Get(ChronicleParameters.Level)} {ItemWord(entry.Get(ChronicleParameters.To))}, for {entry.Get(ChronicleParameters.Need)} sueldos. " +
+                $"{Island(entry.Get(ChronicleParameters.From))?.Sells.FirstOrDefault(g => g.Item == entry.Get(ChronicleParameters.To))?.Looks}".TrimEnd(),
             ChronicleEntryKind.MakingForIsland => $"The captain left the passage and made for {IslandName(entry)}.",
             ChronicleEntryKind.IslandSighted => $"Land! {Capitalise(IslandName(entry))} raised from the masthead, some {entry.Get(ChronicleParameters.Level)} leagues off. " +
                                                 $"{Island(entry)?.Looks}",
@@ -153,7 +156,9 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
         ? "The sun went down red in a brassy haze, the swell heavier by the hour and the birds gone: something bad is coming."
         : "A long swell rising out of the south-west, and mares' tails high up: wind coming."; 
 
-    private Voyage.Island? Island(ChronicleEntry entry) => content.Voyage?.Route?.Islands.FirstOrDefault(i => i.Id == entry.Get(ChronicleParameters.To));
+    private Voyage.Island? Island(ChronicleEntry entry) => Island(entry.Get(ChronicleParameters.To));
+
+    private Voyage.Island? Island(string? id) => content.Voyage?.Route?.Islands.FirstOrDefault(i => i.Id == id);
 
     private string IslandName(ChronicleEntry entry) => Island(entry)?.Name ?? "the island";
 

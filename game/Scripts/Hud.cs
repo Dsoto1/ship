@@ -1618,7 +1618,8 @@ public partial class Hud : CanvasLayer
             $"{Capital(ship.ShipName)}, bound for {ship.Destination}\n" +
             $"  About {ship.ReckonedRemaining:0} leagues to go{(double.IsInfinity(daysLeft) || daysLeft > 99 ? ", becalmed" : $", {Range(daysLeft)} at this pace")}\n" +
             $"  Wind: {_formatter.WeatherName(ship.WeatherId)} · sail: {ship.SailPlan switch { Expedition.Simulation.Voyage.SailPlan.PressOn => "pressing on", Expedition.Simulation.Voyage.SailPlan.HoveTo => "hove to", _ => "normal" }}\n" +
-            $"  Watch: {(ship.WatchKept ? "kept" : "nobody on watch — she sails slowly and blind")}\n\n" +
+            $"  Watch: {(ship.WatchKept ? "kept" : "nobody on watch — she sails slowly and blind")}\n" +
+            $"  Purse: {ship.Funds} sueldos\n\n" +
             $"Hull — {Condition(ship.Hull)} ({ship.Hull:0}%)\n  Leaks worsen as the hull wears; heavy seas strike it.\n  Patches left: {hullRepairs} (oakum and plank)\n" +
             $"Bilge — {ship.Bilge:0}% water\n  The pumps must keep ahead of the leaks; above 80% she founders.\n" +
             $"Rigging — {Condition(ship.Rigging)} ({ship.Rigging:0}%)\n  Worn rigging slows her.\n{CarriedAway(ship)}  Repairs left: {riggingRepairs} (rope)\n";

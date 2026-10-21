@@ -119,6 +119,42 @@ public sealed class IslandTests
     }
 
     [Fact]
+    public void ThePurseGoesToSeaAndBuysFromTheIslandersAtTheAguada()
+    {
+        // Sailing from port, the purse goes aboard.
+        var sailing = ExpeditionScenario.Create(Shipped);
+        foreach (var seeker in sailing.Content.Port!.People.Where(p => p.Seeking is not null).Take(5))
+        {
+            sailing.DeveloperHire(sailing.CharacterFor(seeker.Id)!.Id);
+        }
+
+        var purse = sailing.Campaign.Port!.Funds;
+        Assert.True(ExpeditionScenario.SetSail(sailing).Succeeded);
+        Assert.Equal(purse, sailing.Campaign.Voyage!.Funds);
+
+        var aguada = Islands.Single(i => i.Id == "island.aguada");
+        var (runner, ship, _) = Near(new ChartPoint(aguada.X + 3, aguada.Y), new ChartPoint(0, 0));
+        ship.Funds = 200;
+        var water = aguada.Sells.Single(g => g.Item == "item.water");
+        Assert.False(runner.BuyFromIslanders("item.water").Succeeded);
+
+        runner.MakeForIsland("island.aguada");
+        AdvanceUntil(runner, () => runner.AnchoredAt is not null, hours: 24);
+        runner.Campaign.SharedStore.TryRemove("item.water", Math.Min(300, runner.Campaign.SharedStore.Count("item.water")));
+        var before = runner.Campaign.SharedStore.Count("item.water");
+        Assert.True(runner.BuyFromIslanders("item.water").Succeeded);
+        Assert.Equal(before + water.Quantity, runner.Campaign.SharedStore.Count("item.water"));
+        Assert.Equal(200 - water.Price, ship.Funds);
+        Assert.Single(Entries(runner, ChronicleEntryKind.IslandTrade));
+
+        // The purse runs out before their stock does.
+        Assert.True(runner.BuyFromIslanders("item.water").Succeeded);
+        var broke = runner.BuyFromIslanders("item.water");
+        Assert.False(broke.Succeeded);
+        Assert.Contains("purse", broke.Reason);
+    }
+
+    [Fact]
     public void ACallAtAnIslandSurvivesSaveAndContinuesIdentically()
     {
         var aguada = Islands.Single(i => i.Id == "island.aguada");

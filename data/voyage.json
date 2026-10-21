@@ -26,6 +26,11 @@
     "islands": [
       { "id": "island.aguada", "name": "Isla de la Aguada", "x": -142, "y": -154, "sightingLeagues": 10,
         "spring": 1, "forage": 0.35, "settled": true,
+        "sells": [
+          { "item": "item.water", "quantity": 40, "price": 90, "stock": 4, "looks": "Rafted out in their own casks from the stream, sweet." },
+          { "item": "item.fruit", "quantity": 24, "price": 60, "stock": 3, "looks": "Plantains, limes and a basket of greens, brought off in a canoe." },
+          { "item": "item.fish", "quantity": 15, "price": 40, "stock": 2, "looks": "The morning's catch, still wet." }
+        ],
         "looks": "A high green island with a cloud on its peak, a white beach under it and a few houses where a stream comes down." },
       { "id": "island.esquiva", "name": "Isla Esquiva", "x": -208, "y": -300, "reported": true, "existsChance": 0.55, "positionError": 12,
         "sightingLeagues": 7, "spring": 0.45, "forage": 1,

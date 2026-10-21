@@ -755,10 +755,13 @@ public sealed partial class SimulationRunner
         }
 
         Campaign.SetPort(null);
+        var funds = port.Funds;
         var sailed = StartVoyage(shipName, destination, leagues);
         if (sailed.Succeeded)
         {
             DrawUpWatchBill();
+            // The purse goes aboard with the captain.
+            Campaign.Voyage!.Funds = funds;
         }
 
         return sailed;

@@ -130,6 +130,25 @@ public sealed class VoyageState
     /// <summary>True while the officer of the watch has turned the watch below out: the pumps losing, or a storm.</summary>
     public bool TurnedOut { get; internal set; }
 
+    /// <summary>The expedition's purse, carried to sea: sueldos left when she sailed, less what was spent since.</summary>
+    public int Funds { get; internal set; }
+
+    private readonly Dictionary<string, int> _bought = new(StringComparer.Ordinal);
+
+    /// <summary>Lots bought at islands this voyage, by "island|item".</summary>
+    public IReadOnlyDictionary<string, int> Bought => _bought;
+
+    internal void Buy(string key) => _bought[key] = _bought.GetValueOrDefault(key) + 1;
+
+    internal void RestoreBought(IEnumerable<KeyValuePair<string, int>> bought)
+    {
+        _bought.Clear();
+        foreach (var (key, lots) in bought)
+        {
+            _bought[key] = lots;
+        }
+    }
+
     /// <summary>The weather that comes when this spell ends, once foreseen (some hours before), or null.</summary>
     public string? NextWeatherId { get; internal set; }
 

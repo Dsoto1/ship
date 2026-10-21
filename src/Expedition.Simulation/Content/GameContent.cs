@@ -133,6 +133,14 @@ public sealed class GameContent
             ContentValidator.ValidateLocation(location, Tasks, errors);
         }
 
+        foreach (var island in Voyage?.Route?.Islands ?? [])
+        {
+            if (island.Sells.Any(g => !Items.ContainsKey(g.Item) || g.Quantity <= 0 || g.Price < 0 || g.Stock < 0))
+            {
+                errors.Add($"Island '{island.Id}': each thing sold must be a known item, in a positive quantity, at a price and stock not negative.");
+            }
+        }
+
         foreach (var definition in Events.Values)
         {
             ValidateEvent(definition, port, errors);
