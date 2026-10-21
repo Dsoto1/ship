@@ -33,6 +33,8 @@ public partial class ShipSound : Node
     private readonly List<(double At, string Kind, float Volume)> _queue = [];
     private double _time;
     private int _lastHalfHour = -1;
+    private AudioStreamPlayer? _rain;
+    private float _rainLevel;
 
     public override void _Ready()
     {
@@ -53,6 +55,26 @@ public partial class ShipSound : Node
             var voice = new AudioStreamPlayer();
             AddChild(voice);
             _voices.Add(voice);
+        }
+
+        // Rain on the deck and the sea: the port's recording (Freesound, CC0), looped.
+        const string rain = "res://Assets/Audio/ambience/rain.ogg";
+        if (ResourceLoader.Exists(rain) && GD.Load<AudioStream>(rain) is AudioStreamOggVorbis recording)
+        {
+            recording.Loop = true;
+            _rain = new AudioStreamPlayer { Stream = recording, VolumeDb = -80 };
+            AddChild(_rain);
+            _rain.Play();
+        }
+    }
+
+    /// <summary>Rain at sea, 0 none .. 1 heavy: it hisses in and out over a few seconds.</summary>
+    public void Rain(float level, float delta)
+    {
+        _rainLevel = Mathf.MoveToward(_rainLevel, level, delta * 0.3f);
+        if (_rain is not null)
+        {
+            _rain.VolumeDb = _rainLevel <= 0.01f ? -80 : Mathf.LinearToDb(_rainLevel * 1.6f);
         }
     }
 

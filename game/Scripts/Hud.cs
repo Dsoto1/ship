@@ -862,6 +862,13 @@ public partial class Hud : CanvasLayer
                     $"Course {navigation.Heading:0}° by the compass, steered from your reckoning; the wind from the {SimulationRunner.CompassPoint(navigation.WindFrom)}. " +
                     (navigation.Beating ? "It is too near the course she wants, so she beats to windward, tack upon tack. " : "") +
                     "The chart (M) shows where you reckon she is."));
+                if (runner.Raining)
+                {
+                    var catching = runner.Campaign.ActiveTasks.Values.Count(t => t.DefinitionId == "task.catch_rain");
+                    chips.Add(("☂", catching > 0 ? $"Rain: {catching} catching it" : "Rain: catch it", catching > 0 ? Severity.Information : Severity.Attention,
+                        "It is raining. Set hands to Catch the rain (People, or a standing duty): the courses slacked off into the casks fill them while it lasts."));
+                }
+
                 if (navigation.Sighted)
                 {
                     chips.Add(("⚓", navigation.Pending ? "Land: what coast is this?" : navigation.CoastDirection == 0 ? "Land: standing off" : $"Coasting {(navigation.CoastDirection > 0 ? "north" : "south")}",

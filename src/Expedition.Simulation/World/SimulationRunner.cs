@@ -275,6 +275,11 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
                 $"{character.Name} lacks the skill: {task.Name} needs {SkillName(task.Skill)} {task.MinSkill}.");
         }
 
+        if (WeatherProblem(task) is { } weather)
+        {
+            return CommandResult.Rejected(weather);
+        }
+
         var missingTools = task.RequiredTools.Where(tool => Available(character, tool) == 0).ToList();
         if (missingTools.Count > 0)
         {
@@ -430,8 +435,59 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             }
         }
 
+        if (!WeatherAllows(task))
+        {
+            return false;
+        }
+
         var hour = Campaign.Clock.TimeOfDay.TotalHours;
         return when.StartBetween is not { } windows || windows.Any(w => hour >= w[0] && hour < w[1]);
+    }
+
+    /// <summary>
+    /// True while it rains at sea this hour. Each hour of a spell rains or not by the weather's
+    /// <see cref="WeatherDefinition.Rain"/>; worked out from the seed and the hour, so it uses no dice.
+    /// </summary>
+    public bool Raining
+    {
+        get
+        {
+            if (Campaign.Voyage is not { Outcome: VoyageOutcome.UnderWay } ship || Content.Voyage is not { } rules)
+            {
+                return false;
+            }
+
+            // SplitMix64 of the seed and the hour: well spread, and the same on every replay.
+            var z = Campaign.Seed + (ulong)(Campaign.Clock.Tick / SimulationClock.TicksPerHour + 1) * 0x9E3779B97F4A7C15UL;
+            z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9UL;
+            z = (z ^ (z >> 27)) * 0x94D049BB133111EBUL;
+            z ^= z >> 31;
+            return (z >> 11) * (1.0 / (1UL << 53)) < rules.Weather(ship.WeatherId).Rain;
+        }
+    }
+
+    /// <summary>Whether the weather allows a task now (<see cref="TaskDefinition.NeedsWeather"/>); always true for tasks that need none.</summary>
+    public bool WeatherAllows(TaskDefinition task) => WeatherProblem(task) is null;
+
+    // Why the weather does not allow a task, or null if it does.
+    private string? WeatherProblem(TaskDefinition task)
+    {
+        if (task.NeedsWeather is not { } need)
+        {
+            return null;
+        }
+
+        if (Campaign.Voyage is not { Outcome: VoyageOutcome.UnderWay } ship || Content.Voyage is not { } rules)
+        {
+            return $"{task.Name} is work for the open sea.";
+        }
+
+        if (need.Rain && !Raining)
+        {
+            return "There is no rain to catch.";
+        }
+
+        return need.SeaStateBelow is { } limit && rules.Weather(ship.WeatherId).SeaState >= limit ? $"The sea is running too high for that: {task.Name.ToLowerInvariant()}." : null;
     }
 
     /// <summary>
@@ -912,7 +968,20 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
     // Progress, ship effects, hazards and completion for someone at their work.
     private void Work(Character character, TaskInstance task, TaskDefinition definition, List<TaskOutcome> outcomes)
     {
+        // The rain has stopped, or the sea got up: the work stops with it.
+        if (!WeatherAllows(definition))
+        {
+            AddIfPresent(outcomes, Campaign.InterruptTask(character.Id, InterruptReasons.Weather));
+            return;
+        }
+
         var rate = WorkRate(character, definition);
+        if (definition.Yield is { } yield && !Bring(definition, yield, rate))
+        {
+            AddIfPresent(outcomes, Campaign.InterruptTask(character.Id, InterruptReasons.StoresFull));
+            return;
+        }
+
         task.Progress += rate * SimulationClock.MinutesPerTick;
         if (definition.ShipPerHour is { } effects && Campaign.Voyage is { Outcome: VoyageOutcome.UnderWay } voyage)
         {
@@ -970,6 +1039,32 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
                 Start(character, new TaskInstance(Campaign.Ids.NextTaskId(), character.Id, next, task.Priority) { Origin = task.Origin });
             }
         }
+    }
+
+    // What the work brings in this minute, by chance: the yield at this pace, less as the sea gets up for
+    // lines and nets, more over the bank. False if it will not fit in the stores.
+    private bool Bring(TaskDefinition definition, TaskYield yield, double rate)
+    {
+        var factor = 1.0;
+        if (Campaign.Voyage is { } ship && Content.Voyage is { } rules)
+        {
+            if (yield.BestInCalm)
+            {
+                factor *= Math.Max(0, 1 - rules.Weather(ship.WeatherId).SeaState / 2);
+            }
+
+            if (ship.Navigation is { } navigation && rules.Route?.Coast is { } coast && navigation.Offshore <= coast.ShelfLeagues)
+            {
+                factor *= yield.OnTheBank;
+            }
+        }
+
+        if (!Campaign.Randomness.Tasks.Chance(yield.PerHour * rate * factor * HoursPerTick))
+        {
+            return true;
+        }
+
+        return Campaign.SharedStore.TryAdd(yield.Item, 1, Content.Items).Succeeded;
     }
 
     /// <summary>

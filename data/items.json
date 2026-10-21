@@ -6,7 +6,7 @@
 // they are: 'spoilsPerDay' is the share lost each day at sea, 'sickens' what a ration may give.
 [
   { "id": "item.biscuit", "name": "Ship's biscuit (ration)", "category": "food", "weightKg": 0.25, "volumeLitres": 0.4, "hungerRelief": 10, "packedIn": "sack", "perPackage": 25 },
-  { "id": "item.fish", "name": "Fresh fish (ration)", "category": "food", "weightKg": 0.3, "volumeLitres": 0.3, "hungerRelief": 12, "packedIn": "basket", "perPackage": 10 },
+  { "id": "item.fish", "name": "Fresh fish (ration)", "category": "food", "weightKg": 0.3, "volumeLitres": 0.3, "hungerRelief": 12, "packedIn": "basket", "perPackage": 10, "spoilsPerDay": 0.3 },
   { "id": "item.salt_pork", "name": "Salt pork (ration)", "category": "food", "weightKg": 0.25, "volumeLitres": 0.3, "hungerRelief": 14, "packedIn": "barrel", "perPackage": 10 },
   { "id": "item.water", "name": "Fresh water (litre)", "category": "water", "weightKg": 1.0, "volumeLitres": 1.0, "thirstRelief": 12, "packedIn": "cask", "perPackage": 40 },
   { "id": "item.water_gil", "name": "Water (Gil's casks, litre)", "category": "water", "weightKg": 1.0, "volumeLitres": 1.0, "thirstRelief": 12, "packedIn": "cask", "perPackage": 40 },

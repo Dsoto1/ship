@@ -111,7 +111,8 @@ public partial class SeaAndSky : Node3D
     /// <param name="yaw">The ship's swing about the vertical, radians (Godot's sense), for the wake and the flow.</param>
     /// <param name="gloom">0 clear, 1 storm-dark: overcast, grey water, rain, close haze (ART_BIBLE.md 9 "Storm").</param>
     /// <param name="fog">0 clear, 1 thick fog in port: pale haze closing in, the far water gone.</param>
-    public void UpdateWorld(float hourOfDay, float seaState, float shipSpeed, float delta, Vector3 focus, Vector4 hull, float gloom = 0f, float fog = 0f, float yaw = 0f)
+    /// <param name="raining">Whether it rains: null leaves it to the gloom (heavy weather rains).</param>
+    public void UpdateWorld(float hourOfDay, float seaState, float shipSpeed, float delta, Vector3 focus, Vector4 hull, float gloom = 0f, float fog = 0f, float yaw = 0f, bool? raining = null)
     {
         // Sun height: 0 at about 05:30 and 19:30 (a summer sailing season in the south), 1 at half past noon.
         var elevation = Mathf.Sin((hourOfDay - 5.5f) / 14f * Mathf.Pi);
@@ -141,7 +142,7 @@ public partial class SeaAndSky : Node3D
         _environment.FogDensity = light.FogDensity + gloom * 0.005f + fog * fog * 0.0085f;
         _environment.FogHeight = WaterLevel + 1.2f;
         _environment.FogHeightDensity = fog * 0.6f;
-        _rain.Emitting = gloom > 0.55f;
+        _rain.Emitting = raining ?? gloom > 0.55f;
         _rain.Position = focus + new Vector3(0, 14, 0);
 
         var greyWater = Mathf.Lerp(0.3f, 1f, day);

@@ -112,6 +112,16 @@ public sealed class GameContent
                 errors.Add($"Task '{task.Id}': dutyWhen.startBetween windows must be [from, to) hours with 0 <= from < to <= 24.");
             }
 
+            if (task.Yield is { } yield && (!Items.ContainsKey(yield.Item) || yield.PerHour <= 0 || yield.PerHour > 60 || yield.OnTheBank <= 0))
+            {
+                errors.Add($"Task '{task.Id}': yield must name a known item, with 0 < perHour <= 60 and onTheBank positive.");
+            }
+
+            if (task.NeedsWeather?.SeaStateBelow is <= 0)
+            {
+                errors.Add($"Task '{task.Id}': needsWeather.seaStateBelow must be positive.");
+            }
+
             if (task.Hazard is { } hazard && !Conditions.ContainsKey(hazard.Condition))
             {
                 errors.Add($"Task '{task.Id}': hazard causes unknown condition '{hazard.Condition}'.");
@@ -138,7 +148,8 @@ public sealed class GameContent
             throw new ContentValidationException(errors);
         }
 
-        Foods = Items.Values.Where(i => i.HungerRelief > 0).OrderBy(i => i.Id, StringComparer.Ordinal).ToList();
+        // What spoils soonest is eaten first: fresh fish before biscuit, the chandler's cheap biscuit before good.
+        Foods = Items.Values.Where(i => i.HungerRelief > 0).OrderByDescending(i => i.SpoilsPerDay).ThenBy(i => i.Id, StringComparer.Ordinal).ToList();
         Drinks = Items.Values.Where(i => i.ThirstRelief > 0).OrderBy(i => i.Id, StringComparer.Ordinal).ToList();
     }
 
@@ -486,7 +497,7 @@ public sealed class GameContent
     /// <summary>Location definitions by ID.</summary>
     public IReadOnlyDictionary<string, LocationDefinition> Locations { get; }
 
-    /// <summary>Items that relieve hunger, in ID order. Characters eat the first one available.</summary>
+    /// <summary>Items that relieve hunger, what spoils soonest first, then in ID order. Characters eat the first one available.</summary>
     public IReadOnlyList<ItemDefinition> Foods { get; }
 
     /// <summary>Items that relieve thirst, in ID order. Characters drink the first one available.</summary>

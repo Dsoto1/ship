@@ -119,6 +119,19 @@ public sealed partial class SimulationRunner
         return (CommandResult.Ok(), sight);
     }
 
+    /// <summary>Developer tool for testing and screenshots: this weather at sea, held for a day.</summary>
+    public CommandResult DeveloperSetSeaWeather(string id)
+    {
+        if (Campaign.Voyage is not { Outcome: VoyageOutcome.UnderWay } ship || Content.Voyage?.Weathers.FirstOrDefault(w => w.Id == id) is null)
+        {
+            return CommandResult.Rejected("No voyage, or no such weather.");
+        }
+
+        ship.WeatherId = id;
+        ship.WeatherUntilTick = Campaign.Clock.Tick + SimulationClock.TicksPerDay;
+        return CommandResult.Ok();
+    }
+
     /// <summary>Developer tool for screenshots: the wind from <paramref name="from"/> degrees until the weather next changes.</summary>
     public CommandResult DeveloperSetWind(double from)
     {

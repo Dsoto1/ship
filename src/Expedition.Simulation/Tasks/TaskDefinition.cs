@@ -85,6 +85,44 @@ public sealed record TaskDefinition
 
     /// <summary>When this task is worth taking up as a standing duty; null means always.</summary>
     public DutyCondition? DutyWhen { get; init; }
+
+    /// <summary>The weather the work needs at sea (rain to catch, a sea quiet enough to fish), or null for any.</summary>
+    public WeatherNeed? NeedsWeather { get; init; }
+
+    /// <summary>What the work brings into the ship's stores as it goes (water caught, fish), or null.</summary>
+    public TaskYield? Yield { get; init; }
+}
+
+/// <summary>
+/// The weather a task needs. It can only be started, and only goes on, at sea and while this holds: the
+/// rain stops, and the hands stop catching it.
+/// </summary>
+public sealed record WeatherNeed
+{
+    /// <summary>Only while it is raining.</summary>
+    public bool Rain { get; init; }
+
+    /// <summary>Only with the sea state below this (0 calm .. 3 storm).</summary>
+    public double? SeaStateBelow { get; init; }
+}
+
+/// <summary>
+/// What a task brings in: on average <see cref="PerHour"/> units an hour at normal pace, more for a
+/// skilled hand. Chance decides each unit, minute by minute.
+/// </summary>
+public sealed record TaskYield
+{
+    /// <summary>The item brought in, for example <c>item.water</c>.</summary>
+    public required string Item { get; init; }
+
+    /// <summary>Units an hour at normal pace.</summary>
+    public required double PerHour { get; init; }
+
+    /// <summary>True if the yield falls off as the sea gets up: lines and nets do best in a calm.</summary>
+    public bool BestInCalm { get; init; }
+
+    /// <summary>Multiplies the yield over the bank off a coast, where the fish are.</summary>
+    public double OnTheBank { get; init; } = 1;
 }
 
 /// <summary>

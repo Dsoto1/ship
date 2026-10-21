@@ -68,5 +68,26 @@
     "dutyWhen": { "startBetween": [[10, 11], [17, 18]] },
     "skill": "skill.cooking",
     "needsPerHour": { "fatigue": 2.0 }
+  },
+  {
+    "id": "task.catch_rain",
+    "name": "Catch the rain",
+    "durationMinutes": 120,
+    // The courses slacked off and their feet led into the casks, the awnings spread over the scuttles:
+    // a squall gives a cask in an hour or two. Only while it rains, and only with casks to fill.
+    "needsWeather": { "rain": true },
+    "yield": { "item": "item.water", "perHour": 14 },
+    "needsPerHour": { "fatigue": 2.5 }
+  },
+  {
+    "id": "task.fish",
+    "name": "Fish over the side",
+    "durationMinutes": 180,
+    // Lines over the side: fresh food, more for a fisherman, more over the bank, nothing in a gale.
+    // An easy hour at it eases the mind.
+    "skill": "skill.fishing",
+    "needsWeather": { "seaStateBelow": 1.6 },
+    "yield": { "item": "item.fish", "perHour": 2.2, "bestInCalm": true, "onTheBank": 2.5 },
+    "needsPerHour": { "fatigue": 1.0, "stress": -0.5 }
   }
 ]

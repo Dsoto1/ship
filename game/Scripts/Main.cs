@@ -473,7 +473,8 @@ public partial class Main : Node3D
         _portWet = Mathf.MoveToward(_portWet, raining, (float)delta * (raining > _portWet ? 0.25f : 0.03f));
         _portFog = Mathf.MoveToward(_portFog, (float)(portWeather?.Fog ?? 0), (float)delta * 0.08f);
         _portWind = Mathf.MoveToward(_portWind, (float)(portWeather?.Wind ?? 0), (float)delta * 0.2f);
-        _gloom = Mathf.Lerp(_gloom, _runner.Campaign.Port is not null ? (float)(portWeather?.Gloom ?? 0) : (float)(weather?.Gloom ?? 0), step);
+        // A shower greys the sky a little, even in fair weather.
+        _gloom = Mathf.Lerp(_gloom, _runner.Campaign.Port is not null ? (float)(portWeather?.Gloom ?? 0) : Mathf.Max((float)(weather?.Gloom ?? 0), _runner.Raining ? 0.35f : 0f), step);
         var targetSink = voyage is null ? 0f : voyage.Outcome == Expedition.Simulation.Voyage.VoyageOutcome.Foundered ? 3.2f : (float)voyage.Bilge / 100f * 0.8f;
         _sink = Mathf.Lerp(_sink, targetSink, Mathf.Clamp((float)delta * 0.4f, 0, 1));
         if (_gloom > 0.75f && speed > 0 && _flicker.NextDouble() < delta * 0.12)
@@ -587,7 +588,8 @@ public partial class Main : Node3D
             }
         }
         var making = voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } ? 0.3f + (float)voyage.SpeedLeaguesPerHour * 1.3f : 0f;
-        _world.UpdateWorld(hour, _seaState, making, (float)delta, _camera.Target, hull, _gloom, inPort ? _portFog : 0f, inPort ? 0f : Mathf.DegToRad(_ship.RotationDegrees.Y));
+        _world.UpdateWorld(hour, _seaState, making, (float)delta, _camera.Target, hull, _gloom, inPort ? _portFog : 0f, inPort ? 0f : Mathf.DegToRad(_ship.RotationDegrees.Y), inPort ? null : _runner.Raining);
+        _shipSound.Rain(!inPort && _runner.Raining ? Mathf.Clamp(0.4f + _seaState * 0.25f, 0, 1) : 0f, (float)delta);
         _coastView.Show(inPort ? null : voyage?.Navigation, _runner.Coast, _content.Voyage?.Route?.Bearing ?? 0, _shipCentre, _camera.Size, _world.Darkness, _gloom, (float)delta);
         var cooking = _runner.Campaign.ActiveTasks.Values.Any(task => task.DefinitionId == "task.cook");
         // Sails turn see-through at working zoom so they never hide the crew (ART_BIBLE.md 3); zoom out to see them whole.
@@ -697,7 +699,8 @@ public partial class Main : Node3D
         "task.sell_fish" => Pose.Gutting,
         "task.trade_goods" or "task.dun_debtor" or "task.serve_drinks" or "task.play" or "task.meet_in_secret" or "task.buy_at_market" or "task.gossip" => Pose.Talking,
         "task.inspect_ship" => Pose.Inspecting,
-        "task.watch_water" => Pose.Watching,
+        "task.watch_water" or "task.fish" => Pose.Watching,
+        "task.catch_rain" => Pose.Roping,
         "task.stand_guard" or "task.read_notices" or "task.shelter" => Pose.Leaning,
         "task.steady_plank" => Pose.Steadying,
         "task.catch_breath" => Pose.Sitting,
@@ -1607,6 +1610,7 @@ public partial class Main : Node3D
     private int _seaDays;
     private double? _forceWind;
     private (double Offshore, double North)? _offCoast;
+    private string? _seaWeather;
     private string? _openView;
     private string? _forceCarryAway;
     private string? _developerSelect;
@@ -1832,6 +1836,7 @@ public partial class Main : Node3D
                 case "event": _forceEvent = value; break;
                 case "seadays" when int.TryParse(value, out var seaDays): _seaDays = seaDays; break;
                 case "wind" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var wind): _forceWind = wind; break;
+                case "seaweather": _seaWeather = value; break;
                 case "offcoast" when value.Split(',') is [var off, var along]
                                      && double.TryParse(off, System.Globalization.CultureInfo.InvariantCulture, out var offshore)
                                      && double.TryParse(along, System.Globalization.CultureInfo.InvariantCulture, out var north):
@@ -1918,6 +1923,16 @@ public partial class Main : Node3D
         if (_offCoast is { } coastAt && _runner.DeveloperPlaceOffCoast(coastAt.Offshore, coastAt.North).Succeeded)
         {
             _runner.Advance(30);
+        }
+
+        // --seaweather=weather.fresh: that weather at sea for a day; and on until a shower comes, if it rains in it.
+        if (_seaWeather is { } seaWeather && _runner.DeveloperSetSeaWeather(seaWeather).Succeeded
+            && _content.Voyage?.Weathers.First(w => w.Id == seaWeather).Rain > 0)
+        {
+            for (var hour = 0; hour < 20 && !_runner.Raining; hour++)
+            {
+                _runner.Advance(60);
+            }
         }
 
         // --wind=DEG: the wind from that quarter, until the weather changes.

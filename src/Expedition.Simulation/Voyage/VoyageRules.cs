@@ -139,6 +139,9 @@ public sealed record WeatherDefinition
     /// <summary>How much darker and greyer the sky is, 0..1. Drives the visuals.</summary>
     public double Gloom { get; init; }
 
+    /// <summary>The part of the hours in this weather that bring rain, 0..1: squalls in a fresh breeze, steady rain in a gale.</summary>
+    public double Rain { get; init; }
+
     /// <summary>Multiplies the leak rate: a working hull lets in more water in a seaway.</summary>
     public required double LeakMultiplier { get; init; }
 

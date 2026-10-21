@@ -210,6 +210,8 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
         InterruptReasons.Exhausted => "exhausted",
         InterruptReasons.Cancelled => "ordered to stop",
         InterruptReasons.Moved => "ordered elsewhere",
+        InterruptReasons.Weather => "the weather changed",
+        InterruptReasons.StoresFull => "no room left in the stores",
         InterruptReasons.Incapacitated => $"{Words(entry.Get(ChronicleParameters.To))} ({cause})",
         var other => Words(other),
     };

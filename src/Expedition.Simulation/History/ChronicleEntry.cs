@@ -103,6 +103,12 @@ public static class InterruptReasons
     /// <summary>The player ordered the character to walk somewhere else.</summary>
     public const string Moved = "moved";
 
+    /// <summary>The weather the work needs has gone: the rain stopped, or the sea got up.</summary>
+    public const string Weather = "weather";
+
+    /// <summary>There is no room in the stores for what the work brings in.</summary>
+    public const string StoresFull = "storesFull";
+
     /// <summary>The character became unable to work (state in <c>to</c>, cause in <c>cause</c>).</summary>
     public const string Incapacitated = "incapacitated";
 }
