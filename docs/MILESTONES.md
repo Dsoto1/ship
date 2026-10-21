@@ -1779,3 +1779,27 @@ Screenshots: `docs/screenshots/garza-fittings.jpg`, `props-pilot.jpg`.
 - the bell isn't rung, and the lines and yard make no sound when they go, because `freesound.org`
   is refused by this environment's network and the plan doesn't cover Artlist's catalogue sounds;
 - the props have no wear or wet look of their own (they use the scenery material).
+
+### Weakest first: furled sails, the galley, the market stalls
+
+I judged what to replace by what the player sees most and what looks worst: the quay on arrival and
+the Garza's deck at sea.
+- **Furled sails** (code, no credits). At her berth they had been smooth white capsules, the same
+  thickness from end to end, the first thing in the opening view. Now each is gathered canvas on top
+  of its yard: fat in the bunt, thinning to the yardarms, lumpy between the gaskets, sagging a little
+  at the middle, and shaded duller than set canvas.
+- **Galley firebox** (Artlist, 300 credits). It replaces the glowing orange box. It is a fitting on
+  cell (6,5), backed against the forecastle break, with its open front to the cook, whose spot moves
+  to (6,6). The fire's light is kept. The importer gained `gain` and `saturate` settings for models
+  whose texture comes back dim (this one's brick lining had gone brown).
+- **Market stalls** (Artlist, 300 credits). The model gives the frame: braced trestles, posts,
+  counter, and a scalloped awning. It is stretched to each stall's width, and its canvas is recoloured
+  to that stall's dye (`PortView.StallFrame`, one mesh per dye). The goods by trade and the rain cover
+  are unchanged.
+
+Both models came from reference sheets the user supplied; they are prototype-only until their source
+is cleared (`docs/ASSETS.md`). Screenshots: `docs/screenshots/port-stalls-furls.jpg`,
+`garza-galley.jpg`.
+
+**Next, by the same measure:** the tavern's table and benches (briefs 2 and 3), then the quay's
+outdoor benches, which would reuse the same bench.

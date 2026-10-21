@@ -1,21 +1,53 @@
 {
   "_doc": "Props made with Artlist (AI Suite plan): concept image (Nano Banana 2), then image-to-3D (Hyper3D Rodin v2.5 Fast). The generated GLBs go in .cache/props/<name>.glb; tools/props/import_prop.py makes game/Assets/Props/<name>.glb. Credits are logged in docs/ASSETS.md.",
-  "extraPalette": ["#7a6233", "#5a4a2a", "#4a3b2a", "#2a2622"],
+  "extraPalette": [
+    "#7a6233",
+    "#5a4a2a",
+    "#4a3b2a",
+    "#2a2622"
+  ],
   "props": {
     "capstan": {
       "use": "The Garza's capstan, in the waist aft of the mainmast",
       "source": "Artlist generation 01a15e98-6f84-71a4-bf49-0abf2c75c010 (from concept 01a15e94-5439-7099-ad8e-547f4a821cdc), 2026-10-21",
-      "triangles": 900, "height": 1.1, "tones": 5, "pull": 0.3
+      "triangles": 900,
+      "height": 1.1,
+      "tones": 5,
+      "pull": 0.3
     },
     "bell": {
       "use": "The ship's bell in its belfry, at the forecastle break",
       "source": "Artlist generation 01a15e98-7276-7d25-b729-089d873f81d6 (from concept 01a15e94-5427-7bda-a7f2-884c5ca9b9b3), 2026-10-21",
-      "triangles": 700, "height": 1.5, "tones": 5, "pull": 0.3
+      "triangles": 700,
+      "height": 1.5,
+      "tones": 5,
+      "pull": 0.3
     },
     "gun": {
       "use": "A gun on its sea carriage, behind each gun port",
       "source": "Artlist generation 01a15e98-7543-70da-a730-4e5fe67d7f18 (from concept 01a15e94-5425-7d3e-a18f-66a7821d97ec), 2026-10-21",
-      "triangles": 900, "height": 0.85, "tones": 5, "pull": 0.3
+      "triangles": 900,
+      "height": 0.85,
+      "tones": 5,
+      "pull": 0.3
+    },
+    "stall": {
+      "use": "Market stalls on the quay and in the market",
+      "source": "Artlist generation 01a15ebb-9c31-79a7-948e-d29027658909, from a 3/4 view cropped from a reference sheet the user supplied (source and licence not recorded: prototype-only until cleared), 2026-10-21",
+      "triangles": 1100,
+      "height": 2.3,
+      "tones": 5,
+      "pull": 0.25
+    },
+    "galley": {
+      "use": "The Garza's galley firebox, where the cook works",
+      "source": "Artlist generation 01a15ebb-9f59-7200-9b07-2df41e9d6980, from the front view cropped from a reference sheet the user supplied (source and licence not recorded: prototype-only until cleared), 2026-10-21",
+      "triangles": 1100,
+      "height": 0.8,
+      "tones": 7,
+      "pull": 0.0,
+      "gain": 1.7,
+      "saturate": 1.35
     }
   }
 }

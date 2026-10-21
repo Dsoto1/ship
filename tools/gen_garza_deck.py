@@ -16,7 +16,7 @@ ROWS = [
     "#.......#",  # 2
     "#.......#",  # 3
     "#o......#",  # 4  forecastle break, the galley below its rail; the bell to port
-    "#.......#",  # 5  ladder down to the waist
+    "#.....o.#",  # 5  ladder down to the waist; the galley firebox against the break
     "#...#...#",  # 6  foremast
     "#o.....o#",  # 7  a gun either side
     "#.......#",  # 8
@@ -52,7 +52,7 @@ def spot(id, x, y, tasks, kind=None, face=None):
 
 
 spot("spot.watch_bow", 4, 1, ["task.stand_watch"], "WatchWater", "N")
-spot("spot.galley", 6, 5, ["task.cook"], "WorkBench", "N")
+spot("spot.galley", 6, 6, ["task.cook"], "WorkBench", "N")
 spot("spot.rigging_fore", 2, 6, ["task.repair_rigging"], "RopeWork", "W")
 spot("spot.hull_patch", 2, 10, ["task.patch_hull"], "HammerStation", "E")
 spot("spot.pump", 2, 13, ["task.pump_bilge"], "HelpPoint", "E")
@@ -69,6 +69,7 @@ ground = [
 ]
 # What stands on the 'o' cells (drawn by ShipView from game/Assets/Props, made by tools/props).
 features = [{"kind": "fitting", "style": "bell", "x0": 1, "y0": 4, "x1": 1, "y1": 4},
+            {"kind": "fitting", "style": "galley", "x0": 6, "y0": 5, "x1": 6, "y1": 5},
             {"kind": "fitting", "style": "capstan", "x0": 4, "y0": 15, "x1": 4, "y1": 15}]
 features += [{"kind": "fitting", "style": "gun", "x0": x, "y0": y, "x1": x, "y1": y} for y in (7, 11, 15) for x in (1, 7)]
 assert all(ROWS[f["y0"]][f["x0"]] == "o" for f in features) and sum(r.count("o") for r in ROWS) == len(features)

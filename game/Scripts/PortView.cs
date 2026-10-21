@@ -1301,20 +1301,34 @@ public partial class PortView : Node3D
             "fish" => new Color(0.66f, 0.68f, 0.66f),
             _ => dyed[Math.Abs(seed) % dyed.Length],
         };
-        Trestle(at, width, 0.9f);
         RainCover(at, width);
-        foreach (var (x, z, h) in new[] { (-width / 2f, -0.5f, 2.3f), (width / 2f, -0.5f, 2.3f), (-width / 2f, 0.7f, 1.9f), (width / 2f, 0.7f, 1.9f) })
+        if (StallFrame(canvas) is { } frame)
         {
-            AddBox(at + new Vector3(x, h / 2f, z), new Vector3(0.07f, h, 0.07f), Timber);
+            // The stall itself (posts, braced trestles, counter, scalloped awning): the Artlist prop
+            // (tools/props), stretched to the stall's width, its canvas dyed this stall's colour.
+            AddChild(new MeshInstance3D
+            {
+                Mesh = frame,
+                MaterialOverride = SceneryMaterial.Shared,
+                Position = at,
+                Scale = new Vector3(width / 3.13f, 1, 1),
+            });
         }
+        else
+        {
+            Trestle(at, width, 0.9f);
+            foreach (var (x, z, h) in new[] { (-width / 2f, -0.5f, 2.3f), (width / 2f, -0.5f, 2.3f), (-width / 2f, 0.7f, 1.9f), (width / 2f, 0.7f, 1.9f) })
+            {
+                AddBox(at + new Vector3(x, h / 2f, z), new Vector3(0.07f, h, 0.07f), Timber);
+            }
 
-        // The awning in two slopes meeting low in the middle: canvas that sags between its poles.
-        var back = at + new Vector3(0, 2.3f, -0.5f);
-        var mid = at + new Vector3(0, 2.0f, 0.12f);
-        var fore = at + new Vector3(0, 1.9f, 0.75f);
-        Awning(back, mid, width, canvas);
-        Awning(mid, fore, width, canvas.Darkened(0.06f));
-        AddBox(at + new Vector3(width * 0.2f, 2.09f, -0.12f), new Vector3(0.4f, 0.015f, 0.32f), canvas.Darkened(0.18f), rotation: new Vector3(-22, 0, 0));
+            // The awning in two slopes meeting low in the middle: canvas that sags between its poles.
+            var back = at + new Vector3(0, 2.3f, -0.5f);
+            var mid = at + new Vector3(0, 2.0f, 0.12f);
+            var fore = at + new Vector3(0, 1.9f, 0.75f);
+            Awning(back, mid, width, canvas);
+            Awning(mid, fore, width, canvas.Darkened(0.06f));
+        }
 
         switch (style)
         {
@@ -1367,6 +1381,46 @@ public partial class PortView : Node3D
                 AddCylinder(at + new Vector3(width / 2f + 0.3f, 0.2f, 0.4f), 0.2f, 0.4f, Wood);
                 break;
         }
+    }
+
+    private static readonly Dictionary<Color, ArrayMesh> StallFrames = [];
+
+    // The stall prop with its canvas (its palest tones) recoloured to <paramref name="canvas"/>, shading kept;
+    // one mesh per dye, shared by every stall of that colour. Null if the prop has not been made.
+    private static ArrayMesh? StallFrame(Color canvas)
+    {
+        if (StallFrames.TryGetValue(canvas, out var cached))
+        {
+            return cached;
+        }
+
+        const string path = "res://Assets/Props/stall.glb";
+        if (!ResourceLoader.Exists(path))
+        {
+            return null;
+        }
+
+        var scene = GD.Load<PackedScene>(path).Instantiate<Node3D>();
+        var source = scene.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>().First().Mesh;
+        var arrays = source.SurfaceGetArrays(0);
+        scene.Free();
+        var colours = arrays[(int)Mesh.ArrayType.Color].AsColorArray();
+        var palest = colours.Max(c => c.Luminance);
+        for (var i = 0; i < colours.Length; i++)
+        {
+            // The awning is the only pale part of the prop; wood and rope are well below it.
+            if (colours[i].Luminance > palest * 0.7f)
+            {
+                colours[i] = canvas * (0.75f + 0.25f * colours[i].Luminance / palest);
+                colours[i].A = 1;
+            }
+        }
+
+        arrays[(int)Mesh.ArrayType.Color] = colours;
+        var mesh = new ArrayMesh();
+        mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
+        StallFrames[canvas] = mesh;
+        return mesh;
     }
 
     private void Awning(Vector3 from, Vector3 to, float width, Color colour)

@@ -136,6 +136,12 @@ public partial class ShipView : Node3D
                 case "bell" when side != 0:
                     x = CentreX + side * (inner - 0.3f);
                     break;
+                case "galley":
+                    // Backed against the forecastle break, its open front (+z) to the cook; the fire lights the deck.
+                    z -= 0.12f;
+                    _galleyFire = new OmniLight3D { Position = new Vector3(x, HeightAt(x, z) + 0.9f, z + 0.3f), LightColor = new Color(1f, 0.6f, 0.3f), OmniRange = 3.5f };
+                    AddChild(_galleyFire);
+                    break;
             }
 
             prop.Position = new Vector3(x, HeightAt(Mathf.Round(x), z), z);
@@ -947,27 +953,67 @@ public partial class ShipView : Node3D
 
         AddSailMesh(tool, anchor);
 
-        // Furled: the canvas gathered in a fat roll along the top of the yard, lashed with gaskets.
-        var furl = new Node3D { Position = top + new Vector3(0, -0.06f, -0.12f), Visible = false };
+        // Furled: the canvas gathered on top of the yard, fat in the bunt at the middle and thinning to
+        // the yardarms, lumpy where it bulges between the gaskets that lash it, a little forward of the
+        // yard and sagging at the bunt. Duller than set canvas: the folds are in shadow.
+        var furl = new Node3D { Position = top + new Vector3(0, 0.02f, -0.06f), Visible = false };
         AddChild(furl);
         _furls.Add(furl);
-        var canvas = new StandardMaterial3D { AlbedoColor = new Color(0.78f, 0.72f, 0.6f), Roughness = 0.95f };
-        var radius = 0.13f + 0.04f * (1 - tier) + height * 0.012f;
-        furl.AddChild(new MeshInstance3D
+        var length = width * 0.92f;
+        var bunt = 0.1f + 0.03f * (1 - tier) + height * 0.008f;
+        var gaskets = 6;
+        float Radius(float u) =>
+            bunt * (0.32f + 0.68f * (1 - Mathf.Pow(Mathf.Abs(u), 1.6f)))
+            * (1 + 0.14f * Mathf.Abs(Mathf.Sin(u * Mathf.Pi * gaskets / 2f)));
+        var roll = new SurfaceTool();
+        roll.Begin(Mesh.PrimitiveType.Triangles);
+        const int along = 36;
+        const int around = 10;
+        var ring = new Vector3[along + 1, around];
+        var shade = new Color[along + 1, around];
+        for (var i = 0; i <= along; i++)
         {
-            Mesh = new CapsuleMesh { Radius = radius, Height = width * 0.92f, RadialSegments = 10, Rings = 2 },
-            MaterialOverride = canvas,
-            RotationDegrees = new Vector3(0, 0, 90),
-        });
+            var u = i / (float)along * 2 - 1;
+            var r = Radius(u);
+            var sag = -bunt * 0.35f * (1 - u * u);
+            for (var k = 0; k < around; k++)
+            {
+                var a = k * Mathf.Tau / around;
+                // Flattened a little, and resting on the yard rather than wrapped round it.
+                ring[i, k] = new Vector3(u * length / 2f, r * 0.62f + sag + Mathf.Sin(a) * r * 0.8f, Mathf.Cos(a) * r);
+                var fold = 0.9f + 0.1f * Mathf.Sin(u * 23f + k * 1.7f);
+                var under = 0.78f + 0.22f * (0.5f + 0.5f * Mathf.Sin(a));
+                shade[i, k] = new Color(0.74f, 0.69f, 0.58f) * (fold * under);
+            }
+        }
+
+        for (var i = 0; i < along; i++)
+        {
+            for (var k = 0; k < around; k++)
+            {
+                var k2 = (k + 1) % around;
+                foreach (var (ii, kk) in new[] { (i, k), (i + 1, k2), (i + 1, k), (i, k), (i, k2), (i + 1, k2) })
+                {
+                    roll.SetColor(shade[ii, kk]);
+                    roll.AddVertex(ring[ii, kk]);
+                }
+            }
+        }
+
+        roll.GenerateNormals();
+        furl.AddChild(new MeshInstance3D { Mesh = roll.Commit(), MaterialOverride = VertexColoured(0.95f) });
         var gasket = new StandardMaterial3D { AlbedoColor = Rope, Roughness = 0.9f };
-        for (var x = -width * 0.38f; x <= width * 0.39f; x += width * 0.19f)
+        for (var g = 1; g < gaskets; g++)
         {
+            var u = g / (float)gaskets * 2 - 1;
+            var r = Radius(u) * 0.9f;
             furl.AddChild(new MeshInstance3D
             {
-                Mesh = new TorusMesh { InnerRadius = radius * 0.98f, OuterRadius = radius * 1.12f, Rings = 10, RingSegments = 4 },
+                Mesh = new TorusMesh { InnerRadius = r * 0.94f, OuterRadius = r * 1.06f, Rings = 10, RingSegments = 4 },
                 MaterialOverride = gasket,
-                Position = new Vector3(x, 0, 0),
+                Position = new Vector3(u * length / 2f, r * 0.62f / 0.9f - bunt * 0.35f * (1 - u * u), 0),
                 RotationDegrees = new Vector3(0, 0, 90),
+                Scale = new Vector3(1, 1, 0.8f),
             });
         }
     }
@@ -1070,7 +1116,7 @@ public partial class ShipView : Node3D
                 AddSpar(at + new Vector3(0.35f, 0, 0), at + new Vector3(0.35f, 1.0f, 0), 0.09f, Spar);
                 AddSpar(at + new Vector3(0.35f, 0.95f, 0), at + new Vector3(-0.15f, 1.15f, 0), 0.03f, Iron);
             }
-            else if (spot.Tasks.Contains("task.cook"))
+            else if (spot.Tasks.Contains("task.cook") && !location.Features.Any(f => f is { Kind: "fitting", Style: "galley" }))
             {
                 // Galley fire box: a sand-filled box with a hood.
                 AddBox(at + new Vector3(0.45f, 0.35f, 0), new Vector3(0.6f, 0.7f, 0.8f), new Color(0.45f, 0.3f, 0.22f));

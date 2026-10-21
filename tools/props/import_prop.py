@@ -124,6 +124,9 @@ def build(name, spec):
     tri = positions[faces]
     area = np.linalg.norm(np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0]), axis=1) / 2
     face_colour = colours[faces].mean(1)
+    # Some generators bake a dim texture: lift it towards the reference photo (gain), and its colour (saturate).
+    grey = face_colour.mean(1, keepdims=True)
+    face_colour = np.clip((grey + (face_colour - grey) * spec.get("saturate", 1.0)) * spec.get("gain", 1.0), 0, 1)
     label, flat = tones(face_colour, area + 1e-9, spec.get("tones", 5), spec.get("pull", 0.35))
     mesh = Mesh()
     for (a, b, cc), k in zip(tri, label):
