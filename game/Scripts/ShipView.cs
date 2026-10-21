@@ -47,6 +47,11 @@ public partial class ShipView : Node3D
     private int _holes;
     private int _patches;
     private int _worstHoles;
+    private readonly List<(float Below, Node3D Whole, Node3D Parted, List<Node3D> Ends)> _lines = [];
+    private Node3D? _topYard;
+    private Node3D? _topYardBroken;
+    private Node3D? _topsail;
+    private bool _sprung;
     private float _sternZ;
 
     /// <summary>The hull's centre line (world X) and its length from stem to stern.</summary>
@@ -73,6 +78,9 @@ public partial class ShipView : Node3D
         _lanterns.Clear();
         _galleyFire = null;
         _wear = 0;
+        _lines.Clear();
+        _topYard = _topYardBroken = _topsail = null;
+        _sprung = false;
         _holes = _patches = _worstHoles = 0;
         _damage = new Node3D { Name = "Damage" };
         AddChild(_damage);
@@ -127,9 +135,20 @@ public partial class ShipView : Node3D
             furl.Visible = furled;
         }
 
+        // The ends of parted lines swing as she rolls.
+        foreach (var (_, _, _, ends) in _lines)
+        {
+            for (var i = 0; i < ends.Count; i++)
+            {
+                var phase = i * 1.7f + ends[i].Position.Z;
+                ends[i].Rotation = new Vector3(Mathf.Sin(time * 1.3f + phase) * 0.18f, 0, Mathf.Cos(time * 1.05f + phase) * 0.14f) * Mathf.Clamp(seaState, 0.4f, 2f);
+            }
+        }
+
         foreach (var (sail, tier) in _squareSails)
         {
-            sail.Visible = !furled;
+            // A sprung yard carries no sail: the topsail went with it.
+            sail.Visible = !furled && !(_sprung && sail == _topsail);
             var set = furled ? 0.05f : tier == 1 ? Mathf.Clamp(1.9f - seaState * 0.75f, 0.08f, 1f) : Mathf.Clamp(2.3f - seaState * 0.65f, 0.4f, 1f);
             var scale = Mathf.Lerp(sail.Scale.Y, set, Mathf.Clamp(delta * 1.5f, 0, 1));
             sail.Scale = new Vector3(1, delta == 0 ? set : scale, furled ? 0.12f : Mathf.Lerp(0.3f, 1f, Mathf.Clamp(seaState, 0.2f, 1f)));
@@ -171,6 +190,20 @@ public partial class ShipView : Node3D
             {
                 sail.SetShaderParameter("wear", wear);
             }
+        }
+
+        // Lines part one by one as the rigging goes, and at the last the main topsail yard is sprung.
+        foreach (var (below, whole, parted, _) in _lines)
+        {
+            whole.Visible = rigging >= below;
+            parted.Visible = rigging < below;
+        }
+
+        _sprung = rigging < SprungBelow;
+        if (_topYard is not null && _topYardBroken is not null)
+        {
+            _topYard.Visible = !_sprung;
+            _topYardBroken.Visible = _sprung;
         }
 
         var holes = (int)Math.Clamp(Math.Round((100 - hull) / 10), 0, Wounds.Length);
@@ -233,6 +266,106 @@ public partial class ShipView : Node3D
                 Transform = new Transform3D(new Basis(new Quaternion(Vector3.Up, direction.Normalized())), (foot + tip) / 2f),
             });
         }
+    }
+
+    // The rigging's condition below which each breakable line parts, in the order they are rigged.
+    private static readonly float[] PartsBelow = [44, 22, 36, 12, 30, 18, 40, 26, 15, 33];
+
+    /// <summary>Below this the main topsail yard is sprung (ShowCondition).</summary>
+    public const float SprungBelow = 14;
+
+    // A line that can part: drawn whole, and parted, with both ends hanging from where they are made
+    // fast, slack, swinging.
+    private void AddLine(Vector3 from, Vector3 to)
+    {
+        var below = PartsBelow[_lines.Count % PartsBelow.Length];
+        var whole = new Node3D();
+        AddChild(whole);
+        whole.AddChild(RopePiece(from, to));
+        var parted = new Node3D { Visible = false };
+        AddChild(parted);
+        var ends = new List<Node3D>();
+        var length = (to - from).Length();
+        var at = 0.35f + 0.3f * (_lines.Count * 0.618f % 1f);
+        foreach (var (end, share) in new[] { (from, at), (to, 1 - at) })
+        {
+            // Each end hangs straight down, as far as its share of the line, but not through the deck.
+            var drop = Mathf.Clamp(Mathf.Min(length * share, end.Y - HeightAt(Mathf.Clamp(end.X, 0, _location.Width - 1), Mathf.Clamp(end.Z, 0, _location.Height - 1)) - 0.3f), 0.25f, 6f);
+            var pivot = new Node3D { Position = end };
+            parted.AddChild(pivot);
+            pivot.AddChild(RopePiece(Vector3.Zero, new Vector3(0.05f, -drop, 0.08f)));
+            // The frayed end: a little tuft of loose yarn.
+            pivot.AddChild(new MeshInstance3D
+            {
+                Mesh = new CylinderMesh { TopRadius = 0.025f, BottomRadius = 0.06f, Height = 0.14f, RadialSegments = 5, Rings = 1 },
+                MaterialOverride = Plain(new Color(0.62f, 0.52f, 0.36f)),
+                Position = new Vector3(0.05f, -drop - 0.05f, 0.08f),
+            });
+            ends.Add(pivot);
+        }
+
+        _lines.Add((below, whole, parted, ends));
+    }
+
+    private MeshInstance3D RopePiece(Vector3 from, Vector3 to)
+    {
+        var direction = to - from;
+        return new MeshInstance3D
+        {
+            Mesh = new CylinderMesh { TopRadius = 0.018f, BottomRadius = 0.018f, Height = direction.Length(), RadialSegments = 4, Rings = 1 },
+            MaterialOverride = Plain(Rope),
+            Transform = new Transform3D(new Basis(new Quaternion(Vector3.Up, direction.Normalized())), (from + to) / 2f),
+        };
+    }
+
+    // The main topsail yard, whole and sprung. Sprung, it has snapped in the slings: each half still
+    // hangs from its lift at the yardarm, the broken ends dropped towards the top, splintered.
+    private void AddTopsailYard(Vector3 centre, float half)
+    {
+        _topYard = new Node3D();
+        AddChild(_topYard);
+        foreach (var side in new[] { -1f, 1f })
+        {
+            _topYard.AddChild(SparPiece(centre, centre + new Vector3(side * half, 0, 0), 0.07f, 0.035f));
+        }
+
+        _topYard.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(0.28f, 0.16f, 0.14f) }, MaterialOverride = Plain(Iron), Position = centre + new Vector3(0, 0, 0.12f) });
+        _topYardBroken = new Node3D { Visible = false };
+        AddChild(_topYardBroken);
+        foreach (var (side, drop) in new[] { (-1f, 1.9f), (1f, 2.6f) })
+        {
+            var arm = centre + new Vector3(side * half, 0, 0);
+            var broken = centre + new Vector3(side * 0.25f, -drop, side * 0.2f);
+            _topYardBroken.AddChild(SparPiece(arm, broken, 0.035f, 0.065f));
+            var along = (broken - arm).Normalized();
+            for (var k = 0; k < 4; k++)
+            {
+                var spread = new Vector3(Mathf.Cos(k * 1.7f), 0, Mathf.Sin(k * 1.7f)) * 0.05f;
+                _topYardBroken.AddChild(SparPiece(broken - along * 0.05f + spread, broken + along * (0.12f + k * 0.04f) + spread * 1.6f, 0.02f, 0.004f, new Color(0.7f, 0.58f, 0.4f)));
+            }
+
+            // The torn head of the topsail, still bent to the half-yard.
+            var rag = new MeshInstance3D
+            {
+                Mesh = new QuadMesh { Size = new Vector2((broken - arm).Length() * 0.7f, 0.5f) },
+                MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.8f, 0.74f, 0.62f), CullMode = BaseMaterial3D.CullModeEnum.Disabled, Roughness = 0.95f },
+            };
+            var mid = (arm + broken) / 2f + new Vector3(0, -0.28f, 0.08f);
+            rag.Transform = new Transform3D(new Basis(new Vector3(0, 0, 1), Mathf.Atan2(broken.Y - arm.Y, broken.X - arm.X)), mid);
+            _topYardBroken.AddChild(rag);
+        }
+    }
+
+    private MeshInstance3D SparPiece(Vector3 from, Vector3 to, float r0, float r1, Color? colour = null)
+    {
+        var direction = to - from;
+        // CylinderMesh's top is +Y: point it from 'from' to 'to'.
+        return new MeshInstance3D
+        {
+            Mesh = new CylinderMesh { TopRadius = r1, BottomRadius = r0, Height = direction.Length(), RadialSegments = 8, Rings = 1 },
+            MaterialOverride = Plain(colour ?? Spar),
+            Transform = new Transform3D(new Basis(new Quaternion(Vector3.Up, direction.Normalized())), (from + to) / 2f),
+        };
     }
 
     private void WoundBox(Vector3 position, Vector3 size, Color colour) =>
@@ -439,7 +572,12 @@ public partial class ShipView : Node3D
 
         // Close the stern below the transom.
         // Hull and bulwarks in the shared scenery material: palette colours with photographed timber.
-        AddMesh(Finish(hull), SceneryMaterial.Shared);
+        // (With the Garza's model there is no generated outer hull.)
+        if (!_modelled)
+        {
+            AddMesh(Finish(hull), SceneryMaterial.Shared);
+        }
+
         AddMesh(Finish(walls), SceneryMaterial.Shared);
         _deckMaterial = new ShaderMaterial { Shader = GD.Load<Shader>("res://Shaders/deck.gdshader") };
         _deckMaterial.SetShaderParameter("planks", GD.Load<Texture2D>("res://Assets/Textures/wood_floor_deck/wood_floor_deck_diff_1k.jpg"));
@@ -647,13 +785,13 @@ public partial class ShipView : Node3D
         // Forestay from the foremast head to the bowsprit, and a stay between the masts.
         if (masts.Count > 0)
         {
-            AddRope(masts[0] + new Vector3(0, 9f, 0), new Vector3(CentreX, 2.5f, Length.Bow - 4.2f));
+            AddLine(masts[0] + new Vector3(0, 9f, 0), new Vector3(CentreX, 2.5f, Length.Bow - 4.2f));
         }
 
         if (masts.Count > 1)
         {
-            AddRope(masts[1] + new Vector3(0, 11.5f, 0), masts[0] + new Vector3(0, 7.5f, 0));
-            AddRope(masts[1] + new Vector3(0, 10f, 0), mizzenFoot + new Vector3(0, 5.5f, 0));
+            AddLine(masts[1] + new Vector3(0, 11.5f, 0), masts[0] + new Vector3(0, 7.5f, 0));
+            AddLine(masts[1] + new Vector3(0, 10f, 0), mizzenFoot + new Vector3(0, 5.5f, 0));
         }
     }
 
@@ -682,12 +820,9 @@ public partial class ShipView : Node3D
         if (main)
         {
             var topYard = height * 0.9f;
-            if (!_modelled)
-            {
-                AddSpar(foot + new Vector3(-yardHalf * 0.55f, topYard, 0), foot + new Vector3(yardHalf * 0.55f, topYard, 0), 0.05f, Spar);
-            }
-
+            AddTopsailYard(foot + new Vector3(0, topYard, 0), yardHalf * 0.55f);
             AddSquareSail(foot + new Vector3(0, topYard, 0.1f), yardHalf * 1.05f, topYard - courseYard - 0.6f, belly: 0.6f, tier: 1);
+            _topsail = _squareSails[^1].Sail;
             AddPennant(foot + new Vector3(0, height + 0.05f, 0));
         }
 
@@ -700,7 +835,15 @@ public partial class ShipView : Node3D
             for (var k = 0; k < 3; k++)
             {
                 points[k] = new Vector3(CentreX + side * (beam + 0.12f), BulwarkTop(foot.Z) - 0.12f, foot.Z - 0.1f + k * 0.5f);
-                AddRope(head, points[k]);
+                // The middle shroud of each three can part (the ratlines are seized to the outer two).
+                if (k == 1)
+                {
+                    AddLine(head, points[k]);
+                }
+                else
+                {
+                    AddRope(head, points[k]);
+                }
             }
 
             // The channel: a plank standing out from the hull where the shrouds' deadeyes are set up.

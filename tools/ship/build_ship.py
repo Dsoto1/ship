@@ -411,8 +411,7 @@ def masts(deck, mesh):
         mesh.box(tuple(foot + [0, height + 0.18, 0]), (0.16, 0.1, 0.16), spar_c)
         # The yards: the course and, on the main, the topsail; tapered to the arms, slung at the middle.
         yards = [(height * (0.66 if main else 0.8), beam * (1.45 if main else 1.2), 0.1)]
-        if main:
-            yards.append((height * 0.9, beam * 1.45 * 0.55, 0.07))
+        # (The main topsail yard is ShipView's: it can be sprung in a blow, and the game breaks it.)
         for yh, half, yr in yards:
             centre = foot + [0, yh, 0]
             spar(mesh, centre, centre + [-half, 0, 0], yr, yr * 0.45, spar_c)

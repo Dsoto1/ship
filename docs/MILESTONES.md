@@ -1717,14 +1717,21 @@ and the repairs and pumping the crew do.
 - **Hull:** one stove-in, splintered wound on her sides for every tenth of the hull lost. When the
   carpenter makes a wound good, it becomes two pale new planks nailed over the hole, and those stay
   for the rest of the session.
+- **Lines part.** Seven lines can part: the middle shroud of each three, the forestay and the stays
+  between the masts. Each has its own threshold of rigging condition, from 44% down to 12%. A parted
+  line hangs in two slack ends, frayed at the tip, swinging with the sea.
+- **The yard springs.** Below 14% rigging (`ShipView.SprungBelow`) the main topsail yard snaps in the
+  slings. Each half hangs from its yardarm with splintered inner ends and rags of the topsail, and the
+  topsail itself is gone. ShipView draws this yard, not the model, so that it can break.
+- Repairs that bring the rigging back above a threshold restore that line or the yard.
 - **Bilge:** as before, she rides lower; she now also lists as the water rises.
 
 Developer flags: `--sea` sails at once with no departure; `--hull=N` and `--rigging=N` force her
 condition. For example: `--hire=6 --sea --zoom=18 --hull=40 --rigging=20 --bilge=20`.
 
-Screenshots: `docs/screenshots/garza-at-sea.jpg`, `garza-damaged.jpg`.
+Screenshots: `docs/screenshots/garza-at-sea.jpg`, `garza-damaged.jpg`, `garza-sprung.jpg` (rigging at 10%).
 
 **Not yet:**
-- no parted lines or sprung spars;
+- only the main topsail yard can break; the lines part at fixed thresholds, not from a storm;
 - patches made in an earlier session are not remembered after a load;
 - wounds are on the hull sides only, not on the deck or the bulwarks.
