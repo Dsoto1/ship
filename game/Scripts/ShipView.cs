@@ -18,6 +18,9 @@ public partial class ShipView : Node3D
 
     private static readonly Color HullWood = new(0.26f, 0.18f, 0.12f);
     private static readonly Color Wale = new(0.17f, 0.12f, 0.08f);
+    // The painted strake under the rail: ochre, as the Garza's builders finished her.
+    private static readonly Color Band = new(0.66f, 0.46f, 0.18f);
+    private static readonly Color Red = new(0.5f, 0.16f, 0.11f);
     private static readonly Color Bottom = new(0.72f, 0.68f, 0.58f);
     private static readonly Color RailCap = new(0.42f, 0.31f, 0.2f);
     private static readonly Color Spar = new(0.36f, 0.26f, 0.17f);
@@ -27,6 +30,7 @@ public partial class ShipView : Node3D
     private readonly List<ShaderMaterial> _sails = [];
     private readonly List<(Node3D Sail, int Tier)> _squareSails = [];
     private readonly List<(Node3D Set, Node3D Stowed)> _lateens = [];
+    private readonly List<Node3D> _furls = [];
     private readonly List<(OmniLight3D Light, StandardMaterial3D Glass)> _lanterns = [];
     private ShaderMaterial _deckMaterial = null!;
     private OmniLight3D? _galleyFire;
@@ -53,6 +57,7 @@ public partial class ShipView : Node3D
         _sails.Clear();
         _squareSails.Clear();
         _lateens.Clear();
+        _furls.Clear();
         _lanterns.Clear();
         _galleyFire = null;
         MeasureHull(location);
@@ -88,8 +93,14 @@ public partial class ShipView : Node3D
             stowed.Visible = furled;
         }
 
+        foreach (var furl in _furls)
+        {
+            furl.Visible = furled;
+        }
+
         foreach (var (sail, tier) in _squareSails)
         {
+            sail.Visible = !furled;
             var set = furled ? 0.05f : tier == 1 ? Mathf.Clamp(1.9f - seaState * 0.75f, 0.08f, 1f) : Mathf.Clamp(2.3f - seaState * 0.65f, 0.4f, 1f);
             var scale = Mathf.Lerp(sail.Scale.Y, set, Mathf.Clamp(delta * 1.5f, 0, 1));
             sail.Scale = new Vector3(1, delta == 0 ? set : scale, furled ? 0.12f : Mathf.Lerp(0.3f, 1f, Mathf.Clamp(seaState, 0.2f, 1f)));
@@ -173,7 +184,7 @@ public partial class ShipView : Node3D
         // Cross-section from the gunwale (deck level) down to the keel, as fractions of half beam and depth.
         (float X, float Y, Color Colour)[] profile =
         [
-            (1.00f, 0.00f, HullWood), (1.03f, -0.18f, Wale), (1.03f, -0.32f, Wale), (1.02f, -0.5f, HullWood),
+            (1.00f, 0.00f, Band), (1.015f, -0.1f, Red), (1.03f, -0.18f, Wale), (1.03f, -0.32f, Wale), (1.02f, -0.5f, HullWood),
             (0.97f, -0.95f, HullWood), (0.93f, -1.08f, Bottom), (0.84f, -1.45f, Bottom), (0.62f, -1.88f, Bottom),
             (0.32f, -2.2f, Bottom), (0.0f, -KeelDepth, Bottom),
         ];
@@ -233,6 +244,21 @@ public partial class ShipView : Node3D
         deck.GenerateNormals();
         deck.GenerateTangents();
         AddMesh(deck.Commit(), _deckMaterial);
+
+        // A small raised deck in the bows ahead of the forward hatch, with its rail: the forecastle.
+        var foreBack = -0.5f;
+        var foreFront = Length.Bow + 0.5f;
+        var foreWidth = HalfWidthAt((foreBack + foreFront) / 2f) * 2f;
+        AddBox(new Vector3(CentreX, 0.65f, (foreBack + foreFront) / 2f), new Vector3(foreWidth, 1.3f, foreBack - foreFront), HullWood);
+        AddBox(new Vector3(CentreX, 1.32f, (foreBack + foreFront) / 2f), new Vector3(foreWidth + 0.08f, 0.06f, foreBack - foreFront + 0.08f), RailCap);
+        AddBox(new Vector3(CentreX, 1.05f, foreBack + 0.02f), new Vector3(foreWidth, 0.5f, 0.06f), Band);
+        for (var i = 0; i <= 4; i++)
+        {
+            var x = CentreX - foreWidth / 2f + i * foreWidth / 4f;
+            AddBox(new Vector3(x, 1.55f, foreBack), new Vector3(0.07f, 0.45f, 0.07f), RailCap);
+        }
+
+        AddBox(new Vector3(CentreX, 1.78f, foreBack), new Vector3(foreWidth, 0.05f, 0.07f), RailCap);
 
         // Stem post and bowsprit.
         AddSpar(new Vector3(CentreX, -1.6f, Length.Bow + 0.2f), new Vector3(CentreX, BulwarkTop(Length.Bow) + 0.15f, Length.Bow - 0.15f), 0.1f, HullWood);
@@ -296,6 +322,8 @@ public partial class ShipView : Node3D
         var centre = new Vector3(CentreX, 0.75f, _sternZ + depth / 2f);
         AddBox(centre, new Vector3(width, 1.5f, depth), HullWood);
         AddBox(centre + new Vector3(0, 0.77f, 0), new Vector3(width + 0.1f, 0.06f, depth + 0.1f), RailCap);
+        AddBox(centre + new Vector3(0, 0.45f, depth / 2f + 0.03f), new Vector3(width * 0.92f, 0.4f, 0.04f), Band);
+        AddBox(new Vector3(CentreX, 0.2f, Length.Stern - 0.02f), new Vector3(width * 0.85f, 0.3f, 0.06f), Red);
         AddBox(new Vector3(CentreX, -0.6f, Length.Stern - 0.05f), new Vector3(width * 0.9f, 2.6f, 0.12f), HullWood.Darkened(0.15f));
 
         // Cabin door and windows facing the waist.
@@ -441,6 +469,30 @@ public partial class ShipView : Node3D
         }
 
         AddSailMesh(tool, anchor);
+
+        // Furled: the canvas gathered in a fat roll along the top of the yard, lashed with gaskets.
+        var furl = new Node3D { Position = top + new Vector3(0, -0.06f, -0.12f), Visible = false };
+        AddChild(furl);
+        _furls.Add(furl);
+        var canvas = new StandardMaterial3D { AlbedoColor = new Color(0.78f, 0.72f, 0.6f), Roughness = 0.95f };
+        var radius = 0.13f + 0.04f * (1 - tier) + height * 0.012f;
+        furl.AddChild(new MeshInstance3D
+        {
+            Mesh = new CapsuleMesh { Radius = radius, Height = width * 0.92f, RadialSegments = 10, Rings = 2 },
+            MaterialOverride = canvas,
+            RotationDegrees = new Vector3(0, 0, 90),
+        });
+        var gasket = new StandardMaterial3D { AlbedoColor = Rope, Roughness = 0.9f };
+        for (var x = -width * 0.38f; x <= width * 0.39f; x += width * 0.19f)
+        {
+            furl.AddChild(new MeshInstance3D
+            {
+                Mesh = new TorusMesh { InnerRadius = radius * 0.98f, OuterRadius = radius * 1.12f, Rings = 10, RingSegments = 4 },
+                MaterialOverride = gasket,
+                Position = new Vector3(x, 0, 0),
+                RotationDegrees = new Vector3(0, 0, 90),
+            });
+        }
     }
 
     private void AddLateenSail(Vector3 yardLow, Vector3 yardHigh, Vector3 tack)

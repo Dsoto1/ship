@@ -325,6 +325,9 @@ public partial class PortView : Node3D
             case "fire":
                 CookFire(middle);
                 break;
+            case "cart":
+                MuleCart(new Vector3(left, HeightAt(left, middle.Z), middle.Z), right - left);
+                break;
             case "palm":
                 Palm(middle, (f.X0 * 31 + f.Y0 * 17) % 5);
                 break;
@@ -1776,6 +1779,51 @@ public partial class PortView : Node3D
         }
 
         Piece(new Vector3(0.1f, 0.3f, 0.2f), new Vector3(length * 0.9f, 0.05f, 0.08f), Wood.Lightened(0.1f), 4f);
+    }
+
+    // A two-wheeled cart with sacks in its bed and two on the stones, the mule still in the shafts, head
+    // down, one hind hoof cocked: a load being brought down to the Garza. Faces east along the quay.
+    private void MuleCart(Vector3 back, float length)
+    {
+        var bed = back + new Vector3(length * 0.42f, 0.85f, 0);
+        AddBox(bed, new Vector3(1.6f, 0.08f, 1.15f), Wood);
+        foreach (var side in new[] { -0.56f, 0.56f })
+        {
+            AddBox(bed + new Vector3(0, 0.2f, side), new Vector3(1.6f, 0.35f, 0.05f), Wood.Darkened(0.12f));
+            AddCylinder(bed + new Vector3(0.1f, -0.25f, side * 1.08f), 0.62f, 0.09f, Timber, rotateX: true);
+            AddCylinder(bed + new Vector3(0.1f, -0.25f, side * 1.08f), 0.12f, 0.14f, Iron, rotateX: true);
+            // The shafts, forward to the mule.
+            AddBox(bed + new Vector3(1.35f, -0.05f, side * 0.62f), new Vector3(1.6f, 0.07f, 0.07f), Timber, rotation: new Vector3(0, 0, -6));
+        }
+
+        foreach (var (dx, dz, dy) in new[] { (-0.4f, -0.25f, 0f), (0.2f, -0.25f, 0f), (-0.1f, 0.25f, 0f), (0.45f, 0.22f, 0f), (0f, 0f, 0.35f) })
+        {
+            AddShape(new SphereMesh { Radius = 0.32f, Height = 0.46f, RadialSegments = 8, Rings = 4 }, bed + new Vector3(dx, 0.25f + dy, dz), new Color(0.74f, 0.65f, 0.48f));
+        }
+
+        AddShape(new SphereMesh { Radius = 0.32f, Height = 0.46f, RadialSegments = 8, Rings = 4 }, back + new Vector3(-0.1f, 0.23f, 0.75f), new Color(0.72f, 0.63f, 0.46f));
+        AddShape(new SphereMesh { Radius = 0.32f, Height = 0.46f, RadialSegments = 8, Rings = 4 }, back + new Vector3(0.4f, 0.23f, 0.85f), new Color(0.74f, 0.65f, 0.48f));
+
+        // The mule.
+        var mule = back + new Vector3(length * 0.42f + 2.45f, 0, 0);
+        var coat = new Color(0.36f, 0.27f, 0.2f);
+        AddShape(new CapsuleMesh { Radius = 0.3f, Height = 1.45f, RadialSegments = 10, Rings = 3 }, mule + new Vector3(0, 1.0f, 0), coat, new Vector3(0, 0, 90));
+        foreach (var (dx, dz) in new[] { (-0.5f, -0.15f), (-0.5f, 0.15f), (0.45f, -0.15f), (0.45f, 0.15f) })
+        {
+            AddCylinder(mule + new Vector3(dx, 0.42f, dz), 0.06f, 0.84f, coat.Darkened(0.15f));
+        }
+
+        AddShape(new CapsuleMesh { Radius = 0.14f, Height = 0.75f, RadialSegments = 8, Rings = 2 }, mule + new Vector3(0.85f, 1.15f, 0), coat, new Vector3(0, 0, 40));
+        AddShape(new CapsuleMesh { Radius = 0.13f, Height = 0.55f, RadialSegments = 8, Rings = 2 }, mule + new Vector3(1.15f, 0.82f, 0), coat.Lightened(0.05f), new Vector3(0, 0, 75));
+        foreach (var dz in new[] { -0.07f, 0.07f })
+        {
+            AddBox(mule + new Vector3(1.0f, 1.25f, dz), new Vector3(0.05f, 0.26f, 0.05f), coat.Darkened(0.1f), rotation: new Vector3(dz > 0 ? 12 : -12, 0, -10));
+        }
+
+        AddCylinder(mule + new Vector3(-0.78f, 0.85f, 0), 0.04f, 0.6f, coat.Darkened(0.3f), rotation: new Vector3(0, 0, 15));
+        // The collar and the saddle pad of the harness.
+        AddShape(new TorusMesh { InnerRadius = 0.18f, OuterRadius = 0.28f, Rings = 10, RingSegments = 5 }, mule + new Vector3(0.62f, 1.12f, 0), new Color(0.3f, 0.2f, 0.12f), new Vector3(0, 0, 60));
+        AddBox(mule + new Vector3(0, 1.3f, 0), new Vector3(0.5f, 0.06f, 0.62f), new Color(0.55f, 0.2f, 0.15f));
     }
 
     // A date palm: a ringed trunk leaning a little and curving back, and a head of drooping fronds.

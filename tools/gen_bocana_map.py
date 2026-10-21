@@ -105,6 +105,7 @@ for x, y in [(21, 21), (45, 17), (36, 20), (55, 19), (1, 21), (17, 22)]:
     feature("palm", x, y)
 feature("cargo", 57, 33, style="jars"); feature("cargo", 17, 33, style="sacks"); feature("cargo", 6, 33, style="baskets")
 feature("cargo", 33, 31, style="jars")
+feature("cart", 33, 32, 37, 32)        # a mule cart unloading sacks for the Garza
 feature("well", 30, 21, 31, 22)
 feature("cargo", 52, 17, 53, 18, style="casks")       # the chandler's yard
 

@@ -1586,3 +1586,22 @@ Screenshots: `docs/screenshots/port-ui.jpg`, `port-warm-morning.jpg`, `port-warm
 **Not yet** (from the board): the board's painterly lighting and denser rooftops would need a
 lighting and post-processing pass of their own; the people are still smaller on screen than the
 board draws them.
+
+## The dock, pushed further (owner: "keep pushing the dock")
+
+- **The Garza at her berth:**
+  - furled sails are drawn as canvas rolls lashed along the yards with gaskets; they had been
+    squashed nearly flat;
+  - in port her sails stay solid at every zoom, because furled canvas hides no one;
+  - a painted strake runs under the rail: ochre over a red line, with an ochre band and red on the
+    transom;
+  - a small raised forecastle with its rail stands in the bows.
+
+  She now reads as a rigged ship rather than a barge.
+- **A mule cart** is being unloaded on the quay for the Garza: two-wheeled, sacks in the bed and two
+  on the stones, the mule in the shafts with collar and saddle pad. It is a blocked feature on the
+  map, so people walk round it.
+- **The camera** starts the port closer (zoom 17, from 24), so people read as people.
+- **The harbour water** is a clearer blue-green by day.
+
+Screenshot: `docs/screenshots/dock-garza.jpg`.

@@ -530,7 +530,8 @@ public partial class Main : Node3D
         _world.UpdateWorld(hour, _seaState, making, (float)delta, _camera.Target, hull, _gloom, inPort ? _portFog : 0f);
         var cooking = _runner.Campaign.ActiveTasks.Values.Any(task => task.DefinitionId == "task.cook");
         // Sails turn see-through at working zoom so they never hide the crew (ART_BIBLE.md 3); zoom out to see them whole.
-        _deck.UpdateLook(_world.Darkness, Mathf.Lerp(0.38f, 1f, Mathf.SmoothStep(18f, 32f, _camera.Size)), t, cooking, inPort ? 3.2f : SailSetting(voyage), (float)delta, furled: inPort);
+        // Set sails fade at working zoom so they never hide the crew; furled at the quay they hide no one.
+        _deck.UpdateLook(_world.Darkness, inPort ? 1f : Mathf.Lerp(0.38f, 1f, Mathf.SmoothStep(18f, 32f, _camera.Size)), t, cooking, inPort ? 3.2f : SailSetting(voyage), (float)delta, furled: inPort);
         foreach (var bird in _birds)
         {
             bird.Centre = inPort ? _port.Berth + new Vector3(0, 4f, -4f) : _shipCentre + new Vector3(0, 0, -2f);
@@ -1072,7 +1073,8 @@ public partial class Main : Node3D
         if (runner.Campaign.Port is not null && runner.Campaign.CaptainId is { } captain && runner.Campaign.Placements.TryGetValue(captain, out var start))
         {
             _camera.Target = new Vector3(start.Cell.X, 0, start.Cell.Y);
-            _camera.Size = 24f;
+            // Close enough that people read as people (the owner's board), not as a crowd of pins.
+            _camera.Size = 17f;
         }
 
         _crewSeen = runner.Campaign.Crew.Count();

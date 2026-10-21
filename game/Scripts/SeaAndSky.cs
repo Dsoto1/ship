@@ -144,9 +144,9 @@ public partial class SeaAndSky : Node3D
         _rain.Position = focus + new Vector3(0, 14, 0);
 
         var greyWater = Mathf.Lerp(0.3f, 1f, day);
-        _ocean.SetShaderParameter("deep_colour", Blend(day, dusk, new Color(0.025f, 0.11f, 0.17f), new Color(0.1f, 0.12f, 0.2f), new Color(0.008f, 0.025f, 0.05f))
+        _ocean.SetShaderParameter("deep_colour", Blend(day, dusk, new Color(0.03f, 0.15f, 0.2f), new Color(0.1f, 0.12f, 0.2f), new Color(0.008f, 0.025f, 0.05f))
             .Lerp(new Color(0.05f, 0.08f, 0.09f) * greyWater, gloom * 0.8f));
-        _ocean.SetShaderParameter("crest_colour", Blend(day, dusk, new Color(0.08f, 0.25f, 0.31f), new Color(0.5f, 0.36f, 0.32f), new Color(0.04f, 0.09f, 0.16f))
+        _ocean.SetShaderParameter("crest_colour", Blend(day, dusk, new Color(0.1f, 0.34f, 0.37f), new Color(0.5f, 0.36f, 0.32f), new Color(0.04f, 0.09f, 0.16f))
             .Lerp(new Color(0.2f, 0.25f, 0.26f) * greyWater, gloom * 0.8f));
         _ocean.SetShaderParameter("haze_start", Mathf.Lerp(Mathf.Lerp(28f, 10f, gloom), 3f, fog));
         _ocean.SetShaderParameter("haze_end", Mathf.Lerp(Mathf.Lerp(70f, 38f, gloom), 16f, fog));
