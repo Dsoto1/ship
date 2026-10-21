@@ -14,4 +14,10 @@ Rules for this repo's sessions:
 
 | Date | What | Model | Credits | Expedition total |
 |---|---|---|---|---|
-| — | nothing spent yet | — | 0 | 0 / 4,125 |
+| 2026-10-21 | Concept images: capstan, ship's bell, gun on its carriage (pilot) | Nano Banana 2 | 270 | 270 / 4,125 |
+
+Pilot notes (2026-10-21):
+- The plan is AI Suite: catalogue sound effects cannot be downloaded on it (`subscription_required`).
+- This cloud environment cannot download Artlist files: `cms-toolkit-artifacts.artlist.io`,
+  `ai-toolkit-generations.imgix.net` and `mcp.artlist.io` are refused by the network policy.
+  The three concept images are kept in Artlist until those hosts are allowed. The 3D step is on hold.
