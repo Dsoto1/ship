@@ -81,6 +81,17 @@ def freesound(entry, credits):
             raw.write_bytes(get(info["previews"]["preview-hq-ogg"]))
         fade = 3
         target.parent.mkdir(parents=True, exist_ok=True)
+        if entry.get("oneshot"):
+            # A sound played once (dice, a song): levelled, faded in and out, never looped.
+            length = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(raw)],
+                                          capture_output=True, text=True, check=True).stdout.strip())
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(raw), "-af",
+                            f"afade=t=in:d=0.05,afade=t=out:st={max(0.0, length - 0.4):.2f}:d=0.4,loudnorm=I=-20:TP=-2:LRA=20,aresample=44100",
+                            "-c:a", "libvorbis", "-q:a", "5", str(target)], check=True)
+            print("fetched", target.relative_to(ROOT))
+            credits.append(f"| {entry['name']} | {entry['use']} | {entry['author']} | "
+                           f"https://freesound.org/s/{entry['id']}/ | CC0 | `{entry['folder']}/{entry['file']}` |")
+            return
         subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(raw), "-i", str(raw), "-filter_complex",
                         f"[0:a]atrim=start={fade},asetpts=PTS-STARTPTS[body];"
                         f"[1:a]atrim=end={fade},asetpts=PTS-STARTPTS[head];"

@@ -51,6 +51,30 @@ public partial class PortSound : Node
     /// <summary>True while the captain is inside the Three Anchors: its room loud and close, the port muffled.</summary>
     public bool Inside { get; set; }
 
+    /// <summary>True while a game of dice goes round the captain's table: the bones are thrown now and then.</summary>
+    public bool Dicing { get; set; }
+
+    private AudioStreamPlayer _singer = null!;
+    private float _singing;
+
+    /// <summary>Someone starts a song: the recording for its voice (Audio/tavern/song_*.ogg), once.</summary>
+    public void Sing(string voice)
+    {
+        var path = $"res://Assets/Audio/tavern/song_{voice}.ogg";
+        if (_singer is null || !ResourceLoader.Exists(path))
+        {
+            return;
+        }
+
+        _singer.Stream = GD.Load<AudioStream>(path);
+        _singing = 1f;
+        _singer.VolumeDb = 0;
+        _singer.Play();
+    }
+
+    /// <summary>The song is over: it fades out if it is still going.</summary>
+    public void StopSinging() => _singing = 0f;
+
     private sealed class Layer
     {
         public AudioStreamPlayer Player = null!;
@@ -106,6 +130,10 @@ public partial class PortSound : Node
         _samples["knife"] = Load("rpg", "knifeSlice");
         _samples["creak"] = Load("rpg", "creak");
         _samples["bell"] = Load("impact", "impactBell_heavy");
+        _samples["dice"] = Load("tavern", "dice_roll");
+        _samples["dicecup"] = Load("tavern", "dice_cup");
+        _singer = new AudioStreamPlayer { Name = "Singer" };
+        AddChild(_singer);
         for (var i = 0; i < 10; i++)
         {
             var voice = new AudioStreamPlayer();
@@ -168,6 +196,19 @@ public partial class PortSound : Node
             _layers["tavern"].Target = 0.55f + 0.4f * night;
         }
 
+        // A song: full in the room, faint from outside; the room's talk drops while it is sung.
+        if (_singer is { Playing: true })
+        {
+            var level = _singing * (Inside ? 1f : 0.2f);
+            _singer.VolumeDb = Mathf.MoveToward(_singer.VolumeDb, level < 0.01f ? -60f : Mathf.LinearToDb(level), delta * 30f);
+            if (_singing <= 0 && _singer.VolumeDb <= -55f)
+            {
+                _singer.Stop();
+            }
+
+            _layers["tavern"].Target *= 0.45f;
+        }
+
         foreach (var (name, layer) in _layers)
         {
             layer.Volume = Mathf.MoveToward(layer.Volume, layer.Target, delta * 0.8f);
@@ -183,6 +224,7 @@ public partial class PortSound : Node
         // The sounds of work, each at its own rhythm and as loud as the listener is near it.
         Now("mallet", delta, workers > 0 ? Mathf.Max(0.6f, 2.2f / workers) : -1, 0.8f, Near(_workshop, 20) * 0.6f);
         Now("anvil", delta, smiths > 0 ? 1.1f : -1, 0.5f, Near(_smithy, 16) * 0.7f);
+        Now("dice", delta, Dicing ? 5f : -1, 3f, Inside ? 0.8f : 0.15f);
         Now("cup", delta, Inside ? 2.2f : 3.5f, 2f, (Inside ? 1f : Near(_tavern, 14)) * (0.25f + 0.5f * night) * 0.8f);
         Now("coins", delta, market > 0 ? 18f / market : -1, 4f, Near(_market, 14) * day * 0.6f);
         Now("knife", delta, fish > 0 ? 3f : -1, 2f, Near(_fish, 10) * day * 0.55f);

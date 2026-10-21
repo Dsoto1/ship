@@ -440,6 +440,9 @@ public sealed record SongDefinition
     /// <summary>How it is sung, and how the room takes it, before the words.</summary>
     public required string Says { get; init; }
 
+    /// <summary>The kind of voice it is heard in (the recording the game plays): man, woman, cradle, kitchen or chorus.</summary>
+    public string Voice { get; init; } = "man";
+
     /// <summary>A verse or two of the words.</summary>
     public IReadOnlyList<string> Lines { get; init; } = [];
 

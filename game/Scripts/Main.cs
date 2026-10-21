@@ -115,6 +115,7 @@ public partial class Main : Node3D
     private CharacterId? _selected;
     private int _speedIndex = 1;
     private ConversationView _conversation = null!;
+    private CharacterId? _singerHeard;
     private int? _speedBeforeTalk;
     private int _lastRunningSpeed = 1;
     private double _tickFraction;
@@ -667,6 +668,29 @@ public partial class Main : Node3D
         _portSound.Activity = (market, workers, smiths, fish);
         _portSound.Wind = _portWind;
         _portSound.Inside = _runner.CaptainRoom is not null;
+        // The tavern's evening: a song sung while it lasts, the bones thrown while a game goes round.
+        var singer = _runner.Singing;
+        if (singer != _singerHeard)
+        {
+            if (singer is { } who && _runner.PersonOf(who)?.Song is { } song)
+            {
+                _portSound.Sing(song.Voice);
+            }
+            else
+            {
+                _portSound.StopSinging();
+            }
+
+            _singerHeard = singer;
+        }
+
+        var dicing = _runner.Dicing.Count > 0;
+        if (dicing && !_portSound.Dicing)
+        {
+            _portSound.Cue("dicecup", 0.8f);
+        }
+
+        _portSound.Dicing = dicing;
         _portSound.Update(new Vector2(_camera.Target.X, _camera.Target.Z), hour, _portWet, delta, (float)TicksPerSecond[_speedIndex]);
     }
 

@@ -164,5 +164,75 @@
   "author": "Quaternius",
   "use": "Carrying, chopping (the adze), folded arms, the rail, drinking, lying",
   "files": "`Characters/Shared/animations.glb`"
+ },
+ {
+  "source": "freesound",
+  "id": 235484,
+  "name": "dice roll_wooden table_1.wav",
+  "author": "ekfink",
+  "folder": "Audio/tavern",
+  "file": "dice_roll.ogg",
+  "use": "Two dice thrown on a tavern table",
+  "oneshot": true
+ },
+ {
+  "source": "freesound",
+  "id": 854515,
+  "name": "Dice shaken in a wooden cup and rolled on a wooden board",
+  "author": "Oldome",
+  "folder": "Audio/tavern",
+  "file": "dice_cup.ogg",
+  "use": "Dice shaken in a cup and thrown",
+  "oneshot": true
+ },
+ {
+  "source": "freesound",
+  "id": 369675,
+  "name": "Туман яром (Tuman yarom)",
+  "author": "ko_bx",
+  "folder": "Audio/tavern",
+  "file": "song_man.ogg",
+  "use": "A man singing a folk song alone",
+  "oneshot": true
+ },
+ {
+  "source": "freesound",
+  "id": 193938,
+  "name": "hum.wav",
+  "author": "AlucardsBride",
+  "folder": "Audio/tavern",
+  "file": "song_cradle.ogg",
+  "use": "A woman humming a cradle song",
+  "oneshot": true
+ },
+ {
+  "source": "freesound",
+  "id": 183565,
+  "name": "woman humming",
+  "author": "PSsoundproject",
+  "folder": "Audio/tavern",
+  "file": "song_woman.ogg",
+  "use": "A woman singing a working song",
+  "oneshot": true
+ },
+ {
+  "source": "freesound",
+  "id": 849096,
+  "name": "Man singing in the kitchen / Hombre en la cocina cantando",
+  "author": "GillianHonn",
+  "folder": "Audio/tavern",
+  "file": "song_kitchen.ogg",
+  "use": "The cook singing at his pots",
+  "oneshot": true
+ },
+ {
+  "source": "freesound",
+  "id": 430022,
+  "name": "Men chanting.wav",
+  "author": "BeeProductive",
+  "folder": "Audio/tavern",
+  "file": "song_chorus.ogg",
+  "use": "A room of men singing a chorus",
+  "oneshot": true
  }
 ]

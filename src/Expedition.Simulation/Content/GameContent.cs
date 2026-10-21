@@ -346,6 +346,7 @@ public sealed class GameContent
             }
 
             if (person.Song is { } song && (string.IsNullOrWhiteSpace(song.Title) || string.IsNullOrWhiteSpace(song.Says)
+                    || song.Voice is not ("man" or "woman" or "cradle" or "kitchen" or "chorus")
                     || song.Shows.Any(pair => !KnownTopic(pair.Key) || pair.Value is < 0 or > 5)))
             {
                 errors.Add($"{where}: their song needs a title, words for how it is sung, and known topics at 0..5 for what it shows.");

@@ -26,3 +26,10 @@ clothing made on them, textures divided into one shared sheet, clips reduced to 
 | Universal Base Characters [Standard] | The bodies, heads, hair and beards persistent people are built on (C-1) | Quaternius | https://quaternius.itch.io/universal-base-characters | CC0 | `Characters/*/model.glb`, `Characters/Shared/chr_atlas.png` |
 | Universal Animation Library [Standard] | Walking, standing, sitting, kneeling work, pushing, lifting, talking | Quaternius | https://quaternius.itch.io/universal-animation-library | CC0 | `Characters/Shared/animations.glb` |
 | Universal Animation Library 2 [Standard] | Carrying, chopping (the adze), folded arms, the rail, drinking, lying | Quaternius | https://quaternius.itch.io/universal-animation-library-2 | CC0 | `Characters/Shared/animations.glb` |
+| dice roll_wooden table_1.wav | Two dice thrown on a tavern table | ekfink | https://freesound.org/s/235484/ | CC0 | `Audio/tavern/dice_roll.ogg` |
+| Dice shaken in a wooden cup and rolled on a wooden board | Dice shaken in a cup and thrown | Oldome | https://freesound.org/s/854515/ | CC0 | `Audio/tavern/dice_cup.ogg` |
+| Туман яром (Tuman yarom) | A man singing a folk song alone | ko_bx | https://freesound.org/s/369675/ | CC0 | `Audio/tavern/song_man.ogg` |
+| hum.wav | A woman humming a cradle song | AlucardsBride | https://freesound.org/s/193938/ | CC0 | `Audio/tavern/song_cradle.ogg` |
+| woman humming | A woman singing a working song | PSsoundproject | https://freesound.org/s/183565/ | CC0 | `Audio/tavern/song_woman.ogg` |
+| Man singing in the kitchen / Hombre en la cocina cantando | The cook singing at his pots | GillianHonn | https://freesound.org/s/849096/ | CC0 | `Audio/tavern/song_kitchen.ogg` |
+| Men chanting.wav | A room of men singing a chorus | BeeProductive | https://freesound.org/s/430022/ | CC0 | `Audio/tavern/song_chorus.ogg` |
