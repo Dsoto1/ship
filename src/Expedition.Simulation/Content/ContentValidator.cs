@@ -140,12 +140,12 @@ internal static class ContentValidator
         }
 
         var badCharacters = location.Rows.SelectMany(row => row)
-            .Where(c => c is not LocationDefinition.Walkable and not LocationDefinition.Blocked)
+            .Where(c => c is not LocationDefinition.Walkable and not LocationDefinition.Blocked and not LocationDefinition.Fitting)
             .Distinct()
             .ToList();
         if (badCharacters.Count > 0)
         {
-            errors.Add($"{where}: unknown layout characters '{string.Join("", badCharacters)}' (use '.' and '#').");
+            errors.Add($"{where}: unknown layout characters '{string.Join("", badCharacters)}' (use '.', '#' and 'o').");
         }
 
         foreach (var duplicate in location.Spots.GroupBy(s => s.Id).Where(g => g.Count() > 1))

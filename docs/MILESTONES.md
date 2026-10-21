@@ -1748,3 +1748,34 @@ Screenshots: `docs/screenshots/garza-at-sea.jpg`, `garza-damaged.jpg`, `garza-sp
 - only the main topsail yard can break, and nothing falls to the deck or hurts anyone below;
 - patches made in an earlier session are not remembered after a load;
 - wounds are on the hull sides only, not on the deck or the bulwarks.
+
+### The Garza's fittings: the first props made with Artlist
+
+A pilot of the Artlist workflow (`docs/ASSETS.md` keeps the credits; Expedition's share is 4,125 a
+month):
+- **Concepts** (Nano Banana 2, 90 credits each): a capstan, the ship's bell in its belfry, and a gun
+  on its sea carriage. Each is one object on a plain background, in a low-poly look.
+- **Models** (Hyper3D Rodin v2.5 Fast image-to-3D, 300 credits each): textured GLBs of about 19,500
+  triangles each.
+- **`tools/props/import_prop.py`** makes them the game's. For each prop it:
+  - samples the texture into vertex colours and welds the seams;
+  - reduces the mesh to its budget (700–900 triangles) with the character pipeline's decimator;
+  - cuts the colours to five flat tones, each pulled towards the Garza's palette;
+  - stands it on the ground at its real size, and writes it with the ship builder's writer.
+
+  Sources and settings are in `tools/props/props.json`, and the generated GLBs are kept in
+  `.cache/props/`.
+- **On deck.** A new cell type, `o`, marks a fitting: blocked to walkers, but deck, so the hull keeps
+  its shape. The location's `features` (kind `fitting`) say which prop stands on each one, and
+  ShipView places it.
+  - Six guns stand at the gun ports, which have moved to rows 7, 11 and 15. They run out through the
+    ports.
+  - The capstan stands in the waist aft of the mainmast.
+  - The bell hangs by the port rail at the forecastle break.
+
+Screenshots: `docs/screenshots/garza-fittings.jpg`, `props-pilot.jpg`.
+
+**Not yet:**
+- the bell isn't rung, and the lines and yard make no sound when they go, because `freesound.org`
+  is refused by this environment's network and the plan doesn't cover Artlist's catalogue sounds;
+- the props have no wear or wet look of their own (they use the scenery material).

@@ -35,3 +35,10 @@ clothing made on them, textures divided into one shared sheet, clips reduced to 
 | Men chanting.wav | A room of men singing a chorus | BeeProductive | https://freesound.org/s/430022/ | CC0 | `Audio/tavern/song_chorus.ogg` |
 | Board Game Icons | The screen buttons and the objectives checklist (recoloured white by tools/make_icons.py) | Kenney | https://kenney.nl/assets/board-game-icons | CC0 | `UI/icons/` (6 files) |
 | Game Icons | The menu button and the checklist's ticks (recoloured by tools/make_icons.py) | Kenney | https://kenney.nl/assets/game-icons | CC0 | `UI/icons/` (3 files) |
+
+## Generated props
+
+`Props/` (capstan, bell, gun) were made with Artlist's AI tools on the project's AI Suite plan: a
+concept image (Nano Banana 2), then image-to-3D (Hyper3D Rodin v2.5 Fast), then reduced and
+recoloured into the ship's palette by `tools/props/import_prop.py`. Their sources are listed in
+`tools/props/props.json`; check Artlist's licence terms before shipping them.

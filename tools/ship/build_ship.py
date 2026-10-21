@@ -50,7 +50,7 @@ class Deck:
         self.half = []
         last, left, right = 0, 99, 0
         for y, row in enumerate(self.rows):
-            walk = [x for x, c in enumerate(row) if c == "."]
+            walk = [x for x, c in enumerate(row) if c in ".o"]
             if not walk:
                 self.half.append(None)
                 continue

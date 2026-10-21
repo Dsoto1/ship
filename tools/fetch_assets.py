@@ -153,6 +153,15 @@ def stack_arrays(manifest):
     print("stacked", ", ".join(layers))
 
 
+# The props are not CC0 downloads: they were generated, so they are credited apart (tools/props).
+PROPS_NOTE = (
+    "\n## Generated props\n\n"
+    "`Props/` (capstan, bell, gun) were made with Artlist's AI tools on the project's AI Suite plan: a\n"
+    "concept image (Nano Banana 2), then image-to-3D (Hyper3D Rodin v2.5 Fast), then reduced and\n"
+    "recoloured into the ship's palette by `tools/props/import_prop.py`. Their sources are listed in\n"
+    "`tools/props/props.json`; check Artlist's licence terms before shipping them.\n")
+
+
 def main():
     manifest = json.loads((ASSETS / "assets.json").read_text())
     credits = []
@@ -170,7 +179,7 @@ def main():
         "`Characters/`, built by `tools/characters/build.py` from the Quaternius packs (bodies reshaped,\n"
         "clothing made on them, textures divided into one shared sheet, clips reduced to rotations).\n\n"
         "| Asset | Used for | Author | Source | Licence | Files |\n|---|---|---|---|---|---|\n"
-        + "\n".join(credits) + "\n")
+        + "\n".join(credits) + "\n" + PROPS_NOTE)
 
 
 if __name__ == "__main__":

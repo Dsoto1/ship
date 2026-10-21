@@ -103,7 +103,48 @@ public partial class ShipView : Node3D
         BuildStern();
         BuildMastsAndRigging(location);
         BuildSpotProps(location);
+        BuildFittings(location);
         _batch.Commit(this);
+    }
+
+    // The fittings on her 'o' cells (the guns, the capstan, the bell): props made with tools/props from
+    // Artlist models, flat-shaded in the ship's palette. Guns run out through their ports; the bell
+    // hangs by the rail at the forecastle break.
+    private void BuildFittings(LocationDefinition location)
+    {
+        foreach (var fitting in location.Features.Where(f => f.Kind == "fitting"))
+        {
+            var path = $"res://Assets/Props/{fitting.Style}.glb";
+            if (!ResourceLoader.Exists(path))
+            {
+                continue;
+            }
+
+            var x = (fitting.X0 + fitting.X1) / 2f;
+            var z = (fitting.Y0 + fitting.Y1) / 2f;
+            var side = x < CentreX - 0.5f ? -1f : x > CentreX + 0.5f ? 1f : 0f;
+            var inner = HalfWidthAt(z) - WallThickness;
+            var prop = GD.Load<PackedScene>(path).Instantiate<Node3D>();
+            prop.Name = $"Fitting_{fitting.Style}_{fitting.X0}_{fitting.Y0}";
+            switch (fitting.Style)
+            {
+                case "gun":
+                    // Muzzle (the model's +z) out through the port.
+                    x = CentreX + side * (inner - 0.62f);
+                    prop.RotationDegrees = new Vector3(0, side * 90f, 0);
+                    break;
+                case "bell" when side != 0:
+                    x = CentreX + side * (inner - 0.3f);
+                    break;
+            }
+
+            prop.Position = new Vector3(x, HeightAt(Mathf.Round(x), z), z);
+            AddChild(prop);
+            foreach (var mesh in prop.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>())
+            {
+                mesh.MaterialOverride = SceneryMaterial.Shared;
+            }
+        }
     }
 
     // Static parts of the ship (hull, fittings, spars, rigging) merged into a few meshes; the sails,
@@ -367,7 +408,7 @@ public partial class ShipView : Node3D
     private void WoundBox(Vector3 position, Vector3 size, Color colour) =>
         _damage.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = size }, MaterialOverride = Plain(colour), Position = position });
 
-    // Half beam per deck row: the walkable span plus the bulwark, so the hull hugs the deck.
+    // Half beam per deck row: the deck's span (fittings included) plus the bulwark, so the hull hugs the deck.
     private void MeasureHull(LocationDefinition location)
     {
         _halfWidth = new float[location.Height];
@@ -376,7 +417,7 @@ public partial class ShipView : Node3D
         var right = 0;
         for (var y = 0; y < location.Height; y++)
         {
-            var walkable = Enumerable.Range(0, location.Width).Where(x => location.IsWalkable(new GridPosition(x, y))).ToList();
+            var walkable = Enumerable.Range(0, location.Width).Where(x => location.IsDeck(new GridPosition(x, y))).ToList();
             if (walkable.Count == 0)
             {
                 continue;
@@ -629,7 +670,7 @@ public partial class ShipView : Node3D
             for (var x = walkable.Min() + 1; x < walkable.Max(); x++)
             {
                 var cell = new GridPosition(x, y);
-                if (location.IsWalkable(cell) || IsMast(location, cell))
+                if (location.IsDeck(cell) || IsMast(location, cell))
                 {
                     continue;
                 }
@@ -654,7 +695,7 @@ public partial class ShipView : Node3D
     }
 
     private static bool IsMast(LocationDefinition location, GridPosition cell) =>
-        !location.IsWalkable(cell)
+        !location.IsDeck(cell)
         && new[] { cell with { Y = cell.Y - 1 }, cell with { X = cell.X + 1 }, cell with { Y = cell.Y + 1 }, cell with { X = cell.X - 1 } }
             .All(location.IsWalkable);
 

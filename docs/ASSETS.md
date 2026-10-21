@@ -15,9 +15,14 @@ Rules for this repo's sessions:
 | Date | What | Model | Credits | Expedition total |
 |---|---|---|---|---|
 | 2026-10-21 | Concept images: capstan, ship's bell, gun on its carriage (pilot) | Nano Banana 2 | 270 | 270 / 4,125 |
+| 2026-10-21 | 3D models of the three concepts (pilot) | Hyper3D Rodin v2.5 Fast | 900 | 1,170 / 4,125 |
 
 Pilot notes (2026-10-21):
 - The plan is AI Suite: catalogue sound effects cannot be downloaded on it (`subscription_required`).
 - This cloud environment cannot download Artlist files: `cms-toolkit-artifacts.artlist.io`,
   `ai-toolkit-generations.imgix.net` and `mcp.artlist.io` are refused by the network policy.
-  The three concept images are kept in Artlist until those hosts are allowed. The 3D step is on hold.
+  The user then allowed those hosts and the pilot went ahead. (`freesound.org` still refuses, so
+  the line, yard and bell sounds wait.)
+- The pilot props are in `game/Assets/Props/` (capstan, bell, gun), made by
+  `tools/props/import_prop.py` from the Rodin GLBs; sources and settings in `tools/props/props.json`.
+  Each went from about 19,500 textured triangles to 700-900 flat-shaded ones in five palette tones.

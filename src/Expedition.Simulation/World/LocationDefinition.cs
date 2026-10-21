@@ -2,7 +2,8 @@ namespace Expedition.Simulation.World;
 
 /// <summary>
 /// A place characters can stand and walk, such as a ship's deck, loaded from <c>data/locations</c>.
-/// The layout is a grid of rows: <c>.</c> is walkable and <c>#</c> is blocked (rails, masts, hatches).
+/// The layout is a grid of rows: <c>.</c> is walkable and <c>#</c> is blocked (rails, masts, hatches);
+/// <c>o</c> is a fitting on the deck (a gun, the capstan): blocked to walkers, but part of the deck.
 /// Work spots mark where particular tasks are done.
 /// </summary>
 public sealed record LocationDefinition
@@ -12,6 +13,12 @@ public sealed record LocationDefinition
 
     /// <summary>Blocked cell character in <see cref="Rows"/>.</summary>
     public const char Blocked = '#';
+
+    /// <summary>
+    /// A fitting standing on the deck, such as a gun or the capstan: no one walks there, but it is deck,
+    /// not rail. Which fitting it is, the location's <see cref="Features"/> say (kind <c>fitting</c>).
+    /// </summary>
+    public const char Fitting = 'o';
 
     /// <summary>Unique ID, for example <c>location.test_deck</c>.</summary>
     public required string Id { get; init; }
@@ -62,6 +69,10 @@ public sealed record LocationDefinition
     /// <summary>True if <paramref name="cell"/> is inside the grid and walkable.</summary>
     public bool IsWalkable(GridPosition cell) =>
         cell.Y >= 0 && cell.Y < Height && cell.X >= 0 && cell.X < Rows[cell.Y].Length && Rows[cell.Y][cell.X] == Walkable;
+
+    /// <summary>True if <paramref name="cell"/> is deck: walkable, or a fitting standing on it.</summary>
+    public bool IsDeck(GridPosition cell) =>
+        IsWalkable(cell) || (cell.Y >= 0 && cell.Y < Height && cell.X >= 0 && cell.X < Rows[cell.Y].Length && Rows[cell.Y][cell.X] == Fitting);
 
     /// <summary>The spot with <paramref name="spotId"/>, or null.</summary>
     public WorkSpotDefinition? FindSpot(string spotId) => Spots.FirstOrDefault(s => s.Id == spotId);
