@@ -22,6 +22,10 @@ public partial class ChartView : Control
     private readonly List<CharacterId?> _navigatorChoices = [];
     private VBoxContainer _coastBox = null!;
     private VBoxContainer _sightBox = null!;
+    private VBoxContainer _islandBox = null!;
+    private Label _islands = null!;
+    private VBoxContainer _islandButtons = null!;
+    private string _islandState = "";
     private string? _listedFor;
     private Label _coast = null!;
     private Button _lead = null!;
@@ -88,6 +92,18 @@ public partial class ChartView : Control
             }
         };
         side.AddChild(_navigator);
+
+        // The islands: make for one to water, or go back to the passage.
+        _islandBox = new VBoxContainer();
+        _islandBox.AddThemeConstantOverride("separation", Ui.SpaceS);
+        side.AddChild(_islandBox);
+        _islandBox.AddChild(new HSeparator());
+        _islandBox.AddChild(Ui.Text("Islands", Ui.TextHeading, Ui.Brass));
+        _islands = Ui.Text("", Ui.TextBody, Ui.Ink, 320);
+        _islandBox.AddChild(_islands);
+        _islandButtons = new VBoxContainer();
+        _islandButtons.AddThemeConstantOverride("separation", Ui.SpaceS);
+        _islandBox.AddChild(_islandButtons);
 
         // The coast: the lead, and once it is raised, what it is.
         _coastBox = new VBoxContainer { Visible = false };
@@ -234,8 +250,73 @@ public partial class ChartView : Control
         }
 
         RefreshCoast(navigation);
+        RefreshIslands(ship, navigation);
         _canvas.Show(_runner, navigation, alongX, alongY);
     }
+
+    // The islands section: where each lies from her by the reckoning, and the orders that fit.
+    private void RefreshIslands(VoyageState ship, Navigation navigation)
+    {
+        var islands = _runner?.Content.Voyage?.Route?.Islands ?? [];
+        _islandBox.Visible = islands.Count > 0 && !navigation.Sighted;
+        if (!_islandBox.Visible || _runner is null)
+        {
+            return;
+        }
+
+        var lines = new List<string>();
+        var call = navigation.Call;
+        var bound = call is null ? null : islands.FirstOrDefault(i => i.Id == call.Island);
+        if (bound is not null && call is not null)
+        {
+            lines.Add(call.Anchored ? $"At anchor off {bound.Name}. Send the boat in: Water the ship ashore, Forage ashore."
+                : call.Sighted ? $"{Capitalise(bound.Name)} in sight: running in to anchor."
+                : $"Making for {bound.Name}, about {navigation.Reckoned.DistanceTo(bound.Charted):0} leagues by the reckoning" +
+                  (bound.Reported ? ". It is only reported: it may not be there." : "."));
+        }
+        else
+        {
+            foreach (var island in islands)
+            {
+                var off = navigation.Reckoned.DistanceTo(island.Charted);
+                lines.Add($"{Capitalise(island.Name)}{(island.Reported ? " (reported)" : "")}: about {off:0} leagues, {SimulationRunner.CompassPoint(Bearing(navigation.Reckoned, island.Charted))}. " +
+                          (island.Reported ? "Said to have birds and fruit, and water of a sort." : island.Settled ? "Charted; a spring and a few houses." : "Charted."));
+            }
+
+            lines.Add($"Water for about {_runner.SupplyForecast().WaterDays:0} days.");
+        }
+
+        _islands.Text = string.Join("\n", lines);
+        // Rebuild the buttons only when what they offer changes.
+        var state = call is null ? "passage" : $"{call.Island}:{call.Anchored}";
+        if (state == _islandState)
+        {
+            return;
+        }
+
+        _islandState = state;
+        foreach (var child in _islandButtons.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        if (call is null)
+        {
+            foreach (var island in islands)
+            {
+                var id = island.Id;
+                _islandButtons.AddChild(Ui.Button(island.Reported ? $"Search for {island.Name}" : $"Make for {island.Name}",
+                    "Leave the passage and steer for it, to water and forage. It costs days.", () => { _runner?.MakeForIsland(id); Refresh(); }));
+            }
+        }
+        else
+        {
+            _islandButtons.AddChild(Ui.Button(call.Anchored ? "Weigh anchor: back to the passage" : "Give it up: back to the passage",
+                "Steer for the Ember Coast again", () => { _runner?.ResumePassage(); Refresh(); }));
+        }
+    }
+
+    private static double Bearing(ChartPoint from, ChartPoint to) => (Math.Atan2(to.X - from.X, to.Y - from.Y) * 180 / Math.PI + 360) % 360;
 
     // The coast section: the last cast of the lead, and with the coast raised what is in view, what the
     // best hand aboard makes of it, and the sailing directions for the mark chosen to compare.
@@ -428,6 +509,35 @@ public partial class ChartCanvas : Control
             DrawString(font, at + new Vector2(11, 4), mark.Name, HorizontalAlignment.Left, -1, 11, colour);
         }
 
+        // The islands: a charted one drawn as land, a reported one dashed, with a query.
+        foreach (var island in _runner.Content.Voyage?.Route?.Islands ?? [])
+        {
+            var at = At(island.X, island.Y);
+            var radius = Mathf.Max(5f, 2.5f * Zoom);
+            if (island.Reported)
+            {
+                for (var a = 0; a < 16; a += 2)
+                {
+                    DrawArc(at, radius, a * Mathf.Tau / 16, (a + 1) * Mathf.Tau / 16, 4, InkLine, 1.2f);
+                }
+
+                DrawString(font, at + new Vector2(radius + 4, 4), $"{island.Name} (reported) ?", HorizontalAlignment.Left, -1, 11, InkLine);
+            }
+            else
+            {
+                var blob = new Vector2[12];
+                for (var k = 0; k < 12; k++)
+                {
+                    var a = k * Mathf.Tau / 12;
+                    blob[k] = at + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * radius * (0.8f + 0.25f * Mathf.Sin(k * 2.3f));
+                }
+
+                DrawColoredPolygon(blob, new Color(Land, 0.9f));
+                DrawPolyline([.. blob, blob[0]], InkLine, 1.5f);
+                DrawString(font, at + new Vector2(radius + 4, 4), island.Name, HorizontalAlignment.Left, -1, 11, InkLine);
+            }
+        }
+
         // The soundings, where the reckoning put her: fathoms, or a ring with a bar for no bottom.
         foreach (var cast in navigation.Soundings)
         {
@@ -446,7 +556,12 @@ public partial class ChartCanvas : Control
         // The course: to the offing on the destination's latitude, then down it to the coast.
         var reckoned = navigation.Reckoned;
         var offing = new ChartPoint(d.X + navigation.Offing, d.Y);
-        if (!navigation.Sighted)
+        if (navigation.Call is { Anchored: false } call && _runner.Content.Voyage?.Route?.Islands.FirstOrDefault(i => i.Id == call.Island) is { } bound)
+        {
+            var aim = call.SeenAt ?? bound.Charted;
+            Dashed(At(reckoned.X, reckoned.Y), At(aim.X, aim.Y));
+        }
+        else if (!navigation.Sighted && navigation.Call is null)
         {
             if (!navigation.RunningDown)
             {

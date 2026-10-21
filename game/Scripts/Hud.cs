@@ -862,6 +862,15 @@ public partial class Hud : CanvasLayer
                     $"Course {navigation.Heading:0}° by the compass, steered from your reckoning; the wind from the {SimulationRunner.CompassPoint(navigation.WindFrom)}. " +
                     (navigation.Beating ? "It is too near the course she wants, so she beats to windward, tack upon tack. " : "") +
                     "The chart (M) shows where you reckon she is."));
+                if (navigation.Call is { } call && runner.Content.Voyage?.Route?.Islands.FirstOrDefault(i => i.Id == call.Island) is { } island)
+                {
+                    chips.Add(("⚓", call.Anchored ? $"At anchor: {island.Name}" : call.Sighted ? $"{island.Name} in sight" : $"Bound for {island.Name}",
+                        call.Anchored ? Severity.Positive : Severity.Information,
+                        call.Anchored
+                            ? "At anchor. Order hands to Water the ship ashore and Forage ashore, then weigh from the chart (M)."
+                            : "She has left the passage for the island. The chart (M) can send her back to it."));
+                }
+
                 if (runner.Raining)
                 {
                     var catching = runner.Campaign.ActiveTasks.Values.Count(t => t.DefinitionId == "task.catch_rain");
@@ -1039,6 +1048,8 @@ public partial class Hud : CanvasLayer
 
         return ship.Navigation switch
         {
+            { Call.Anchored: true } => $"{Ui.IconLead} Water and forage ashore, then weigh anchor (Chart, M)",
+            { Call: { } } => $"{Ui.IconLead} Make for the island, then send the boat in to water",
             { Sighted: true, Identified: null } => $"{Ui.IconLead} Know the coast: which mark is in view? (Chart, M)",
             { Sighted: true } => $"{Ui.IconLead} Run along the coast for Punta Ceniza: about {ship.ReckonedRemaining:0} leagues, by what you took it for",
             _ => $"{Ui.IconLead} Reach {ship.Destination}: about {ship.ReckonedRemaining:0} leagues to go",

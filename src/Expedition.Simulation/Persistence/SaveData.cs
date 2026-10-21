@@ -423,6 +423,28 @@ public sealed record NavigationData
 
     /// <summary>The approach to the coast. Added in format 28; null before the coast is raised or near.</summary>
     public ApproachData? Approach { get; init; }
+
+    /// <summary>The island she has made for, or null on the passage. Added in format 29.</summary>
+    public IslandCallData? Call { get; init; }
+}
+
+/// <summary>A saved call at an island. Added in format 29.</summary>
+public sealed record IslandCallData
+{
+    /// <summary>The island's ID.</summary>
+    public required string Island { get; init; }
+
+    /// <summary>True once raised.</summary>
+    public bool Sighted { get; init; }
+
+    /// <summary>Where she reckons it lies, [east, north], once seen.</summary>
+    public IReadOnlyList<double>? SeenAt { get; init; }
+
+    /// <summary>True at anchor off it.</summary>
+    public bool Anchored { get; init; }
+
+    /// <summary>Hours searched for it.</summary>
+    public double Searched { get; init; }
 }
 
 /// <summary>A saved landfall approach (Voyage.Navigation's coast state). Added in format 28.</summary>

@@ -89,5 +89,27 @@
     "needsWeather": { "seaStateBelow": 1.6 },
     "yield": { "item": "item.fish", "perHour": 2.2, "bestInCalm": true, "onTheBank": 2.5 },
     "needsPerHour": { "fatigue": 1.0, "stress": -0.5 }
+  },
+  {
+    "id": "task.water_ashore",
+    "name": "Water the ship ashore",
+    "durationMinutes": 240,
+    // At anchor off an island: the boat in through the surf with the empty casks, filled at the spring,
+    // rafted off. Far more than rain gives, as good as the spring is; the surf can roll a boat.
+    "attribute": "attribute.strength",
+    "needsWeather": { "atAnchor": true },
+    "yield": { "item": "item.water", "perHour": 45, "ashore": "spring" },
+    "needsPerHour": { "fatigue": 6.0, "thirst": 1.0 },
+    "hazard": { "chancePerHour": 0.01, "healthDamage": 12, "condition": "condition.bruised" }
+  },
+  {
+    "id": "task.forage_ashore",
+    "name": "Forage ashore",
+    "durationMinutes": 240,
+    // Fruit, greens, birds' eggs: as much as the island has.
+    "skill": "skill.foraging",
+    "needsWeather": { "atAnchor": true },
+    "yield": { "item": "item.fruit", "perHour": 5, "ashore": "forage" },
+    "needsPerHour": { "fatigue": 3.0, "stress": -0.8 }
   }
 ]

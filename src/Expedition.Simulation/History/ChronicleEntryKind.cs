@@ -87,6 +87,21 @@ public enum ChronicleEntryKind
     /// <summary>She ran onto the coast unseen (parameters: damage, level = hull now).</summary>
     StruckTheCoast,
 
+    /// <summary>The captain made for an island (parameter: to = island ID).</summary>
+    MakingForIsland,
+
+    /// <summary>The island was raised (parameters: to = island ID, level = leagues off).</summary>
+    IslandSighted,
+
+    /// <summary>She came to anchor off an island (parameters: to = island ID, reason = fix or found).</summary>
+    Anchored,
+
+    /// <summary>Where the chart put a reported island, nothing in sight (parameter: to = island ID).</summary>
+    IslandNotFound,
+
+    /// <summary>Back to the passage (parameters: to = island ID, reason = weighed or gave up).</summary>
+    WeighedAnchor,
+
     /// <summary>The captain decided an event (parameters: event, choice, outcome; characters involved).</summary>
     EventResolved,
 

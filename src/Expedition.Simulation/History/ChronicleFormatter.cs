@@ -107,12 +107,26 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
                 $"Standing in where {Coast()?.Find(entry.Get(ChronicleParameters.To))?.Name ?? "the destination"} should be: no ruin on the headland, no lagoon behind. It is not here.",
             ChronicleEntryKind.StruckTheCoast =>
                 $"She struck in the dark, unseen surf and then rock, and was got off with the hull stove (down {entry.Get(ChronicleParameters.Damage)}, now {entry.Get(ChronicleParameters.Level)}%).",
+            ChronicleEntryKind.MakingForIsland => $"The captain left the passage and made for {IslandName(entry)}.",
+            ChronicleEntryKind.IslandSighted => $"Land! {Capitalise(IslandName(entry))} raised from the masthead, some {entry.Get(ChronicleParameters.Level)} leagues off. " +
+                                                $"{Island(entry)?.Looks}",
+            ChronicleEntryKind.Anchored => entry.Get(ChronicleParameters.Reason) == "fix"
+                ? $"At anchor off {IslandName(entry)}. Her place is known again: the reckoning is put right."
+                : $"At anchor off {IslandName(entry)}: it is there after all, if not quite where it was drawn.",
+            ChronicleEntryKind.IslandNotFound => $"Where the chart puts {IslandName(entry)}, an empty sea all round from the masthead. It is given up.",
+            ChronicleEntryKind.WeighedAnchor => entry.Get(ChronicleParameters.Reason) == "weighed"
+                ? $"Anchor weighed off {IslandName(entry)}: back to the passage."
+                : $"The captain gave up {IslandName(entry)} and went back to the passage.",
             ChronicleEntryKind.Landfall => $"Landfall: {entry.Get(ChronicleParameters.To) ?? "the coast"} reached, and known for what it is.",
             _ => $"{entry.Kind}: {string.Join(", ", entry.Parameters.Select(p => $"{p.Key}={p.Value}"))}",
         };
     }
 
     private Voyage.CoastRules? Coast() => content.Voyage?.Route?.Coast;
+
+    private Voyage.Island? Island(ChronicleEntry entry) => content.Voyage?.Route?.Islands.FirstOrDefault(i => i.Id == entry.Get(ChronicleParameters.To));
+
+    private string IslandName(ChronicleEntry entry) => Island(entry)?.Name ?? "the island";
 
     /// <summary>The name of a kind of weather, for example "a gale".</summary>
     public string WeatherName(string? id) =>

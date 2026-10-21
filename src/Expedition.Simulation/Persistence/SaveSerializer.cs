@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 28;
+    public const int CurrentSchemaVersion = 29;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -194,6 +194,9 @@ public static class SaveSerializer
 
                 return root;
             },
+
+            // Format 29 added calling at islands: no voyage before it had made for one.
+            [28] = root => root,
 
             // Format 28 added the landfall approach: a voyage that had fetched the coast knows where she is on it.
             [27] = root => root,
@@ -646,6 +649,9 @@ public static class SaveSerializer
                                     Soundings = n.Soundings.Select(d => new SoundingData { Tick = d.Tick, Who = d.Who.Value, At = [d.At.X, d.At.Y], Fathoms = d.Fathoms, Bottom = d.Bottom }).ToList(),
                                 }
                                 : null,
+                            Call = n.Call is { } call
+                                ? new IslandCallData { Island = call.Island, Sighted = call.Sighted, SeenAt = call.SeenAt is { } seen ? [seen.X, seen.Y] : null, Anchored = call.Anchored, Searched = call.Searched }
+                                : null,
                         }
                         : null,
                 }
@@ -1088,6 +1094,20 @@ public static class SaveSerializer
                     navigation.Restore(Point(saved.True), Point(saved.Reckoned), Point(saved.Drift), saved.LogError, saved.Heading, saved.RunningDown,
                         saved.LastSightDay, saved.Navigator is { } navigator ? new CharacterId(navigator) : null, saved.Track.Select(Point),
                         saved.Sights.Select(s => new Voyage.NoonSight(s.Day, new CharacterId(s.Taker), s.Y, s.Error)), saved.WindFrom ?? route.WindFrom, saved.Tack, saved.BoardHours);
+                    if (saved.Call is { } call)
+                    {
+                        if (!route.Islands.Any(i => i.Id == call.Island) || call.SeenAt is { Count: not 2 } || call.Searched < 0)
+                        {
+                            throw new SaveLoadException("The voyage's call at an island is invalid.");
+                        }
+
+                        navigation.Call = new Voyage.IslandCall
+                        {
+                            Island = call.Island, Sighted = call.Sighted, Anchored = call.Anchored, Searched = call.Searched,
+                            SeenAt = call.SeenAt is { } seen ? new Voyage.ChartPoint(seen[0], seen[1]) : null,
+                        };
+                    }
+
                     if (saved.Approach is { } approach2)
                     {
                         navigation.RestoreApproach(approach2.Sighted, approach2.Direction, approach2.Identified, approach2.Seen, approach2.Pending, approach2.PendingHours,

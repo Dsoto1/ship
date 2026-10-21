@@ -104,6 +104,9 @@ public sealed record WeatherNeed
 
     /// <summary>Only with the sea state below this (0 calm .. 3 storm).</summary>
     public double? SeaStateBelow { get; init; }
+
+    /// <summary>Only at anchor off an island: work for the boat and the shore.</summary>
+    public bool AtAnchor { get; init; }
 }
 
 /// <summary>
@@ -123,6 +126,9 @@ public sealed record TaskYield
 
     /// <summary>Multiplies the yield over the bank off a coast, where the fish are.</summary>
     public double OnTheBank { get; init; } = 1;
+
+    /// <summary>Ashore, what the yield depends on: "spring" (the island's water) or "forage" (what grows there); null for neither.</summary>
+    public string? Ashore { get; init; }
 }
 
 /// <summary>

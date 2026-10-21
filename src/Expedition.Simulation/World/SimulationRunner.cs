@@ -487,6 +487,11 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             return "There is no rain to catch.";
         }
 
+        if (need.AtAnchor && AnchoredAt is null)
+        {
+            return $"{task.Name} is work for the boat, at anchor off an island.";
+        }
+
         return need.SeaStateBelow is { } limit && rules.Weather(ship.WeatherId).SeaState >= limit ? $"The sea is running too high for that: {task.Name.ToLowerInvariant()}." : null;
     }
 
@@ -607,6 +612,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             * (rules.RiggingSpeedFloor + (1 - rules.RiggingSpeedFloor) * ship.Rigging / 100)
             * (ship.WatchKept ? 1 : rules.NoWatchSpeedMultiplier)
             * (ship.YardSprung ? rules.SprungYardSpeed : 1)
+            * (HeldForIsland(ship) ? 0 : 1)
             * (ship.Navigation is { Sighted: false } sailing && rules.Route is { } points ? points.SpeedOnPoint(sailing.OffWind) : 1)
             * plan.Speed;
         ship.LeaguesSailed += ship.SpeedLeaguesPerHour * HoursPerTick;
@@ -1056,6 +1062,12 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             if (ship.Navigation is { } navigation && rules.Route?.Coast is { } coast && navigation.Offshore <= coast.ShelfLeagues)
             {
                 factor *= yield.OnTheBank;
+            }
+
+            // Ashore, what the island has: its spring, what grows and nests there.
+            if (AnchoredAt is { } island)
+            {
+                factor *= yield.Ashore switch { "spring" => island.Spring, "forage" => island.Forage, _ => 1 };
             }
         }
 

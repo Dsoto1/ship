@@ -18,7 +18,9 @@ public sealed partial class SimulationRunner
     // navigator's sight if the captain has not taken it. True on arrival.
     private bool SailTheRoute(VoyageState ship, Navigation navigation, RouteRules route)
     {
+        SteerForIsland(navigation);
         navigation.Sail(ship.SpeedLeaguesPerHour, HoursPerTick, route.Coast?.StandOffLeagues ?? 0);
+        CallAtIsland(ship, navigation, Content.Voyage!.Weather(ship.WeatherId));
         bool arrived;
         if (route.Coast is { } coast)
         {

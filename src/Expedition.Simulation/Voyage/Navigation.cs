@@ -41,6 +41,9 @@ public sealed record RouteRules
     /// <summary>The far coast: its landmarks, the bank off it, how far off it is raised. Null: none charted.</summary>
     public CoastRules? Coast { get; init; }
 
+    /// <summary>Islands off the route where she might water, charted or only reported.</summary>
+    public IReadOnlyList<Island> Islands { get; init; } = [];
+
     /// <summary>Within this many leagues of the destination along the coast, and knowing it, she has arrived.</summary>
     public double LandfallTolerance { get; init; } = 4;
 
@@ -129,6 +132,16 @@ public sealed record RouteRules
             {
                 yield return problem;
             }
+        }
+
+        if (Islands.Select(i => i.Id).Distinct(StringComparer.Ordinal).Count() != Islands.Count)
+        {
+            yield return "Voyage route: island IDs must be unique.";
+        }
+
+        foreach (var problem in Islands.SelectMany(i => i.Validate()))
+        {
+            yield return problem;
         }
     }
 }
@@ -253,6 +266,12 @@ public sealed class Navigation
     /// <summary>Every cast of the lead.</summary>
     public IReadOnlyList<Sounding> Soundings => _soundings;
 
+    /// <summary>The island she has made for, and how far she has got with it; null on the passage.</summary>
+    public IslandCall? Call { get; internal set; }
+
+    // Where she steers for while making for an island (set by the runner each minute), or null.
+    internal ChartPoint? Target { get; set; }
+
     /// <summary>Leagues off the coast, truly. Seen from the deck once the coast is raised.</summary>
     public double Offshore => True.X - Destination.X;
 
@@ -279,6 +298,11 @@ public sealed class Navigation
     // south to hold it, until the coast is raised.
     internal double CourseFrom(ChartPoint from)
     {
+        if (Target is { } target)
+        {
+            return (Math.Atan2(target.X - from.X, target.Y - from.Y) * 180 / Math.PI + 360) % 360;
+        }
+
         if (RunningDown || from.X <= Destination.X + Offing)
         {
             var off = Math.Clamp(Destination.Y - from.Y, -6, 6);
@@ -298,6 +322,13 @@ public sealed class Navigation
     /// </summary>
     internal void Sail(double speed, double hours, double standOff = 2)
     {
+        if (Call is { Anchored: true })
+        {
+            BoardHours = 0;
+            Beating = false;
+            return;
+        }
+
         if (Sighted)
         {
             Coast(speed, hours, standOff);

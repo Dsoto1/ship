@@ -60,6 +60,7 @@ public partial class Main : Node3D
     private ShipView _deck = null!;
     private SeaAndSky _world = null!;
     private CoastView _coastView = null!;
+    private IslandView _islandView = null!;
     private readonly List<SeaBird> _birds = [];
     private float _seaState = 1f;
     private float _gloom;
@@ -591,6 +592,10 @@ public partial class Main : Node3D
         _world.UpdateWorld(hour, _seaState, making, (float)delta, _camera.Target, hull, _gloom, inPort ? _portFog : 0f, inPort ? 0f : Mathf.DegToRad(_ship.RotationDegrees.Y), inPort ? null : _runner.Raining);
         _shipSound.Rain(!inPort && _runner.Raining ? Mathf.Clamp(0.4f + _seaState * 0.25f, 0, 1) : 0f, (float)delta);
         _coastView.Show(inPort ? null : voyage?.Navigation, _runner.Coast, _content.Voyage?.Route?.Bearing ?? 0, _shipCentre, _camera.Size, _world.Darkness, _gloom, (float)delta);
+        var raised = inPort || voyage?.Navigation is not { Call: { Sighted: true } call } ? null
+            : _content.Voyage?.Route?.Islands.FirstOrDefault(i => i.Id == call.Island);
+        _islandView.Show(raised, raised is null ? default : _runner.IslandTruth(raised).At, voyage?.Navigation, voyage?.Navigation?.Call?.Anchored == true,
+            _content.Voyage?.Route?.Bearing ?? 0, _shipCentre, _camera.Size, _world.Darkness, _gloom, (float)delta);
         var cooking = _runner.Campaign.ActiveTasks.Values.Any(task => task.DefinitionId == "task.cook");
         // Sails turn see-through at working zoom so they never hide the crew (ART_BIBLE.md 3); zoom out to see them whole.
         // Set sails fade at working zoom so they never hide the crew; furled at the quay they hide no one.
@@ -1322,6 +1327,9 @@ public partial class Main : Node3D
                 ChronicleEntryKind.LandmarkSighted => (Severity.Attention, AutoPause.Landfall, "A mark on the coast"),
                 ChronicleEntryKind.NotTheDestination => (Severity.Urgent, AutoPause.Landfall, "This is not Punta Ceniza"),
                 ChronicleEntryKind.StruckTheCoast => (Severity.Critical, AutoPause.ShipDamage, "She has struck"),
+                ChronicleEntryKind.IslandSighted => (Severity.Positive, AutoPause.Landfall, "Land! The island"),
+                ChronicleEntryKind.Anchored => (Severity.Positive, AutoPause.Landfall, "At anchor"),
+                ChronicleEntryKind.IslandNotFound => (Severity.Attention, AutoPause.Landfall, "No island there"),
                 ChronicleEntryKind.Sounding when entry.Get(ChronicleParameters.Level) != "none"
                     && !_runner.Campaign.Chronicle.Entries.Take(_chronicleSeen).Any(e => e.Kind == ChronicleEntryKind.Sounding && e.Get(ChronicleParameters.Level) != "none")
                     => (Severity.Attention, AutoPause.Landfall, "Bottom found"),
@@ -1552,6 +1560,8 @@ public partial class Main : Node3D
         _world = new SeaAndSky { Name = "SeaAndSky" };
         _coastView = new CoastView { Name = "Coast" };
         AddChild(_coastView);
+        _islandView = new IslandView { Name = "Island" };
+        AddChild(_islandView);
         AddChild(_world);
 
         _ship = new Node3D { Name = "Ship" };
@@ -1611,6 +1621,7 @@ public partial class Main : Node3D
     private double? _forceWind;
     private (double Offshore, double North)? _offCoast;
     private string? _seaWeather;
+    private string? _island;
     private string? _openView;
     private string? _forceCarryAway;
     private string? _developerSelect;
@@ -1837,6 +1848,7 @@ public partial class Main : Node3D
                 case "seadays" when int.TryParse(value, out var seaDays): _seaDays = seaDays; break;
                 case "wind" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var wind): _forceWind = wind; break;
                 case "seaweather": _seaWeather = value; break;
+                case "island": _island = value; break;
                 case "offcoast" when value.Split(',') is [var off, var along]
                                      && double.TryParse(off, System.Globalization.CultureInfo.InvariantCulture, out var offshore)
                                      && double.TryParse(along, System.Globalization.CultureInfo.InvariantCulture, out var north):
@@ -1932,6 +1944,17 @@ public partial class Main : Node3D
             for (var hour = 0; hour < 20 && !_runner.Raining; hour++)
             {
                 _runner.Advance(60);
+            }
+        }
+
+        // --island=island.aguada (or island.aguada,anchor): put her a few leagues off it and make for it,
+        // sailing on until it is raised (or until she anchors).
+        if (_island?.Split(',') is [var islandId, ..] && _runner.DeveloperPlaceNearIsland(islandId).Succeeded)
+        {
+            var toAnchor = _island.EndsWith(",anchor", StringComparison.Ordinal);
+            for (var minute = 0; minute < 48 * 60 && _runner.Campaign.Voyage?.Navigation?.Call is { } call && (toAnchor ? !call.Anchored : !call.Sighted); minute += 15)
+            {
+                _runner.Advance(15);
             }
         }
 

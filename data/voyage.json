@@ -21,6 +21,16 @@
     "landfallTolerance": 4, "sightFrom": 11.5, "sightUntil": 12.5,
     "windFrom": 25, "windVariation": 85, "closestToWind": 67.5, "tackMargin": 12, "longestBoard": 10,
     "pointsOfSail": [[67.5, 0.88], [90, 1.02], [135, 1.12], [180, 1.02]],
+    // Islands off the route where she might water. The Aguada is charted and settled, some twenty leagues
+    // west of the course a quarter of the way down; Esquiva is only reported, and may not be there.
+    "islands": [
+      { "id": "island.aguada", "name": "Isla de la Aguada", "x": -142, "y": -154, "sightingLeagues": 10,
+        "spring": 1, "forage": 0.35, "settled": true,
+        "looks": "A high green island with a cloud on its peak, a white beach under it and a few houses where a stream comes down." },
+      { "id": "island.esquiva", "name": "Isla Esquiva", "x": -208, "y": -300, "reported": true, "existsChance": 0.55, "positionError": 12,
+        "sightingLeagues": 7, "spring": 0.45, "forage": 1,
+        "looks": "A low wooded island, birds wheeling over it in thousands, surf all round and one cove on the lee side." }
+    ],
     "coast": {
       "destination": "coast.punta_ceniza",
       "landmarks": [

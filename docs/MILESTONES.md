@@ -2065,3 +2065,91 @@ Screenshots: `docs/screenshots/landfall-punta-ceniza.jpg`, `landfall-punta-falsa
 - night approaches drawn as darkness and surf only;
 - anchoring, the boat sent in, and what is found ashore (R6);
 - the true track drawn after landfall.
+
+### What the sea gives, and watering at the islands (owner: "can the ship find land for supplies if they run out?")
+
+Until now nothing at sea could refill a cask: once the water ran out, short rations only stretched it.
+There are now two ways to get more: the sea itself, and the islands.
+
+**1. Rain and fish** (`TaskDefinition.NeedsWeather`, `TaskDefinition.Yield`, `data/tasks/shipboard.json`).
+
+*Rain.* It now rains at sea for each weather's share of the hours:
+
+| Weather | Hours with rain |
+|---|---|
+| calm | none |
+| fair | 4% |
+| fresh breeze | 22% (squalls) |
+| gale | 50% |
+| storm | 85% |
+
+Whether a given hour rains comes from the seed and the hour, so it uses no dice and needs no save. You
+see and hear it: the rain particles follow the hour's rain, a shower greys the sky, and the port's
+rain recording plays at sea.
+
+*Two new tasks.* Both can be ordered or kept as standing duties.
+- **Catch the rain**, only while it rains: about 14 litres an hour a hand, into the casks while there
+  is room. It stops when the rain stops, or when the casks are full.
+- **Fish over the side**: paced by fishing skill, best in a calm, two and a half times better over
+  the bank off the far coast, and impossible in a gale. An easy hour that eases the mind.
+
+*Tasks can now need weather* (rain; a sea below some state; at anchor), and stop when it goes. *Tasks
+can now yield stores*, unit by unit at their pace.
+
+*Eating.* Fresh fish spoils (30% a day), and the crew now eat what spoils soonest first. That order
+changed no other test.
+
+*The HUD.* A chip says "Rain: catch it" while it rains, or how many hands are catching it.
+
+**2. The islands** (`Voyage/Islands.cs`, `SimulationRunner.Islands.cs`, "route" → "islands").
+
+| Island | Kind | Where | Water | Forage |
+|---|---|---|---|---|
+| Isla de la Aguada | charted and settled: a high green island, a beach, a few houses by a stream | about 25 leagues west of the first leg | spring 1.0 | 0.35 |
+| Isla Esquiva | only reported: low and wooded, birds in thousands | on the chart near the second half of the first leg | spring 0.45 | 1.0 |
+
+Whether Esquiva is there at all (55%), and how far from its charted place (up to 12 leagues), comes
+from the voyage's seed and is never saved.
+
+*Making for an island.* From the chart: "Make for", or "Search for" a reported island. She steers for
+its charted place.
+- **Sighting.** The masthead raises it (10 leagues by day for the Aguada, 7 for Esquiva; little at
+  night; hardly with no lookout). Once raised, she steers for it by eye.
+- **Searching.** Reaching its charted place unseen, she lies to (through the night, if need be) and
+  searches three hours of daylight before giving it up: "an empty sea all round".
+- **Anchoring.** At anchor off a charted island the reckoning is put right, longitude and all.
+
+*Ashore.* At anchor she makes no way, and two shore tasks open:
+- **Water the ship ashore**: about 45 litres an hour a hand, times the spring; strong backs help, and
+  the surf can bruise.
+- **Forage ashore**: island fruit and greens (a new food that spoils at 20% a day), times what the
+  island has.
+
+"Weigh anchor" (or "Give it up") takes her back to the passage. A detour to the Aguada costs a day or
+two; Esquiva is a gamble.
+
+*Saving.* Saved in format 29: the island, sighted, where she saw it, how long she searched, anchored.
+
+*On the chart* (`ChartView`).
+- The Aguada is drawn as land; Esquiva as a dashed ring with "(reported) ?".
+- A dashed course runs to the island she is bound for.
+- An Islands section gives each island's distance and bearing by the reckoning, the water left, and
+  the orders.
+
+*In the view* (`IslandView`). Once raised, the island stands in the direction it truly bears: grey
+and small at first, nearer as she runs in, close aboard at anchor. The Aguada is a high green hill
+with its houses; Esquiva is low and wooded.
+
+*The HUD.* Chips read "Bound for …", "… in sight" and "At anchor: …", and the objective gives the next
+step. Alerts: land, the island; at anchor; no island there.
+
+Developer flags: `--seaweather=ID` (that weather at sea, and on until a shower if it rains in it);
+`--island=island.aguada` (put her a few leagues off and make for it), `--island=island.aguada,anchor`
+(on until she anchors). Tests: `SeaSuppliesTests` (5) and `IslandTests` (4). Screenshots:
+`docs/screenshots/sea-rain.jpg`, `island-anchored-aguada.jpg`, `island-chart.jpg`.
+
+**Not yet:**
+- buying water and food with coin at the Aguada (the purse stays with the port);
+- the boat itself, seen going in;
+- islanders and news;
+- islands along the coast's approach.
