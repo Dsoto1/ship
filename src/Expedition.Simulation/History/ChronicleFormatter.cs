@@ -89,10 +89,30 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
             ChronicleEntryKind.NoonSight => $"Noon sight by {who}: latitude {entry.Get(ChronicleParameters.Level)}.",
             ChronicleEntryKind.BilgeAlarm => $"The bilge is {entry.Get(ChronicleParameters.Level)}% full and rising. Man the pumps!",
             ChronicleEntryKind.Foundered => $"{Capitalise(entry.Get(ChronicleParameters.To) ?? "The ship")} filled and foundered.",
-            ChronicleEntryKind.Landfall => $"Land! {Capitalise(entry.Get(ChronicleParameters.To) ?? "The coast")} sighted from the masthead.",
+            ChronicleEntryKind.CoastNear => $"By the reckoning the coast is {entry.Get(ChronicleParameters.Level)} leagues off. Heave the lead, and keep a good lookout.",
+            ChronicleEntryKind.LandSign => entry.Get(ChronicleParameters.To) switch
+            {
+                "birds" => "Land birds about the ship, flying west at dusk.",
+                "weed" => "Weed in the water, and a drifting branch with its leaves still green.",
+                "water" => "The sea has changed colour: greener, and cloudy.",
+                _ => "A bank of cloud stands still in the west all day, as cloud does over land.",
+            },
+            ChronicleEntryKind.Sounding => entry.Get(ChronicleParameters.Level) == "none"
+                ? $"{who} heaved the deep-sea lead: no bottom at {Coast()?.ShelfFathoms ?? 100:0} fathoms."
+                : $"{who} heaved the lead: {entry.Get(ChronicleParameters.Level)} fathoms, {entry.Get(ChronicleParameters.To)}.",
+            ChronicleEntryKind.LandSighted => $"Land! The coast raised from the masthead, some {entry.Get(ChronicleParameters.Level)} leagues off.",
+            ChronicleEntryKind.LandmarkSighted => $"In view: {Coast()?.Find(entry.Get(ChronicleParameters.To))?.Looks ?? "a mark on the coast."}",
+            ChronicleEntryKind.CoastIdentified => $"{who} took the coast for {Coast()?.Find(entry.Get(ChronicleParameters.To))?.Name ?? "a mark on the chart"}.",
+            ChronicleEntryKind.NotTheDestination =>
+                $"Standing in where {Coast()?.Find(entry.Get(ChronicleParameters.To))?.Name ?? "the destination"} should be: no ruin on the headland, no lagoon behind. It is not here.",
+            ChronicleEntryKind.StruckTheCoast =>
+                $"She struck in the dark, unseen surf and then rock, and was got off with the hull stove (down {entry.Get(ChronicleParameters.Damage)}, now {entry.Get(ChronicleParameters.Level)}%).",
+            ChronicleEntryKind.Landfall => $"Landfall: {entry.Get(ChronicleParameters.To) ?? "the coast"} reached, and known for what it is.",
             _ => $"{entry.Kind}: {string.Join(", ", entry.Parameters.Select(p => $"{p.Key}={p.Value}"))}",
         };
     }
+
+    private Voyage.CoastRules? Coast() => content.Voyage?.Route?.Coast;
 
     /// <summary>The name of a kind of weather, for example "a gale".</summary>
     public string WeatherName(string? id) =>

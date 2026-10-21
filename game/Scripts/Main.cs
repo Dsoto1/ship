@@ -1312,6 +1312,14 @@ public partial class Main : Node3D
                 ChronicleEntryKind.SurvivalStateChanged when entry.Get(ChronicleParameters.To) is "Dead" => (Severity.Critical, AutoPause.InjuryAndDeath, "A death aboard"),
                 ChronicleEntryKind.SurvivalStateChanged when entry.Get(ChronicleParameters.To) is "Incapacitated" => (Severity.Critical, AutoPause.InjuryAndDeath, "Someone has collapsed"),
                 ChronicleEntryKind.SupplyShortage => (Severity.Critical, AutoPause.Shortage, $"Out of {entry.Get(ChronicleParameters.Need)}"),
+                ChronicleEntryKind.CoastNear => (Severity.Attention, AutoPause.Landfall, "The coast is near"),
+                ChronicleEntryKind.LandSighted => (Severity.Positive, AutoPause.Landfall, "Land!"),
+                ChronicleEntryKind.LandmarkSighted => (Severity.Attention, AutoPause.Landfall, "A mark on the coast"),
+                ChronicleEntryKind.NotTheDestination => (Severity.Urgent, AutoPause.Landfall, "This is not Punta Ceniza"),
+                ChronicleEntryKind.StruckTheCoast => (Severity.Critical, AutoPause.ShipDamage, "She has struck"),
+                ChronicleEntryKind.Sounding when entry.Get(ChronicleParameters.Level) != "none"
+                    && !_runner.Campaign.Chronicle.Entries.Take(_chronicleSeen).Any(e => e.Kind == ChronicleEntryKind.Sounding && e.Get(ChronicleParameters.Level) != "none")
+                    => (Severity.Attention, AutoPause.Landfall, "Bottom found"),
                 _ => null,
             };
             if (alert is not { } found)
@@ -1353,7 +1361,9 @@ public partial class Main : Node3D
         var losses = dead.Count == 0 ? "Every soul aboard is still alive." : $"Lost on the way: {string.Join(", ", dead)}.";
         if (ship.Outcome == Expedition.Simulation.Voyage.VoyageOutcome.Arrived)
         {
-            _hud.ShowEnding("Land!", $"After {days:0.#} days at sea, {ship.ShipName} raises {ship.Destination}.\n\n" +
+            var wrongMarks = _runner.Campaign.Chronicle.Entries.Count(e => e.Kind == ChronicleEntryKind.NotTheDestination);
+            _hud.ShowEnding("Punta Ceniza", $"After {days:0.#} days at sea, {ship.ShipName} comes to anchor under Punta Ceniza: the ruin on the headland, the lagoon behind." +
+                (wrongMarks > 0 ? $" It took {wrongMarks + 1} tries to know it." : "") + "\n\n" +
                 $"{losses} {alive} of {crew.Count} come to the coast, with water for about {water:0} days and food for about {food:0}. " +
                 $"The hull stands at {ship.Hull:0}% and the rigging at {ship.Rigging:0}%.\n\n" +
                 "What waits ashore, and what became of the old factory at Punta Ceniza, is still to be written.");
@@ -1592,6 +1602,7 @@ public partial class Main : Node3D
     private string? _forceEvent;
     private int _seaDays;
     private double? _forceWind;
+    private (double Offshore, double North)? _offCoast;
     private string? _openView;
     private string? _forceCarryAway;
     private string? _developerSelect;
@@ -1817,6 +1828,11 @@ public partial class Main : Node3D
                 case "event": _forceEvent = value; break;
                 case "seadays" when int.TryParse(value, out var seaDays): _seaDays = seaDays; break;
                 case "wind" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var wind): _forceWind = wind; break;
+                case "offcoast" when value.Split(',') is [var off, var along]
+                                     && double.TryParse(off, System.Globalization.CultureInfo.InvariantCulture, out var offshore)
+                                     && double.TryParse(along, System.Globalization.CultureInfo.InvariantCulture, out var north):
+                    _offCoast = (offshore, north);
+                    break;
                 case "chart": _openView = "chart"; break;
                 case "astrolabe": _openView = "astrolabe"; break;
                 case "hull" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var hullLeft): _forceHull = hullLeft; break;
@@ -1892,6 +1908,12 @@ public partial class Main : Node3D
             {
                 _runner.ResolveEvent(first.Choice.Id);
             }
+        }
+
+        // --offcoast=OFF,NORTH: put her off the far coast (and sail on a little, so the masthead can raise it).
+        if (_offCoast is { } coastAt && _runner.DeveloperPlaceOffCoast(coastAt.Offshore, coastAt.North).Succeeded)
+        {
+            _runner.Advance(30);
         }
 
         // --wind=DEG: the wind from that quarter, until the weather changes.

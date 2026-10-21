@@ -20,7 +20,27 @@
     "offing": 60,
     "landfallTolerance": 4, "sightFrom": 11.5, "sightUntil": 12.5,
     "windFrom": 25, "windVariation": 85, "closestToWind": 67.5, "tackMargin": 12, "longestBoard": 10,
-    "pointsOfSail": [[67.5, 0.88], [90, 1.02], [135, 1.12], [180, 1.02]]
+    "pointsOfSail": [[67.5, 0.88], [90, 1.02], [135, 1.12], [180, 1.02]],
+    "coast": {
+      "destination": "coast.punta_ceniza",
+      "landmarks": [
+        { "id": "coast.rio_bermejo", "name": "the Río Bermejo", "north": 32, "bottom": "soft red mud",
+          "looks": "A broad river mouth between low wooded banks. The sea off it runs brown and red with the dye-wood water, a league out." },
+        { "id": "coast.bajos_largos", "name": "the Bajos Largos", "north": 16, "bottom": "fine grey sand", "like": "coast.manglares",
+          "looks": "Long low sand spits with surf on the bars offshore, and no hills behind: only a line of palms, and the haze." },
+        { "id": "coast.punta_ceniza", "name": "Punta Ceniza", "north": 0, "bottom": "shell and coarse sand", "like": "coast.punta_falsa",
+          "looks": "A rocky headland standing out from the forest, with a blackened ruin on its shoulder and the still water of a lagoon behind it." },
+        { "id": "coast.punta_falsa", "name": "Punta Falsa", "north": -13, "bottom": "coral and broken rock", "like": "coast.punta_ceniza",
+          "looks": "A rocky headland much like Ceniza, with reefs breaking white off it and the forest down to the rocks. No ruin, no lagoon." },
+        { "id": "coast.manglares", "name": "the Manglares", "north": -29, "bottom": "black mud", "like": "coast.bajos_largos",
+          "looks": "An endless low green wall of mangrove, roots in the water and the hills far inland. Nothing to know it by but that." }
+      ],
+      "landmarkLeagues": 7, "sightingLeagues": 6, "nightSightingLeagues": 1.2, "noLookout": 0.15,
+      "standOffLeagues": 2, "strikeLeagues": 0.3, "strikeDamage": 25,
+      "shelfLeagues": 25, "shelfFathoms": 100, "shoreFathoms": 4,
+      "landSignLeagues": 40, "landSignChancePerHour": 0.06, "nearLeagues": 30,
+      "soundEveryHours": 2, "decideAfterHours": 3
+    }
   },
   "startingWeather": "weather.fair",
   "weathers": [

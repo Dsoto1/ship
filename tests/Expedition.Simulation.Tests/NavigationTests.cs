@@ -156,12 +156,12 @@ public sealed class NavigationTests
                 runner.SetNavigator(runner.Campaign.CaptainId);
             }
 
-            while (!navigation.Landed && ship.Outcome == VoyageOutcome.UnderWay && runner.Campaign.Clock.Day < 45)
+            while (!navigation.Sighted && ship.Outcome == VoyageOutcome.UnderWay && runner.Campaign.Clock.Day < 45)
             {
                 runner.Advance(60);
             }
 
-            return navigation.Landed ? Math.Abs(navigation.True.Y - navigation.Destination.Y) : double.NaN;
+            return navigation.Sighted ? Math.Abs(navigation.True.Y - navigation.Destination.Y) : double.NaN;
         }
 
         var careful = Enumerable.Range(1, 6).Select(s => Landing(true, (ulong)s)).Where(d => !double.IsNaN(d)).Average();

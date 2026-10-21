@@ -551,7 +551,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             * (rules.RiggingSpeedFloor + (1 - rules.RiggingSpeedFloor) * ship.Rigging / 100)
             * (ship.WatchKept ? 1 : rules.NoWatchSpeedMultiplier)
             * (ship.YardSprung ? rules.SprungYardSpeed : 1)
-            * (ship.Navigation is { Landed: false } sailing && rules.Route is { } points ? points.SpeedOnPoint(sailing.OffWind) : 1)
+            * (ship.Navigation is { Sighted: false } sailing && rules.Route is { } points ? points.SpeedOnPoint(sailing.OffWind) : 1)
             * plan.Speed;
         ship.LeaguesSailed += ship.SpeedLeaguesPerHour * HoursPerTick;
         var landfall = ship.Navigation is { } navigation && rules.Route is { } course

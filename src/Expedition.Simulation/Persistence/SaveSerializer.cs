@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 27;
+    public const int CurrentSchemaVersion = 28;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -194,6 +194,9 @@ public static class SaveSerializer
 
                 return root;
             },
+
+            // Format 28 added the landfall approach: a voyage that had fetched the coast knows where she is on it.
+            [27] = root => root,
 
             // Format 27 gave the wind a direction: an older voyage takes the prevailing wind, on the port tack.
             [26] = root => root,
@@ -630,11 +633,19 @@ public static class SaveSerializer
                         ? new NavigationData
                         {
                             True = [n.True.X, n.True.Y], Reckoned = [n.Reckoned.X, n.Reckoned.Y], Drift = [n.Drift.X, n.Drift.Y],
-                            LogError = n.LogError, Heading = n.Heading, Landed = n.Landed, RunningDown = n.RunningDown, LastSightDay = n.LastSightDay,
+                            LogError = n.LogError, Heading = n.Heading, RunningDown = n.RunningDown, LastSightDay = n.LastSightDay,
                             Navigator = n.Navigator?.Value,
                             Track = n.Track.Select(p => (IReadOnlyList<double>)[p.X, p.Y]).ToList(),
                             Sights = n.Sights.Select(s => new NoonSightData { Day = s.Day, Taker = s.Taker.Value, Y = s.Y, Error = s.Error }).ToList(),
                             WindFrom = n.WindFrom, Tack = n.Tack, BoardHours = n.BoardHours,
+                            Approach = n.Sighted || n.NearWarned || n.Soundings.Count > 0
+                                ? new ApproachData
+                                {
+                                    Sighted = n.Sighted, Direction = n.CoastDirection, Identified = n.Identified, Seen = n.Seen, Pending = n.Pending,
+                                    PendingHours = n.PendingHours, Opinion = n.Opinion, OpinionBy = n.OpinionBy?.Value, NearWarned = n.NearWarned, RuledOut = n.RuledOut,
+                                    Soundings = n.Soundings.Select(d => new SoundingData { Tick = d.Tick, Who = d.Who.Value, At = [d.At.X, d.At.Y], Fathoms = d.Fathoms, Bottom = d.Bottom }).ToList(),
+                                }
+                                : null,
                         }
                         : null,
                 }
@@ -1063,17 +1074,41 @@ public static class SaveSerializer
                         throw new SaveLoadException("The voyage's navigation is invalid.");
                     }
 
+                    var coast = route.Coast;
+                    bool Known(string? id) => id is null || (coast is null ? id == "coast" : coast.Find(id) is not null);
+                    if (saved.Approach is { } approach
+                        && (approach.Direction is < -1 or > 1 || approach.PendingHours < 0 || !Known(approach.Identified) || !Known(approach.Seen) || !Known(approach.Opinion) || !Known(approach.RuledOut)
+                            || (approach.OpinionBy is { } by && !campaign.Characters.ContainsKey(new CharacterId(by)))
+                            || approach.Soundings.Any(d => d.At.Count != 2 || !campaign.Characters.ContainsKey(new CharacterId(d.Who)) || d.Fathoms is < 0)))
+                    {
+                        throw new SaveLoadException("The voyage's approach to the coast is invalid.");
+                    }
+
                     Voyage.ChartPoint Point(IReadOnlyList<double> p) => new(p[0], p[1]);
-                    navigation.Restore(Point(saved.True), Point(saved.Reckoned), Point(saved.Drift), saved.LogError, saved.Heading, saved.Landed, saved.RunningDown,
+                    navigation.Restore(Point(saved.True), Point(saved.Reckoned), Point(saved.Drift), saved.LogError, saved.Heading, saved.RunningDown,
                         saved.LastSightDay, saved.Navigator is { } navigator ? new CharacterId(navigator) : null, saved.Track.Select(Point),
                         saved.Sights.Select(s => new Voyage.NoonSight(s.Day, new CharacterId(s.Taker), s.Y, s.Error)), saved.WindFrom ?? route.WindFrom, saved.Tack, saved.BoardHours);
+                    if (saved.Approach is { } approach2)
+                    {
+                        navigation.RestoreApproach(approach2.Sighted, approach2.Direction, approach2.Identified, approach2.Seen, approach2.Pending, approach2.PendingHours,
+                            approach2.Opinion, approach2.OpinionBy is { } opinionBy ? new CharacterId(opinionBy) : null, approach2.NearWarned,
+                            approach2.Soundings.Select(d => new Voyage.Sounding(d.Tick, new CharacterId(d.Who), Point(d.At), d.Fathoms, d.Bottom)), approach2.RuledOut);
+                    }
+                    else if (saved.Landed)
+                    {
+                        // A format 26 or 27 voyage on the coast: she knew it, and was running along it for the destination.
+                        var north = navigation.True.Y - navigation.Destination.Y;
+                        var known = coast is null ? "coast" : coast.InView(north)?.Id ?? coast.Destination;
+                        navigation.Reckoned = navigation.True;
+                        navigation.RestoreApproach(true, north > 0 ? -1 : 1, known, coast?.InView(north)?.Id, false, 0, null, null, true, [], null);
+                    }
                 }
                 else
                 {
                     // An older voyage, reckoned by distance only: put her on the course, as far along it as she had come.
                     var along = Math.Min(savedVoyage.LeaguesSailed, savedVoyage.TotalLeagues);
                     var here = new Voyage.ChartPoint(Math.Sin(bearing) * along, Math.Cos(bearing) * along);
-                    navigation.Restore(here, here, new Voyage.ChartPoint(route.Current[0], route.Current[1]), 1, route.Bearing, false, false, -1, null, [here], [], route.WindFrom, 1, 0);
+                    navigation.Restore(here, here, new Voyage.ChartPoint(route.Current[0], route.Current[1]), 1, route.Bearing, false, -1, null, [here], [], route.WindFrom, 1, 0);
                 }
 
                 voyage.Navigation = navigation;

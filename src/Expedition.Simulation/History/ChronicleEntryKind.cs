@@ -60,8 +60,32 @@ public enum ChronicleEntryKind
     /// <summary>The ship filled and sank.</summary>
     Foundered,
 
-    /// <summary>The destination was sighted (parameter: to = destination).</summary>
+    /// <summary>The destination was reached, and known for what it is (parameter: to = destination).</summary>
     Landfall,
+
+    /// <summary>By the reckoning the coast is near (parameter: level = leagues off by the reckoning).</summary>
+    CoastNear,
+
+    /// <summary>A sign of land (parameter: to = birds, weed, water or cloud).</summary>
+    LandSign,
+
+    /// <summary>The lead was cast (parameters: level = fathoms, or none; to = the bottom; character: who).</summary>
+    Sounding,
+
+    /// <summary>The coast was raised (parameter: level = leagues off).</summary>
+    LandSighted,
+
+    /// <summary>A landmark came into view (parameter: to = landmark ID).</summary>
+    LandmarkSighted,
+
+    /// <summary>The captain, or the best hand aboard, took the coast for a landmark (parameter: to = landmark ID; character: who decided).</summary>
+    CoastIdentified,
+
+    /// <summary>Where she was taken to be at the destination, it was not there (parameter: to = destination landmark ID).</summary>
+    NotTheDestination,
+
+    /// <summary>She ran onto the coast unseen (parameters: damage, level = hull now).</summary>
+    StruckTheCoast,
 
     /// <summary>The captain decided an event (parameters: event, choice, outcome; characters involved).</summary>
     EventResolved,

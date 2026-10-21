@@ -38,7 +38,10 @@ public sealed record RouteRules
     /// </summary>
     public double Offing { get; init; } = 60;
 
-    /// <summary>Fetching the coast within this many leagues of the destination counts as arriving.</summary>
+    /// <summary>The far coast: its landmarks, the bank off it, how far off it is raised. Null: none charted.</summary>
+    public CoastRules? Coast { get; init; }
+
+    /// <summary>Within this many leagues of the destination along the coast, and knowing it, she has arrived.</summary>
     public double LandfallTolerance { get; init; } = 4;
 
     /// <summary>Noon sights can be taken from this hour (inclusive) until <see cref="SightUntil"/> (exclusive).</summary>
@@ -119,6 +122,14 @@ public sealed record RouteRules
         {
             yield return "Voyage route: closest to wind 0..180, margin and variation not negative, points of sail [degrees, factor] rising.";
         }
+
+        if (Coast is { } coast)
+        {
+            foreach (var problem in coast.Validate())
+            {
+                yield return problem;
+            }
+        }
     }
 }
 
@@ -143,6 +154,7 @@ public sealed class Navigation
 {
     private readonly List<ChartPoint> _track = [];
     private readonly List<NoonSight> _sights = [];
+    private readonly List<Sounding> _soundings = [];
 
     /// <summary>A new passage from the port, bound for <paramref name="destination"/>, making its latitude <paramref name="offing"/> leagues out.</summary>
     public Navigation(ChartPoint destination, double offing = 60)
@@ -202,8 +214,47 @@ public sealed class Navigation
     /// <summary>Degrees between the wind and her bow, -180..180: negative with the wind on her starboard side.</summary>
     public double OffWind => Wrap(Heading - WindFrom);
 
-    /// <summary>True once she has raised the coast; she then runs along it for the destination.</summary>
-    public bool Landed { get; internal set; }
+    /// <summary>
+    /// True once the coast is raised. From then she knows her distance off it (her longitude) but not
+    /// where along it she is, until the captain knows a landmark for what it is.
+    /// </summary>
+    public bool Sighted { get; internal set; }
+
+    /// <summary>With the coast in sight: +1 running north along it, -1 south, 0 standing off and on for the captain's word.</summary>
+    public int CoastDirection { get; internal set; }
+
+    /// <summary>The landmark the captain takes the coast for (rightly or not), or null.</summary>
+    public string? Identified { get; internal set; }
+
+    /// <summary>The last landmark that came into view, or null.</summary>
+    public string? Seen { get; internal set; }
+
+    /// <summary>True while a landmark in view waits for the captain to say what it is.</summary>
+    public bool Pending { get; internal set; }
+
+    /// <summary>Hours it has waited; after a while the best hand aboard decides.</summary>
+    public double PendingHours { get; internal set; }
+
+    /// <summary>What the best hand aboard takes the landmark in view for, and who that is.</summary>
+    public string? Opinion { get; internal set; }
+
+    /// <summary>Who gave <see cref="Opinion"/>.</summary>
+    public Core.CharacterId? OpinionBy { get; internal set; }
+
+    /// <summary>The landmark in view that standing in has shown is not the destination, or null.</summary>
+    public string? RuledOut { get; internal set; }
+
+    /// <summary>True once the captain has been told the reckoning puts the coast near.</summary>
+    public bool NearWarned { get; internal set; }
+
+    /// <summary>When the lead was last cast, or -1.</summary>
+    public long LastSoundingTick { get; internal set; } = -1;
+
+    /// <summary>Every cast of the lead.</summary>
+    public IReadOnlyList<Sounding> Soundings => _soundings;
+
+    /// <summary>Leagues off the coast, truly. Seen from the deck once the coast is raised.</summary>
+    public double Offshore => True.X - Destination.X;
 
     /// <summary>The day of the last noon sight, or -1.</summary>
     public long LastSightDay { get; internal set; } = -1;
@@ -218,21 +269,16 @@ public sealed class Navigation
     public IReadOnlyList<NoonSight> Sights => _sights;
 
     /// <summary>Leagues still to run, truly: to the coast, then along it.</summary>
-    public double TrueRemaining => Landed ? Math.Abs(True.Y - Destination.Y) : True.DistanceTo(Destination);
+    public double TrueRemaining => Sighted ? Math.Abs(True.Y - Destination.Y) : True.DistanceTo(Destination);
 
     /// <summary>Leagues still to run by the captain's reckoning.</summary>
-    public double ReckonedRemaining => Landed ? Math.Abs(True.Y - Destination.Y) : Reckoned.DistanceTo(Destination);
+    public double ReckonedRemaining => Sighted ? Math.Abs(Reckoned.Y - Destination.Y) : Reckoned.DistanceTo(Destination);
 
     // The course to steer from where the captain reckons she is. First for the offing, a point on the
     // destination's latitude well out from the coast; then due west down that latitude, edging north or
     // south to hold it, until the coast is raised.
     internal double CourseFrom(ChartPoint from)
     {
-        if (Landed)
-        {
-            return Destination.Y - from.Y >= 0 ? 0 : 180;
-        }
-
         if (RunningDown || from.X <= Destination.X + Offing)
         {
             var off = Math.Clamp(Destination.Y - from.Y, -6, 6);
@@ -246,39 +292,67 @@ public sealed class Navigation
 
     /// <summary>
     /// Sails for <paramref name="hours"/> at <paramref name="speed"/> leagues an hour: the reckoning by the
-    /// course and the log, the truth with the set of the sea besides. Returns true when she arrives.
+    /// course and the log, the truth with the set of the sea besides. She cannot sail through the land:
+    /// whether she sees it first, or strikes it, is for the runner to decide. With the coast raised she
+    /// stands in to <paramref name="standOff"/> leagues and runs along it as the captain orders.
     /// </summary>
-    internal bool Sail(double speed, double hours, double tolerance)
+    internal void Sail(double speed, double hours, double standOff = 2)
     {
-        Heading = Landed ? CourseFrom(Reckoned) : Steer(CourseFrom(Reckoned));
+        if (Sighted)
+        {
+            Coast(speed, hours, standOff);
+            return;
+        }
+
+        Heading = Steer(CourseFrom(Reckoned));
         BoardHours = Beating ? BoardHours + hours : 0;
         var radians = Heading * Math.PI / 180;
         var (east, north) = (Math.Sin(radians), Math.Cos(radians));
-        if (Landed)
-        {
-            // Along the coast with the land in sight: no reckoning needed, she follows it.
-            var step = Math.Min(speed * hours, Math.Abs(Destination.Y - True.Y));
-            True = True with { Y = True.Y + Math.Sign(Destination.Y - True.Y) * step };
-            Reckoned = True;
-            return Math.Abs(True.Y - Destination.Y) <= tolerance;
-        }
-
         True = new ChartPoint(True.X + (east * speed + Drift.X) * hours, True.Y + (north * speed + Drift.Y) * hours);
         Reckoned = new ChartPoint(Reckoned.X + east * speed * LogError * hours, Reckoned.Y + north * speed * LogError * hours);
         if (!RunningDown && Reckoned.X <= Destination.X + Offing + 1)
         {
             RunningDown = true;
         }
-        if (True.X > Destination.X)
+
+        if (True.X < Destination.X)
         {
-            return false;
+            True = True with { X = Destination.X };
+        }
+    }
+
+    // Along the coast in sight: in to her offing first, then north or south as ordered, the reckoning
+    // keeping pace (the coast gives the distance off; where along it she is, only what the captain made of it).
+    private void Coast(double speed, double hours, double standOff)
+    {
+        var step = speed * hours;
+        var closing = Math.Min(step, Math.Max(0, Offshore - standOff));
+        True = True with { X = True.X - closing };
+        if (CoastDirection == 0 || closing >= step)
+        {
+            Heading = closing > 0 ? 270 : CoastDirection >= 0 ? 0 : 180;
+        }
+        else
+        {
+            Heading = CoastDirection > 0 ? 0 : 180;
+            var along = step - closing;
+            if (Identified is not null)
+            {
+                // She runs to where she reckons the destination lies, and no further.
+                along = Math.Min(along, Math.Abs(Destination.Y - Reckoned.Y));
+            }
+
+            True = True with { Y = True.Y + CoastDirection * along };
+            Reckoned = Reckoned with { Y = Reckoned.Y + CoastDirection * along };
         }
 
-        // The coast: now she knows her longitude, and runs along the shore for the destination.
-        Landed = true;
-        True = True with { X = Destination.X };
-        Reckoned = True;
-        return Math.Abs(True.Y - Destination.Y) <= tolerance;
+        Reckoned = Reckoned with { X = True.X };
+    }
+
+    internal void Sound(Sounding sounding)
+    {
+        _soundings.Add(sounding);
+        LastSoundingTick = sounding.Tick;
     }
 
     // The course she can make good for the one she wants: as wanted, unless it lies too near the wind;
@@ -324,15 +398,26 @@ public sealed class Navigation
     }
 
     /// <summary>Sets every value while loading a save. The loader validates them.</summary>
-    internal void Restore(ChartPoint truth, ChartPoint reckoned, ChartPoint drift, double logError, double heading, bool landed, bool runningDown,
+    internal void Restore(ChartPoint truth, ChartPoint reckoned, ChartPoint drift, double logError, double heading, bool runningDown,
         long lastSightDay, Core.CharacterId? navigator, IEnumerable<ChartPoint> track, IEnumerable<NoonSight> sights, double windFrom, int tack, double boardHours)
     {
-        (True, Reckoned, Drift, LogError, Heading, Landed, RunningDown, LastSightDay, Navigator) = (truth, reckoned, drift, logError, heading, landed, runningDown, lastSightDay, navigator);
+        (True, Reckoned, Drift, LogError, Heading, RunningDown, LastSightDay, Navigator) = (truth, reckoned, drift, logError, heading, runningDown, lastSightDay, navigator);
         (WindFrom, Tack, BoardHours) = (windFrom, tack, boardHours);
-        Beating = !Landed && Math.Abs(Wrap(CourseFrom(Reckoned) - WindFrom)) < ClosestToWind;
+        Beating = Math.Abs(Wrap(CourseFrom(Reckoned) - WindFrom)) < ClosestToWind;
         _track.Clear();
         _track.AddRange(track);
         _sights.Clear();
         _sights.AddRange(sights);
+    }
+
+    /// <summary>Sets the approach while loading a save. The loader validates it.</summary>
+    internal void RestoreApproach(bool sighted, int direction, string? identified, string? seen, bool pending, double pendingHours,
+        string? opinion, Core.CharacterId? opinionBy, bool nearWarned, IEnumerable<Sounding> soundings, string? ruledOut)
+    {
+        (Sighted, CoastDirection, Identified, Seen, Pending, PendingHours, Opinion, OpinionBy, NearWarned, RuledOut) =
+            (sighted, direction, identified, seen, pending, pendingHours, opinion, opinionBy, nearWarned, ruledOut);
+        _soundings.Clear();
+        _soundings.AddRange(soundings);
+        LastSoundingTick = _soundings.Count > 0 ? _soundings[^1].Tick : -1;
     }
 }

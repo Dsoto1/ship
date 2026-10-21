@@ -393,7 +393,8 @@ public sealed record NavigationData
     /// <summary>The course steered, degrees.</summary>
     public required double Heading { get; init; }
 
-    /// <summary>True once the coast is raised.</summary>
+    /// <summary>Format 26 and 27: true once she had fetched the coast (and knew it). Read only; not written.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
     public bool Landed { get; init; }
 
     /// <summary>True once she is running down the destination's latitude.</summary>
@@ -419,6 +420,65 @@ public sealed record NavigationData
 
     /// <summary>Hours on that tack. Added in format 27.</summary>
     public double BoardHours { get; init; }
+
+    /// <summary>The approach to the coast. Added in format 28; null before the coast is raised or near.</summary>
+    public ApproachData? Approach { get; init; }
+}
+
+/// <summary>A saved landfall approach (Voyage.Navigation's coast state). Added in format 28.</summary>
+public sealed record ApproachData
+{
+    /// <summary>True once the coast is raised.</summary>
+    public bool Sighted { get; init; }
+
+    /// <summary>+1 north along the coast, -1 south, 0 standing off and on.</summary>
+    public int Direction { get; init; }
+
+    /// <summary>The landmark the captain takes the coast for.</summary>
+    public string? Identified { get; init; }
+
+    /// <summary>The last landmark in view.</summary>
+    public string? Seen { get; init; }
+
+    /// <summary>True while a landmark waits for the captain's word.</summary>
+    public bool Pending { get; init; }
+
+    /// <summary>Hours it has waited.</summary>
+    public double PendingHours { get; init; }
+
+    /// <summary>What the best hand aboard takes it for.</summary>
+    public string? Opinion { get; init; }
+
+    /// <summary>Who that is.</summary>
+    public int? OpinionBy { get; init; }
+
+    /// <summary>True once told the coast is near by the reckoning.</summary>
+    public bool NearWarned { get; init; }
+
+    /// <summary>Casts of the lead.</summary>
+    public IReadOnlyList<SoundingData> Soundings { get; init; } = [];
+
+    /// <summary>The landmark in view shown not to be the destination.</summary>
+    public string? RuledOut { get; init; }
+}
+
+/// <summary>One saved cast of the lead.</summary>
+public sealed record SoundingData
+{
+    /// <summary>When.</summary>
+    public required long Tick { get; init; }
+
+    /// <summary>Who cast it.</summary>
+    public required int Who { get; init; }
+
+    /// <summary>Where by the reckoning, [east, north].</summary>
+    public required IReadOnlyList<double> At { get; init; }
+
+    /// <summary>Fathoms, or null for no bottom.</summary>
+    public double? Fathoms { get; init; }
+
+    /// <summary>What came up, or null.</summary>
+    public string? Bottom { get; init; }
 }
 
 /// <summary>One saved noon sight.</summary>

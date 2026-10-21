@@ -20,6 +20,16 @@ public partial class ChartView : Control
     private Button _take = null!;
     private OptionButton _navigator = null!;
     private readonly List<CharacterId?> _navigatorChoices = [];
+    private VBoxContainer _coastBox = null!;
+    private VBoxContainer _sightBox = null!;
+    private string? _listedFor;
+    private Label _coast = null!;
+    private Button _lead = null!;
+    private VBoxContainer _knowBox = null!;
+    private OptionButton _landmark = null!;
+    private Label _directions = null!;
+    private Button _north = null!;
+    private Button _south = null!;
     private SimulationRunner? _runner;
 
     /// <summary>The captain goes to take the noon sight himself.</summary>
@@ -44,22 +54,30 @@ public partial class ChartView : Control
         var row = new HBoxContainer();
         row.AddThemeConstantOverride("separation", Ui.SpaceL);
         _panel.AddChild(row);
-        _canvas = new ChartCanvas { CustomMinimumSize = new Vector2(820, 660), SizeFlagsVertical = SizeFlags.ExpandFill };
+        _canvas = new ChartCanvas { CustomMinimumSize = new Vector2(820, 660), SizeFlagsVertical = SizeFlags.ExpandFill, ClipContents = true };
         row.AddChild(_canvas);
 
+        var column = new VBoxContainer { CustomMinimumSize = new Vector2(330, 0) };
+        column.AddThemeConstantOverride("separation", Ui.SpaceM);
+        row.AddChild(column);
+        var scroll = new ScrollContainer { SizeFlagsVertical = SizeFlags.ExpandFill, HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
+        column.AddChild(scroll);
         var side = new VBoxContainer { CustomMinimumSize = new Vector2(320, 0) };
         side.AddThemeConstantOverride("separation", Ui.SpaceM);
-        row.AddChild(side);
+        scroll.AddChild(side);
         side.AddChild(Ui.Text("The chart", Ui.TextHeading + 2, Ui.Brass));
         _reckoning = Ui.Text("", Ui.TextBody, Ui.Ink, 320);
         side.AddChild(_reckoning);
-        side.AddChild(new HSeparator());
-        side.AddChild(Ui.Text("The noon sight", Ui.TextHeading, Ui.Brass));
+        _sightBox = new VBoxContainer();
+        _sightBox.AddThemeConstantOverride("separation", Ui.SpaceM);
+        side.AddChild(_sightBox);
+        _sightBox.AddChild(new HSeparator());
+        _sightBox.AddChild(Ui.Text("The noon sight", Ui.TextHeading, Ui.Brass));
         _sight = Ui.Text("", Ui.TextBody, Ui.Ink, 320);
-        side.AddChild(_sight);
+        _sightBox.AddChild(_sight);
         _take = Ui.Button("Take the sun with the astrolabe", "Take the noon sight yourself: the latitude, as true as your hand is steady", () => SightRequested?.Invoke());
-        side.AddChild(_take);
-        side.AddChild(Ui.Text("Navigator (takes the sight if you do not)", Ui.TextMeta, Ui.InkSoft, 320));
+        _sightBox.AddChild(_take);
+        side.AddChild(Ui.Text("Navigator (takes the sight, keeps the lead going near the coast, and speaks to what is seen)", Ui.TextMeta, Ui.InkSoft, 320));
         _navigator = new OptionButton { FocusMode = FocusModeEnum.None, ClipText = true };
         _navigator.ItemSelected += index =>
         {
@@ -70,8 +88,34 @@ public partial class ChartView : Control
             }
         };
         side.AddChild(_navigator);
-        side.AddChild(new Control { SizeFlagsVertical = SizeFlags.ExpandFill });
-        side.AddChild(Ui.Button("Close", "Close the chart  (M or Esc)", Close));
+
+        // The coast: the lead, and once it is raised, what it is.
+        _coastBox = new VBoxContainer { Visible = false };
+        _coastBox.AddThemeConstantOverride("separation", Ui.SpaceS);
+        side.AddChild(_coastBox);
+        _coastBox.AddChild(new HSeparator());
+        _coastBox.AddChild(Ui.Text("The coast", Ui.TextHeading, Ui.Brass));
+        _coast = Ui.Text("", Ui.TextBody, Ui.Ink, 320);
+        _coastBox.AddChild(_coast);
+        _lead = Ui.Button("Heave the lead", "Sound: the depth, and what the tallow brings up off the bottom", HeaveTheLead);
+        _coastBox.AddChild(_lead);
+        _knowBox = new VBoxContainer { Visible = false };
+        _knowBox.AddThemeConstantOverride("separation", Ui.SpaceS);
+        _coastBox.AddChild(_knowBox);
+        _landmark = new OptionButton { FocusMode = FocusModeEnum.None, ClipText = true };
+        _landmark.ItemSelected += _ => Refresh();
+        _knowBox.AddChild(_landmark);
+        _directions = Ui.Text("", Ui.TextMeta, Ui.InkSoft, 320);
+        _knowBox.AddChild(_directions);
+        _knowBox.AddChild(Ui.Button("That is what we see", "Take the coast in view for this mark: the reckoning goes there, and she runs for Punta Ceniza by it", Identify));
+        var along = new HBoxContainer();
+        along.AddThemeConstantOverride("separation", Ui.SpaceS);
+        _coastBox.AddChild(along);
+        _north = Ui.Button("Run north", "Run north along the coast by eye", () => _runner?.CoastAlong(1));
+        _south = Ui.Button("Run south", "Run south along the coast by eye", () => _runner?.CoastAlong(-1));
+        along.AddChild(_north);
+        along.AddChild(_south);
+        column.AddChild(Ui.Button("Close", "Close the chart  (M or Esc)", Close));
     }
 
     public override void _UnhandledInput(InputEvent @event)
@@ -97,9 +141,46 @@ public partial class ChartView : Control
             _navigatorChoices.Add(person.Id);
         }
 
+        _landmark.Clear();
+        foreach (var mark in runner.Coast?.Landmarks ?? [])
+        {
+            _landmark.AddItem(Capitalise(mark.Name));
+        }
+
         Visible = true;
         Refresh();
         Ui.FadeIn(_panel);
+    }
+
+    private static string Capitalise(string text) => text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];
+
+    // The lead is hove by the navigator if there is one, else by the first able hand.
+    private void HeaveTheLead()
+    {
+        if (_runner?.Campaign.Voyage?.Navigation is not { } navigation)
+        {
+            return;
+        }
+
+        var who = navigation.Navigator is { } appointed && _runner.Campaign.Characters[appointed].CanWork
+            ? appointed
+            : _runner.Campaign.Crew.Where(c => c.CanWork && c.Id != _runner.Campaign.CaptainId).Select(c => (CharacterId?)c.Id).FirstOrDefault()
+              ?? _runner.Campaign.CaptainId;
+        if (who is { } hand)
+        {
+            _runner.HeaveTheLead(hand);
+        }
+
+        Refresh();
+    }
+
+    private void Identify()
+    {
+        if (_runner?.Coast is { } coast && _landmark.Selected >= 0 && _landmark.Selected < coast.Landmarks.Count)
+        {
+            _runner.IdentifyCoast(coast.Landmarks[_landmark.Selected].Id);
+            Refresh();
+        }
     }
 
     // The wind as the sailors would say it, from how far it is off her bow.
@@ -130,8 +211,8 @@ public partial class ChartView : Control
             (navigation.Beating
                 ? $": too near her course to steer it, so she beats up to windward, {(navigation.Tack > 0 ? "on the port tack" : "on the starboard tack")}.\n"
                 : $", {PointOfSail(navigation.OffWind)}.\n") +
-            (navigation.Landed
-                ? $"The coast is in sight: running along it, {ship.ReckonedRemaining:0} leagues to go."
+            (navigation.Sighted
+                ? $"The coast is in sight, {navigation.Offshore:0.0} leagues off."
                 : $"About {ship.ReckonedRemaining:0} leagues to {ship.Destination}" + (navigation.RunningDown ? ", running down her latitude." : ", making for her latitude.")) +
             $"\nYour latitude may be out by {alongY:0} leagues; your longitude, by {alongX:0}.";
         var last = navigation.Sights.LastOrDefault();
@@ -144,13 +225,76 @@ public partial class ChartView : Control
             : _runner.CanTakeNoonSight ? "The sun is near noon: take it now." : $"Taken between {Hour(window?.SightFrom ?? 11.5)} and {Hour(window?.SightUntil ?? 12.5)}.";
         _sight.Text = $"{lastText}\n{today}";
         _take.Disabled = !_runner.CanTakeNoonSight;
+        // With the coast in sight the sun has nothing more to tell: the land gives the place.
+        _sightBox.Visible = !navigation.Sighted;
         var selected = _navigatorChoices.IndexOf(navigation.Navigator);
         if (_navigator.Selected != selected)
         {
             _navigator.Select(Math.Max(selected, 0));
         }
 
+        RefreshCoast(navigation);
         _canvas.Show(_runner, navigation, alongX, alongY);
+    }
+
+    // The coast section: the last cast of the lead, and with the coast raised what is in view, what the
+    // best hand aboard makes of it, and the sailing directions for the mark chosen to compare.
+    private void RefreshCoast(Navigation navigation)
+    {
+        if (_runner?.Coast is not { } coast)
+        {
+            _coastBox.Visible = false;
+            return;
+        }
+
+        _coastBox.Visible = navigation.NearWarned || navigation.Sighted || navigation.Soundings.Count > 0;
+        var lines = new List<string>();
+        if (navigation.Soundings.LastOrDefault() is { } cast)
+        {
+            var when = new SimulationClock(cast.Tick).TimeOfDay;
+            lines.Add(cast.Fathoms is { } fathoms
+                ? $"Last cast at {when.Hours:00}:{when.Minutes:00}: {fathoms:0} fathoms, {cast.Bottom}."
+                : $"Last cast at {when.Hours:00}:{when.Minutes:00}: no bottom at {coast.ShelfFathoms:0} fathoms.");
+        }
+        else
+        {
+            lines.Add($"The bank runs out some {coast.ShelfLeagues:0} leagues from the coast: inside it the lead finds bottom, shoaling as she closes.");
+        }
+
+        if (navigation.Sighted)
+        {
+            var view = coast.Find(navigation.Seen);
+            lines.Add(view is null ? "In view: a plain stretch of shore, nothing to know it by." : $"In view: {view.Looks}");
+            if (navigation.Pending && navigation.Opinion is { } opinion && navigation.OpinionBy is { } by)
+            {
+                lines.Add($"{_runner.Campaign.Characters[by].Name} takes it for {coast.Find(opinion)?.Name}.");
+            }
+
+            lines.Add(navigation.CoastDirection == 0
+                ? "She stands off and on, waiting for your word."
+                : $"Running {(navigation.CoastDirection > 0 ? "north" : "south")} along the coast" +
+                  (coast.Find(navigation.Identified) is { } taken ? $", taking it for {taken.Name}: by that, {Math.Abs(navigation.Reckoned.Y - navigation.Destination.Y):0} leagues to go." : ", by eye."));
+        }
+
+        _coast.Text = string.Join("\n", lines);
+        _lead.Disabled = _runner.Campaign.Voyage?.Outcome != VoyageOutcome.UnderWay;
+        _knowBox.Visible = navigation.Sighted && navigation.Seen is not null;
+        _north.Visible = _south.Visible = navigation.Sighted;
+        // A new mark in view: the list opens on what the best hand makes of it.
+        if (_knowBox.Visible && navigation.Seen != _listedFor)
+        {
+            _listedFor = navigation.Seen;
+            var guess = coast.Landmarks.ToList().FindIndex(l => l.Id == navigation.Opinion);
+            if (guess >= 0)
+            {
+                _landmark.Select(guess);
+            }
+        }
+
+        if (_knowBox.Visible && _landmark.Selected >= 0 && _landmark.Selected < coast.Landmarks.Count)
+        {
+            _directions.Text = $"The sailing directions for {coast.Landmarks[_landmark.Selected].Name}: {coast.Landmarks[_landmark.Selected].Looks}";
+        }
     }
 
     // How far out the reckoning may be: the longitude by every day's run since the port (no fix at sea),
@@ -161,7 +305,7 @@ public partial class ChartView : Control
         var x = 1.5 + 1.6 * day;
         var last = navigation.Sights.LastOrDefault();
         var y = last is null ? 1.5 + 1.6 * day : 3 + 1.6 * Math.Max(0, day - last.Day - 0.5);
-        return navigation.Landed ? (0, 0) : (x, y);
+        return navigation.Sighted ? (0.3, navigation.Identified is null ? y : 1) : (x, y);
     }
 
     private static string Hour(double hour) => $"{(int)hour:00}:{(int)Math.Round(hour % 1 * 60):00}";
@@ -199,14 +343,19 @@ public partial class ChartCanvas : Control
     private double _doubtX;
     private double _doubtY;
     private Rect2 _world;
+    private bool _coastSheet;
 
     /// <summary>Sets what to draw.</summary>
     public void Show(SimulationRunner runner, Navigation navigation, double doubtX, double doubtY)
     {
         (_runner, _navigation, _doubtX, _doubtY) = (runner, navigation, doubtX, doubtY);
         // The whole passage, with a margin: from a little east and north of the port to past the coast.
+        // Near the coast, the coast sheet: the approach to Punta Ceniza, large enough to work on.
         var d = navigation.Destination;
-        _world = new Rect2((float)d.X - 45, (float)d.Y - 70, (float)-d.X + 85, (float)-d.Y + 130);
+        _coastSheet = runner.Coast is not null && (navigation.NearWarned || navigation.Sighted);
+        _world = _coastSheet
+            ? new Rect2((float)d.X - 14, (float)d.Y - 42, 62, 86)
+            : new Rect2((float)d.X - 45, (float)d.Y - 70, (float)-d.X + 85, (float)-d.Y + 130);
         QueueRedraw();
     }
 
@@ -234,7 +383,7 @@ public partial class ChartCanvas : Control
         var perDegree = route.LeaguesPerDegree;
         for (var lat = Math.Ceiling(route.StartLatitude + (_world.Position.Y) / perDegree); lat <= route.StartLatitude + _world.End.Y / perDegree; lat++)
         {
-            if ((int)lat % 2 != 0)
+            if (!_coastSheet && (int)lat % 2 != 0)
             {
                 continue;
             }
@@ -248,7 +397,7 @@ public partial class ChartCanvas : Control
         var perLonDegree = perDegree * Math.Cos(middle);
         for (var lon = Math.Ceiling(route.StartLongitude + _world.Position.X / perLonDegree); lon <= route.StartLongitude + _world.End.X / perLonDegree; lon++)
         {
-            if ((int)lon % 2 != 0)
+            if (!_coastSheet && (int)lon % 2 != 0)
             {
                 continue;
             }
@@ -262,20 +411,42 @@ public partial class ChartCanvas : Control
         // south through Punta Ceniza, the destination, with its bar standing off to the north.
         Coast([(25, 70), (12, 30), (6, 8), (0, 0), (4, -10), (-2, -30), (8, -60), (30, -90)], "Castrena");
         var ember = new List<(double, double)>();
-        for (var y = d.Y - 70; y <= d.Y + 130; y += 10)
+        for (var y = Math.Max(d.Y - 70, _world.Position.Y); y <= Math.Min(d.Y + 130, _world.End.Y); y += _coastSheet ? 1 : 5)
         {
-            ember.Add((d.X + 2 * Math.Sin(y * 0.21) + (y > d.Y + 10 && y < d.Y + 25 ? 3 : 0), y));
+            ember.Add((d.X + CoastBulge(y, d), y));
         }
 
         Coast(ember, "the Ember Coast", west: true);
         Mark(0, 0, "La Bocana");
-        Mark(d.X, d.Y, "Punta Ceniza");
-        DrawString(font, At(d.X + 3, d.Y + 17), "the bar", HorizontalAlignment.Left, -1, 11, Red);
+        // The marks of the sailing directions, along the coast; the destination in red.
+        foreach (var mark in _runner.Coast?.Landmarks ?? [])
+        {
+            var at = At(d.X + CoastBulge(d.Y + mark.North, d), d.Y + mark.North);
+            var colour = mark.Id == _runner.Coast!.Destination ? Red : InkLine;
+            DrawLine(at, at + new Vector2(8, 0), colour, 2);
+            DrawCircle(at, 3, colour);
+            DrawString(font, at + new Vector2(11, 4), mark.Name, HorizontalAlignment.Left, -1, 11, colour);
+        }
+
+        // The soundings, where the reckoning put her: fathoms, or a ring with a bar for no bottom.
+        foreach (var cast in navigation.Soundings)
+        {
+            var at = At(cast.At.X, cast.At.Y);
+            if (cast.Fathoms is { } fathoms)
+            {
+                DrawString(font, at + new Vector2(-6, 4), $"{fathoms:0}", HorizontalAlignment.Left, -1, 10, SoundingInk);
+            }
+            else
+            {
+                DrawArc(at, 2.5f, 0, Mathf.Tau, 10, SoundingInk, 1);
+                DrawLine(at + new Vector2(-3, -5), at + new Vector2(3, -5), SoundingInk, 1);
+            }
+        }
 
         // The course: to the offing on the destination's latitude, then down it to the coast.
         var reckoned = navigation.Reckoned;
         var offing = new ChartPoint(d.X + navigation.Offing, d.Y);
-        if (!navigation.Landed)
+        if (!navigation.Sighted)
         {
             if (!navigation.RunningDown)
             {
@@ -312,7 +483,17 @@ public partial class ChartCanvas : Control
         DrawCircle(centre, 4.5f, Red);
         DrawString(font, centre + new Vector2(8, 4), _runner.Campaign.Voyage!.ShipName, HorizontalAlignment.Left, -1, 12, Red);
 
-        Rose(new Vector2(Size.X - 80, Size.Y - 90), 46);
+        Rose(new Vector2(Size.X - 110, Size.Y - 110), 46);
+    }
+
+    private static readonly Color SoundingInk = new(0.2f, 0.32f, 0.5f);
+
+    // The drawn coast's wander about the straight line the simulation uses, small enough not to mislead:
+    // the headlands of Ceniza and the false point stand out a little.
+    private static double CoastBulge(double y, ChartPoint destination)
+    {
+        var north = y - destination.Y;
+        return 1.2 * Math.Sin(y * 0.21) + 2.2 * Math.Exp(-north * north / 8) + 1.8 * Math.Exp(-(north + 13) * (north + 13) / 8);
     }
 
     private void Coast(IReadOnlyList<(double X, double Y)> line, string name, bool west = false)

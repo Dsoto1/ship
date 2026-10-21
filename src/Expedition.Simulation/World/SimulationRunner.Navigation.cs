@@ -18,7 +18,26 @@ public sealed partial class SimulationRunner
     // navigator's sight if the captain has not taken it. True on arrival.
     private bool SailTheRoute(VoyageState ship, Navigation navigation, RouteRules route)
     {
-        var arrived = navigation.Sail(ship.SpeedLeaguesPerHour, HoursPerTick, route.LandfallTolerance);
+        navigation.Sail(ship.SpeedLeaguesPerHour, HoursPerTick, route.Coast?.StandOffLeagues ?? 0);
+        bool arrived;
+        if (route.Coast is { } coast)
+        {
+            arrived = Approach(ship, navigation, route, coast, Content.Voyage!.Weather(ship.WeatherId));
+        }
+        else
+        {
+            // No coast charted: she knows it when she fetches it, and runs along it to the destination.
+            if (!navigation.Sighted && navigation.Offshore <= 0)
+            {
+                navigation.Sighted = true;
+                navigation.Identified = "coast";
+                navigation.Reckoned = navigation.True;
+                navigation.CoastDirection = navigation.True.Y > navigation.Destination.Y ? -1 : 1;
+            }
+
+            arrived = navigation.Sighted && Math.Abs(navigation.True.Y - navigation.Destination.Y) <= route.LandfallTolerance;
+        }
+
         var hour = Campaign.Clock.TimeOfDay.TotalHours;
         var minute = Campaign.Clock.Tick % SimulationClock.TicksPerDay;
         if (minute == 0)
@@ -61,7 +80,7 @@ public sealed partial class SimulationRunner
 
     /// <summary>True between the hours the sun can be taken at noon, if today's sight is not yet taken.</summary>
     public bool CanTakeNoonSight =>
-        Campaign.Voyage is { Outcome: VoyageOutcome.UnderWay, Navigation: { Landed: false } navigation } && Content.Voyage?.Route is { } route
+        Campaign.Voyage is { Outcome: VoyageOutcome.UnderWay, Navigation: { Sighted: false } navigation } && Content.Voyage?.Route is { } route
         && navigation.LastSightDay != Campaign.Clock.Day
         && Campaign.Clock.TimeOfDay.TotalHours >= route.SightFrom && Campaign.Clock.TimeOfDay.TotalHours < route.SightUntil;
 
@@ -109,7 +128,7 @@ public sealed partial class SimulationRunner
         }
 
         navigation.WindFrom = ((from % 360) + 360) % 360;
-        if (!navigation.Landed)
+        if (!navigation.Sighted)
         {
             navigation.Heading = navigation.Steer(navigation.CourseFrom(navigation.Reckoned));
         }

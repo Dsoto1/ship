@@ -26,6 +26,7 @@ public enum AutoPause
     ShipDamage,
     Shortage,
     Events,
+    Landfall,
 }
 
 /// <summary>
@@ -52,7 +53,7 @@ public partial class Hud : CanvasLayer
     private readonly Dictionary<string, ProgressBar> _needBars = [];
     private readonly Dictionary<PanelId, Button> _navButtons = [];
     private readonly Dictionary<PanelId, VBoxContainer> _panelBodies = [];
-    private readonly HashSet<AutoPause> _autoPause = [AutoPause.InjuryAndDeath, AutoPause.Weather, AutoPause.ShipDamage, AutoPause.Shortage, AutoPause.Events];
+    private readonly HashSet<AutoPause> _autoPause = [AutoPause.InjuryAndDeath, AutoPause.Weather, AutoPause.ShipDamage, AutoPause.Shortage, AutoPause.Events, AutoPause.Landfall];
 
     private Control _root = null!;
     private Label _clock = null!;
@@ -749,6 +750,7 @@ public partial class Hud : CanvasLayer
                      (AutoPause.ShipDamage, "Damage and the bilge", 12),
                      (AutoPause.Shortage, "Running short of water or food", 13),
                      (AutoPause.Events, "Decisions for the captain", 14),
+                     (AutoPause.Landfall, "The coast: land sighted, marks to know", 15),
                  })
         {
             _menu.AddCheckItem(label, id);
@@ -774,7 +776,7 @@ public partial class Hud : CanvasLayer
                 GetTree().Root.ContentScaleFactor = _uiScale;
                 Toast($"Interface size {_uiScale:P0}.");
                 break;
-            case >= 10 and <= 13:
+            case (>= 10 and <= 13) or 15:
                 var category = (AutoPause)(id - 10);
                 if (!_autoPause.Remove(category)) _autoPause.Add(category);
                 Toast(_autoPause.Contains(category) ? "Will pause for this." : "Will notify without pausing.");
@@ -860,6 +862,18 @@ public partial class Hud : CanvasLayer
                     $"Course {navigation.Heading:0}° by the compass, steered from your reckoning; the wind from the {SimulationRunner.CompassPoint(navigation.WindFrom)}. " +
                     (navigation.Beating ? "It is too near the course she wants, so she beats to windward, tack upon tack. " : "") +
                     "The chart (M) shows where you reckon she is."));
+                if (navigation.Sighted)
+                {
+                    chips.Add(("⚓", navigation.Pending ? "Land: what coast is this?" : navigation.CoastDirection == 0 ? "Land: standing off" : $"Coasting {(navigation.CoastDirection > 0 ? "north" : "south")}",
+                        navigation.Pending || navigation.CoastDirection == 0 ? Severity.Attention : Severity.Information,
+                        "The coast is in sight. Open the chart (M) to say what it is, by the sailing directions, or to run along it by eye."));
+                }
+                else if (navigation.NearWarned)
+                {
+                    chips.Add(("⚓", "Coast near: sound", Severity.Attention,
+                        "By your reckoning the coast is near. Heave the lead from the chart (M): the bank shoals as she closes. Keep a lookout, above all at night."));
+                }
+
                 if (runner.CanTakeNoonSight)
                 {
                     chips.Add(("☀", "Noon: take the sun", Severity.Attention, "The sun is near its height. Open the chart (M) and take the noon sight, or leave it to your navigator."));

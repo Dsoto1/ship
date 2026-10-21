@@ -212,12 +212,15 @@ public class VoyageTests
         var runner = TestDeckScenario.Create(Shipped, withDuties: true, withVoyage: false);
         Assert.True(runner.StartVoyage("the Garza", "the Ember Coast", 3).Succeeded);
 
+        // The coast is raised at once; she arrives when the captain knows it for Punta Ceniza.
+        runner.Advance(10);
+        Assert.True(runner.IdentifyCoast("coast.punta_ceniza").Succeeded);
         runner.Advance(12 * 60);
 
         Assert.Equal(VoyageOutcome.Arrived, runner.Campaign.Voyage!.Outcome);
         Assert.Equal(CampaignPhase.Landfall, runner.Campaign.Phase);
         var landfall = runner.Campaign.Chronicle.Entries.Single(e => e.Kind == ChronicleEntryKind.Landfall);
-        Assert.Equal("Land! The Ember Coast sighted from the masthead.", new ChronicleFormatter(runner.Campaign, Shipped).Format(landfall));
+        Assert.Equal("Landfall: the Ember Coast reached, and known for what it is.", new ChronicleFormatter(runner.Campaign, Shipped).Format(landfall));
     }
 
     [Fact]
@@ -225,6 +228,8 @@ public class VoyageTests
     {
         var runner = TestDeckScenario.Create(Shipped, withDuties: true, withVoyage: false);
         runner.StartVoyage("the Garza", "the Ember Coast", 1);
+        runner.Advance(10);
+        runner.IdentifyCoast("coast.punta_ceniza");
         runner.Advance(6 * 60);
         var ship = runner.Campaign.Voyage!;
         var (hull, bilge) = (ship.Hull, ship.Bilge);
