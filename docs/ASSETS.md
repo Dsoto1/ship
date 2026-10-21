@@ -9,8 +9,11 @@ Rules for this repo's sessions:
 - Log every spend below.
 - Before each batch, check the shared balance. If spending would leave less than the other games'
   remaining caps, stop and ask the user.
-- Searching and downloading catalogue music and sound effects probably doesn't use credits; to be
-  confirmed on the first download.
+- Searching catalogue music and sound effects works; downloading them is not on the AI Suite plan.
+- No AI concept images (the user's rule, 2026-10-21). For image-to-3D, write the user a short photo
+  brief (object, view, details that must show); the user sends a free photo with a clear background.
+  Upload it with upload_image (no credits), then use Hyper3D Rodin Fast (300 credits). Record each
+  photo's source and licence; a photo of unknown source is prototype-only until cleared.
 
 | Date | What | Model | Credits | Expedition total |
 |---|---|---|---|---|
