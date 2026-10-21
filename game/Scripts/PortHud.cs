@@ -112,6 +112,7 @@ public partial class PortHud : CanvasLayer
         BuildCard();
         BuildDialogue();
         BuildRoomBar();
+        BuildHover();
         _confirmSail = new ConfirmationDialog { Title = "Set sail?", OkButtonText = "Sail", CancelButtonText = "Not yet" };
         _confirmSail.Confirmed += () => SetSailRequested?.Invoke();
         AddChild(_confirmSail);
@@ -501,6 +502,66 @@ public partial class PortHud : CanvasLayer
     private PanelContainer _roomBar = null!;
     private Label _roomName = null!;
     private Button _roundButton = null!;
+
+    // Beside the pointer, over someone in port: who they are as far as the captain knows, whether they
+    // want a berth, and what the mouse does.
+    private PanelContainer _hover = null!;
+    private Label _hoverName = null!;
+    private Label _hoverWhat = null!;
+    private Label _hoverState = null!;
+    private Label _hoverHint = null!;
+
+    private void BuildHover()
+    {
+        _hover = Ui.PanelOf(Ui.Paper, Ui.Rule, Ui.SpaceM, Ui.SpaceS);
+        _hover.Visible = false;
+        _hover.MouseFilter = Control.MouseFilterEnum.Ignore;
+        _root.AddChild(_hover);
+        var column = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        column.AddThemeConstantOverride("separation", 0);
+        _hover.AddChild(column);
+        _hoverName = Ui.Text("", Ui.TextBody + 1, Ui.Brass);
+        _hoverWhat = Ui.Text("", Ui.TextMeta + 1, Ui.Ink);
+        _hoverState = Ui.Text("", Ui.TextMeta + 1, Ui.Of(Severity.Positive));
+        _hoverHint = Ui.Text("", Ui.TextMeta, Ui.InkSoft);
+        foreach (var label in new[] { _hoverName, _hoverWhat, _hoverState, _hoverHint })
+        {
+            label.MouseFilter = Control.MouseFilterEnum.Ignore;
+            column.AddChild(label);
+        }
+    }
+
+    /// <summary>Walks over and talks with someone (right-click on them).</summary>
+    public void RequestTalk(CharacterId id) => TalkRequested?.Invoke(id);
+
+    /// <summary>The label beside the pointer over <paramref name="hovered"/>, or none.</summary>
+    public void Hover(SimulationRunner runner, CharacterId? hovered, Vector2 pointer)
+    {
+        if (hovered is not { } id || !runner.Campaign.Characters.TryGetValue(id, out var character) || runner.Campaign.Port is not { } port)
+        {
+            _hover.Visible = false;
+            return;
+        }
+
+        var person = runner.PersonOf(id);
+        var known = KnownName(runner, id);
+        _hoverName.Text = known;
+        _hoverWhat.Text = character.Membership == Membership.Crew ? "Signed on, aboard the Garza"
+            : known == character.Name && person is not null ? Capital(person.Occupation) : person?.Look ?? "";
+        _hoverWhat.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        _hoverWhat.CustomMinimumSize = new Vector2(known == character.Name ? 0 : 240, 0);
+        var seeking = person?.Seeking is not null && !port.Hired.Contains(id) && !port.Gone.Contains(id);
+        var talked = port.TalkedTo.Contains(id);
+        _hoverState.Visible = character.Membership == Membership.Local && (seeking && talked || runner.RoomOf(id) is not null);
+        _hoverState.Text = seeking && talked ? "Available for hire" : runner.RoomOf(id) is { } room ? $"Inside {room.Name}" : "";
+        _hoverState.AddThemeColorOverride("font_color", seeking && talked ? Ui.Of(Severity.Positive) : Ui.InkSoft);
+        _hoverHint.Text = character.Membership == Membership.Local && person is not null ? "Right-click to talk · click to look" : "Click to look";
+        _hover.Visible = true;
+        _hover.ResetSize();
+        var size = _hover.Size;
+        var screen = _root.GetViewportRect().Size;
+        _hover.Position = new Vector2(Mathf.Min(pointer.X + 18, screen.X - size.X - 8), Mathf.Clamp(pointer.Y + 14, 8, screen.Y - size.Y - 8));
+    }
 
     private void BuildDialogue()
     {

@@ -210,6 +210,30 @@ public static class Ui
     }
 
     /// <summary>A panel container with a style.</summary>
+    /// <summary>
+    /// Puts one of the interface icons (Assets/UI/icons, white silhouettes) above a button's label, in its
+    /// text colour, as the screen buttons along the bottom show it.
+    /// </summary>
+    public static void WithIcon(Button button, string icon, int size = 26)
+    {
+        var path = $"res://Assets/UI/icons/{icon}.png";
+        if (!ResourceLoader.Exists(path))
+        {
+            return;
+        }
+
+        button.Icon = GD.Load<Texture2D>(path);
+        button.IconAlignment = HorizontalAlignment.Center;
+        button.VerticalIconAlignment = VerticalAlignment.Top;
+        button.AddThemeConstantOverride("icon_max_width", size);
+        button.AddThemeColorOverride("icon_normal_color", Ink);
+        button.AddThemeColorOverride("icon_hover_color", Brass);
+        button.AddThemeColorOverride("icon_pressed_color", Brass);
+        button.AddThemeColorOverride("icon_hover_pressed_color", Brass);
+        button.AddThemeColorOverride("icon_disabled_color", Disabled);
+        button.CustomMinimumSize = new Vector2(Math.Max(button.CustomMinimumSize.X, 64), 0);
+    }
+
     public static PanelContainer PanelOf(Color fill, Color? border = null, int padX = SpaceL, int padY = SpaceM)
     {
         var panel = new PanelContainer();

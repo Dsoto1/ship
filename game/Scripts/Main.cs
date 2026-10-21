@@ -590,6 +590,15 @@ public partial class Main : Node3D
 
         _hud.Refresh(_runner, _selected, _speedIndex);
         _portHud.Refresh(_runner, _selected);
+        var pointer = GetViewport().GetMousePosition();
+        // --hover=person.x: as if the pointer were over them, for screenshots.
+        if (_developerHover is { } hoverId && _runner.CharacterFor(hoverId) is { } hoverOf && _figures.TryGetValue(hoverOf.Id, out var hoverFigure))
+        {
+            _hovered = hoverOf.Id;
+            pointer = _camera.UnprojectPosition(hoverFigure.GlobalPosition + new Vector3(0, 1.2f, 0));
+        }
+
+        _portHud.Hover(_runner, inPort && !_departure.Playing && _hovered != _runner.Campaign.CaptainId ? _hovered : null, pointer);
     }
 
     // Which way someone at a spot faces: the spot's own facing, or else the nearest thing beside them
@@ -869,6 +878,14 @@ public partial class Main : Node3D
             if (click.ButtonIndex == MouseButton.Left)
             {
                 _selected = FigureUnder(click.Position) ?? _selected;
+            }
+            else if (click.ButtonIndex == MouseButton.Right && _runner.Campaign.Port is not null && FigureUnder(click.Position) is { } person
+                     && person != _runner.Campaign.CaptainId && _runner.Campaign.Characters[person].Membership == Membership.Local && _runner.PersonOf(person) is not null)
+            {
+                // In port, right-click on someone walks over and talks with them.
+                _selected = person;
+                _follow = true;
+                _portHud.RequestTalk(person);
             }
             else if (click.ButtonIndex == MouseButton.Right && _runner.Campaign.Port is not null && _runner.Campaign.CaptainId is { } captain
                      && CellUnder(click.Position) is { } portCell)
@@ -1474,6 +1491,7 @@ public partial class Main : Node3D
     private string? _developerTopics;
     private GridPosition? _developerCaptainAt;
     private string? _developerTavern;
+    private string? _developerHover;
     private bool _developerJournal;
     private bool _developerPerf;
     private PanelId? _developerPanel;
@@ -1680,6 +1698,7 @@ public partial class Main : Node3D
                 case "talk": _developerTalk = true; break;
                 case "topics": _developerTopics = value; break;
                 case "tavern": _developerTavern = value; break;
+                case "hover": _developerHover = value; break;
                 case "captain" when value.Split(',') is [var cx, var cy] && int.TryParse(cx, out var x) && int.TryParse(cy, out var y): _developerCaptainAt = new GridPosition(x, y); break;
                 case "journal": _developerJournal = true; break;
                 case "perf": _developerPerf = true; break;

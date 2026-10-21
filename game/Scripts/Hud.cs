@@ -166,6 +166,7 @@ public partial class Hud : CanvasLayer
         AddChild(_root);
 
         BuildClock();
+        BuildChecklist();
         BuildNavigation();
         BuildStatus();
         BuildSelected();
@@ -486,6 +487,7 @@ public partial class Hud : CanvasLayer
 
         RefreshStatus(runner);
         RefreshSelectedCard(runner, selected);
+        RefreshChecklist(runner);
         RefreshChronicleNews(runner);
 
         switch (_open)
@@ -582,6 +584,94 @@ public partial class Hud : CanvasLayer
         SetSpeedNames(DefaultSpeedNames);
     }
 
+    // Top left, under the clock, in port: what preparing the expedition comes to, ticked off as it is done
+    // (the owner's port board: "Prepare the expedition"). Built from the simulation each refresh.
+    private PanelContainer _checklist = null!;
+    private VBoxContainer _checks = null!;
+    private string _checkSignature = "";
+
+    private void BuildChecklist()
+    {
+        _checklist = Ui.PanelOf(Ui.Panel, null, Ui.SpaceL, Ui.SpaceS);
+        _checklist.Position = new Vector2(Ui.SpaceM, 78);
+        _checklist.Visible = false;
+        _root.AddChild(_checklist);
+        var column = new VBoxContainer();
+        column.AddThemeConstantOverride("separation", 3);
+        _checklist.AddChild(column);
+        column.AddChild(Ui.Heading("Prepare the expedition"));
+        _checks = new VBoxContainer();
+        _checks.AddThemeConstantOverride("separation", 2);
+        column.AddChild(_checks);
+    }
+
+    private void RefreshChecklist(SimulationRunner runner)
+    {
+        if (runner.Campaign.Port is not { } port || runner.Content.Port is not { } rules || _open is not null)
+        {
+            _checklist.Visible = false;
+            return;
+        }
+
+        _checklist.Visible = true;
+        var crew = runner.Campaign.Crew.Where(c => c.Id != runner.Campaign.CaptainId).ToList();
+        int Knowing(string skill) => crew.Count(c => c.Skills.Get(skill) >= 3);
+        var sailing = Math.Max(runner.Campaign.Crew.Count(), rules.MinimumCrew + 1);
+        var (food, water) = runner.SupplyForecast(sailing);
+        var (low, _) = Expedition.Simulation.Scenarios.ExpeditionScenario.PassageDays;
+        var hours = (rules.Departure.Tick - runner.Campaign.Clock.Tick) / (double)SimulationClock.TicksPerHour;
+        var items = new List<(bool Done, string Text, string Tip)>
+        {
+            (port.Hired.Count >= rules.MinimumCrew, $"Sign on hands ({port.Hired.Count}/{rules.MinimumCrew})", "The Garza will not sail with fewer. Talk with people; the journal (X) says who to find."),
+            (Knowing("skill.navigation") > 0, $"Find someone who knows the way ({Math.Min(1, Knowing("skill.navigation"))}/1)", "A pilot or a navigator: no one aboard has been to the Ember Coast."),
+            (Knowing("skill.first_aid") + Knowing("skill.surgery") > 0, "Find someone to treat the sick (optional)", "A barber-surgeon keeps the flux and the fever from emptying the berths."),
+            (Math.Min(food, water) >= low, $"Buy stores for the passage ({Math.Floor(Math.Min(food, water)):0}/{low} days)", $"Water and food for {sailing} aboard, from the chandler and the cooper (Cargo, C)."),
+        };
+        if (port.Owed.Count > 0)
+        {
+            items.Add((false, $"Settle with the sellers ({port.Owed.Values.Sum()} owed)", "What is owed on credit is claimed at the gangway."));
+        }
+
+        items.Add((false, hours > 0 ? $"Sail with the convoy (in {Math.Floor(hours / 24):0} d {Math.Floor(hours % 24):0} h)" : "The convoy has sailed", "Set sail from Expedition (X) when ready."));
+        var signature = string.Join("|", items.Select(i => $"{i.Done}{i.Text}"));
+        if (signature == _checkSignature)
+        {
+            return;
+        }
+
+        _checkSignature = signature;
+        foreach (var child in _checks.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        foreach (var (done, text, tip) in items)
+        {
+            var row = new HBoxContainer { TooltipText = tip, MouseFilter = Control.MouseFilterEnum.Stop };
+            row.AddThemeConstantOverride("separation", Ui.SpaceS);
+            var box = new PanelContainer { CustomMinimumSize = new Vector2(18, 18), MouseFilter = Control.MouseFilterEnum.Ignore };
+            box.AddThemeStyleboxOverride("panel", Ui.Box(new Color(0, 0, 0, 0.25f), done ? Ui.Of(Severity.Positive) : Ui.Rule, 1, 1));
+            if (done && ResourceLoader.Exists("res://Assets/UI/icons/tick.png"))
+            {
+                box.AddChild(new TextureRect
+                {
+                    Texture = GD.Load<Texture2D>("res://Assets/UI/icons/tick.png"),
+                    ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                    StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+                    CustomMinimumSize = new Vector2(14, 14),
+                    Modulate = Ui.Of(Severity.Positive),
+                    MouseFilter = Control.MouseFilterEnum.Ignore,
+                });
+            }
+
+            row.AddChild(box);
+            var label = Ui.Text(text, Ui.TextBody, done ? Ui.InkSoft : Ui.Ink);
+            label.MouseFilter = Control.MouseFilterEnum.Ignore;
+            row.AddChild(label);
+            _checks.AddChild(row);
+        }
+    }
+
     private void BuildNavigation()
     {
         // Bottom right, where the world matters least, clear of the clock and the phase's gauges.
@@ -611,11 +701,13 @@ public partial class Hud : CanvasLayer
             var panelId = id;
             var button = Ui.Button(label, $"{tip}  ({key})", () => TogglePanel(panelId), toggle: true);
             button.Disabled = id == PanelId.Chart;
+            Ui.WithIcon(button, id.ToString().ToLowerInvariant());
             row.AddChild(button);
             _navButtons[id] = button;
         }
 
-        var menuButton = Ui.Button("☰", "Menu: new voyage, save, load, controls, interface size, auto-pause");
+        var menuButton = Ui.Button("Menu", "Menu: new voyage, save, load, controls, interface size, auto-pause");
+        Ui.WithIcon(menuButton, "menu");
         row.AddChild(menuButton);
         _menu = new PopupMenu();
         _root.AddChild(_menu);
@@ -858,7 +950,8 @@ public partial class Hud : CanvasLayer
         }
 
         var objective = Objective(runner);
-        _objectivePanel.Visible = objective is not null && _open is null;
+        // In port the checklist at the top left says it; this panel is for the voyage.
+        _objectivePanel.Visible = objective is not null && _open is null && runner.Campaign.Port is null;
         _objective.Text = objective ?? "";
     }
 

@@ -234,5 +234,34 @@
   "file": "song_chorus.ogg",
   "use": "A room of men singing a chorus",
   "oneshot": true
+ },
+ {
+  "source": "kenney",
+  "name": "Board Game Icons",
+  "page": "https://kenney.nl/assets/board-game-icons",
+  "folder": "UI/icons",
+  "url": "https://kenney.nl/media/pages/assets/board-game-icons/19cae04050-1721645690/kenney_board-game-icons.zip",
+  "use": "The screen buttons and the objectives checklist (recoloured white by tools/make_icons.py)",
+  "keep": [
+   "Double (128px)/pawns.png",
+   "Double (128px)/flag_triangle.png",
+   "Double (128px)/pouch.png",
+   "Double (128px)/direction_n.png",
+   "Double (128px)/book_open.png",
+   "Double (128px)/notepad_write.png"
+  ]
+ },
+ {
+  "source": "kenney",
+  "name": "Game Icons",
+  "page": "https://kenney.nl/assets/game-icons",
+  "folder": "UI/icons",
+  "url": "https://kenney.nl/media/pages/assets/game-icons/1ebf9c14af-1677661579/kenney_game-icons.zip",
+  "use": "The menu button and the checklist's ticks (recoloured by tools/make_icons.py)",
+  "keep": [
+   "PNG/White/2x/menuList.png",
+   "PNG/White/2x/checkmark.png",
+   "PNG/White/2x/cross.png"
+  ]
  }
 ]

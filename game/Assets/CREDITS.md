@@ -33,3 +33,5 @@ clothing made on them, textures divided into one shared sheet, clips reduced to 
 | woman humming | A woman singing a working song | PSsoundproject | https://freesound.org/s/183565/ | CC0 | `Audio/tavern/song_woman.ogg` |
 | Man singing in the kitchen / Hombre en la cocina cantando | The cook singing at his pots | GillianHonn | https://freesound.org/s/849096/ | CC0 | `Audio/tavern/song_kitchen.ogg` |
 | Men chanting.wav | A room of men singing a chorus | BeeProductive | https://freesound.org/s/430022/ | CC0 | `Audio/tavern/song_chorus.ogg` |
+| Board Game Icons | The screen buttons and the objectives checklist (recoloured white by tools/make_icons.py) | Kenney | https://kenney.nl/assets/board-game-icons | CC0 | `UI/icons/` (6 files) |
+| Game Icons | The menu button and the checklist's ticks (recoloured by tools/make_icons.py) | Kenney | https://kenney.nl/assets/game-icons | CC0 | `UI/icons/` (3 files) |
