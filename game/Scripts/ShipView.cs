@@ -48,6 +48,10 @@ public partial class ShipView : Node3D
     private int _patches;
     private int _worstHoles;
     private readonly List<(Node3D Whole, Node3D Parted, List<Node3D> Ends)> _lines = [];
+    private readonly List<Node3D> _braced = [];
+    private readonly List<Node3D> _streamers = [];
+    private float _brace;
+    private float _stream;
     private Node3D? _topYard;
     private Node3D? _topYardBroken;
     private Node3D? _topsail;
@@ -73,6 +77,8 @@ public partial class ShipView : Node3D
 
         _sails.Clear();
         _squareSails.Clear();
+        _braced.Clear();
+        _streamers.Clear();
         _lateens.Clear();
         _furls.Clear();
         _lanterns.Clear();
@@ -359,6 +365,54 @@ public partial class ShipView : Node3D
             MaterialOverride = Plain(Rope),
             Transform = new Transform3D(new Basis(new Quaternion(Vector3.Up, direction.Normalized())), (from + to) / 2f),
         };
+    }
+
+    // A course yard: tapered to the arms, slung at the middle, with the blocks for its sheets and clews.
+    private void AddCourseYard(Vector3 centre, float half)
+    {
+        var yard = new Node3D();
+        AddChild(yard);
+        foreach (var side in new[] { -1f, 1f })
+        {
+            yard.AddChild(SparPiece(centre, centre + new Vector3(side * half, 0, 0), 0.1f, 0.045f));
+            yard.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(0.08f, 0.14f, 0.1f) }, MaterialOverride = Plain(Wale), Position = centre + new Vector3(side * (half - 0.18f), -0.06f, 0) });
+            yard.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(0.1f, 0.16f, 0.1f) }, MaterialOverride = Plain(Wale), Position = centre + new Vector3(side * half * 0.5f, -0.12f, 0) });
+        }
+
+        yard.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(0.3f, 0.24f, 0.16f) }, MaterialOverride = Plain(Iron), Position = centre + new Vector3(0, 0, 0.12f) });
+    }
+
+    /// <summary>
+    /// The wind on her: the yards braced round to it (square before the wind, sharp up close-hauled, the
+    /// windward yardarm forward) and the flag and pennant streaming away from it, with the air her own way
+    /// makes. <paramref name="relativeWind"/> is where the wind blows from, degrees clockwise from her bow;
+    /// null at her berth, where the yards are squared and the colours hang astern.
+    /// </summary>
+    public void SetWind(float? relativeWind, float delta)
+    {
+        var brace = 0f;
+        var stream = 0f;
+        if (relativeWind is { } r)
+        {
+            var off = Mathf.Abs(Mathf.Wrap(r, -180f, 180f));
+            brace = Mathf.Sign(Mathf.Wrap(r, -180f, 180f)) * Mathf.Min(40f, (180f - off) * 0.35f);
+            var radians = Mathf.DegToRad(r);
+            // Blowing towards the far side from where it comes, plus the headwind of her own way.
+            stream = Mathf.RadToDeg(Mathf.Atan2(-Mathf.Sin(radians), Mathf.Cos(radians) + 0.5f));
+        }
+
+        var step = delta <= 0 ? 1f : Mathf.Clamp(delta * 0.6f, 0, 1);
+        _brace = Mathf.Lerp(_brace, brace, step);
+        _stream = Mathf.LerpAngle(Mathf.DegToRad(_stream), Mathf.DegToRad(stream), step) * 180f / Mathf.Pi;
+        foreach (var braces in _braced)
+        {
+            braces.RotationDegrees = new Vector3(0, _brace, 0);
+        }
+
+        foreach (var streamer in _streamers)
+        {
+            streamer.RotationDegrees = new Vector3(0, _stream, 0);
+        }
     }
 
     // The main topsail yard, whole and sprung. Sprung, it has snapped in the slings: each half still
@@ -852,13 +906,11 @@ public partial class ShipView : Node3D
         }
 
         // Course yard and sail, plus a small topsail on the mainmast.
+        // The yards and their sails swing together about the mast, braced round to the wind.
         var courseYard = height * (main ? 0.66f : 0.8f);
         var yardHalf = beam * (main ? 1.45f : 1.2f);
-        if (!_modelled)
-        {
-            AddSpar(foot + new Vector3(-yardHalf, courseYard, 0), foot + new Vector3(yardHalf, courseYard, 0), 0.07f, Spar);
-        }
-
+        var first = GetChildCount();
+        AddCourseYard(foot + new Vector3(0, courseYard, 0), yardHalf);
         AddSquareSail(foot + new Vector3(0, courseYard, 0.15f), yardHalf * 1.9f, courseYard - 1.9f, belly: 1.2f, tier: 0);
         if (main)
         {
@@ -866,6 +918,20 @@ public partial class ShipView : Node3D
             AddTopsailYard(foot + new Vector3(0, topYard, 0), yardHalf * 0.55f);
             AddSquareSail(foot + new Vector3(0, topYard, 0.1f), yardHalf * 1.05f, topYard - courseYard - 0.6f, belly: 0.6f, tier: 1);
             _topsail = _squareSails[^1].Sail;
+        }
+
+        var braces = new Node3D { Position = new Vector3(foot.X, 0, foot.Z) };
+        foreach (var child in GetChildren().Skip(first).OfType<Node3D>().ToList())
+        {
+            RemoveChild(child);
+            child.Position -= braces.Position;
+            braces.AddChild(child);
+        }
+
+        AddChild(braces);
+        _braced.Add(braces);
+        if (main)
+        {
             AddPennant(foot + new Vector3(0, height + 0.05f, 0));
         }
 
@@ -1084,6 +1150,7 @@ public partial class ShipView : Node3D
     {
         var flag = new Node3D { Position = top };
         AddChild(flag);
+        _streamers.Add(flag);
         var material = new StandardMaterial3D { AlbedoColor = field, CullMode = BaseMaterial3D.CullModeEnum.Disabled, Roughness = 0.9f };
         flag.AddChild(new MeshInstance3D { Mesh = new QuadMesh { Size = new Vector2(1.3f, 0.85f) }, MaterialOverride = material, Position = new Vector3(0, -0.45f, 0.68f), RotationDegrees = new Vector3(0, 90, 0) });
         var bars = new StandardMaterial3D { AlbedoColor = cross, CullMode = BaseMaterial3D.CullModeEnum.Disabled, Roughness = 0.9f };
@@ -1097,13 +1164,16 @@ public partial class ShipView : Node3D
         var tool = new SurfaceTool();
         tool.Begin(Mesh.PrimitiveType.Triangles);
         tool.SetColor(new Color(0.62f, 0.12f, 0.1f));
-        tool.AddVertex(top);
-        tool.AddVertex(top + new Vector3(0.2f, -0.05f, 2.4f));
-        tool.AddVertex(top + new Vector3(0, -0.45f, 0));
+        tool.AddVertex(Vector3.Zero);
+        tool.AddVertex(new Vector3(0.2f, -0.05f, 2.4f));
+        tool.AddVertex(new Vector3(0, -0.45f, 0));
         tool.GenerateNormals();
         var material = VertexColoured(0.9f);
         material.CullMode = BaseMaterial3D.CullModeEnum.Disabled;
-        AddMesh(tool.Commit(), material);
+        var pennant = new Node3D { Position = top };
+        AddChild(pennant);
+        pennant.AddChild(new MeshInstance3D { Mesh = tool.Commit(), MaterialOverride = material });
+        _streamers.Add(pennant);
     }
 
     private void BuildSpotProps(LocationDefinition location)

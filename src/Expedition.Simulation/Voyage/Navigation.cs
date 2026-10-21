@@ -47,6 +47,59 @@ public sealed record RouteRules
     /// <summary>The last moment for the noon sight; at this time an appointed navigator takes it.</summary>
     public double SightUntil { get; init; } = 12.5;
 
+    /// <summary>The quarter the wind blows from most often, compass degrees.</summary>
+    public double WindFrom { get; init; } = 20;
+
+    /// <summary>How far each spell's wind strays from <see cref="WindFrom"/>, degrees (standard deviation).</summary>
+    public double WindVariation { get; init; } = 55;
+
+    /// <summary>The nearest she can lie to the wind, degrees off it (six points, 67.5, for a ship of her rig).</summary>
+    public double ClosestToWind { get; init; } = 67.5;
+
+    /// <summary>
+    /// When beating, she stays on her tack until the course she wants lies this many degrees the other side
+    /// of the wind, then goes about: so she zigzags up to windward rather than tacking every minute.
+    /// </summary>
+    public double TackMargin { get; init; } = 12;
+
+    /// <summary>
+    /// The longest she stands on one tack, hours, while the course she wants lies the other side of the wind:
+    /// so she works up near the line to it, instead of standing off for days.
+    /// </summary>
+    public double LongestBoard { get; init; } = 10;
+
+    /// <summary>
+    /// How fast she sails on each point, as [degrees off the wind, factor] pairs in rising order: slower
+    /// close-hauled, fastest with the wind on the quarter. Between the points the factor is interpolated.
+    /// </summary>
+    public IReadOnlyList<IReadOnlyList<double>> PointsOfSail { get; init; } = [[67.5, 0.75], [90, 0.95], [135, 1.05], [180, 0.9]];
+
+    /// <summary>The speed factor with the wind <paramref name="offWind"/> degrees off her bow (0..180).</summary>
+    public double SpeedOnPoint(double offWind)
+    {
+        if (PointsOfSail.Count == 0)
+        {
+            return 1;
+        }
+
+        offWind = Math.Abs(offWind);
+        if (offWind <= PointsOfSail[0][0])
+        {
+            return PointsOfSail[0][1];
+        }
+
+        for (var i = 1; i < PointsOfSail.Count; i++)
+        {
+            var (a, b) = (PointsOfSail[i - 1], PointsOfSail[i]);
+            if (offWind <= b[0])
+            {
+                return a[1] + (b[1] - a[1]) * (offWind - a[0]) / (b[0] - a[0]);
+            }
+        }
+
+        return PointsOfSail[^1][1];
+    }
+
     /// <summary>Problems with these rules, empty if valid.</summary>
     public IEnumerable<string> Validate()
     {
@@ -58,6 +111,13 @@ public sealed record RouteRules
         if (Current.Count != 2 || LeaguesPerDegree <= 0 || SightError < 0 || SpeedErrorSd < 0 || LandfallTolerance <= 0 || SightFrom >= SightUntil)
         {
             yield return "Voyage route: current must be [east, north]; leagues per degree, tolerance positive; sight window from < until.";
+        }
+
+        if (ClosestToWind is < 0 or >= 180 || TackMargin < 0 || WindVariation < 0 || LongestBoard <= 0
+            || PointsOfSail.Any(p => p.Count != 2 || p[0] is < 0 or > 180 || p[1] <= 0)
+            || PointsOfSail.Zip(PointsOfSail.Skip(1)).Any(pair => pair.Second[0] <= pair.First[0]))
+        {
+            yield return "Voyage route: closest to wind 0..180, margin and variation not negative, points of sail [degrees, factor] rising.";
         }
     }
 }
@@ -112,8 +172,35 @@ public sealed class Navigation
     /// <summary>How far the log over-reads (above 1) or under-reads the speed today. Unknown to the captain.</summary>
     public double LogError { get; internal set; } = 1;
 
-    /// <summary>The course steered, compass degrees, from the reckoned position.</summary>
+    /// <summary>The course steered, compass degrees, from the reckoned position and the wind.</summary>
     public double Heading { get; internal set; }
+
+    /// <summary>Where the wind blows from this spell, compass degrees.</summary>
+    public double WindFrom { get; internal set; }
+
+    /// <summary>
+    /// Which side of the wind she lies when she cannot steer her course: +1 clockwise of it (the wind on her
+    /// port bow, the port tack), -1 the other way (the starboard tack).
+    /// </summary>
+    public int Tack { get; internal set; } = 1;
+
+    /// <summary>The nearest she can lie to the wind, degrees; 0 lets her steer any course.</summary>
+    public double ClosestToWind { get; init; }
+
+    /// <summary>How far past the wind the course must swing before she goes about, degrees.</summary>
+    public double TackMargin { get; init; }
+
+    /// <summary>The longest she stands on one tack with the course the other side of the wind, hours.</summary>
+    public double LongestBoard { get; init; } = double.PositiveInfinity;
+
+    /// <summary>Hours on her present tack while beating.</summary>
+    public double BoardHours { get; internal set; }
+
+    /// <summary>True while the course she wants lies too near the wind and she is beating up to it.</summary>
+    public bool Beating { get; private set; }
+
+    /// <summary>Degrees between the wind and her bow, -180..180: negative with the wind on her starboard side.</summary>
+    public double OffWind => Wrap(Heading - WindFrom);
 
     /// <summary>True once she has raised the coast; she then runs along it for the destination.</summary>
     public bool Landed { get; internal set; }
@@ -163,7 +250,8 @@ public sealed class Navigation
     /// </summary>
     internal bool Sail(double speed, double hours, double tolerance)
     {
-        Heading = CourseFrom(Reckoned);
+        Heading = Landed ? CourseFrom(Reckoned) : Steer(CourseFrom(Reckoned));
+        BoardHours = Beating ? BoardHours + hours : 0;
         var radians = Heading * Math.PI / 180;
         var (east, north) = (Math.Sin(radians), Math.Cos(radians));
         if (Landed)
@@ -193,6 +281,30 @@ public sealed class Navigation
         return Math.Abs(True.Y - Destination.Y) <= tolerance;
     }
 
+    // The course she can make good for the one she wants: as wanted, unless it lies too near the wind;
+    // then as near the wind as she will lie, on her tack, until the wanted course swings far enough the
+    // other side of the wind for her to go about, or until she has stood long enough on this board.
+    internal double Steer(double wanted)
+    {
+        var off = Wrap(wanted - WindFrom);
+        Beating = Math.Abs(off) < ClosestToWind;
+        if (!Beating)
+        {
+            Tack = off >= 0 ? 1 : -1;
+            return wanted;
+        }
+
+        if (Math.Sign(off) == -Tack && (Math.Abs(off) > TackMargin || BoardHours >= LongestBoard))
+        {
+            Tack = -Tack;
+            BoardHours = 0;
+        }
+
+        return (WindFrom + Tack * ClosestToWind + 360) % 360;
+    }
+
+    private static double Wrap(double degrees) => ((degrees % 360) + 540) % 360 - 180;
+
     /// <summary>Moves her along her course (or back), truth and reckoning alike: time gained or lost.</summary>
     internal void Shift(double leagues)
     {
@@ -213,9 +325,11 @@ public sealed class Navigation
 
     /// <summary>Sets every value while loading a save. The loader validates them.</summary>
     internal void Restore(ChartPoint truth, ChartPoint reckoned, ChartPoint drift, double logError, double heading, bool landed, bool runningDown,
-        long lastSightDay, Core.CharacterId? navigator, IEnumerable<ChartPoint> track, IEnumerable<NoonSight> sights)
+        long lastSightDay, Core.CharacterId? navigator, IEnumerable<ChartPoint> track, IEnumerable<NoonSight> sights, double windFrom, int tack, double boardHours)
     {
         (True, Reckoned, Drift, LogError, Heading, Landed, RunningDown, LastSightDay, Navigator) = (truth, reckoned, drift, logError, heading, landed, runningDown, lastSightDay, navigator);
+        (WindFrom, Tack, BoardHours) = (windFrom, tack, boardHours);
+        Beating = !Landed && Math.Abs(Wrap(CourseFrom(Reckoned) - WindFrom)) < ClosestToWind;
         _track.Clear();
         _track.AddRange(track);
         _sights.Clear();

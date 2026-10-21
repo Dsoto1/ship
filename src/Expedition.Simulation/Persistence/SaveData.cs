@@ -410,6 +410,15 @@ public sealed record NavigationData
 
     /// <summary>Noon sights taken.</summary>
     public IReadOnlyList<NoonSightData> Sights { get; init; } = [];
+
+    /// <summary>Where the wind blows from, degrees; null in a format 26 save (the prevailing wind). Added in format 27.</summary>
+    public double? WindFrom { get; init; }
+
+    /// <summary>Her tack when beating: +1 or -1. Added in format 27.</summary>
+    public int Tack { get; init; } = 1;
+
+    /// <summary>Hours on that tack. Added in format 27.</summary>
+    public double BoardHours { get; init; }
 }
 
 /// <summary>One saved noon sight.</summary>

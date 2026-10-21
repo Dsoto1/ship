@@ -375,7 +375,7 @@ def disc(mesh, centre, radius, thickness, colour, sides=14):
 
 
 def masts(deck, mesh):
-    """The fore and main, square-rigged, and the lateen mizzen, with their tops, topmast, yards and the
+    """The fore and main, square-rigged, and the lateen mizzen, with their tops, topmast, lateen yard and the
     bowsprit. Where they stand and how high the yards hang are ShipView's rule (it hangs the sails and
     rigging from them): the mast cells of the deck plan; the main 12 m, the fore 9.5 m."""
     spar_c, iron, rope = C["mast"], C["iron"], C["woolding"]
@@ -409,17 +409,8 @@ def masts(deck, mesh):
         # The topmast above the cap, to the masthead.
         spar(mesh, top + [0, -0.4, -r * 0.9], foot + [0, height + 0.15, -r * 0.9 * 0.3], r * 0.62, r * 0.38, spar_c)
         mesh.box(tuple(foot + [0, height + 0.18, 0]), (0.16, 0.1, 0.16), spar_c)
-        # The yards: the course and, on the main, the topsail; tapered to the arms, slung at the middle.
-        yards = [(height * (0.66 if main else 0.8), beam * (1.45 if main else 1.2), 0.1)]
-        # (The main topsail yard is ShipView's: it can be sprung in a blow, and the game breaks it.)
-        for yh, half, yr in yards:
-            centre = foot + [0, yh, 0]
-            spar(mesh, centre, centre + [-half, 0, 0], yr, yr * 0.45, spar_c)
-            spar(mesh, centre, centre + [half, 0, 0], yr, yr * 0.45, spar_c)
-            mesh.box(tuple(centre + [0, 0, 0.12]), (0.3, yr * 2.4, 0.16), iron)
-            for side in (-1, 1):
-                mesh.box(tuple(centre + [side * (half - 0.18), -0.06, 0]), (0.08, 0.14, 0.1), C["block"])
-                mesh.box(tuple(centre + [side * half * 0.5, -0.12, 0]), (0.1, 0.16, 0.1), C["block"])
+        # (The yards are ShipView's: they are braced round to the wind, and the main topsail yard can be
+        # sprung in a blow.)
     if len(cells) >= 3:
         x, y = cells[-1]
         foot = np.array([x, deck.height_at(x, y), y], float)

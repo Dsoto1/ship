@@ -84,7 +84,8 @@ public class VoyageTests
         runner.Advance(10);
 
         Assert.True(ship.WatchKept);
-        Assert.Equal(drifting / Shipped.Voyage!.NoWatchSpeedMultiplier, ship.SpeedLeaguesPerHour, 3);
+        // (To within the little her point of sail changes as the course swings over those minutes.)
+        Assert.Equal(drifting / Shipped.Voyage!.NoWatchSpeedMultiplier, ship.SpeedLeaguesPerHour, 2);
     }
 
     [Fact]

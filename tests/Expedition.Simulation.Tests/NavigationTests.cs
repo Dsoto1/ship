@@ -43,6 +43,63 @@ public sealed class NavigationTests
     }
 
     [Fact]
+    public void WithAFairWindSheSteersHerCourseAndWithAHeadWindSheBeats()
+    {
+        var navigation = new Navigation(new ChartPoint(-400, -300)) { ClosestToWind = 67.5, TackMargin = 12 };
+        navigation.WindFrom = 30;
+        Assert.Equal(225, navigation.Steer(225), 6);
+        Assert.False(navigation.Beating);
+
+        // The wind dead ahead: she lies six points off it, on the tack she is on, and holds it while the
+        // course she wants is only a little the other side of the wind.
+        navigation.WindFrom = 260;
+        var heading = navigation.Steer(280);
+        Assert.True(navigation.Beating);
+        Assert.Equal((260 + 67.5) % 360, heading, 6);
+        Assert.Equal(327.5, navigation.Steer(255), 6);
+        // Far enough the other side, she goes about.
+        Assert.Equal(192.5, navigation.Steer(245), 6);
+        Assert.Equal(-1, navigation.Tack);
+    }
+
+    [Fact]
+    public void SheIsFastestWithTheWindOnHerQuarter()
+    {
+        var route = Shipped.Voyage!.Route!;
+        Assert.True(route.SpeedOnPoint(67.5) < route.SpeedOnPoint(90));
+        Assert.True(route.SpeedOnPoint(135) > route.SpeedOnPoint(180));
+        Assert.Equal(route.SpeedOnPoint(-135), route.SpeedOnPoint(135));
+        Assert.InRange(route.SpeedOnPoint(112.5), route.SpeedOnPoint(90), route.SpeedOnPoint(135));
+    }
+
+    [Fact]
+    public void AgainstAHeadWindTheTrackZigzags()
+    {
+        var (runner, ship, navigation, _) = Setup();
+        ship.WeatherId = "weather.fair";
+        ship.WeatherUntilTick = long.MaxValue;
+        // A wind from where she is bound: she must work up to it, tack upon tack.
+        navigation.WindFrom = 222;
+        var tacks = new HashSet<int>();
+        var changes = 0;
+        var last = navigation.Tack;
+        for (var hour = 0; hour < 4 * 24; hour++)
+        {
+            runner.Advance(60);
+            Assert.True(navigation.Beating);
+            tacks.Add(navigation.Tack);
+            changes += navigation.Tack != last ? 1 : 0;
+            last = navigation.Tack;
+        }
+
+        Assert.Equal(2, tacks.Count);
+        // A board of most of a day, back across the line and ten hours beyond it: a zigzag, not a tack every minute.
+        Assert.InRange(changes, 3, 8);
+        // For all her sailing she has made some way towards the destination.
+        Assert.True(navigation.Reckoned.DistanceTo(navigation.Destination) < navigation.Destination.DistanceTo(new ChartPoint(0, 0)) - 10);
+    }
+
+    [Fact]
     public void WithoutSightsTheReckoningDriftsFromTheTruth()
     {
         var (runner, _, navigation, _) = Setup();

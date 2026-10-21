@@ -1933,3 +1933,46 @@ Developer flags: `--seadays=N` sails on N days with the captain keeping the reck
 - sounding with the lead near the coast;
 - the true track drawn after landfall, to show how far out the reckoning was;
 - a binnacle and compass on the deck.
+
+### Turning: she swings to her course, and the wind has a direction
+
+The ship used to point the same way whatever course she steered. Now she turns.
+
+**Her swing** (`Main`, `SeaAndSky`, `ocean.gdshader`). At sea the ship turns to the course steered,
+measured from the course she set out on, so the view opens as it always has. She wanders a degree or
+two either side as the helmsman works the wheel. The wake and the flow of the water turn with her,
+and clicks on the deck are taken into her own frame.
+
+**The wind** (`Navigation`, `data/voyage.json` "route").
+- **Direction.** Each spell of weather brings a wind from its own quarter, mostly from the prevailing
+  NNE (25°, give or take 50°). The wind is drawn from the navigation stream.
+- **How near the wind she can sail.** No nearer than six points (67.5°). When the course she wants lies
+  nearer the wind than that, she beats to windward. She lies as close as she will on one tack, and
+  goes about once the wanted course is 12° the other side of the wind, or once she has held that
+  board for 10 hours with the course across the wind. A head wind makes her zigzag, a board of most of
+  a day each.
+- **Points of sail** set her speed: 0.8 close-hauled, 1.0 with the wind on the beam, 1.12 on the
+  quarter, 1.02 dead astern.
+- **Balance.** Measured over the ten test crews, the prevailing wind leaves the passage about as long
+  as it was: six of ten arrive, and they beat 0–10% of the time.
+- **Saving.** Saved in format 27 (wind, tack, hours on the board). A format 26 voyage takes the
+  prevailing wind.
+
+**On the ship** (`ShipView.SetWind`).
+- **Yards.** The yards and their sails are braced round to the wind: square before it, up to 40°
+  close-hauled, the windward yardarm forward.
+- **Colours.** The pennant and the flag stream away from the wind, with the air her own way makes.
+- **Heel.** She heels to leeward with the wind on her beam, more as it freshens, and sails upright
+  before it or hove to.
+- **The model.** The course yards came out of `garza.glb`: ShipView draws them now, so they can be
+  braced.
+
+**On the HUD and chart.**
+- **The compass chip** reads "SW by S · wind NNE", and adds "· beating" when she cannot steer her course.
+- **The chart's rose** has a blue arrow flying in from the wind's quarter.
+- **The chart's reckoning** says where the wind is and how she sails to it: close-hauled, on the beam,
+  on the quarter, or beating on the port or starboard tack.
+
+Developer flag: `--wind=DEG` sets the wind's quarter until the weather changes; `--wind=222` puts it
+dead ahead. Three new tests are in `NavigationTests`. Screenshots: `docs/screenshots/voyage-beating.jpg`,
+`voyage-beam-reach.jpg`.

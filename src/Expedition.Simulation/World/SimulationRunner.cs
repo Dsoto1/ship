@@ -481,9 +481,12 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         if (rules.Route is { } route)
         {
             var bearing = route.Bearing * Math.PI / 180;
-            voyage.Navigation = new Navigation(new ChartPoint(Math.Sin(bearing) * leagues, Math.Cos(bearing) * leagues), route.Offing);
-            voyage.Navigation.Heading = voyage.Navigation.CourseFrom(new ChartPoint(0, 0));
+            voyage.Navigation = new Navigation(new ChartPoint(Math.Sin(bearing) * leagues, Math.Cos(bearing) * leagues), route.Offing)
+            {
+                ClosestToWind = route.ClosestToWind, TackMargin = route.TackMargin, LongestBoard = route.LongestBoard,
+            };
             SetTheSea(voyage.Navigation, route, weather);
+            voyage.Navigation.Heading = voyage.Navigation.Steer(voyage.Navigation.CourseFrom(new ChartPoint(0, 0)));
             voyage.Navigation.LogError = 1 + Gaussian(Campaign.Randomness.Navigation) * route.SpeedErrorSd;
             voyage.Navigation.Mark();
         }
@@ -548,6 +551,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             * (rules.RiggingSpeedFloor + (1 - rules.RiggingSpeedFloor) * ship.Rigging / 100)
             * (ship.WatchKept ? 1 : rules.NoWatchSpeedMultiplier)
             * (ship.YardSprung ? rules.SprungYardSpeed : 1)
+            * (ship.Navigation is { Landed: false } sailing && rules.Route is { } points ? points.SpeedOnPoint(sailing.OffWind) : 1)
             * plan.Speed;
         ship.LeaguesSailed += ship.SpeedLeaguesPerHour * HoursPerTick;
         var landfall = ship.Navigation is { } navigation && rules.Route is { } course

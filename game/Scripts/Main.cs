@@ -126,6 +126,7 @@ public partial class Main : Node3D
     private double _elapsed;
     private Vector3 _shipCentre;
     private float _shipYaw;
+    private float _heel;
 
     public override void _Ready()
     {
@@ -483,8 +484,14 @@ public partial class Main : Node3D
         var t = (float)_elapsed;
         var swell = inPort ? 0.15f : 0.35f + _seaState * 0.65f;
         var leaving = inPort && _departure.Playing ? _departure.Ship : (Offset: Vector3.Zero, Turn: 0f);
-        // Water in her lies to leeward: she lists as the bilge fills.
+        // Water in her lies to leeward: she lists as the bilge fills. The wind on her beam heels her too,
+        // away from it, more as it freshens; before the wind she sails upright.
         var list = _sink * 4.5f;
+        var heelTarget = inPort || voyage?.Navigation is not { } heeling || voyage.SailPlan == Expedition.Simulation.Voyage.SailPlan.HoveTo
+            ? 0f
+            : -Mathf.Sin(Mathf.DegToRad((float)heeling.OffWind)) * Mathf.Clamp((float)(weather?.WindLeaguesPerHour ?? 0) / 1.5f, 0, 1.3f) * 5f;
+        _heel = Mathf.Lerp(_heel, heelTarget, Mathf.Clamp((float)delta * 0.4f, 0, 1));
+        list += _heel;
         // At sea she swings to the course steered, measured from the course she set out on so the view
         // opens as it always has, and wanders either side of it as the helmsman works the wheel.
         var course = voyage?.Navigation is { } navigation && _content.Voyage?.Route is { } route
@@ -585,6 +592,7 @@ public partial class Main : Node3D
         // Set sails fade at working zoom so they never hide the crew; furled at the quay they hide no one.
         _deck.ShowCondition(voyage?.Hull ?? 100, voyage?.Rigging ?? 100, voyage?.PartedLines, voyage?.YardSprung == true);
         _deck.UpdateLook(_world.Darkness, inPort ? 1f : Mathf.Lerp(0.38f, 1f, Mathf.SmoothStep(18f, 32f, _camera.Size)), t, cooking, inPort ? 3.2f : SailSetting(voyage), (float)delta, furled: inPort);
+        _deck.SetWind(inPort || voyage?.Navigation is not { } windOn ? null : (float)-windOn.OffWind, (float)delta);
         foreach (var bird in _birds)
         {
             bird.Centre = inPort ? _port.Berth + new Vector3(0, 4f, -4f) : _shipCentre + new Vector3(0, 0, -2f);
@@ -1583,6 +1591,7 @@ public partial class Main : Node3D
     private double? _forceRigging;
     private string? _forceEvent;
     private int _seaDays;
+    private double? _forceWind;
     private string? _openView;
     private string? _forceCarryAway;
     private string? _developerSelect;
@@ -1807,6 +1816,7 @@ public partial class Main : Node3D
                 case "carryaway": _forceCarryAway = value; break;
                 case "event": _forceEvent = value; break;
                 case "seadays" when int.TryParse(value, out var seaDays): _seaDays = seaDays; break;
+                case "wind" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var wind): _forceWind = wind; break;
                 case "chart": _openView = "chart"; break;
                 case "astrolabe": _openView = "astrolabe"; break;
                 case "hull" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var hullLeft): _forceHull = hullLeft; break;
@@ -1882,6 +1892,12 @@ public partial class Main : Node3D
             {
                 _runner.ResolveEvent(first.Choice.Id);
             }
+        }
+
+        // --wind=DEG: the wind from that quarter, until the weather changes.
+        if (_forceWind is { } windFrom)
+        {
+            _runner.DeveloperSetWind(windFrom);
         }
 
         // --chart / --astrolabe: open them, for screenshots.

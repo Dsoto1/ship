@@ -49,6 +49,8 @@ public sealed partial class SimulationRunner
         var angle = random.NextDouble() * Math.Tau;
         var strength = route.CurrentVariation * random.NextDouble() * (1 + 0.5 * weather.SeaState);
         navigation.Drift = new ChartPoint(route.Current[0] + Math.Sin(angle) * strength, route.Current[1] + Math.Cos(angle) * strength);
+        // Each spell brings its own wind, mostly from the prevailing quarter.
+        navigation.WindFrom = ((route.WindFrom + Gaussian(random) * route.WindVariation) % 360 + 360) % 360;
     }
 
     private static double Gaussian(SimulationRandom random)
@@ -98,7 +100,24 @@ public sealed partial class SimulationRunner
         return (CommandResult.Ok(), sight);
     }
 
-    /// <summary>Appoints who takes the noon sight when the captain does not (null: no one; he takes it or it is missed).</summary>
+    /// <summary>Developer tool for screenshots: the wind from <paramref name="from"/> degrees until the weather next changes.</summary>
+    public CommandResult DeveloperSetWind(double from)
+    {
+        if (Campaign.Voyage?.Navigation is not { } navigation)
+        {
+            return CommandResult.Rejected("There is no voyage.");
+        }
+
+        navigation.WindFrom = ((from % 360) + 360) % 360;
+        if (!navigation.Landed)
+        {
+            navigation.Heading = navigation.Steer(navigation.CourseFrom(navigation.Reckoned));
+        }
+
+        return CommandResult.Ok();
+    }
+
+        /// <summary>Appoints who takes the noon sight when the captain does not (null: no one; he takes it or it is missed).</summary>
     public CommandResult SetNavigator(CharacterId? id)
     {
         if (Campaign.Voyage?.Navigation is not { } navigation)

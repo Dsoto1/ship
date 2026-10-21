@@ -855,8 +855,11 @@ public partial class Hud : CanvasLayer
             if (ship.Navigation is { } navigation)
             {
                 // The compass: the course steered, and at noon a reminder to take the sun.
-                chips.Add(("✦", $"{SimulationRunner.CompassPoint(navigation.Heading)}", Severity.Information,
-                    $"Course {navigation.Heading:0}° by the compass, steered from your reckoning. The chart (M) shows where you reckon she is."));
+                chips.Add(("✦", $"{SimulationRunner.CompassPoint(navigation.Heading)} · wind {SimulationRunner.CompassPoint(navigation.WindFrom)}" + (navigation.Beating ? " · beating" : ""),
+                    Severity.Information,
+                    $"Course {navigation.Heading:0}° by the compass, steered from your reckoning; the wind from the {SimulationRunner.CompassPoint(navigation.WindFrom)}. " +
+                    (navigation.Beating ? "It is too near the course she wants, so she beats to windward, tack upon tack. " : "") +
+                    "The chart (M) shows where you reckon she is."));
                 if (runner.CanTakeNoonSight)
                 {
                     chips.Add(("☀", "Noon: take the sun", Severity.Attention, "The sun is near its height. Open the chart (M) and take the noon sight, or leave it to your navigator."));

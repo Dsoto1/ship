@@ -102,6 +102,15 @@ public partial class ChartView : Control
         Ui.FadeIn(_panel);
     }
 
+    // The wind as the sailors would say it, from how far it is off her bow.
+    private static string PointOfSail(double offWind) => Math.Abs(offWind) switch
+    {
+        < 80 => "close-hauled",
+        < 110 => "on the beam",
+        < 160 => "on the quarter",
+        _ => "dead astern: she runs before it",
+    };
+
     /// <summary>Redraws from the voyage; called each frame while open.</summary>
     public void Refresh()
     {
@@ -117,6 +126,10 @@ public partial class ChartView : Control
             $"By your reckoning she lies at {_runner.Latitude(navigation.Reckoned.Y)}, {_runner.Longitude(navigation.Reckoned.X, navigation.Reckoned.Y)}.\n" +
             $"Course {SimulationRunner.CompassPoint(navigation.Heading)} ({navigation.Heading:0}°), " +
             $"making about {speed:0} leagues a day by the log.\n" +
+            $"The wind is from the {SimulationRunner.CompassPoint(navigation.WindFrom)}" +
+            (navigation.Beating
+                ? $": too near her course to steer it, so she beats up to windward, {(navigation.Tack > 0 ? "on the port tack" : "on the starboard tack")}.\n"
+                : $", {PointOfSail(navigation.OffWind)}.\n") +
             (navigation.Landed
                 ? $"The coast is in sight: running along it, {ship.ReckonedRemaining:0} leagues to go."
                 : $"About {ship.ReckonedRemaining:0} leagues to {ship.Destination}" + (navigation.RunningDown ? ", running down her latitude." : ", making for her latitude.")) +
@@ -339,7 +352,9 @@ public partial class ChartCanvas : Control
         }
     }
 
-    // A compass rose: the cardinal points, north marked, and the course steered as a red needle.
+    private static readonly Color WindInk = new(0.2f, 0.32f, 0.5f);
+
+    // A compass rose: the cardinal points, north marked, the course steered as a red needle, and the wind.
     private void Rose(Vector2 centre, float radius)
     {
         DrawArc(centre, radius, 0, Mathf.Tau, 48, InkLine, 1.5f);
@@ -357,6 +372,18 @@ public partial class ChartCanvas : Control
             var heading = new Vector2(Mathf.Sin(Mathf.DegToRad((float)navigation.Heading)), -Mathf.Cos(Mathf.DegToRad((float)navigation.Heading)));
             DrawLine(centre, centre + heading * radius * 0.92f, Red, 3);
             DrawCircle(centre, 3, Red);
+
+            // The wind: an arrow flying in from the quarter it blows from.
+            var from = new Vector2(Mathf.Sin(Mathf.DegToRad((float)navigation.WindFrom)), -Mathf.Cos(Mathf.DegToRad((float)navigation.WindFrom)));
+            var tail = centre + from * radius * 1.75f;
+            var tip = centre + from * radius * 1.08f;
+            var side = new Vector2(-from.Y, from.X);
+            DrawLine(tail, tip, WindInk, 2.5f);
+            DrawColoredPolygon([tip, tip + from * 9 + side * 5, tip + from * 9 - side * 5], WindInk);
+            foreach (var k in new[] { 0f, 7f })
+            {
+                DrawLine(tail + from * -k, tail + from * (6 - k) + side * 6, WindInk, 1.5f);
+            }
         }
     }
 }
