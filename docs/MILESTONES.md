@@ -1830,3 +1830,53 @@ game already credits: four more clips from RPG Audio (`clothBelt`, `cloth`), fet
 
 **Not yet:** these are stand-ins from foley packs. Real recordings of a ship's bell and a parting
 line from Freesound would be better, once it can be reached.
+
+### The crew at sea: claims tested, secrets surfacing
+
+The port is where the captain learns who people say they are; the voyage is now where he finds out.
+
+**Claims tested by work** (`SimulationRunner.Crew.cs`).
+- The first time the captain sees someone at work in a skill or language, it is set against what he
+  was told in port: their own word first, else references.
+- If the two are two levels or more apart (`ClaimMargin`), it is recorded (`ClaimTested`) and raises
+  an alert: "X is not what they claimed" or "X is better than they said".
+- Everyone else aboard changes their respect for that person (-6 or +5). Someone found wanting also
+  carries the stress of it.
+- Duties gain `shows`: skills the work reveals without setting its pace. Standing watch now shows
+  seamanship and sailing.
+
+So with the port's people:
+- Tomé, who swore he had never sailed, shows himself a seaman on his first watch.
+- Rodrigo's rigging and seamanship come out at half what he claimed.
+- Pascual's sailing gives him away.
+
+**Events written for people** (`data/events/crew.json`). The event system gains:
+- a named subject (`subject.person`), so an event fires only if that person sailed;
+- `known` and `notKnown` triggers, for what the captain was told in port;
+- `leaguesBelow`, for when the coast is near;
+- choices offered only if the captain knows something (`known`), such as "ask him about the ship
+  that came home without her master";
+- a `learn` effect that shows the truth (skill, language or fact) or records what someone now tells.
+
+The six events:
+- **Velho, *A Brennish sail*.** He asks to pass letters to an interloper. You can let him, ask him
+  what Hob carries (if you were told of the meetings), open the packet, or refuse.
+- **Velho, *The bar at Punta Ceniza*.** Near the coast, he says the chart will put her on the bar.
+  His navigation is tested by your choice; trusting the chart can ground her.
+- **Pons, *The medicine chest*.** The sick-bay wine is going. If you know of his debts you can ask
+  about Grilo, and hear Almara.
+- **Tomé, *The convict in the blow*.** He works the ship like a seaman. If you were told of his past,
+  you can ask about the Caridad, and he tells you.
+- **Pascual, *Frozen in the shrouds*.** He was never past the river bar. Send a topman, go up
+  yourself, or order him.
+- **Ximena, *Before the coast*.** If you know it was a season and not a year, she tells you about her
+  son at Mahenu. Otherwise, asking for the greetings shows her Ahuneri for what it is.
+
+`DeveloperRaiseEvent` and the `--event=` flag raise one on demand, for example
+`--hire=11 --sea --event=event.pascual_aloft`. Five tests are in `CrewAtSeaTests`.
+Screenshot: `docs/screenshots/crew-pascual-aloft.jpg`.
+
+**Not yet:**
+- talking to the crew at sea (the conversation view is port-only);
+- events for the others (Rodrigo, Wat, Leonor, Ulloa, Bartolo, Gil, Nuño);
+- friction between shipmates beyond the existing quarrel event.

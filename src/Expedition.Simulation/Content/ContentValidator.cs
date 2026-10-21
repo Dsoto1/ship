@@ -100,6 +100,11 @@ internal static class ContentValidator
             errors.Add($"{where}: minSkill must be {Skills.MinLevel}..{Skills.MaxLevel}.");
         }
 
+        foreach (var shown in task.Shows.Where(s => !skills.ContainsKey(s)))
+        {
+            errors.Add($"{where}: shows unknown skill '{shown}'.");
+        }
+
         if (task.MinSkill > 0 && task.Skill is null)
         {
             errors.Add($"{where}: minSkill is set but no skill is named.");

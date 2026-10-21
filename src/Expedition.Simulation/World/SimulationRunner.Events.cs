@@ -38,13 +38,16 @@ public sealed partial class SimulationRunner
                 || (trigger.WaterDaysBelow is { } below && water >= below)
                 || (trigger.BilgeAbove is { } bilge && ship.Bilge <= bilge)
                 || (trigger.Rationing is { } rationing && rationing != Campaign.Rationing)
+                || (trigger.LeaguesBelow is { } leagues && ship.LeaguesRemaining >= leagues)
                 || (history is not null && (trigger.Once
                     || Campaign.Clock.Tick - history.LastTick < trigger.CooldownDays * SimulationClock.TicksPerDay)))
             {
                 continue;
             }
 
-            if (!PickInvolved(trigger.Subject, out var subject, out var other))
+            if (!PickInvolved(trigger.Subject, out var subject, out var other)
+                || (subject is { } about && (trigger.Known.Any(t => Campaign.Knowledge.Assess(about, t) is null)
+                                             || trigger.NotKnown.Any(t => Campaign.Knowledge.Assess(about, t) is not null))))
             {
                 continue;
             }
@@ -52,6 +55,33 @@ public sealed partial class SimulationRunner
             Campaign.RaiseEvent(new PendingEvent(definition.Id, subject, other, Campaign.Clock.Tick));
             return;
         }
+    }
+
+    /// <summary>
+    /// Developer tool for testing and screenshots: raises an event now, whatever its chance, day,
+    /// weather or cooldown, if someone fits it. Its knowledge conditions still apply.
+    /// </summary>
+    public CommandResult DeveloperRaiseEvent(string eventId)
+    {
+        if (!Content.Events.TryGetValue(eventId, out var definition))
+        {
+            return CommandResult.Rejected($"No event '{eventId}'.");
+        }
+
+        if (Campaign.Voyage is not { Outcome: VoyageOutcome.UnderWay } || Campaign.PendingEvent is not null)
+        {
+            return CommandResult.Rejected("Events happen at sea, one at a time.");
+        }
+
+        if (!PickInvolved(definition.Trigger.Subject, out var subject, out var other)
+            || (subject is { } about && (definition.Trigger.Known.Any(t => Campaign.Knowledge.Assess(about, t) is null)
+                                         || definition.Trigger.NotKnown.Any(t => Campaign.Knowledge.Assess(about, t) is not null))))
+        {
+            return CommandResult.Rejected($"No one aboard fits '{eventId}'.");
+        }
+
+        Campaign.RaiseEvent(new PendingEvent(definition.Id, subject, other, Campaign.Clock.Tick));
+        return CommandResult.Ok();
     }
 
     private bool PickInvolved(SubjectRule? rule, out CharacterId? subject, out CharacterId? other)
@@ -67,6 +97,7 @@ public sealed partial class SimulationRunner
             .Where(c => c.SurvivalState == SurvivalState.Alive)
             .Where(c => rule.Origin is null || c.Origin == rule.Origin)
             .Where(c => rule.Trait is null || c.Traits.Contains(rule.Trait))
+            .Where(c => rule.Person is null || c.PersonId == rule.Person)
             .OrderBy(c => c.Id)
             .ToList();
         if (rule.Pick == "feud")
@@ -119,7 +150,9 @@ public sealed partial class SimulationRunner
             return [];
         }
 
-        return definition.Choices.Select(choice => new OfferedChoice(
+        return definition.Choices
+            .Where(choice => choice.Known.Count == 0 || (pending.Subject is { } about && choice.Known.All(t => Campaign.Knowledge.Assess(about, t) is not null)))
+            .Select(choice => new OfferedChoice(
             choice,
             choice.RequiresItem is null || Campaign.SharedStore.Count(choice.RequiresItem) >= choice.RequiresAmount,
             choice.Check is { } check ? ChanceOf(check, pending) : null)).ToList();
@@ -244,6 +277,20 @@ public sealed partial class SimulationRunner
                 CheckHealthThresholds(character, cause, []);
             }
 
+            if (effect.Learn is { } learn)
+            {
+                var level = learn.Level ?? TruthOf(character, learn.Topic);
+                if (learn.Source is Knowledge.KnowledgeSource.Observation or Knowledge.KnowledgeSource.Test
+                    && (Content.Skills.ContainsKey(learn.Topic) || Content.Languages.ContainsKey(learn.Topic)))
+                {
+                    Witness(character, learn.Topic, level, learn.Source);
+                }
+                else
+                {
+                    Campaign.Learn(character.Id, learn.Topic, level, learn.Source);
+                }
+            }
+
             if (effect.Becomes is { } state && character.SurvivalState is not (SurvivalState.Dead or SurvivalState.Missing))
             {
                 Campaign.InterruptTask(character.Id, InterruptReasons.Incapacitated, [new(ChronicleParameters.Cause, cause)]);
@@ -267,6 +314,29 @@ public sealed partial class SimulationRunner
         {
             SetRationing(rationing);
         }
+    }
+
+    // The truth about someone, for what an event shows of them: a skill or language level, a trait, or
+    // a fact of their past (1 if it is theirs, else 0).
+    private int TruthOf(Character character, string topic)
+    {
+        if (Content.Skills.ContainsKey(topic))
+        {
+            return character.Skills.Get(topic);
+        }
+
+        if (Content.Languages.ContainsKey(topic))
+        {
+            return character.Languages.Get(topic);
+        }
+
+        if (Content.Traits.ContainsKey(topic))
+        {
+            return character.Traits.Contains(topic) ? 1 : 0;
+        }
+
+        return PersonOf(character.Id) is { } person
+               && (person.Facts.Any(f => f.Id == topic) || person.Secrets.Any(s => s.Id == topic)) ? 1 : 0;
     }
 
     /// <summary>

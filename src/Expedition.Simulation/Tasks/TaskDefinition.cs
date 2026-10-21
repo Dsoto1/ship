@@ -63,6 +63,12 @@ public sealed record TaskDefinition
     public bool KeepsWatch { get; init; }
 
     /// <summary>
+    /// Skills the work shows, besides <see cref="Skill"/>, without them setting its pace: a watch kept in
+    /// a seaway shows who is a seaman. The captain learns them when he sees it done.
+    /// </summary>
+    public IReadOnlyList<string> Shows { get; init; } = [];
+
+    /// <summary>
     /// The task taken up as soon as this one is finished, making a loop of work (PORT_EXPERIENCE §7): a
     /// docker shoulders a crate, then carries it to the lighter. Null for none.
     /// </summary>

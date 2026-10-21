@@ -1257,6 +1257,9 @@ public partial class Main : Node3D
                 ChronicleEntryKind.WeatherChanged when entry.Get(ChronicleParameters.To) is "weather.storm" => (Severity.Critical, AutoPause.Weather, "A storm breaks"),
                 ChronicleEntryKind.WeatherChanged when entry.Get(ChronicleParameters.To) is "weather.gale" => (Severity.Urgent, AutoPause.Weather, "A gale is blowing"),
                 ChronicleEntryKind.HullStruck => (Severity.Urgent, AutoPause.ShipDamage, "The hull is struck"),
+                ChronicleEntryKind.ClaimTested when int.Parse(entry.Get(ChronicleParameters.Level) ?? "0", System.Globalization.CultureInfo.InvariantCulture) < int.Parse(entry.Get(ChronicleParameters.From) ?? "0", System.Globalization.CultureInfo.InvariantCulture)
+                    => (Severity.Attention, AutoPause.Events, $"{NameOf(entry)} is not what they claimed"),
+                ChronicleEntryKind.ClaimTested => (Severity.Positive, AutoPause.Events, $"{NameOf(entry)} is better than they said"),
                 ChronicleEntryKind.RiggingCarriedAway when entry.Get(ChronicleParameters.To) is "yard" => (Severity.Urgent, AutoPause.ShipDamage, "The topsail yard is sprung"),
                 ChronicleEntryKind.RiggingCarriedAway => (Severity.Attention, AutoPause.ShipDamage, "A line has parted aloft"),
                 ChronicleEntryKind.BilgeAlarm => (Severity.Critical, AutoPause.ShipDamage, "The bilge is rising"),
@@ -1524,6 +1527,7 @@ public partial class Main : Node3D
     private double? _forceBilge;
     private double? _forceHull;
     private double? _forceRigging;
+    private string? _forceEvent;
     private string? _forceCarryAway;
     private string? _developerSelect;
     private string? _developerInspect;
@@ -1745,6 +1749,7 @@ public partial class Main : Node3D
                 case "choose": _developerChoice = value; break;
                 case "sail" when Enum.TryParse<Expedition.Simulation.Voyage.SailPlan>(value, out var plan): _developerSail = plan; break;
                 case "carryaway": _forceCarryAway = value; break;
+                case "event": _forceEvent = value; break;
                 case "hull" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var hullLeft): _forceHull = hullLeft; break;
                 case "rigging" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var riggingLeft): _forceRigging = riggingLeft; break;
                 case "bilge" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var bilge): _forceBilge = bilge; break;
@@ -1808,6 +1813,12 @@ public partial class Main : Node3D
             ship.DeveloperSetCondition(_forceHull, _forceRigging);
         }
 
+        // --event=event.pascual_aloft: raise that event at once (if whoever it is about sailed).
+        if (_forceEvent is { } forced && !_runner.DeveloperRaiseEvent(forced).Succeeded)
+        {
+            GD.PushWarning($"--event: {forced} could not be raised.");
+        }
+
         // --carryaway=0,3,yard: those lines parted and the topsail yard sprung.
         if (_forceCarryAway is { } carried)
         {
@@ -1821,6 +1832,9 @@ public partial class Main : Node3D
             _sink = (float)bilge / 100f * 0.8f;
         }
     }
+
+    private string NameOf(ChronicleEntry entry) =>
+        entry.Characters.Count > 0 && _runner.Campaign.Characters.TryGetValue(entry.Characters[0], out var who) ? who.Name : "Someone";
 
     private async void TakeScreenshotAndQuit()
     {

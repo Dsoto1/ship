@@ -15,6 +15,8 @@
     "durationMinutes": 240,
     // Someone at the helm and on lookout: without them she makes little headway.
     "keepsWatch": true,
+    // A watch kept in a seaway shows who knows the work: the captain sees it, whatever was said ashore.
+    "shows": ["skill.seamanship", "skill.sailing"],
     "needsPerHour": { "fatigue": 1.0, "stress": 0.25 }
   },
   {

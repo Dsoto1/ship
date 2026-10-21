@@ -915,9 +915,9 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
                 var source = task.Origin == TaskOrigin.Order && character.Membership == Membership.Local
                     ? Knowledge.KnowledgeSource.Test
                     : Knowledge.KnowledgeSource.Observation;
-                if (definition.Skill is not null)
+                foreach (var skill in new[] { definition.Skill }.Concat(definition.Shows).OfType<string>().Distinct())
                 {
-                    Campaign.Learn(character.Id, definition.Skill, character.Skills.Get(definition.Skill), source);
+                    Witness(character, skill, character.Skills.Get(skill), source);
                 }
 
                 if (definition.Attribute is not null)

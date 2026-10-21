@@ -85,6 +85,7 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
             ChronicleEntryKind.RiggingCarriedAway => entry.Get(ChronicleParameters.To) == "yard"
                 ? $"A squall sprang the main topsail yard on {Ship()}; the topsail cannot be set until it is fished (rigging now {entry.Get(ChronicleParameters.Level)}%)."
                 : $"A line parted aloft on {Ship()} and flies loose (rigging now {entry.Get(ChronicleParameters.Level)}%).",
+            ChronicleEntryKind.ClaimTested => ClaimLine(who, entry),
             ChronicleEntryKind.BilgeAlarm => $"The bilge is {entry.Get(ChronicleParameters.Level)}% full and rising. Man the pumps!",
             ChronicleEntryKind.Foundered => $"{Capitalise(entry.Get(ChronicleParameters.To) ?? "The ship")} filled and foundered.",
             ChronicleEntryKind.Landfall => $"Land! {Capitalise(entry.Get(ChronicleParameters.To) ?? "The coast")} sighted from the masthead.",
@@ -143,6 +144,19 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
 
     private Port.LeadDefinition? Lead(string? id) =>
         content.Port?.AllLeads().Select(l => l.Lead).FirstOrDefault(l => l.Id == id);
+
+    private string ClaimLine(string who, ChronicleEntry entry)
+    {
+        var topic = entry.Get(ChronicleParameters.Need) ?? "";
+        var skill = content.Skills.TryGetValue(topic, out var definition) ? definition.Name.ToLowerInvariant()
+            : content.Languages.TryGetValue(topic, out var language) ? language.Name : topic;
+        var told = int.Parse(entry.Get(ChronicleParameters.From) ?? "0", CultureInfo.InvariantCulture);
+        var seen = int.Parse(entry.Get(ChronicleParameters.Level) ?? "0", CultureInfo.InvariantCulture);
+        var (toldWord, seenWord) = (KnowledgeText.LevelWord(told).ToLowerInvariant(), KnowledgeText.LevelWord(seen).ToLowerInvariant());
+        return seen < told
+            ? $"At sea, {who}'s {skill} shows for what it is: {seenWord}, not the {toldWord} you were told. The crew have seen it too."
+            : $"At sea, {who} turns out better at {skill} than you were told: {seenWord}, not {toldWord}. The crew have noticed.";
+    }
 
     private string Ship() => campaign.Voyage?.ShipName ?? "the ship";
 

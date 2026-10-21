@@ -1,0 +1,303 @@
+// Things that happen at sea to the people the captain chose in port (the crew at sea, MILESTONES):
+// what they claimed meets what they can do, and what they hid comes out. Each is written for one
+// person and fires only if they sailed. Choices that need something the captain was told in port
+// ("known") are offered only if he was told it. Text may use {subject}, {captain}, {ship}, {Ship}.
+[
+  {
+    "id": "event.velho_letters",
+    "title": "A Brennish sail",
+    "text": "A Brennish ketch crosses your wake, close enough to hail. {subject} is at your elbow before the lookout has finished calling her: he has a packet, oiled and tied, and asks you to speak her and let it go across.",
+    "trigger": { "chancePerDay": 0.35, "minDay": 4, "once": true, "weather": ["weather.calm", "weather.fair", "weather.fresh"], "subject": { "person": "person.velho" } },
+    "choices": [
+      {
+        "id": "speak", "text": "Heave to and let him pass it across",
+        "success": {
+          "text": "The ketch's master takes the packet with a wave as if he has done it before. {subject} watches her go, and for once says thank you.",
+          "effects": [
+            { "leagues": -3 },
+            { "who": "subject", "learn": { "topic": "fact.velho_brennish" } },
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Trust", "amount": 10 } },
+            { "relationship": { "from": "crew", "to": "captain", "dimension": "Respect", "amount": -3 } }
+          ]
+        }
+      },
+      {
+        "id": "ask", "text": "Ask him what Hob the trader carries for him", "known": ["fact.velho_brennish"],
+        "success": {
+          "text": "\"Letters. To my sister in Lusara: your Chamber reads everything that goes on a Castrenan ship.\" He holds the packet out for you to weigh. You speak the ketch, and he does not forget that you asked first.",
+          "effects": [
+            { "leagues": -3 },
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Trust", "amount": 14 } }
+          ]
+        }
+      },
+      {
+        "id": "open", "text": "Open the packet before anything goes across",
+        "success": {
+          "text": "Letters, in Lusaran, to a woman in Viana: the harvest, a debt paid, a nephew's fever. Nothing about the Garza at all. {subject} takes them back without a word, and from then on speaks to you only about the course.",
+          "effects": [
+            { "leagues": -3 },
+            { "who": "subject", "learn": { "topic": "fact.velho_brennish" } },
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Trust", "amount": -18 } },
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Affection", "amount": -10 } }
+          ]
+        }
+      },
+      {
+        "id": "no", "text": "Keep your course: a Castrenan ship does not speak interlopers",
+        "success": {
+          "text": "The ketch falls astern. {subject} puts the packet back inside his coat and goes forward. The Castrenans aboard approve; he does not.",
+          "effects": [
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Trust", "amount": -6 } },
+            { "relationship": { "from": "crew", "to": "captain", "dimension": "Respect", "amount": 3 } }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "event.velho_bar",
+    "title": "The bar at Punta Ceniza",
+    "text": "The water has gone brown. {subject} has been on deck since the middle watch with the lead, and comes aft to say it: the current here sets north along the shore, and the course on the Chamber's chart will put {ship} on the bar at Punta Ceniza before dark. He wants to stand off two leagues and come in from the south.",
+    "trigger": { "chancePerDay": 3, "once": true, "leaguesBelow": 80, "subject": { "person": "person.velho" } },
+    "choices": [
+      {
+        "id": "his", "text": "Stand off as he says",
+        "check": { "skill": "skill.navigation", "who": "subject", "base": 0.35, "perLevel": 0.13 },
+        "success": {
+          "text": "At dusk the breakers show white on the bar, exactly where he said, a league inside the course you would have held. The crew look at {subject} differently after that.",
+          "effects": [
+            { "leagues": -4 },
+            { "who": "subject", "learn": { "topic": "skill.navigation" } },
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Trust", "amount": 10 } },
+            { "relationship": { "from": "crew", "to": "subject", "dimension": "Respect", "amount": 8 } }
+          ]
+        },
+        "failure": {
+          "text": "The current is not where he said; you lose the day standing off and beating back. {subject} takes the lead himself after that and does not leave the rail.",
+          "effects": [
+            { "leagues": -12 },
+            { "who": "subject", "learn": { "topic": "skill.navigation" } },
+            { "relationship": { "from": "crew", "to": "subject", "dimension": "Respect", "amount": -5 } }
+          ]
+        }
+      },
+      {
+        "id": "chart", "text": "Hold your course: the Chamber's chart shows deep water",
+        "check": { "skill": "skill.navigation", "who": "captain", "base": 0.15, "perLevel": 0.08 },
+        "success": {
+          "text": "The lead never finds less than six fathoms. {subject} says nothing at all, which is worse than saying something.",
+          "effects": [
+            { "leagues": 6 },
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Respect", "amount": -4 } }
+          ]
+        },
+        "failure": {
+          "text": "She takes the ground on the edge of the bar with a shock that throws men off their feet, and it is two hours of kedging and pumping before she floats free. {subject} was right, and everyone aboard knows it.",
+          "effects": [
+            { "ship": { "hull": -15, "bilge": 12 } },
+            { "who": "subject", "learn": { "topic": "skill.navigation" } },
+            { "relationship": { "from": "crew", "to": "captain", "dimension": "Trust", "amount": -10 } },
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Respect", "amount": -10 } },
+            { "relationship": { "from": "crew", "to": "subject", "dimension": "Respect", "amount": 8 } }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "event.pons_wine",
+    "title": "The medicine chest",
+    "text": "The cook comes to you quietly: the wine kept back for the sick is short, and {subject} has been seen at the chest after dark. You find him there, with the hands of a man who has not slept.",
+    "trigger": { "chancePerDay": 0.3, "minDay": 6, "once": true, "subject": { "person": "person.pons" } },
+    "choices": [
+      {
+        "id": "grilo", "text": "Ask him what Grilo has over him", "known": ["fact.pons_debts"],
+        "success": {
+          "text": "It comes out all at once: the debts, Grilo's men at his door, and before that Almara, the patient of good family who died under his knife. \"He was dead before I came, Captain. They needed someone to blame.\" He gives you the key to the chest himself.",
+          "effects": [
+            { "who": "subject", "learn": { "topic": "fact.pons_almara", "source": "Claim" } },
+            { "who": "subject", "needs": { "stress": -20 } },
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Trust", "amount": 12 } },
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Affection", "amount": 6 } }
+          ]
+        }
+      },
+      {
+        "id": "lock", "text": "Take the key, and say no more about it",
+        "success": {
+          "text": "He hands it over. Nothing more is said, by either of you, and the wine lasts after that.",
+          "effects": [
+            { "item": "item.wine", "amount": -2 },
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Trust", "amount": 3 } }
+          ]
+        }
+      },
+      {
+        "id": "shame", "text": "Have it out with him in front of the crew",
+        "success": {
+          "text": "The crew hear every word. {subject} stands and takes it, and goes about his work after with his eyes down. The wine is safe; whether he is, you are less sure.",
+          "effects": [
+            { "item": "item.wine", "amount": -2 },
+            { "who": "subject", "needs": { "stress": 20 } },
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Trust", "amount": -12 } },
+            { "relationship": { "from": "crew", "to": "subject", "dimension": "Respect", "amount": -8 } },
+            { "relationship": { "from": "crew", "to": "captain", "dimension": "Respect", "amount": 4 } }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "event.tome_seaman",
+    "title": "The convict in the blow",
+    "text": "In the worst of it a sheet parts and the main course thunders loose. Before anyone is told, {subject}, who swore in port he had never set foot on a deck, is at the clew with the sheet's end in his fist, taking a turn round the cleat the way only a seaman does it.",
+    "trigger": { "chancePerDay": 2, "minDay": 2, "once": true, "weather": ["weather.gale", "weather.storm"], "subject": { "person": "person.tome" } },
+    "choices": [
+      {
+        "id": "caridad", "text": "Ask him about the ship that came home without her master", "known": ["fact.tome_sailor"],
+        "success": {
+          "text": "He is quiet a long time. \"The Caridad. Her master beat the ship's boy to death on the passage out, and nobody stopped him. On the way home the men put him over the side, and I was one of them.\" He looks at you. \"Hang me at the coast if you like, Captain. I'll work the ship till then.\"",
+          "effects": [
+            { "who": "subject", "learn": { "topic": "skill.seamanship" } },
+            { "who": "subject", "learn": { "topic": "fact.tome_master", "source": "Claim" } },
+            { "who": "subject", "needs": { "stress": -15 } },
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Trust", "amount": 14 } }
+          ]
+        }
+      },
+      {
+        "id": "where", "text": "Ask him where he learned that",
+        "success": {
+          "text": "\"River barges, Captain,\" he says, and goes back to the rail. No one on a river barge ever took a turn like that.",
+          "effects": [
+            { "who": "subject", "learn": { "topic": "skill.seamanship" } },
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Trust", "amount": 2 } }
+          ]
+        }
+      },
+      {
+        "id": "watch", "text": "Say nothing, and put him in the starboard watch with the seamen",
+        "success": {
+          "text": "He takes the place as if it were his by right. Nobody asks where he learned his trade, least of all you, and he seems grateful for it.",
+          "effects": [
+            { "who": "subject", "learn": { "topic": "skill.seamanship" } },
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Respect", "amount": 8 } },
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Affection", "amount": 5 } }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "event.pascual_aloft",
+    "title": "Frozen in the shrouds",
+    "text": "It is blowing up and the topsail must come in. {subject}, who told you in port of two years in the coasting trade, goes up the ratlines with the rest, stops at the top, and does not move again. He is holding on with both arms, face against the shrouds, and will not look down.",
+    "trigger": { "chancePerDay": 1.5, "minDay": 2, "once": true, "weather": ["weather.fresh", "weather.gale"], "subject": { "person": "person.pascual" } },
+    "choices": [
+      {
+        "id": "send", "text": "Send the best topman up after him",
+        "check": { "skill": "skill.rigging", "base": 0.4, "perLevel": 0.12 },
+        "success": {
+          "text": "It takes a quarter of an hour, talking all the while, but he is brought down. He sits on the hatch shaking. Two years in the coasting trade, he said. He has never been past the river bar.",
+          "effects": [
+            { "who": "subject", "learn": { "topic": "skill.rigging" } },
+            { "who": "subject", "learn": { "topic": "fact.pascual_never_sailed" } },
+            { "who": "subject", "needs": { "stress": 15 } }
+          ]
+        },
+        "failure": {
+          "text": "His hands give out before the topman reaches him. He comes down through the rigging, catches a backstay, and lands on the deck hard. He will mend. He has never been past the river bar.",
+          "effects": [
+            { "who": "subject", "learn": { "topic": "skill.rigging" } },
+            { "who": "subject", "learn": { "topic": "fact.pascual_never_sailed" } },
+            { "who": "subject", "condition": "condition.sprain", "health": -15, "needs": { "stress": 25 } }
+          ]
+        }
+      },
+      {
+        "id": "self", "text": "Go up yourself",
+        "check": { "skill": "skill.seamanship", "who": "captain", "base": 0.35, "perLevel": 0.1 },
+        "success": {
+          "text": "You talk him down a ratline at a time, your hand on his ankle. On deck he tells you the truth without being asked: he has never been past the river bar. The crew saw who went up for him.",
+          "effects": [
+            { "who": "subject", "learn": { "topic": "skill.rigging" } },
+            { "who": "subject", "learn": { "topic": "fact.pascual_never_sailed" } },
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Trust", "amount": 15 } },
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Affection", "amount": 10 } },
+            { "relationship": { "from": "crew", "to": "captain", "dimension": "Respect", "amount": 6 } }
+          ]
+        },
+        "failure": {
+          "text": "You get him down, and leave the skin of both palms on the shrouds doing it. He has never been past the river bar, he says on deck, crying. The crew saw who went up for him.",
+          "effects": [
+            { "who": "subject", "learn": { "topic": "skill.rigging" } },
+            { "who": "subject", "learn": { "topic": "fact.pascual_never_sailed" } },
+            { "who": "captain", "condition": "condition.rope_burn", "health": -6 },
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Trust", "amount": 15 } },
+            { "relationship": { "from": "crew", "to": "captain", "dimension": "Respect", "amount": 4 } }
+          ]
+        }
+      },
+      {
+        "id": "order", "text": "Order him to go on or come down",
+        "check": { "base": 0.5 },
+        "success": {
+          "text": "Your voice reaches him where nothing else did. He comes down white to the lips and does not go aloft again on this passage. He has never been past the river bar, and now everyone knows it.",
+          "effects": [
+            { "who": "subject", "learn": { "topic": "skill.rigging" } },
+            { "who": "subject", "learn": { "topic": "fact.pascual_never_sailed" } },
+            { "who": "subject", "needs": { "stress": 25 } },
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Affection", "amount": -6 } }
+          ]
+        },
+        "failure": {
+          "text": "He tries to obey and his foot misses the ratline. He falls into the belly of the course and slides to the deck. He has never been past the river bar, and now everyone knows it.",
+          "effects": [
+            { "who": "subject", "learn": { "topic": "skill.rigging" } },
+            { "who": "subject", "learn": { "topic": "fact.pascual_never_sailed" } },
+            { "who": "subject", "condition": "condition.bruised", "health": -10, "needs": { "stress": 25 } },
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Trust", "amount": -8 } }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "event.ximena_coast",
+    "title": "Before the coast",
+    "text": "The night before you raise the land, {subject} comes aft and stands at the rail, turning the lagoon shell on its thong. She has something to say and cannot find the start of it.",
+    "trigger": { "chancePerDay": 3, "once": true, "leaguesBelow": 110, "subject": { "person": "person.ximena" } },
+    "choices": [
+      {
+        "id": "season", "text": "Tell her Hernando says it was a season, not a year", "known": ["fact.ximena_season"],
+        "success": {
+          "text": "\"A season. He is right.\" The words come easier after that. She has their tongue well enough to trade and be polite, not to treat. And there is a boy at Mahenu, her son, left with his father's people when the Company ship came. \"I am not going back for your Company, Captain. I am going back for him.\"",
+          "effects": [
+            { "who": "subject", "learn": { "topic": "language.ahuneri", "source": "Claim" } },
+            { "who": "subject", "learn": { "topic": "fact.ximena_child", "source": "Claim" } },
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Trust", "amount": 12 } }
+          ]
+        }
+      },
+      {
+        "id": "teach", "text": "Ask her to teach you the greetings, for when you land",
+        "success": {
+          "text": "She teaches you three, and then stops, groping for a fourth she cannot find. Whatever she claimed in port, her Ahuneri is a trader's, not an interpreter's. She knows you have seen it.",
+          "effects": [
+            { "who": "subject", "learn": { "topic": "language.ahuneri" } },
+            { "relationship": { "from": "subject", "to": "captain", "dimension": "Affection", "amount": 4 } },
+            { "who": "subject", "needs": { "stress": 10 } }
+          ]
+        }
+      },
+      {
+        "id": "wait", "text": "Tell her it can wait until landfall",
+        "success": {
+          "text": "She nods and goes forward. In the morning she is first at the bow, watching the land come up, and does not speak to anyone.",
+          "effects": [ { "who": "subject", "needs": { "stress": 12 } } ]
+        }
+      }
+    ]
+  }
+]

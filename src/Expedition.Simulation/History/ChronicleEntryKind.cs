@@ -45,6 +45,12 @@ public enum ChronicleEntryKind
     /// </summary>
     RiggingCarriedAway,
 
+    /// <summary>
+    /// The captain saw someone at work in a skill and it was far from what he had been told (parameters:
+    /// need = the skill, from = the level told, level = the level seen).
+    /// </summary>
+    ClaimTested,
+
     /// <summary>The bilge rose past an alarm level (parameter: level).</summary>
     BilgeAlarm,
 

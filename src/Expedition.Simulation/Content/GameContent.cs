@@ -125,7 +125,7 @@ public sealed class GameContent
 
         foreach (var definition in Events.Values)
         {
-            ValidateEvent(definition, errors);
+            ValidateEvent(definition, port, errors);
         }
 
         if (port is not null)
@@ -374,9 +374,18 @@ public sealed class GameContent
 
     private static readonly string[] EffectTargets = ["subject", "other", "captain", "crew", "all"];
 
-    private void ValidateEvent(Events.EventDefinition definition, List<string> errors)
+    private void ValidateEvent(Events.EventDefinition definition, Port.PortRules? port, List<string> errors)
     {
         var where = $"Event '{definition.Id}'";
+        if (definition.Trigger.Subject?.Person is { } person && port?.People.All(p => p.Id != person) != false)
+        {
+            errors.Add($"{where}: subject person '{person}' is not one of the port's people.");
+        }
+
+        if (definition.Trigger.LeaguesBelow is <= 0)
+        {
+            errors.Add($"{where}: leaguesBelow must be positive.");
+        }
         if (definition.Choices.Count == 0 || definition.Choices.Select(c => c.Id).Distinct().Count() != definition.Choices.Count)
         {
             errors.Add($"{where}: needs at least one choice, with unique IDs.");

@@ -44,6 +44,15 @@ public sealed record EventTrigger
     /// <summary>Only when the bilge is above this level.</summary>
     public double? BilgeAbove { get; init; }
 
+    /// <summary>Only with fewer leagues than this left to run: the coast is near.</summary>
+    public double? LeaguesBelow { get; init; }
+
+    /// <summary>Only if the captain already knows these things (fact or skill IDs) about the subject.</summary>
+    public IReadOnlyList<string> Known { get; init; } = [];
+
+    /// <summary>Only if the captain does not yet know these things about the subject.</summary>
+    public IReadOnlyList<string> NotKnown { get; init; } = [];
+
     /// <summary>Only while the crew are on short rations, or only while they are not.</summary>
     public bool? Rationing { get; init; }
 
@@ -75,6 +84,12 @@ public sealed record SubjectRule
 
     /// <summary>Only people with this trait.</summary>
     public string? Trait { get; init; }
+
+    /// <summary>
+    /// Only this person of the port (for example <c>person.velho</c>), if they sailed: events written for
+    /// someone, about who they are and what they hid.
+    /// </summary>
+    public string? Person { get; init; }
 }
 
 /// <summary>One thing the captain can do.</summary>
@@ -91,6 +106,12 @@ public sealed record EventChoice
 
     /// <summary>How many of <see cref="RequiresItem"/> are needed.</summary>
     public int RequiresAmount { get; init; } = 1;
+
+    /// <summary>
+    /// Offered only if the captain knows these things about the subject: he cannot ask about the Santa
+    /// Clara if no one told him of it.
+    /// </summary>
+    public IReadOnlyList<string> Known { get; init; } = [];
 
     /// <summary>A skill roll deciding between success and failure, or null for a sure outcome.</summary>
     public SkillCheck? Check { get; init; }
@@ -167,6 +188,28 @@ public sealed record EventEffect
 
     /// <summary>Put the crew on short rations (true) or back on full (false).</summary>
     public bool? Rationing { get; init; }
+
+    /// <summary>
+    /// What the captain learns of <see cref="EventEffect.Who"/>: the truth about a skill, a language or
+    /// a fact of their past, as seen (or, with a source of Claim, only as they now tell it).
+    /// </summary>
+    public LearnEffect? Learn { get; init; }
+}
+
+/// <summary>Something the captain learns from an event.</summary>
+public sealed record LearnEffect
+{
+    /// <summary>A skill, language, trait or fact ID.</summary>
+    public required string Topic { get; init; }
+
+    /// <summary>
+    /// The level learned, or null for the truth: the person's real skill or language level, or 1 for a
+    /// fact (0 if it is not theirs).
+    /// </summary>
+    public int? Level { get; init; }
+
+    /// <summary>How it is learned: Observation (seen), Test, or Claim (their own word now).</summary>
+    public Knowledge.KnowledgeSource Source { get; init; } = Knowledge.KnowledgeSource.Observation;
 }
 
 /// <summary>How one person or group regards another changes.</summary>
