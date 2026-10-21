@@ -1461,3 +1461,32 @@ Tests: 428 (3 new in `TavernTests`). Screenshots: `docs/screenshots/tavern-insid
   back walls stay up;
 - nothing yet happens in the tavern that happens nowhere else (a game of dice, a song, a fight at
   closing).
+
+## Evenings in the Three Anchors: dice and a song, and four days in port (owner's request)
+
+- **More time:** the convoy now sails at dawn on day 5, not day 3: four evenings in port. The
+  deadlines of those who will not wait move with it (Velho and Pons on day 4, Pascual on the morning
+  of day 5), as do the price rise in the last 36 hours, the eve-of-sailing warning and the late fees.
+- **Dice** (from 17:00 to 02:00):
+  - sit in with whoever is drinking or gambling in the room (up to three, gamblers first), for 10,
+    20 or 50 sueldos a throw;
+  - everyone throws two dice and the highest takes the pot (ties throw again), the same throws for
+    the same moment, so reloading changes nothing;
+  - sitting down warms them to you, and losing graciously warms them more than taking their money;
+  - between throws someone may talk of someone they know, as hearsay in the captain's knowledge;
+  - a game holds the table for half an hour as the clock runs, and the players are seen talking
+    over it.
+- **A song** (from 19:00 to 01:00, once an evening, 5 sueldos to the singer):
+  - someone in the room with a song of their own, who has not yet sung, stands and sings it for
+    twenty minutes;
+  - written songs: Wat's Brennish ballad, Ximena's cradle song from Mahenu, Velho's "Salt Sea",
+    Nuño's "Garlic and Onions", Rodrigo's bawdy "Abbess of Almara", Andrés's capstan shanty,
+    Bartolo's caulkers' song, Gil's cooper's round and Marta's ropewalk song;
+  - the room warms to the captain and the singer more;
+  - what a song shows the captain hears for himself: Ximena singing in Ahuneri confirms she speaks it.
+- **The room bar** inside the tavern now has Dice (with the stake) and Call for a song beside the round.
+- **Save format 24** keeps who has sung and the last song's evening.
+- **Developer:** `--captain=29,12 --tavern=song` (or `dice`).
+
+Tests: 433 (5 new in `TavernEveningTests`). Screenshots: `docs/screenshots/tavern-song.jpg`,
+`tavern-dice.jpg`.

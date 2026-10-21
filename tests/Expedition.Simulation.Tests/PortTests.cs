@@ -291,7 +291,7 @@ public class PortTests
         var runner = Port();
         var velho = Id(runner, "person.velho");
 
-        AdvanceTo(runner, 2, 14, 1);
+        AdvanceTo(runner, 4, 14, 1);
 
         Assert.Contains(velho, runner.Campaign.Port!.Gone);
         Assert.False(runner.Campaign.Placements.ContainsKey(velho));
@@ -354,10 +354,10 @@ public class PortTests
     {
         var runner = Port();
 
-        AdvanceTo(runner, 2, 18, 1);
+        AdvanceTo(runner, 4, 18, 1);
         Assert.Contains(runner.Campaign.Chronicle.Entries, e => e.Kind == ChronicleEntryKind.ConvoyWarning);
 
-        AdvanceTo(runner, 3, 18, 1);
+        AdvanceTo(runner, 5, 18, 1);
         Assert.Equal(2, runner.Campaign.Chronicle.Entries.Count(e => e.Kind == ChronicleEntryKind.LateFee));
         Assert.Equal(7000 - 600, runner.Campaign.Port!.Funds);
     }
@@ -708,7 +708,7 @@ public class PortTests
         runner.Buy(0);
         Assert.Equal(PreparationStage.DepartureReady, Stage());
 
-        AdvanceTo(runner, 3, 3);
+        AdvanceTo(runner, 5, 3);
         Assert.Equal(PreparationStage.DepartureMorning, Stage());
         Assert.Equal(4, ShipPreparation.Of(runner.Campaign, Shipped)!.Belongings);
     }

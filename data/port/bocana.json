@@ -16,8 +16,7 @@
  "funds": 7000,
  "berths": 7,
  "minimumCrew": 4,
- "departure": {
-  "day": 3,
+ "departure": {"day": 5,
   "hour": 6
  },
  "lateFeePerHalfDay": 300,
@@ -410,6 +409,7 @@
  "people": [
   {
    "id": "person.velho",
+   "song": {"title": "Salt Sea", "says": "Velho will not sing, he says, and then does: an old Lusaran song about the sea that takes men, slow and dark. He sings it well, and looks at no one while he does. Afterwards he drinks his wine in one go and goes back to being proud.", "lines": ["O salt sea, how much of your salt", "is the tears of the mothers of Lusara..."]},
    "facts": [{"id": "fact.velho_left_ship", "text": "Left the last Company ship at the coast and came home on a Brennish one; no one knows why."}, {"id": "fact.velho_mutiny", "text": "Says the master of the Santa Clara was hanging Ahuneri pilots off the river mouth, and he would not stand by."}],
    "conversation": {"first": "The Lusaran looks up from his charts, looks you over, and takes his time about it. \"You are the Garza's captain. I wondered when you would come.\"", "again": "Velho nods without getting up. \"Captain.\"", "topics": [{"id": "topic.velho.charts", "ask": "Those are the Ember Coast charts?", "says": "\"Mine. Not the Chamber's: theirs put the river mouths three leagues wrong, and I have the reefs to prove it on a Lusaran hull.\" He turns the sheet so you can see the soundings, all in his own small hand.", "claims": {"skill.navigation": 5}, "respect": 4, "trust": 3}, {"id": "topic.velho.coast", "ask": "What is the coast like, in truth?", "after": ["topic.velho.charts"], "says": "\"Low. Green to the water, and the water brown for a league out where the rivers come down. You smell it before you see it. In the dry season the currents set north along the shore and will put you on the bar at Punta Ceniza if you sleep. The Ahuneri will trade if you let them come to you. Most captains do not let them.\"", "claims": {"skill.seamanship": 4, "language.ahuneri": 2}, "trust": 4}, {"id": "topic.velho.why", "ask": "Why go back?", "after": ["topic.velho.coast"], "says": "He is quiet so long you think he will not answer. \"Because I know the way, and the next man who does not will drown his crew finding it. That is enough for you.\"", "guard": {"trust": 10, "says": "\"That is my business, Captain. I said so.\" He goes back to his charts.", "change": -4}, "trust": 5, "respect": 3}, {"id": "topic.velho.brennish", "ask": "You were seen with the Brennish trader, after dark.", "known": ["fact.velho_brennish"], "says": "He puts the dividers down very carefully. \"Hob carries letters for me. To Lusara, to my sister; your Chamber reads everything that goes on a Castrenan ship. If that is a crime, tell Quintana.\"", "guard": {"trust": 12, "says": "\"You have been watching me.\" His face closes like a door. \"Then keep watching, Captain. You will learn nothing else from me today.\"", "change": -8}, "trust": 6}, {"id": "topic.velho.santa_clara", "ask": "Quintana says you left the last Company ship at the coast.", "known": ["fact.velho_left_ship"], "says": "\"The Santa Clara. Her master was hanging Ahuneri pilots off the river mouth for leading him wrong, and they had not. I told him so in front of the crew, and he put me ashore with my chest. A Brennish ship took me off a month after.\" He looks at you. \"If you are that kind of master, Captain, find another pilot.\"", "guard": {"trust": 14, "says": "\"Quintana says a great deal. Ask him why the Chamber never wrote down what that master did.\"", "change": -3}, "tells": ["fact.velho_mutiny"], "trust": 8, "respect": 6}, {"id": "topic.velho.terms", "ask": "What would you want, to pilot the Garza?", "seeking": true, "terms": true, "after": ["topic.velho.coast"], "says": "\"Sixteen hundred, in advance, and not a sueldo less: that is what a pilot who has been there is worth. And my word on the course is the last word, when it comes to shoals.\""}]},
    "farewell": "Velho stoops and touches the quay stones before he goes up the gangway.",
@@ -501,7 +501,7 @@
      "language.ahuneri": 2
     },
     "leaves": {
-     "day": 2,
+     "day": 4,
      "hour": 14,
      "reason": "signed on as pilot of a Lusaran caravel bound for the islands"
     }
@@ -586,7 +586,7 @@
      "skill.surgery": 4
     },
     "leaves": {
-     "day": 2,
+     "day": 4,
      "hour": 20,
      "reason": "fled the town by the night road, a step ahead of his creditors"
     }
@@ -594,6 +594,7 @@
   },
   {
    "id": "person.bartolo",
+   "song": {"title": "The Caulkers' Song", "says": "Old Bartolo sings a yard song from when he was a boy, tapping the beat on the table with his knuckles like a caulking mallet. Only the old men know the words. They sing them with their eyes shut.", "lines": ["Oakum in the seam, boys, pitch upon the oakum,", "and the sea will never find the way into her bosom..."]},
    "conversation": {"first": "The old carpenter straightens from his work slowly, one hand in the small of his back. \"Captain. They say you want a carpenter who knows a caravel. Well. I knew the Garza when she was built.\"", "again": "Bartolo wipes his hands on his apron. \"Captain.\"", "topics": [{"id": "topic.bartolo.garza", "ask": "You knew the Garza when she was built?", "says": "\"Forty years ago, in the yard where Benito has his forge now. Oak from the hills, the good oak, before they cut it all. She has a soft plank under the larboard bow; she always had. I can show you where.\"", "claims": {"skill.ship_repair": 5, "skill.carpentry": 4}, "trust": 4, "respect": 3}, {"id": "topic.bartolo.age", "ask": "Are you not too old for another voyage?", "after": ["topic.bartolo.garza"], "says": "He does not take offence. \"Too old to go aloft. Too old to haul. Not too old to know which seam is going to open before it opens, and that is what you pay a carpenter for. Pay a young one to swing the maul.\"", "respect": 4}, {"id": "topic.bartolo.wife", "ask": "Will anyone mind you going?", "after": ["topic.bartolo.garza"], "says": "\"My wife is in the churchyard. My sons are in Lusara and do not write.\" He looks at the Garza for a while. \"Father Anselmo will mind. He will have no one left to argue with.\"", "affection": 6, "trust": 4}, {"id": "topic.bartolo.gil", "ask": "Who else should I take?", "after": ["topic.bartolo.garza"], "says": "\"Gil, the cooper. A ship's water is only as good as her casks, and his do not leak. And if you want a cook, Nuño at the Three Anchors, if Inés will let him go, which she will not.\"", "trust": 2}, {"id": "topic.bartolo.terms", "ask": "What would you want?", "seeking": true, "terms": true, "after": ["topic.bartolo.garza"], "says": "\"Eleven hundred, and room in the hold for my tool chest. My own tools. I do not work with the Company's.\""}]},
    "name": "Bartolo Ruiz",
    "age": 61,
@@ -794,6 +795,7 @@
   },
   {
    "id": "person.ximena",
+   "song": {"title": "A cradle song from Mahenu", "says": "Ximena does not stand. She sings sitting, her hand on the shell at her throat, a soft rising song in a tongue no one here speaks, and her voice breaks once in the middle. No one claps. Then Gil does, and everyone else.", "lines": ["Naku te, naku te, the water is warm,", "the lagoon holds you, the reef holds the storm..."], "shows": {"language.ahuneri": 4}},
    "facts": [{"id": "fact.ximena_season", "text": "Was at Mahenu a season, not a year, and left in a hurry, says Hernando."}, {"id": "fact.ximena_child", "text": "Had a child at Mahenu, and left him with his father's people when the Company ship came."}],
    "conversation": {"first": "The fish seller keeps gutting while you talk; her knife does not stop. \"You're the Garza. Everyone knows. Are you buying, or asking?\"", "again": "Ximena flicks the scales off her knife. \"Asking again, Captain?\"", "topics": [{"id": "topic.ximena.mahenu", "ask": "You lived among the Ahuneri?", "says": "\"At Mahenu, on the lagoon, after the Rosario broke up on the bar. Three of us came ashore. Two of us lived.\" She speaks a few words, low and quick, in a tongue you do not know. \"That means 'the sea took the rest'. You'll want to know how to say that.\"", "claims": {"language.ahuneri": 4, "skill.languages": 3}, "trust": 4}, {"id": "topic.ximena.shell", "ask": "The shell on the thong?", "after": ["topic.ximena.mahenu"], "says": "Her hand goes to it. \"A gift.\" That is all she says, and her knife is still for a moment.", "guard": {"trust": 6, "says": "\"A shell.\" The knife goes back to work.", "change": -1}, "trust": 3}, {"id": "topic.ximena.season", "ask": "Hernando says it was a season, not a year.", "known": ["fact.ximena_season"], "says": "She puts the knife down. \"It was fourteen months. Hernando came on the Company ship at the end of it and saw a woman run down the beach to it, so he thinks he knows.\" Quietly: \"I had a son there. His father's people kept him when I went. I did not run to the ship, Captain; I ran from them telling me to go.\"", "guard": {"trust": 12, "says": "\"Hernando was drunk the whole time he was on that coast.\" She goes on gutting, harder.", "change": -5}, "tells": ["fact.ximena_child"], "trust": 8, "affection": 6}, {"id": "topic.ximena.why", "ask": "Why go back?", "after": ["topic.ximena.mahenu"], "says": "\"For the fish, Captain.\" She does not smile. \"You'll need someone who can talk to them before your soldiers do. That's reason enough for you.\"", "trust": 2}, {"id": "topic.ximena.terms", "ask": "What would you want?", "seeking": true, "terms": true, "after": ["topic.ximena.mahenu"], "says": "\"Twelve hundred. And that I go ashore at Mahenu, whatever else you do there.\""}]},
    "farewell": "Catalina has left the fish stalls to see Ximena off. Neither of them says much.",
@@ -863,6 +865,7 @@
   },
   {
    "id": "person.gil",
+   "song": {"title": "The Cooper's Round", "says": "Gil rolls an empty cask into the middle of the room and drums the time on it with his fists. It is a round, and he gets the whole room singing it in three parts before it falls apart in laughter.", "lines": ["Hoop it and drive it and drive it and hoop it,", "a cask that is tight is a cask that won't droop it!"]},
    "conversation": {"first": "The cooper stops a cask with his foot without looking at it. \"Captain! Water, is it? Or a man to keep it?\"", "again": "Gil raps a stave with his knuckle out of habit. \"Captain.\"", "topics": [{"id": "topic.gil.casks", "ask": "What makes a good cask?", "says": "\"Oak, seasoned three years, and a cooper who isn't in a hurry. Listen.\" He thumps one: it rings. Another: it thuds. \"That one leaks. I'll not sell it you. Hob would.\"", "claims": {"skill.carpentry": 3, "skill.ship_repair": 2}, "trust": 4, "respect": 3}, {"id": "topic.gil.family", "ask": "You've a family?", "after": ["topic.gil.casks"], "says": "\"Wife and four, and one coming. That's why I want the voyage, Captain: a share on the coast is two years of casks.\" He grins. \"And it's quieter at sea.\"", "affection": 5, "trust": 3}, {"id": "topic.gil.terms", "ask": "What would you want?", "seeking": true, "terms": true, "after": ["topic.gil.casks"], "says": "\"Nine hundred, and half of it to my wife at the door, not to me at the tavern.\""}]},
    "name": "Gil Cordero",
    "age": 40,
@@ -923,6 +926,7 @@
   },
   {
    "id": "person.nuno",
+   "song": {"title": "Garlic and Onions", "says": "Nuño comes out of the kitchen with a ladle and bangs the time on a pot. It is a cook's song with a chorus everyone knows, and everyone shouts it, the dockers loudest. Inés pretends to be cross.", "lines": ["Garlic for the sailor, onions for the priest,", "and the cook gets the bottom of the pot at least!"]},
    "conversation": {"first": "The cook comes out wiping his hands, smelling of onions. \"Captain! Sit, sit. Inés says you're looking for a cook, and you've come to the only one worth having.\"", "again": "\"Captain! Hungry?\" Nuño is already reaching for a bowl.", "topics": [{"id": "topic.nuno.cooking", "ask": "What can you do with ship's stores?", "says": "\"Biscuit, pork, peas, oil, a bit of garlic. Most cooks boil it and call it dinner. I make it so a man looks forward to it, and a man who looks forward to his dinner does his watch.\" He presses a bowl on you: it is good.", "claims": {"skill.cooking": 4}, "trust": 5, "affection": 4}, {"id": "topic.nuno.ines", "ask": "Will Inés let you go?", "after": ["topic.nuno.cooking"], "says": "He looks back at the kitchen door. \"Five years I've cooked for her. She'll shout. Then she'll find someone who boils it.\" Quieter: \"I was at sea before I was a cook, Captain. I'd like to see it again before I'm too fat for the hatch.\"", "affection": 4, "trust": 3}, {"id": "topic.nuno.talk", "ask": "What do you hear, in the kitchen?", "after": ["topic.nuno.cooking"], "says": "\"Everything Inés hears, a little later and with more onions.\" He leans in. \"Pons the barber owes Grilo more than his coat is worth. And the young topman Rodrigo has told every girl on the waterfront he is sailing on the Garza.\"", "trust": 2}, {"id": "topic.nuno.terms", "ask": "What would you want?", "seeking": true, "terms": true, "after": ["topic.nuno.cooking"], "says": "\"Five hundred, and a proper fire box, lined, not a sandbox on the deck. I'll not set your ship alight, Captain.\""}]},
    "farewell": "Inés stands in the tavern door with her arms folded and does not wave to Nuño. Then she does.",
    "farewellBy": ["person.ines"],
@@ -982,6 +986,7 @@
   },
   {
    "id": "person.rodrigo",
+   "song": {"title": "The Abbess of Almara", "says": "Rodrigo jumps on a bench and sings a song about an abbess, a sailor and a laundry basket that is not fit for Father Anselmo's ears. The room roars. Inés throws a wet cloth at him and misses.", "lines": ["The Abbess of Almara had a basket full of linen,", "and what was in the bottom of it, sirs, was not a sin..."]},
    "conversation": {"first": "The young topman is leaning on a bollard as if it belongs to him. \"You'll be wanting me, Captain. Everyone does.\"", "again": "Rodrigo grins. \"Back again? I knew it.\"", "topics": [{"id": "topic.rodrigo.aloft", "ask": "Best man aloft on the waterfront?", "says": "\"Watch me.\" He is up the shrouds of the nearest boat before you can answer, hangs by one hand from the yard, and comes down by the backstay in a breath. The dockers do not even look up; they have seen it before.", "claims": {"skill.rigging": 4, "skill.seamanship": 3}, "respect": 2}, {"id": "topic.rodrigo.islands", "ask": "Round the Lusaran islands twice?", "after": ["topic.rodrigo.aloft"], "says": "\"Twice! Well. Once round and once halfway, and we came back for the master's wife.\" He laughs at himself, which is the first thing you have liked about him.", "affection": 4, "trust": 3}, {"id": "topic.rodrigo.wat", "ask": "What do you have against the Brennish seaman?", "after": ["topic.rodrigo.aloft"], "says": "\"Harrow? He's a pirate. Interlopers, the lot of them; my uncle was on the Esperanza when the Brennish burned her.\" He spits. \"Sign him and you can find another topman.\"", "trust": 1}, {"id": "topic.rodrigo.girls", "ask": "I hear you've told half the waterfront you're sailing with me.", "after": ["topic.rodrigo.aloft"], "says": "He has the grace to colour. \"Well. You will take me, won't you?\" For a moment he looks his age, which is younger than he pretends.", "affection": 3}, {"id": "topic.rodrigo.terms", "ask": "What would you want?", "seeking": true, "terms": true, "after": ["topic.rodrigo.aloft"], "says": "\"Eight fifty. Cheap for the best, Captain.\""}]},
    "farewell": "Two women on the quay both wave to Rodrigo. He waves back to both, and does not look at either long.",
    "farewellWavers": 2,
@@ -1058,6 +1063,7 @@
   },
   {
    "id": "person.wat",
+   "song": {"title": "The Lass of Brennmouth Quay", "says": "Wat stands, a little red, and sings in his own tongue, low and plain. The room does not understand a word and goes quiet anyway; even Rodrigo does not jeer. When he sits down, Inés puts a cup in front of him without being asked.", "lines": ["Oh the tide goes out at Brennmouth and the tide comes in again,", "and the lass upon the quay-wall counts the sails and counts the men..."]},
    "conversation": {"first": "The fair-haired seaman stands when you come up, which no one else on this quay does. \"Captain. They say you might not mind a Brennish hand. I'd be grateful to be wrong about that if I am.\"", "again": "Wat touches his forehead. \"Captain.\"", "topics": [{"id": "topic.wat.coast", "ask": "You've sailed the Ember Coast?", "says": "\"Twice, with Brennmouth men, trading where your Chamber says we mayn't. The weather turns in an hour there: the sky goes yellow in the east and you've the time it takes to hand the topsails, no more.\"", "claims": {"skill.seamanship": 3, "skill.navigation": 2}, "trust": 4, "respect": 3}, {"id": "topic.wat.here", "ask": "Why are you on a Castrenan quay?", "after": ["topic.wat.coast"], "says": "\"My ship was taken by your coastguard off the cape. They hanged the master and turned the rest of us loose here to starve. No Castrenan master will have me, and I've no money for the passage home.\" He says it without self-pity.", "affection": 3, "trust": 4}, {"id": "topic.wat.rodrigo", "ask": "Rodrigo says you're a pirate.", "after": ["topic.wat.coast"], "says": "\"Rodrigo's uncle was on the Esperanza, I know. That was Captain Haile, and he was hanged for it at Brennmouth, by my own people. I'll not fight the lad, Captain. I'll keep my watch and he can keep his.\"", "trust": 3, "respect": 4}, {"id": "topic.wat.terms", "ask": "What would you want?", "seeking": true, "terms": true, "after": ["topic.wat.coast"], "says": "\"Seven hundred. Less, if it comes to it; I'd rather sail than starve.\""}]},
    "farewell": "Hob the Brennish trader shouts something to Wat in their own tongue, and Wat laughs for the first time since he came ashore.",
    "farewellBy": ["person.hob"],
@@ -1188,7 +1194,7 @@
      "skill.rigging": 2
     },
     "leaves": {
-     "day": 3,
+     "day": 5,
      "hour": 5,
      "reason": "was taken home by his mother"
     }
@@ -1833,6 +1839,7 @@
   },
   {
    "id": "person.andres",
+   "song": {"title": "Heave and Bring Her Home", "says": "Andrés starts a capstan shanty, the way a bosun does, and half the room answers the calls without thinking: anyone who has been to sea. You can tell who has and who has not by who knows when to stamp.", "lines": ["Heave and bring her home, my lads, heave and bring her home,", "the wind is in the west, my lads, and the girls are all alone!"]},
    "conversation": {"first": "The scarred docker sets down his load and straightens, favouring one knee. \"Captain. You'll be wanting a bosun, I suppose, and you'll be wanting a younger one than me.\"", "again": "Andrés nods. \"Captain.\"", "topics": [{"id": "topic.andres.knee", "ask": "What happened to the knee?", "says": "\"A block came down off the main yard in the Lusaran roads. Fifteen years a bosun, and one bad splice.\" He shrugs. \"I haul bales now. It's dry work.\"", "affection": 3, "trust": 3}, {"id": "topic.andres.rodrigo", "ask": "What do you make of the topman Rodrigo?", "says": "\"Quick aloft, I'll give him that. Talks a good deal more than he knows. Put him under a bosun who'll knock it out of him and he'll be a fine seaman in two years.\"", "trust": 2}, {"id": "topic.andres.crew", "ask": "What would you look for, in a crew?", "after": ["topic.andres.knee"], "says": "\"Men who've been wet before. A cook they like and a carpenter who's old enough to be careful. And no two men who hate each other in the same watch: you'll have your topman and the Brennish lad at each other's throats by the cape.\"", "respect": 4, "trust": 3}]},
    "name": "Andrés",
    "age": 31,
@@ -2151,6 +2158,7 @@
   },
   {
    "id": "person.marta",
+   "song": {"title": "The Ropewalk Song", "says": "Marta the ropemaker sings the song they walk backwards to on the ropewalk, slow and long. Her voice is the best in the room, and the room knows it.", "lines": ["Walk back, walk back, the yarn runs true,", "the hemp is long and the day is too..."]},
    "name": "Marta la Cordelera",
    "age": 35,
    "sex": "Female",

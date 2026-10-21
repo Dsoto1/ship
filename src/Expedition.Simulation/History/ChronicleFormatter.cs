@@ -62,6 +62,10 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
             ChronicleEntryKind.LeadHeard => Lead(entry.Get(ChronicleParameters.To)) is { } lead
                 ? $"Heard of someone worth finding: \"{lead.Text}\" ({lead.Where})"
                 : "Heard of someone worth finding.",
+            ChronicleEntryKind.DicePlayed => int.TryParse(entry.Get(ChronicleParameters.Level), out var won) && won >= 0
+                ? $"Dice in the Three Anchors: you won {won} sueldos."
+                : $"Dice in the Three Anchors: you lost {-int.Parse(entry.Get(ChronicleParameters.Level) ?? "0", System.Globalization.CultureInfo.InvariantCulture)} sueldos.",
+            ChronicleEntryKind.SongSung => $"{who} sang \"{entry.Get(ChronicleParameters.To)}\" in the Three Anchors.",
             ChronicleEntryKind.RoundBought => $"You stood {entry.Get(ChronicleParameters.To)} a round, {entry.Get(ChronicleParameters.Level)} sueldos.",
             ChronicleEntryKind.LateFee => $"The convoy has gone without {Ship()}. Harbour fees and the Company's displeasure: {entry.Get(ChronicleParameters.Level)} sueldos.",
             ChronicleEntryKind.CrewHired => int.TryParse(entry.Get(ChronicleParameters.Level), out var paid) && paid < 0

@@ -420,12 +420,31 @@ public sealed record PersonDefinition
     /// <summary>Things about them the captain can be told (by them, or by others): fact ID to text.</summary>
     public IReadOnlyList<PersonFact> Facts { get; init; } = [];
 
+    /// <summary>A song of their own, sung in the tavern when someone calls for one, or null.</summary>
+    public SongDefinition? Song { get; init; }
+
     /// <summary>What there is to talk about with them, and what it takes (the conversation), or null.</summary>
     public ConversationDefinition? Conversation { get; init; }
 
     /// <summary>The text of a fact about them, seen (a secret) or told, or null.</summary>
     public string? FactText(string id) =>
         Secrets.FirstOrDefault(s => s.Id == id)?.Text ?? Facts.FirstOrDefault(f => f.Id == id)?.Text;
+}
+
+/// <summary>A song someone sings in the tavern: what it is called, the words, and what hearing it shows.</summary>
+public sealed record SongDefinition
+{
+    /// <summary>What it is called.</summary>
+    public required string Title { get; init; }
+
+    /// <summary>How it is sung, and how the room takes it, before the words.</summary>
+    public required string Says { get; init; }
+
+    /// <summary>A verse or two of the words.</summary>
+    public IReadOnlyList<string> Lines { get; init; } = [];
+
+    /// <summary>What the captain learns of them by hearing it, for example a language: topic to level, seen for himself.</summary>
+    public IReadOnlyDictionary<string, int> Shows { get; init; } = new Dictionary<string, int>();
 }
 
 /// <summary>Something about a person that can be told rather than seen.</summary>

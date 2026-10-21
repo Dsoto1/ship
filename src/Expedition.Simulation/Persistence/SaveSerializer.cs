@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 23;
+    public const int CurrentSchemaVersion = 24;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -172,6 +172,17 @@ public static class SaveSerializer
                 if (root["port"] is JsonObject port)
                 {
                     port["lastRound"] = -1;
+                }
+
+                return root;
+            },
+            // Format 24 added songs in the tavern.
+            [23] = root =>
+            {
+                if (root["port"] is JsonObject port)
+                {
+                    port["lastSong"] = -1;
+                    port["sung"] = new JsonArray();
                 }
 
                 return root;
@@ -549,6 +560,8 @@ public static class SaveSerializer
                     Gone = port.Gone.Select(id => id.Value).Order().ToList(),
                     LateFeesCharged = port.LateFeesCharged,
                     LastRound = port.LastRound,
+                    LastSong = port.LastSong,
+                    Sung = port.Sung.Select(id => id.Value).Order().ToList(),
                     Warned = port.Warned,
                     Leads = port.Leads.Select(l => new HeardLeadData { Lead = l.LeadId, Tick = l.Tick }).ToList(),
                     Purchases = port.Purchases.Select(p => new PurchaseData { Lot = p.Lot, Tick = p.Tick }).ToList(),
@@ -841,7 +854,7 @@ public static class SaveSerializer
                 throw new SaveLoadException("The port preparations have invalid stock, fees or inquiries, or the content has no port.");
             }
 
-            var port = new Port.PortState { Funds = savedPort.Funds, LateFeesCharged = savedPort.LateFeesCharged, Warned = savedPort.Warned, LastRound = savedPort.LastRound };
+            var port = new Port.PortState { Funds = savedPort.Funds, LateFeesCharged = savedPort.LateFeesCharged, Warned = savedPort.Warned, LastRound = savedPort.LastRound, LastSong = savedPort.LastSong };
             if (savedPort.Weather is { } weather && portRules.Weather?.Find(weather) is null)
             {
                 throw new SaveLoadException($"The save's port weather '{weather}' is not in this game.");
@@ -901,6 +914,11 @@ public static class SaveSerializer
                 }
 
                 port.MarkInspected(inspection.Lot, inspection.Seen);
+            }
+
+            foreach (var singer in savedPort.Sung)
+            {
+                port.MarkSung(Known(singer));
             }
 
             foreach (var talk in savedPort.Discussed)

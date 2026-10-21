@@ -95,7 +95,7 @@ public partial class Main : Node3D
         // Late morning, not noon: at noon everyone named goes indoors to eat and drink.
         new("midday-market", "Scene B: the market at midday", 195, "fair", new Vector2(40, 23), 22f, "person.leonor,person.tome", "0,1"),
         new("rainy-workshops", "Scene C: the workshop street in rain", 450, "rain", new Vector2(65, 17), 18f, "", ""),
-        new("departure-morning", "Scene D: departure morning", 2740, "fair", new Vector2(32, 33), 14f,
+        new("departure-morning", "Scene D: departure morning", 5620, "fair", new Vector2(32, 33), 14f,
             "person.velho,person.pons,person.bartolo,person.rodrigo,person.gil,person.wat,person.pascual", "0,0,0,0,0,1,1,1,1,2,2,3,3,4,5,6", Depart: true),
     ];
     private PreparationView _preparation = null!;
@@ -246,6 +246,16 @@ public partial class Main : Node3D
             var result = _runner.Offer(id, advance);
             _portHud.Say(result.Succeeded ? $"{name} spits in a palm and shakes on it, and goes to stow a sea chest aboard the Garza." : result.Reason);
         });
+        _portHud.DiceRequested += stake =>
+        {
+            var (result, said) = _runner.PlayDice(stake);
+            _portHud.Say(result.Succeeded ? said : result.Reason);
+        };
+        _portHud.SongRequested += () =>
+        {
+            var (result, said) = _runner.CallForSong();
+            _portHud.Say(result.Succeeded ? said : result.Reason);
+        };
         _portHud.RoundRequested += () =>
         {
             var (result, said) = _runner.BuyRound();
@@ -551,6 +561,8 @@ public partial class Main : Node3D
                 }
 
                 var pose = signing ? Pose.Talking
+                    : _runner.Singing == id ? Pose.Waving
+                    : _runner.Dicing.Contains(id) ? Pose.Talking
                     : standAt is not null ? Pose.Waving
                     : character.SurvivalState is SurvivalState.Incapacitated or SurvivalState.Dead ? Pose.Lying
                     : definition?.Carries == "cask" ? (placement.IsMoving ? Pose.Rolling : Pose.Lifting)
@@ -1435,6 +1447,7 @@ public partial class Main : Node3D
     private bool _developerTalk;
     private string? _developerTopics;
     private GridPosition? _developerCaptainAt;
+    private string? _developerTavern;
     private bool _developerJournal;
     private bool _developerPerf;
     private PanelId? _developerPanel;
@@ -1487,6 +1500,15 @@ public partial class Main : Node3D
             {
                 _runner.Advance(1);
             }
+
+            // --tavern=song or --tavern=dice: an evening's entertainment, once the captain is in.
+            var (done, told) = _developerTavern switch
+            {
+                "song" => _runner.CallForSong(),
+                "dice" => _runner.PlayDice(20),
+                _ => (Expedition.Simulation.Core.CommandResult.Ok(), ""),
+            };
+            _portHud.Say(done.Succeeded ? told : done.Reason);
         }
 
         if (_developerSelect is { } person && _runner.CharacterFor(person) is { } character)
@@ -1631,6 +1653,7 @@ public partial class Main : Node3D
                 case "look": _developerLook = value; break;
                 case "talk": _developerTalk = true; break;
                 case "topics": _developerTopics = value; break;
+                case "tavern": _developerTavern = value; break;
                 case "captain" when value.Split(',') is [var cx, var cy] && int.TryParse(cx, out var x) && int.TryParse(cy, out var y): _developerCaptainAt = new GridPosition(x, y); break;
                 case "journal": _developerJournal = true; break;
                 case "perf": _developerPerf = true; break;

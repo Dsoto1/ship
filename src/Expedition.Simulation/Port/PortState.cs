@@ -70,6 +70,16 @@ public sealed class PortState
     /// <summary>Who has greeted the captain, and on which day.</summary>
     public IReadOnlySet<(CharacterId Who, int Day)> Greeted => _greeted;
 
+    private readonly HashSet<CharacterId> _sung = [];
+
+    /// <summary>Who has sung for the captain in the tavern.</summary>
+    public IReadOnlySet<CharacterId> Sung => _sung;
+
+    internal void MarkSung(CharacterId id) => _sung.Add(id);
+
+    /// <summary>The evening (day) a song was last called for, or -1.</summary>
+    public long LastSong { get; internal set; } = -1;
+
     /// <summary>The day the captain last stood a room a round, or -1.</summary>
     public long LastRound { get; internal set; } = -1;
 

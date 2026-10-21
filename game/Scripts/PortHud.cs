@@ -86,6 +86,12 @@ public partial class PortHud : CanvasLayer
     /// <summary>Stand the room the captain is in a round.</summary>
     public event Action? RoundRequested;
 
+    /// <summary>Sit in at dice, for this stake.</summary>
+    public event Action<int>? DiceRequested;
+
+    /// <summary>Call for a song.</summary>
+    public event Action? SongRequested;
+
     /// <summary>Walk to the Chamber's board and read it.</summary>
     public event Action? NoticesRequested;
 
@@ -183,6 +189,20 @@ public partial class PortHud : CanvasLayer
             _roundButton.Text = $"Stand the room a round ({room.Round})";
             _roundButton.Disabled = runner.Campaign.Port?.LastRound == runner.Campaign.Clock.Day;
             _roundButton.TooltipText = _roundButton.Disabled ? "You have already stood them a round today." : "Drink to the Garza with everyone here: they will think better of you. Once a day";
+            var hour = runner.Campaign.Clock.TimeOfDay.TotalHours;
+            var players = runner.DicePartners();
+            _diceButton.Visible = _stake.Visible = _songButton.Visible = room.Round is not null;
+            var playing = runner.Dicing.Count > 0;
+            _diceButton.Disabled = !(hour >= 17 || hour < 2) || players.Count == 0 || playing;
+            _diceButton.TooltipText = playing ? "The game is still going round the table."
+                : !(hour >= 17 || hour < 2) ? "No one dices before the evening."
+                : players.Count == 0 ? "No one here is in the mood for dice."
+                : $"Sit in with {string.Join(", ", players.Select(p => KnownName(runner, p)))}. Half an hour; talk goes round with the bones.";
+            var evening = (runner.Campaign.Clock.Tick - 6 * SimulationClock.TicksPerHour) / SimulationClock.TicksPerDay;
+            _songButton.Disabled = !(hour >= 19 || hour < 1) || runner.Campaign.Port?.LastSong == evening;
+            _songButton.TooltipText = !(hour >= 19 || hour < 1) ? "Singing starts after dark."
+                : runner.Campaign.Port?.LastSong == evening ? "There has been a song tonight already."
+                : $"Give a singer {SimulationRunner.SongPrice} sueldos and call for a song. Twenty minutes; the room warms to you.";
             if (!_roomBar.Visible)
             {
                 Ui.FadeIn(_roomBar);
@@ -446,8 +466,8 @@ public partial class PortHud : CanvasLayer
         _roomBar = Ui.PanelOf(Ui.Panel, Ui.Rule, Ui.SpaceL, Ui.SpaceS);
         _roomBar.AnchorLeft = 0.5f;
         _roomBar.AnchorRight = 0.5f;
-        _roomBar.OffsetLeft = -230;
-        _roomBar.OffsetRight = 230;
+        _roomBar.OffsetLeft = -380;
+        _roomBar.OffsetRight = 380;
         _roomBar.OffsetTop = 58;
         _roomBar.Visible = false;
         _root.AddChild(_roomBar);
@@ -459,7 +479,22 @@ public partial class PortHud : CanvasLayer
         row.AddChild(_roomName);
         _roundButton = Ui.Button("Stand the room a round", "Drink to the Garza with everyone here: they will think better of you. Once a day", () => RoundRequested?.Invoke());
         row.AddChild(_roundButton);
+        _diceButton = Ui.Button("Dice", "", () => DiceRequested?.Invoke(SimulationRunner.Stakes[Math.Max(0, _stake.Selected)]));
+        row.AddChild(_diceButton);
+        _stake = new OptionButton { FocusMode = Control.FocusModeEnum.None };
+        foreach (var stake in SimulationRunner.Stakes)
+        {
+            _stake.AddItem($"{stake} a throw");
+        }
+
+        row.AddChild(_stake);
+        _songButton = Ui.Button("Call for a song", "", () => SongRequested?.Invoke());
+        row.AddChild(_songButton);
     }
+
+    private Button _diceButton = null!;
+    private OptionButton _stake = null!;
+    private Button _songButton = null!;
 
     private PanelContainer _roomBar = null!;
     private Label _roomName = null!;

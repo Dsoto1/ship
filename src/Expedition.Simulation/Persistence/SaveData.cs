@@ -513,6 +513,12 @@ public sealed record PortData
     /// <summary>The day the captain last stood a room a round, or -1. Added in format 23.</summary>
     public long LastRound { get; init; } = -1;
 
+    /// <summary>The evening a song was last called for, or -1. Added in format 24.</summary>
+    public long LastSong { get; init; } = -1;
+
+    /// <summary>Character ID numbers who have sung in the tavern. Added in format 24.</summary>
+    public IReadOnlyList<int> Sung { get; init; } = [];
+
     /// <summary>Whether the eve-of-sailing warning was given.</summary>
     public required bool Warned { get; init; }
 }

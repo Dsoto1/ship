@@ -89,4 +89,10 @@ public enum ChronicleEntryKind
 
     /// <summary>The captain stood a room a round (parameters: to = room name, level = sueldos; characters: who drank).</summary>
     RoundBought,
+
+    /// <summary>A game of dice in a room (parameter: level = sueldos won, negative lost; characters: who played).</summary>
+    DicePlayed,
+
+    /// <summary>Someone sang in a room (parameter: to = the song's title; character: the singer).</summary>
+    SongSung,
 }

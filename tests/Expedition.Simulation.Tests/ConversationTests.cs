@@ -2,6 +2,7 @@ using Expedition.Simulation.Campaign;
 using Expedition.Simulation.Characters;
 using Expedition.Simulation.Content;
 using Expedition.Simulation.Core;
+using Expedition.Simulation.History;
 using Expedition.Simulation.Knowledge;
 using Expedition.Simulation.Persistence;
 using Expedition.Simulation.Scenarios;
@@ -216,5 +217,87 @@ public sealed class TavernTests
 
         var loaded = SaveSerializer.Deserialize(SaveSerializer.Serialize(runner.Campaign), Shipped);
         Assert.Equal(runner.Campaign.Port.LastRound, loaded.Port!.LastRound);
+    }
+}
+
+/// <summary>Evenings in the Three Anchors: dice and a song, each taking its time.</summary>
+public sealed class TavernEveningTests
+{
+    private static readonly GameContent Shipped = ContentLoader.LoadFromDirectory(Path.Combine(AppContext.BaseDirectory, "data"));
+
+    private static CharacterId Captain(SimulationRunner runner) => runner.Campaign.CaptainId!.Value;
+
+    // The captain in the common room at the given hour of the first evening, with the drinkers settled.
+    private static SimulationRunner Evening(int hour)
+    {
+        var runner = ExpeditionScenario.Create(Shipped, CampaignState.DefaultSeed);
+        var start = runner.Campaign.Clock.TimeOfDay.TotalMinutes;
+        runner.Advance((int)(hour * 60 - start - 40));
+        Assert.True(runner.MoveCharacter(Captain(runner), new World.GridPosition(28, 9)).Succeeded);
+        runner.Advance(40);
+        Assert.NotNull(runner.CaptainRoom);
+        return runner;
+    }
+
+    [Fact]
+    public void DiceHoldTheTableHalfAnHourAndMoveTheMoney()
+    {
+        var runner = Evening(20);
+        var players = runner.DicePartners();
+        Assert.NotEmpty(players);
+        var funds = runner.Campaign.Port!.Funds;
+        var (result, said) = runner.PlayDice(20);
+
+        Assert.True(result.Succeeded, result.Reason);
+        Assert.Equal(players, runner.Dicing);
+        Assert.Contains("still going", runner.PlayDice(20).Result.Reason);
+        var change = runner.Campaign.Port.Funds - funds;
+        Assert.True(change == -20 || change == 20 * players.Count, said);
+        Assert.All(players, p => Assert.True(runner.Campaign.Relationships[(p, Captain(runner))].Affection > 0));
+        Assert.Contains(runner.Campaign.Chronicle.Entries, e => e.Kind == ChronicleEntryKind.DicePlayed);
+        runner.Advance(SimulationRunner.DiceMinutes);
+        Assert.Empty(runner.Dicing);
+    }
+
+    [Fact]
+    public void NoDiceInTheMorningOrForOddStakes()
+    {
+        var runner = Evening(10);
+        Assert.Contains("evening", runner.PlayDice(20).Result.Reason);
+        var evening = Evening(20);
+        Assert.False(evening.PlayDice(15).Result.Succeeded);
+    }
+
+    [Fact]
+    public void ASongOnceAnEveningShowsSomethingOfTheSinger()
+    {
+        var runner = Evening(20);
+        var (result, said) = runner.CallForSong();
+
+        Assert.True(result.Succeeded, result.Reason);
+        var singer = runner.Campaign.Port!.Sung.Single();
+        Assert.Equal(singer, runner.Singing);
+        runner.Advance(SimulationRunner.SongMinutes);
+        Assert.Null(runner.Singing);
+        Assert.Contains(runner.Campaign.Characters[singer].Name.Split(' ')[0], said);
+        Assert.Equal(5, runner.Campaign.Relationships[(singer, Captain(runner))].Affection);
+        Assert.Contains("already", runner.CallForSong().Result.Reason);
+
+        var loaded = SaveSerializer.Deserialize(SaveSerializer.Serialize(runner.Campaign), Shipped);
+        Assert.Equal(runner.Campaign.Port.Sung, loaded.Port!.Sung);
+        Assert.Equal(runner.Campaign.Port.LastSong, loaded.Port.LastSong);
+    }
+
+    [Fact]
+    public void HearingXimenaSingShowsHerTongue()
+    {
+        var song = Shipped.Port!.People.Single(p => p.Id == "person.ximena").Song!;
+        Assert.Equal(4, song.Shows["language.ahuneri"]);
+    }
+
+    [Fact]
+    public void TheConvoyGivesFourEveningsInPort()
+    {
+        Assert.Equal(5, Shipped.Port!.Departure.Day);
     }
 }
