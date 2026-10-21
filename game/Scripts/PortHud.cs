@@ -186,6 +186,8 @@ public partial class PortHud : CanvasLayer
         {
             _roomName.Text = char.ToUpperInvariant(room.Name[0]) + room.Name[1..];
             _roundButton.Visible = room.Round is not null;
+            _roomBar.OffsetLeft = room.Round is null ? -200 : -380;
+            _roomBar.OffsetRight = -_roomBar.OffsetLeft;
             _roundButton.Text = $"Stand the room a round ({room.Round})";
             _roundButton.Disabled = runner.Campaign.Port?.LastRound == runner.Campaign.Clock.Day;
             _roundButton.TooltipText = _roundButton.Disabled ? "You have already stood them a round today." : "Drink to the Garza with everyone here: they will think better of you. Once a day";

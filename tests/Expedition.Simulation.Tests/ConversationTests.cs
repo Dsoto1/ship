@@ -301,3 +301,55 @@ public sealed class TavernEveningTests
         Assert.Equal(5, Shipped.Port!.Departure.Day);
     }
 }
+
+/// <summary>The chandlery and the Chamber: rooms like the tavern, with their people at work inside.</summary>
+public sealed class ShopAndChamberTests
+{
+    private static readonly GameContent Shipped = ContentLoader.LoadFromDirectory(Path.Combine(AppContext.BaseDirectory, "data"));
+
+    private static CharacterId Captain(SimulationRunner runner) => runner.Campaign.CaptainId!.Value;
+
+    private static SimulationRunner AtTen()
+    {
+        var runner = ExpeditionScenario.Create(Shipped, CampaignState.DefaultSeed);
+        runner.Advance((int)(10 * 60 - runner.Campaign.Clock.TimeOfDay.TotalMinutes));
+        return runner;
+    }
+
+    private static void WalkTo(SimulationRunner runner, int x, int y)
+    {
+        Assert.True(runner.MoveCharacter(Captain(runner), new World.GridPosition(x, y)).Succeeded);
+        for (var minute = 0; minute < 120 && runner.Campaign.Placements[Captain(runner)].IsMoving; minute++)
+        {
+            runner.Advance(1);
+        }
+    }
+
+    [Theory]
+    [InlineData("person.corbalan", "room.chandlery", 50, 10)]
+    [InlineData("person.clerk_chamber", "room.chamber", 4, 9)]
+    public void TheyWorkInsideAndAreSeenOnlyFromInside(string person, string room, int x, int y)
+    {
+        var runner = AtTen();
+        var who = runner.CharacterFor(person)!.Id;
+        Assert.Equal(room, runner.RoomOf(who)?.Id);
+        Assert.False(runner.IsIndoors(who));
+        Assert.Contains("Go in", runner.WhyCannotSpeak(who) ?? "");
+
+        WalkTo(runner, x, y);
+        Assert.Equal(room, runner.CaptainRoom?.Id);
+        Assert.True(runner.CaptainSees(who));
+        Assert.Null(runner.WhyCannotSpeak(who));
+    }
+
+    [Fact]
+    public void TheChandlersGoodsAreJudgedInHisShop()
+    {
+        var runner = AtTen();
+        var corbalan = Shipped.Port!.Sellers.Single(s => s.Id == "seller.corbalan");
+        WalkTo(runner, 50, 15);
+        Assert.Contains("Go in", runner.WhyCannotInspect(corbalan) ?? "");
+        WalkTo(runner, 51, 11);
+        Assert.Null(runner.WhyCannotInspect(corbalan));
+    }
+}

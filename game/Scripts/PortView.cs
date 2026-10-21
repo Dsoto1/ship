@@ -378,16 +378,7 @@ public partial class PortView : Node3D
         switch (style)
         {
             case "chamber":
-                // The Chamber of the Ocean Sea: dressed stone, an arched door, the Crown's banner.
-                House(left, right, back, front, Stone.Lightened(0.08f), Stone, 2, 3.8f, frame: false, baseHeight);
-                Arch(new Vector3(middleX, baseHeight, front + 0.02f), 1.9f, 3.0f);
-                for (var x = left + 0.7f; x < right; x += (right - left - 1.4f) / 4f)
-                {
-                    AddBox(new Vector3(x, baseHeight + 1.9f, front + 0.15f), new Vector3(0.35f, 3.8f, 0.3f), Stone.Lightened(0.12f));
-                }
-
-                Banner(new Vector3(right - 0.6f, baseHeight + 8f, front + 0.2f), new Color(0.62f, 0.13f, 0.12f), new Color(0.85f, 0.7f, 0.25f));
-                Lantern(new Vector3(middleX - 1.6f, baseHeight + 2.6f, front + 0.3f));
+                Chamber(left, right, back, front, baseHeight);
                 break;
             case "counting":
                 House(left, right, back, front, Ochre, Stone, 3, 3f, frame: true, baseHeight);
@@ -414,13 +405,7 @@ public partial class PortView : Node3D
                 Lantern(new Vector3(middleX - 1.6f, baseHeight + 2.6f, front + 0.3f));
                 break;
             case "warehouse":
-                House(left, right, back, front, new Color(0.7f, 0.62f, 0.5f), Stone, 2, 3.6f, frame: true, baseHeight);
-                AddBox(new Vector3(middleX, baseHeight + 1.6f, front + 0.06f), new Vector3(2.6f, 3.0f, 0.08f), Timber);
-                AddBox(new Vector3(middleX, baseHeight + 5.5f, front + 0.06f), new Vector3(1.4f, 1.6f, 0.08f), Timber);
-                AddBox(new Vector3(middleX, baseHeight + 6.8f, front + 0.9f), new Vector3(0.25f, 0.25f, 1.8f), Timber);
-                AddCylinder(new Vector3(middleX, baseHeight + 5.2f, front + 1.6f), 0.02f, 3.2f, Rope);
-                HangingSign(new Vector3(right - 1f, baseHeight + 3.2f, front + 0.7f), new Color(0.3f, 0.2f, 0.12f));
-                ChandlerKit(middleX, front, baseHeight);
+                Chandlery(left, right, back, front, baseHeight);
                 break;
             case "cooperage":
                 House(left, right, back, front, new Color(0.76f, 0.68f, 0.56f), Stone, 1, 3.6f, frame: true, baseHeight);
@@ -506,9 +491,6 @@ public partial class PortView : Node3D
         // Door leaves swung open against the wall.
         AddBox(at + new Vector3(-1.75f, 1.5f, 0.45f), new Vector3(0.9f, 2.9f, 0.07f), Timber.Lightened(0.08f), rotation: new Vector3(0, -70, 0));
         AddBox(at + new Vector3(1.75f, 1.5f, 0.45f), new Vector3(0.9f, 2.9f, 0.07f), Timber.Lightened(0.08f), rotation: new Vector3(0, 70, 0));
-        // A bale halfway up the hoist line.
-        AddBox(at + new Vector3(0, 4.3f, 1.6f), new Vector3(0.7f, 0.55f, 0.55f), new Color(0.7f, 0.64f, 0.48f));
-        AddBox(at + new Vector3(0, 4.3f, 1.6f), new Vector3(0.72f, 0.06f, 0.57f), Rope);
         // Rope coils in two heaps, and canvas bolts on a trestle.
         foreach (var (x, z, n) in new[] { (-2.6f, 1.0f, 3), (-1.9f, 1.7f, 2) })
         {
@@ -558,20 +540,8 @@ public partial class PortView : Node3D
         House(left, split, back, room, wall, Stone, 2, Storey, frame: true, baseHeight, detail: false);
         House(split, right, back, room, new Color(0.8f, 0.74f, 0.62f), Stone, 3, 3f, frame: true, baseHeight, detail: false);
 
-        // The common room: plank floor, side walls, and a sill-high front wall with the door gap.
-        var plank = new Color(0.42f, 0.3f, 0.19f);
-        AddBox(Box(left + 1f, right - 1f, room, front - 1f, baseHeight, baseHeight + 0.04f), plank);
-        for (var z = room + 0.5f; z < front - 1f; z += 0.5f)
-        {
-            AddBox(new Vector3((left + right) / 2f, baseHeight + 0.045f, z), new Vector3(right - left - 2f, 0.01f, 0.03f), plank.Darkened(0.25f));
-        }
-
-        AddBox(Box(left, left + 1f, room, front, baseHeight, baseHeight + Storey), Stone);
-        // The east wall faces the camera too: it drops to the sill with the front one when the roof lifts.
-        AddBox(Box(right - 1f, right, room, front, baseHeight, baseHeight + 0.9f), Stone);
-        AddBox(Box(left, 27.5f, front - 1f, front, baseHeight, baseHeight + 0.9f), Stone);
-        AddBox(Box(28.5f, right, front - 1f, front, baseHeight, baseHeight + 0.9f), Stone);
-        AddBox(Box(left + 1f, right - 1f, room - 0.05f, room, baseHeight, baseHeight + Storey), wall.Darkened(0.15f));
+        // The common room: plank floor, walls, the sill-high front wall with the door gap.
+        RoomFloorAndWalls(left, right, room, front, 28f, baseHeight, Storey, new Color(0.42f, 0.3f, 0.19f), planks: true, wall.Darkened(0.15f));
 
         // The hearth on the back wall, with its fire, and Nuño's pot over it.
         AddBox(Box(23.5f, 25.5f, room, room + 1f, baseHeight, baseHeight + 1.2f), DarkStone);
@@ -625,26 +595,221 @@ public partial class PortView : Node3D
         AddShape(new SphereMesh { Radius = 0.13f, Height = 0.24f, RadialSegments = 8, Rings = 4 }, new Vector3(26.85f, baseHeight + 0.2f, room + 1.75f), new Color(0.45f, 0.36f, 0.25f));
 
         // The shell: upper floors, roof, and the front wall above the sill (windows and the door's head).
-        var shellBatch = new MeshBatcher();
-        var scenery = _batch;
-        _batch = shellBatch;
-        House(left, split, room, front, wall, wall, 2, Storey, frame: true, baseHeight + Storey - Storey, detail: true);
-        House(split, right, room, front, new Color(0.8f, 0.74f, 0.62f), new Color(0.8f, 0.74f, 0.62f), 3, 3f, frame: true, baseHeight, detail: true);
-        AddBox(new Vector3(28f, baseHeight + 1.4f, front + 0.06f), new Vector3(1.0f, 2.5f, 0.08f), Timber);
-        foreach (var x in new[] { 25f, 32f })
+        RoomShell("room.three_anchors", () =>
         {
-            AddBox(new Vector3(x, baseHeight + 1.7f, front + 0.06f), new Vector3(1.1f, 0.9f, 0.06f), _glass.AlbedoColor.Darkened(0.5f));
-        }
-
-        _batch = scenery;
-        var shell = new Node3D { Name = "ThreeAnchorsShell" };
-        AddChild(shell);
-        shellBatch.Commit(shell);
-        _shells["room.three_anchors"] = shell;
+            House(left, split, room, front, wall, wall, 2, Storey, frame: true, baseHeight, detail: true);
+            House(split, right, room, front, new Color(0.8f, 0.74f, 0.62f), new Color(0.8f, 0.74f, 0.62f), 3, 3f, frame: true, baseHeight, detail: true);
+            AddBox(new Vector3(28f, baseHeight + 1.4f, front + 0.06f), new Vector3(1.0f, 2.5f, 0.08f), Timber);
+            foreach (var x in new[] { 25f, 32f })
+            {
+                AddBox(new Vector3(x, baseHeight + 1.7f, front + 0.06f), new Vector3(1.1f, 0.9f, 0.06f), _glass.AlbedoColor.Darkened(0.5f));
+            }
+        });
 
         HangingSign(new Vector3(29.1f, baseHeight + 3.4f, front + 0.7f), new Color(0.2f, 0.25f, 0.32f));
         Lantern(new Vector3(26.9f, baseHeight + 2.6f, front + 0.3f));
         TavernKit(28f, front, baseHeight);
+    }
+
+    // A room on the map inside a building (LocationDefinition.Rooms): its floor, the west and back walls
+    // to the ceiling, and the east and front walls to the sill, the front broken by the door (a cell wide
+    // at doorX). Everything above the sill is in the room's shell (RoomShell), which lifts while the
+    // captain is inside, so the camera's corner of the room is always open to it.
+    private void RoomFloorAndWalls(float left, float right, float roomBack, float front, float doorX, float baseHeight, float storey, Color floor, bool planks, Color inner)
+    {
+        AddBox(Box(left + 1f, right - 1f, roomBack, front - 1f, baseHeight, baseHeight + 0.04f), floor);
+        if (planks)
+        {
+            for (var z = roomBack + 0.5f; z < front - 1f; z += 0.5f)
+            {
+                AddBox(new Vector3((left + right) / 2f, baseHeight + 0.045f, z), new Vector3(right - left - 2f, 0.01f, 0.03f), floor.Darkened(0.25f));
+            }
+        }
+        else
+        {
+            // Flagstones: the joints a metre apart, staggered.
+            for (var z = roomBack + 1f; z < front - 1f; z += 1f)
+            {
+                AddBox(new Vector3((left + right) / 2f, baseHeight + 0.045f, z), new Vector3(right - left - 2f, 0.01f, 0.04f), floor.Darkened(0.3f));
+            }
+
+            for (var x = left + 1.5f; x < right - 1f; x += 1f)
+            {
+                AddBox(new Vector3(x, baseHeight + 0.045f, (roomBack + front - 1f) / 2f), new Vector3(0.04f, 0.01f, front - 1f - roomBack), floor.Darkened(0.3f));
+            }
+        }
+
+        AddBox(Box(left, left + 1f, roomBack, front, baseHeight, baseHeight + storey), Stone);
+        AddBox(Box(right - 1f, right, roomBack, front, baseHeight, baseHeight + 0.9f), Stone);
+        AddBox(Box(left, doorX - 0.5f, front - 1f, front, baseHeight, baseHeight + 0.9f), Stone);
+        AddBox(Box(doorX + 0.5f, right, front - 1f, front, baseHeight, baseHeight + 0.9f), Stone);
+        AddBox(Box(left + 1f, right - 1f, roomBack - 0.05f, roomBack, baseHeight, baseHeight + storey), inner);
+    }
+
+    // Builds a room's shell (what <paramref name="draw"/> adds) into a node of its own, which OpenRoom hides.
+    private void RoomShell(string roomId, Action draw)
+    {
+        var shellBatch = new MeshBatcher();
+        var scenery = _batch;
+        _batch = shellBatch;
+        draw();
+        _batch = scenery;
+        var shell = new Node3D { Name = roomId.Replace("room.", "") + "_shell" };
+        AddChild(shell);
+        shellBatch.Commit(shell);
+        _shells[roomId] = shell;
+    }
+
+    // A candle or a hanging lamp inside: a small flame and its glow, which follows the lanterns at dusk.
+    private void Candle(Vector3 at, float range = 3.5f)
+    {
+        AddCylinder(at, 0.03f, 0.16f, new Color(0.95f, 0.9f, 0.75f));
+        AddBox(at + new Vector3(0, 0.11f, 0), new Vector3(0.025f, 0.05f, 0.025f), new Color(1f, 0.75f, 0.35f), emissive: true);
+        var light = new OmniLight3D { Position = at + new Vector3(0, 0.3f, 0), LightColor = new Color(1f, 0.7f, 0.4f), OmniRange = range, OmniAttenuation = 1.4f };
+        AddChild(light);
+        _lanterns.Add(light);
+    }
+
+    // The Chamber of the Ocean Sea: its hall on the terrace (cells x 2-8, y 6-10), the archive behind.
+    // Quintana's desk with ledgers, ink and the seal; the licence presses on the back wall under the
+    // Crown's banner; a bench where captains wait their turn; a strongbox.
+    private void Chamber(float left, float right, float back, float front, float baseHeight)
+    {
+        const float Storey = 3.8f;
+        var room = 5.5f;
+        var stone = Stone.Lightened(0.08f);
+        House(left, right, back, room, stone, Stone, 2, Storey, frame: false, baseHeight, detail: false);
+        RoomFloorAndWalls(left, right, room, front, 5f, baseHeight, Storey, new Color(0.5f, 0.47f, 0.42f), planks: false, Lime.Darkened(0.1f));
+        var y = baseHeight;
+
+        // The presses: tall cupboards of pigeonholes, rolled licences in them, against the back wall.
+        foreach (var x0 in new[] { 1.6f, 4.1f, 6.6f })
+        {
+            AddBox(Box(x0, x0 + 2.2f, room, room + 0.45f, y, y + 2.6f), Wood.Darkened(0.2f));
+            for (var r = 0; r < 4; r++)
+            {
+                for (var c = 0; c < 4; c++)
+                {
+                    var at = new Vector3(x0 + 0.3f + c * 0.53f, y + 0.5f + r * 0.55f, room + 0.46f);
+                    AddBox(at, new Vector3(0.44f, 0.44f, 0.02f), Shadow);
+                    if ((r + c + (int)x0) % 3 != 0)
+                    {
+                        AddCylinder(at + new Vector3(0, -0.12f, 0), 0.07f, 0.36f, Canvas.Darkened(0.1f + 0.05f * c), rotation: new Vector3(0, 0, 90));
+                    }
+                }
+            }
+        }
+
+        Banner(new Vector3(5f, y + 3.1f, room + 0.15f), new Color(0.62f, 0.13f, 0.12f), new Color(0.85f, 0.7f, 0.25f));
+
+        // The desk across the hall (cells x 3-6, row 8), and on it the ledger of licences, ink, the seal.
+        AddBox(Box(2.6f, 6.4f, 7.6f, 8.4f, y + 0.74f, y + 0.82f), Wood);
+        AddBox(Box(2.7f, 6.3f, 7.7f, 8.3f, y, y + 0.74f), Wood.Darkened(0.2f));
+        AddBox(new Vector3(4f, y + 0.85f, 8f), new Vector3(0.7f, 0.05f, 0.5f), new Color(0.85f, 0.8f, 0.68f));
+        AddBox(new Vector3(4.9f, y + 0.9f, 7.9f), new Vector3(0.45f, 0.14f, 0.32f), new Color(0.35f, 0.2f, 0.12f));
+        AddBox(new Vector3(5.5f, y + 0.95f, 7.9f), new Vector3(0.4f, 0.24f, 0.3f), new Color(0.3f, 0.17f, 0.1f));
+        AddCylinder(new Vector3(3.2f, y + 0.87f, 8.15f), 0.05f, 0.1f, Shadow);
+        AddCylinder(new Vector3(6f, y + 0.86f, 8.15f), 0.08f, 0.06f, new Color(0.62f, 0.13f, 0.12f));
+        Candle(new Vector3(2.9f, y + 0.9f, 7.85f));
+        // The clerk's stool behind it, and the bench along the east wall for those who wait.
+        AddCylinder(new Vector3(4f, y + 0.25f, 6.8f), 0.2f, 0.5f, Wood.Darkened(0.1f));
+        Bench(8.6f, 10.4f, 7.75f, alongX: false);
+        // The strongbox, iron-bound, by the west wall.
+        AddBox(new Vector3(2f, y + 0.25f, 10f), new Vector3(0.7f, 0.5f, 0.45f), Wood.Darkened(0.3f));
+        AddBox(new Vector3(2f, y + 0.25f, 10f), new Vector3(0.72f, 0.06f, 0.47f), Iron);
+
+        RoomShell("room.chamber", () =>
+        {
+            House(left, right, room, front, stone, Stone, 2, Storey, frame: false, baseHeight, detail: true);
+            Arch(new Vector3(5f, baseHeight, front + 0.02f), 1.9f, 3.0f);
+            for (var x = left + 0.7f; x < right; x += (right - left - 1.4f) / 4f)
+            {
+                AddBox(new Vector3(x, baseHeight + 1.9f, front + 0.15f), new Vector3(0.35f, 3.8f, 0.3f), Stone.Lightened(0.12f));
+            }
+
+            Banner(new Vector3(right - 0.6f, baseHeight + 8f, front + 0.2f), new Color(0.62f, 0.13f, 0.12f), new Color(0.85f, 0.7f, 0.25f));
+        });
+        Lantern(new Vector3(5f - 1.6f, baseHeight + 2.6f, front + 0.3f));
+    }
+
+    // Corbalán's chandlery (cells x 48-53, y 7-12), the store behind: the counter with the steelyard and
+    // a ledger, shelves of jars, lamps and tallow behind it, rope and canvas, casks along the west wall
+    // and biscuit sacks along the east, a lamp over the counter.
+    private void Chandlery(float left, float right, float back, float front, float baseHeight)
+    {
+        const float Storey = 3.6f;
+        var room = 6.5f;
+        var wall = new Color(0.7f, 0.62f, 0.5f);
+        House(left, right, back, room, wall, Stone, 2, Storey, frame: true, baseHeight, detail: false);
+        RoomFloorAndWalls(left, right, room, front, 50f, baseHeight, Storey, new Color(0.4f, 0.3f, 0.2f), planks: true, wall.Darkened(0.2f));
+        var y = baseHeight;
+
+        // The counter (cells x 48-52, row 9), the steelyard and the account book on it.
+        AddBox(Box(47.5f, 52.5f, 8.6f, 9.4f, y, y + 0.95f), Wood.Darkened(0.12f));
+        AddBox(Box(47.4f, 52.6f, 8.55f, 9.45f, y + 0.95f, y + 1.02f), Wood);
+        AddBox(new Vector3(51.6f, y + 1.45f, 9f), new Vector3(0.08f, 0.9f, 0.08f), Timber);
+        AddBox(new Vector3(51.6f, y + 1.9f, 9f), new Vector3(0.9f, 0.04f, 0.04f), Iron, rotation: new Vector3(0, 0, -5));
+        AddCylinder(new Vector3(51.25f, y + 1.35f, 9f), 0.16f, 0.03f, Iron);
+        AddBox(new Vector3(49.2f, y + 1.06f, 9f), new Vector3(0.5f, 0.05f, 0.36f), new Color(0.35f, 0.2f, 0.12f));
+        Candle(new Vector3(48.2f, y + 1.1f, 9f), 4f);
+
+        // Shelves on the back wall: jars of oil and pitch, lamps, bundles of tallow candles, nails.
+        for (var shelf = 0; shelf < 3; shelf++)
+        {
+            var h = y + 0.8f + shelf * 0.7f;
+            AddBox(Box(47.6f, 53.4f, room, room + 0.4f, h, h + 0.05f), Wood);
+            for (var x = 47.9f; x < 53.2f; x += 0.42f)
+            {
+                var kind = ((int)(x * 10) + shelf) % 3;
+                if (kind == 0)
+                {
+                    AddCylinder(new Vector3(x, h + 0.17f, room + 0.2f), 0.12f, 0.3f, new Color(0.55f, 0.38f, 0.24f));
+                }
+                else if (kind == 1)
+                {
+                    AddBox(new Vector3(x, h + 0.1f, room + 0.2f), new Vector3(0.3f, 0.16f, 0.22f), new Color(0.85f, 0.8f, 0.62f));
+                }
+                else
+                {
+                    AddCylinder(new Vector3(x, h + 0.13f, room + 0.2f), 0.08f, 0.22f, Iron.Lightened(0.15f));
+                }
+            }
+        }
+
+        // Rope coils hung on pegs on the west wall, and canvas bolts in the corner.
+        for (var i = 0; i < 3; i++)
+        {
+            AddShape(new TorusMesh { InnerRadius = 0.15f, OuterRadius = 0.38f, Rings = 12, RingSegments = 5 }, new Vector3(47.62f, y + 1.6f, 8f + i * 0.9f), Rope.Lightened(0.05f * i), new Vector3(0, 0, 90));
+        }
+
+        for (var i = 0; i < 3; i++)
+        {
+            AddCylinder(new Vector3(53f, y + 0.15f + i * 0.28f, 7.3f + (i % 2) * 0.1f), 0.14f, 1.2f, SceneryMaterial.Cloth(Canvas.Darkened(0.05f * i)), rotation: new Vector3(90, 0, 0));
+        }
+
+        // Casks along the west wall (cells x 48, rows 11-12), one lying on top; biscuit sacks along the east.
+        Cask(new Vector3(48f, y + 0.42f, 11f), false);
+        Cask(new Vector3(48f, y + 0.42f, 11.75f), false);
+        Cask(new Vector3(48f, y + 1.12f, 11.35f), true);
+        foreach (var (z, h) in new[] { (10.8f, 0f), (11.6f, 0f), (11.2f, 0.5f), (12.2f, 0f) })
+        {
+            AddShape(new SphereMesh { Radius = 0.36f, Height = 0.55f, RadialSegments = 8, Rings = 4 }, new Vector3(53f, y + 0.27f + h, z), new Color(0.72f, 0.64f, 0.48f));
+        }
+
+        RoomShell("room.chandlery", () =>
+        {
+            House(left, right, room, front, wall, Stone, 2, Storey, frame: true, baseHeight, detail: true);
+            var middleX = (left + right) / 2f;
+            AddBox(new Vector3(50f, baseHeight + 1.6f, front + 0.06f), new Vector3(2.6f, 3.0f, 0.08f), Timber);
+            AddBox(new Vector3(middleX, baseHeight + 5.5f, front + 0.06f), new Vector3(1.4f, 1.6f, 0.08f), Timber);
+            AddBox(new Vector3(middleX, baseHeight + 6.8f, front + 0.9f), new Vector3(0.25f, 0.25f, 1.8f), Timber);
+            AddCylinder(new Vector3(middleX, baseHeight + 5.2f, front + 1.6f), 0.02f, 3.2f, Rope);
+            // A bale halfway up the hoist line.
+            AddBox(new Vector3(middleX, baseHeight + 4.3f, front + 1.6f), new Vector3(0.7f, 0.55f, 0.55f), new Color(0.7f, 0.64f, 0.48f));
+            AddBox(new Vector3(middleX, baseHeight + 4.3f, front + 1.6f), new Vector3(0.72f, 0.06f, 0.57f), Rope);
+        });
+        HangingSign(new Vector3(right - 1f, baseHeight + 3.2f, front + 0.7f), new Color(0.3f, 0.2f, 0.12f));
+        ChandlerKit(50f, front, baseHeight);
     }
 
     // The tavern: the green branch over the door that marks wine for sale, casks, a cask-top table with jug and cups.

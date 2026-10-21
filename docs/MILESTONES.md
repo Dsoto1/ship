@@ -1507,3 +1507,33 @@ Tests: 433 (5 new in `TavernEveningTests`). Screenshots: `docs/screenshots/taver
   and the porters resting at the pier head sit on crates.
 
 Screenshots: `docs/screenshots/captain-model.jpg`, `tavern-benches.jpg`.
+
+## The chandlery and the Chamber open like the tavern (owner's request)
+
+- **Corbalán's chandlery** (cells x 48–53, y 7–12, door on the square at (50, 13)). Corbalán now
+  works behind his counter inside, not at its door. In the room:
+  - the counter with the steelyard, his account book and a candle;
+  - shelves of jars, tallow and lamps on the back wall;
+  - rope coils on pegs and canvas bolts;
+  - casks along the west wall and biscuit sacks along the east.
+
+  You must go in to look closely at his goods ("Maese Corbalán is inside Corbalán's chandlery. Go
+  in to look at the goods.").
+- **The Chamber of the Ocean Sea** (cells x 2–8, y 6–10, on the terrace, door at (5, 11)). Quintana
+  works at his desk across the hall instead of vanishing indoors. In the room:
+  - the desk with the ledger of licences, ink, the seal and a candle;
+  - three presses of pigeonholes full of rolled licences under the Crown's banner;
+  - a bench for those who wait, and an iron-bound strongbox.
+- **Both behave like the Three Anchors:** walls hide who is inside, and walking in lifts the roof
+  and the walls above the sill. The bar across the top names the room; there is no round, dice or
+  song where no drink is sold.
+- **The view code** for a room is shared now (`RoomFloorAndWalls`, `RoomShell`, `Candle`), the
+  tavern included.
+
+Tests: 436 (3 new in `ShopAndChamberTests`). Screenshots: `docs/screenshots/chandlery-inside.jpg`,
+`chamber-inside.jpg`.
+
+**Not yet:**
+- the counting house next to the Chamber (Varzi and Leonor) is still closed;
+- the cooperage's roof, east of the chandlery, hides that room's east end;
+- the counting house's balcony hides the Chamber's east end.

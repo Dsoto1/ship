@@ -51,6 +51,12 @@ feature("steps", 19, 15, 22, 18, style="east", solid=False); block(19, 15, 22, 1
 feature("steps", 6, 25, 9, 29, style="south", solid=False); block(6, 25, 9, 29, '.')
 feature("building", 1, 3, 9, 11, style="chamber")
 feature("building", 11, 3, 17, 11, style="counting")
+# The Chamber's hall (x 2-8, y 6-10), its door on the terrace at (5, 11): Quintana's desk across it,
+# the licence presses on the back wall, a bench for those who wait.
+block(2, 6, 8, 10, '.')
+g[11][5] = '.'
+block(3, 8, 6, 8)              # the clerk's desk
+block(8, 9, 8, 10)             # the bench for petitioners
 feature("vault", 0, 26, 5, 29); feature("vault", 10, 26, 18, 29)
 feature("notice_board", 8, 13, 9, 13, solid=False)
 feature("chart_table", 3, 16)
@@ -68,9 +74,18 @@ block(24, 6, 25, 6)            # hearth
 block(30, 8, 33, 8)            # counter
 block(25, 10, 27, 10)          # long table
 block(31, 11, 32, 11)          # small table
-rooms = [{"id": "room.three_anchors", "name": "the Three Anchors", "x0": 24, "y0": 6, "x1": 33, "y1": 12, "round": 30}]
+rooms = [{"id": "room.three_anchors", "name": "the Three Anchors", "x0": 24, "y0": 6, "x1": 33, "y1": 12, "round": 30},
+         {"id": "room.chandlery", "name": "Corbalán's chandlery", "x0": 48, "y0": 7, "x1": 53, "y1": 12},
+         {"id": "room.chamber", "name": "the Chamber of the Ocean Sea", "x0": 2, "y0": 6, "x1": 8, "y1": 10}]
 feature("building", 37, 3, 44, 13, style="chapel")
 feature("building", 47, 3, 54, 13, style="warehouse")
+# Corbalán's shop (x 48-53, y 7-12), its door on the square at (50, 13): the counter, stores stacked
+# along both walls, the way round the counter's east end.
+block(48, 7, 53, 12, '.')
+g[13][50] = '.'
+block(48, 9, 52, 9)            # the counter
+block(48, 11, 48, 12)          # casks along the west wall
+block(53, 11, 53, 12)          # sacks of biscuit along the east wall
 feature("building", 20, 3, 21, 13, style="house")
 feature("table", 24, 17, 26, 17); feature("table", 31, 17, 33, 17)
 feature("fire", 35, 17)
@@ -153,7 +168,7 @@ spot("spot.chapel_steps_1", 38, 15, ["task.pray"], "PrayerPoint"); spot("spot.ch
 for i in range(8):
     spot(f"spot.chapel_inside_{i + 1}", 40, 14, ["task.pray"], "PrayerPoint", True)
 # the Chamber and the Company house, on the terrace
-spot("spot.chamber_door", 5, 12, ["task.office_work"], "WorkBench", True)
+spot("spot.chamber_desk", 4, 7, ["task.office_work"], "WorkBench", face="S")
 for i, (x, y) in enumerate([(8, 14), (9, 14), (7, 15), (10, 15)]):
     spot("spot.chamber_board" + ("" if i == 0 else f"_{i + 1}"), x, y, ["task.read_notices"], "LeanPoint")
 spot("spot.chart_table", 3, 17, ["task.study_charts"], "WorkBench")
@@ -162,7 +177,7 @@ spot("spot.counting_table", 15, 16, ["task.keep_accounts"], "WorkBench"); spot("
 for i, x in enumerate([4, 11, 16]):
     spot(f"spot.overlook_{i + 1}", x, 23, ["task.watch_water"], "WatchWater")
 # chandler
-spot("spot.chandler_counter", 50, 14, ["task.trade_goods"], "MarketStall"); spot("spot.chandler_yard", 51, 17, ["task.trade_goods"], "MarketStall")
+spot("spot.chandler_counter", 50, 8, ["task.trade_goods"], "MarketStall", face="S"); spot("spot.chandler_yard", 51, 17, ["task.trade_goods"], "MarketStall")
 # market
 # sellers at the stall's east end (seen from the camera), customers at the west end facing them across the board
 spot("spot.fish_stall_1", 46, 22, ["task.sell_fish"], "MarketStall", face="W"); spot("spot.fish_stall_2", 50, 22, ["task.sell_fish"], "MarketStall", face="W")
