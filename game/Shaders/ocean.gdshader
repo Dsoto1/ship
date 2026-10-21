@@ -17,6 +17,7 @@ uniform float sea_state = 1.0;
 uniform vec2 flow = vec2(0.0);
 // Hull footprint for the wake: centre x, centre z, half beam, half length. Bow towards -z.
 uniform vec4 hull = vec4(4.0, 10.5, 4.0, 11.0);
+uniform float hull_yaw = 0.0;
 // Point the camera looks at; haze grows with distance from it.
 uniform vec3 focus = vec3(4.0, 0.0, 10.0);
 uniform float haze_start = 28.0;
@@ -92,8 +93,9 @@ void fragment() {
 	// Whitecaps on the highest crests, more of them in rough weather.
 	float foam = smoothstep(0.86 - 0.12 * (swell - 1.0), 1.0, crest + (fbm(p * 1.7 + TIME * 0.3) - 0.5) * 0.35) * 0.7;
 
-	// Wake: churned water along the hull and a widening trail astern (the ship sails towards -z).
-	vec2 local = vec2(world.x - hull.x, world.z - hull.y);
+	// Wake: churned water along the hull and a widening trail astern (in her own frame she sails towards -z).
+	vec2 offset = vec2(world.x - hull.x, world.z - hull.y);
+	vec2 local = vec2(offset.x * cos(hull_yaw) - offset.y * sin(hull_yaw), offset.x * sin(hull_yaw) + offset.y * cos(hull_yaw));
 	float along = local.y / hull.w;
 	float sideways = abs(local.x) / max(hull.z, 0.1);
 	float hullEdge = 1.0 - smoothstep(0.0, 0.35, abs(sideways - (1.0 - along * along * 0.6)) * 2.5);

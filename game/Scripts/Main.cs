@@ -125,6 +125,7 @@ public partial class Main : Node3D
     private double _tickFraction;
     private double _elapsed;
     private Vector3 _shipCentre;
+    private float _shipYaw;
 
     public override void _Ready()
     {
@@ -484,7 +485,14 @@ public partial class Main : Node3D
         var leaving = inPort && _departure.Playing ? _departure.Ship : (Offset: Vector3.Zero, Turn: 0f);
         // Water in her lies to leeward: she lists as the bilge fills.
         var list = _sink * 4.5f;
-        _ship.RotationDegrees = new Vector3(Mathf.Sin(t * 0.45f) * 0.8f * swell, inPort ? -90f + leaving.Turn : 0, Mathf.Sin(t * 0.6f) * 1.6f * swell + list);
+        // At sea she swings to the course steered, measured from the course she set out on so the view
+        // opens as it always has, and wanders either side of it as the helmsman works the wheel.
+        var course = voyage?.Navigation is { } navigation && _content.Voyage?.Route is { } route
+            ? -Mathf.Wrap((float)(navigation.Heading - route.Bearing), -180f, 180f)
+            : 0f;
+        var wander = (Mathf.Sin(t * 0.11f) * 1.6f + Mathf.Sin(t * 0.27f + 1.3f) * 0.9f) * (0.6f + _seaState * 0.5f);
+        _shipYaw = inPort ? 0f : Mathf.MoveToward(_shipYaw, course, (float)delta * (0.8f + Mathf.Abs(course - _shipYaw) * 0.15f));
+        _ship.RotationDegrees = new Vector3(Mathf.Sin(t * 0.45f) * 0.8f * swell, inPort ? -90f + leaving.Turn : _shipYaw + wander, Mathf.Sin(t * 0.6f) * 1.6f * swell + list);
         _ship.Position = (inPort ? _port.Berth + leaving.Offset : _shipCentre) + new Vector3(0, Mathf.Sin(t * 0.7f) * 0.08f * swell - _sink, 0);
 
         var clock = _runner.Campaign.Clock;
@@ -501,7 +509,7 @@ public partial class Main : Node3D
 
         var hull = inPort
             ? new Vector4(9999, 9999, 0.1f, 0.1f)
-            : new Vector4(_deck.CentreX, (_deck.Length.Bow + _deck.Length.Stern) / 2f, _deck.HalfBeam, (_deck.Length.Stern - _deck.Length.Bow) / 2f);
+            : HullOnTheWater();
         // The camera keeps to the port and a little past its ends, but not off into the country; the
         // departure and the profiler's circle are free to go where they need.
         _camera.Bounds = inPort && _departure.Camera is null && !_profiler.Capturing ? new Rect2(-10, -6, 100, 54) : null;
@@ -571,7 +579,7 @@ public partial class Main : Node3D
             }
         }
         var making = voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } ? 0.3f + (float)voyage.SpeedLeaguesPerHour * 1.3f : 0f;
-        _world.UpdateWorld(hour, _seaState, making, (float)delta, _camera.Target, hull, _gloom, inPort ? _portFog : 0f);
+        _world.UpdateWorld(hour, _seaState, making, (float)delta, _camera.Target, hull, _gloom, inPort ? _portFog : 0f, inPort ? 0f : Mathf.DegToRad(_ship.RotationDegrees.Y));
         var cooking = _runner.Campaign.ActiveTasks.Values.Any(task => task.DefinitionId == "task.cook");
         // Sails turn see-through at working zoom so they never hide the crew (ART_BIBLE.md 3); zoom out to see them whole.
         // Set sails fade at working zoom so they never hide the crew; furled at the quay they hide no one.
@@ -1496,7 +1504,24 @@ public partial class Main : Node3D
             point = high;
         }
 
+        if (_runner.Campaign.Port is null)
+        {
+            point = ShipLocal(point);
+        }
+
         return new GridPosition(Mathf.RoundToInt(point.X), Mathf.RoundToInt(point.Z));
+    }
+
+    // A point on the water into the deck's own frame, undoing the ship's swing about her centre.
+    private Vector3 ShipLocal(Vector3 world) =>
+        (world - _shipCentre).Rotated(Vector3.Up, -Mathf.DegToRad(_ship.RotationDegrees.Y)) + _shipCentre;
+
+    // The hull's centre on the water, swung with her, and her half beam and half length, for the wake.
+    private Vector4 HullOnTheWater()
+    {
+        var centre = new Vector3(_deck.CentreX, 0, (_deck.Length.Bow + _deck.Length.Stern) / 2f) - _shipCentre;
+        var swung = centre.Rotated(Vector3.Up, Mathf.DegToRad(_ship.RotationDegrees.Y)) + _shipCentre;
+        return new Vector4(swung.X, swung.Z, _deck.HalfBeam, (_deck.Length.Stern - _deck.Length.Bow) / 2f);
     }
 
     private void BuildWorld()

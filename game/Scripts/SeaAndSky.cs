@@ -108,9 +108,10 @@ public partial class SeaAndSky : Node3D
     /// <param name="delta">Seconds since the last frame.</param>
     /// <param name="focus">Point the camera looks at.</param>
     /// <param name="hull">Hull centre x, centre z, half beam, half length, for the wake.</param>
+    /// <param name="yaw">The ship's swing about the vertical, radians (Godot's sense), for the wake and the flow.</param>
     /// <param name="gloom">0 clear, 1 storm-dark: overcast, grey water, rain, close haze (ART_BIBLE.md 9 "Storm").</param>
     /// <param name="fog">0 clear, 1 thick fog in port: pale haze closing in, the far water gone.</param>
-    public void UpdateWorld(float hourOfDay, float seaState, float shipSpeed, float delta, Vector3 focus, Vector4 hull, float gloom = 0f, float fog = 0f)
+    public void UpdateWorld(float hourOfDay, float seaState, float shipSpeed, float delta, Vector3 focus, Vector4 hull, float gloom = 0f, float fog = 0f, float yaw = 0f)
     {
         // Sun height: 0 at about 05:30 and 19:30 (a summer sailing season in the south), 1 at half past noon.
         var elevation = Mathf.Sin((hourOfDay - 5.5f) / 14f * Mathf.Pi);
@@ -156,8 +157,9 @@ public partial class SeaAndSky : Node3D
         _ocean.SetShaderParameter("cloud_shadow", 0.3f * day * (1f - gloom));
         _ocean.SetShaderParameter("sea_state", seaState);
 
-        // The ship sails towards -z, so the water streams towards +z past it.
-        _flow += new Vector2(0, -shipSpeed * delta);
+        // The ship sails towards her own -z, swung by her yaw, so the water streams astern past her.
+        _flow -= new Vector2(Mathf.Sin(yaw), Mathf.Cos(yaw)) * shipSpeed * delta;
+        _ocean.SetShaderParameter("hull_yaw", yaw);
         _ocean.SetShaderParameter("flow", _flow);
         _ocean.SetShaderParameter("focus", focus);
         _ocean.SetShaderParameter("hull", hull);
