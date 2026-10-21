@@ -393,7 +393,7 @@ public partial class Main : Node3D
         // Each new voyage gets its own seed; the seed is saved, so a reported problem can be replayed.
         var seed = (ulong)System.Random.Shared.NextInt64();
         ReadDeveloperArguments(ref seed);
-        StartCampaign(_testDeck ? TestDeckScenario.Create(_content, seed) : ExpeditionScenario.Create(_content, seed),
+        StartCampaign(_testDeck ? WithWatches(TestDeckScenario.Create(_content, seed)) : ExpeditionScenario.Create(_content, seed),
             _testDeck ? "At sea. Left-click a crew member, right-click to send them." : "La Bocana. Right-click to walk; click anyone to look at them.");
         if (_startZoom is { } size)
         {
@@ -1110,6 +1110,13 @@ public partial class Main : Node3D
         _departure.Play(_runner, new Vector3(_port.Berth.X, 0, 33.6f), _port.Berth);
     }
 
+    // The test deck sails with a watch bill, as a ship from port does.
+    private static SimulationRunner WithWatches(SimulationRunner runner)
+    {
+        runner.DrawUpWatchBill();
+        return runner;
+    }
+
     private void StartCampaign(SimulationRunner runner, string message)
     {
         _runner = runner;
@@ -1327,6 +1334,7 @@ public partial class Main : Node3D
                 ChronicleEntryKind.LandmarkSighted => (Severity.Attention, AutoPause.Landfall, "A mark on the coast"),
                 ChronicleEntryKind.NotTheDestination => (Severity.Urgent, AutoPause.Landfall, "This is not Punta Ceniza"),
                 ChronicleEntryKind.StruckTheCoast => (Severity.Critical, AutoPause.ShipDamage, "She has struck"),
+                ChronicleEntryKind.AllHands when entry.Get(ChronicleParameters.To) == "turnedOut" => (Severity.Urgent, AutoPause.ShipDamage, "The watch below turned out"),
                 ChronicleEntryKind.IslandSighted => (Severity.Positive, AutoPause.Landfall, "Land! The island"),
                 ChronicleEntryKind.Anchored => (Severity.Positive, AutoPause.Landfall, "At anchor"),
                 ChronicleEntryKind.IslandNotFound => (Severity.Attention, AutoPause.Landfall, "No island there"),
@@ -1782,10 +1790,6 @@ public partial class Main : Node3D
             _weatherShown = _runner.PortWeather?.Id;
         }
 
-        if (_developerPanel is { } open)
-        {
-            _hud.OpenPanel(open);
-        }
 
         if (_developerYaw is { } yaw)
         {
@@ -1962,6 +1966,12 @@ public partial class Main : Node3D
         if (_forceWind is { } windFrom)
         {
             _runner.DeveloperSetWind(windFrom);
+        }
+
+        // --panel=ship (people, cargo, ...): open that screen, once at sea if she is sailing.
+        if (_developerPanel is { } open)
+        {
+            Callable.From(() => _hud.OpenPanel(open)).CallDeferred();
         }
 
         // --chart / --astrolabe: open them, for screenshots.

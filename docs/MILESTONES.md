@@ -42,7 +42,7 @@ This file tracks status and breaks the next work into tickets.
 | R4a | Wind, heading and sailing: wind direction, visibility, warning signs; why she is slow (VOYAGE §5, §20) | Largely done (2026-10-21): she turns to her course; wind direction, points of sail, tacking, braced yards, heel. Visibility and warning signs not yet |
 | R4b | True vs estimated position; the chart: dead reckoning, a latitude sight, uncertainty region, route legs, annotations (NAVIGATION) | Largely done (2026-10-21): truth and reckoning, the noon sight and astrolabe, the chart with its doubt. Route legs and annotations not yet |
 | R4c | Standing navigation orders and configurable interrupts; alerts by severity (VOYAGE §8, §35; NAV §7–9) | Planned |
-| R4d | Watch rotation and the assignment board (VOYAGE §9, §17) | Planned |
+| R4d | Watch rotation and the assignment board (VOYAGE §9, §17) | Done (2026-10-21): the watch bill, the round, the day's work, all hands, the turned-out watch, tired hands' mistakes |
 | R4e | Localized damage, repair quality and history, cargo zones, the storm with preparation (VOYAGE §4, §21–23) | Planned |
 | R4f | Medical crisis, grievances by stages, skill growth and mentorship; events become state-caused (VOYAGE §15, §18–19, §25–26, §42) | Planned |
 | R4g | Landfall approach: soundings, sighting, identifying the coast, wrong landfall (NAV §30–31) | Done (2026-10-21) |
@@ -2153,3 +2153,72 @@ Developer flags: `--seaweather=ID` (that weather at sea, and on until a shower i
 - the boat itself, seen going in;
 - islanders and news;
 - islands along the coast's approach.
+
+### R4d — The watches
+
+The crew used to work round the clock, each hand resting only when worn down. Now the ship keeps
+watches (VOYAGE_EXPERIENCE §9, §17).
+
+**The watch bill** (`Voyage/Watches.cs`, `SimulationRunner.Watches.cs`). When she sails, the mate
+splits the crew into the starboard and larboard watches in turn, with the cook a day-worker. The
+captain can change anyone's watch in the Ship panel, or leave a hand out of the bill ("works when
+needed").
+
+**The round.**
+- **Seven watches a day:** the middle, morning, forenoon, afternoon, first dog, last dog and first
+  watches. Being an odd number, the round shifts each day, so no one keeps the same hours.
+- **The day's work.** From 06:00 to 18:00 both watches turn to. Through the evening and night they
+  stand four hours on deck and four below.
+- **Day-workers** are on deck 06:00–18:00 and below at night.
+
+**On deck and below.**
+- **On deck.** The watch on deck works its standing duties, and one hand always keeps the helm and
+  lookout before any other work. On deck a hand rests at fatigue 80 rather than 70.
+- **Below.** The watch below turns in once at all tired (fatigue 25). A rested hand below may still turn
+  to a needed duty, but never the helm.
+- **The change of watch.** At the bell the routine work of the watch going below is dropped, and the
+  sleepers of the watch coming up are turned out.
+- **Orders always go first**, whatever the watch.
+
+**All hands.** The captain can call all hands (both watches on deck, sleep spent for the work in hand)
+and dismiss them. The officer of the watch also turns the watch below out to the pumps when the bilge
+passes 35%, and sends them below again once it is pumped under 12%. A storm alone does not turn them
+out: watch and watch keeps the crew fit to ride it out.
+
+**Fatigue.**
+- **Mistakes.** Tired hands make mistakes: the chance of an accident climbs to four times as fatigue
+  rises past about 50.
+- **Fresh hands.** Hands keeping watches, fresh from below (fatigue under 30), work 15% faster.
+
+**Balance.** Over the ten test crews:
+
+| | Arrive | Average fatigue |
+|---|---|---|
+| Driven round the clock (no watch bill) | 5 of 10 | about 55 |
+| Keeping watches | 4 of 10 | about 27 |
+
+The watches give fewer hands on deck but fresh ones, and a helm always kept. Getting there took four
+changes, each forced by a measured failure:
+- **Turning out for the pumps.** At first, with the watch below asleep, the bilge won and one crew
+  foundered on day 3. The officer now turns them out.
+- **Storms.** A storm turning out both watches wore everyone out together. Storms no longer do.
+- **The day's work.** Half the crew asleep left too little repair done. Both watches now work by day.
+- **The helm first.** The helm going unmanned while the watch was busy cost speed, so it is now kept
+  before any other work.
+
+The older tests keep their crews without a watch bill. The game's ship, sailing from port or the test
+deck, draws one up.
+
+**On the HUD.**
+- **A chip** says "Starboard watch on deck", "Day's work", "Watch below turned out" or "All hands".
+- **The Ship panel** has the watch bill: the watch in progress, All hands on deck, and each hand's
+  watch.
+- **Alerts** for the watch below turned out.
+
+Saved in format 30: the bill, all hands, turned out. Tests: `WatchTests` (7). Screenshot:
+`docs/screenshots/watch-bill.jpg`.
+
+**Not yet:**
+- named posts (helmsman, lookout aloft);
+- the bosun's call heard at the change of watch;
+- a watch officer of the crew's own choosing.

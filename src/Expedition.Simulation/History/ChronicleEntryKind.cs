@@ -87,6 +87,9 @@ public enum ChronicleEntryKind
     /// <summary>She ran onto the coast unseen (parameters: damage, level = hull now).</summary>
     StruckTheCoast,
 
+    /// <summary>All hands were called on deck, or dismissed (parameter: to = called or dismissed).</summary>
+    AllHands,
+
     /// <summary>The captain made for an island (parameter: to = island ID).</summary>
     MakingForIsland,
 

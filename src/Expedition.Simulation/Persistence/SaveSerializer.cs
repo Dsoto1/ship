@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 29;
+    public const int CurrentSchemaVersion = 30;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -194,6 +194,9 @@ public static class SaveSerializer
 
                 return root;
             },
+
+            // Format 30 added the watch bill: an older voyage keeps no watches until the captain sets them.
+            [29] = root => root,
 
             // Format 29 added calling at islands: no voyage before it had made for one.
             [28] = root => root,
@@ -632,6 +635,7 @@ public static class SaveSerializer
                     Weather = voyage.WeatherId, WeatherUntilTick = voyage.WeatherUntilTick, Speed = voyage.SpeedLeaguesPerHour,
                     WatchKept = voyage.WatchKept, Outcome = voyage.Outcome.ToString(), SailPlan = voyage.SailPlan.ToString(),
                     PartedLines = voyage.PartedLines.ToList(), YardSprung = voyage.YardSprung, Mending = voyage.Mending,
+                    Watches = new SortedDictionary<int, string>(voyage.Watches.ToDictionary(pair => pair.Key.Value, pair => pair.Value.ToString())), AllHands = voyage.AllHands, TurnedOut = voyage.TurnedOut,
                     Navigation = voyage.Navigation is { } n
                         ? new NavigationData
                         {
@@ -1062,6 +1066,18 @@ public static class SaveSerializer
             }
 
             voyage.RestoreCarriedAway(savedVoyage.PartedLines, savedVoyage.YardSprung, savedVoyage.Mending);
+            foreach (var (who, name) in savedVoyage.Watches)
+            {
+                if (!campaign.Characters.ContainsKey(new CharacterId(who)) || !Enum.TryParse<Voyage.Watch>(name, out var watch) || watch == Voyage.Watch.None)
+                {
+                    throw new SaveLoadException($"The watch bill names someone not aboard, or a watch that is not kept: {who} {name}.");
+                }
+
+                voyage.SetWatch(new CharacterId(who), watch);
+            }
+
+            voyage.AllHands = savedVoyage.AllHands;
+            voyage.TurnedOut = savedVoyage.TurnedOut;
             if (rules.Route is { } route)
             {
                 var bearing = route.Bearing * Math.PI / 180;

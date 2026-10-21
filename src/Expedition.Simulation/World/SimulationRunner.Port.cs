@@ -755,7 +755,13 @@ public sealed partial class SimulationRunner
         }
 
         Campaign.SetPort(null);
-        return StartVoyage(shipName, destination, leagues);
+        var sailed = StartVoyage(shipName, destination, leagues);
+        if (sailed.Succeeded)
+        {
+            DrawUpWatchBill();
+        }
+
+        return sailed;
     }
 
     private static string Capital(string text) => text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];

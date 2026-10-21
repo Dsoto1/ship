@@ -862,6 +862,16 @@ public partial class Hud : CanvasLayer
                     $"Course {navigation.Heading:0}° by the compass, steered from your reckoning; the wind from the {SimulationRunner.CompassPoint(navigation.WindFrom)}. " +
                     (navigation.Beating ? "It is too near the course she wants, so she beats to windward, tack upon tack. " : "") +
                     "The chart (M) shows where you reckon she is."));
+                if (ship.Watches.Count > 0)
+                {
+                    var hour = runner.Campaign.Clock.Tick % SimulationClock.TicksPerDay / SimulationClock.TicksPerHour;
+                    var daysWork = hour >= Expedition.Simulation.Voyage.WatchBill.DaysWorkBegins && hour < Expedition.Simulation.Voyage.WatchBill.DaysWorkEnds;
+                    var deck = Expedition.Simulation.Voyage.WatchBill.OnDeck(runner.Campaign.Clock.Tick) == Expedition.Simulation.Voyage.Watch.Starboard ? "Starboard" : "Larboard";
+                    chips.Add(("◷", ship.AllHands ? "All hands" : ship.TurnedOut ? "Watch below turned out" : daysWork ? "Day's work" : $"{deck} watch on deck",
+                        ship.AllHands || ship.TurnedOut ? Severity.Attention : Severity.Information,
+                        $"{Capital(Expedition.Simulation.Voyage.WatchBill.NameAt(runner.Campaign.Clock.Tick))}. The watch bill, and All hands, are in the Ship panel (H)."));
+                }
+
                 if (navigation.Call is { } call && runner.Content.Voyage?.Route?.Islands.FirstOrDefault(i => i.Id == call.Island) is { } island)
                 {
                     chips.Add(("⚓", call.Anchored ? $"At anchor: {island.Name}" : call.Sighted ? $"{island.Name} in sight" : $"Bound for {island.Name}",
@@ -1414,6 +1424,13 @@ public partial class Hud : CanvasLayer
             .Select(g => $"\n{g.Item1}{(g.Item3.Length > 0 ? $" — {g.Item3}" : "")}\n" + string.Join("\n", g.Item2.OrderBy(p => content.Items[p.Key].Name).Select(Line))));
     }
 
+    private VBoxContainer _watchBox = null!;
+    private Label _watchReport = null!;
+    private Button _allHands = null!;
+    private GridContainer _watchRows = null!;
+    private readonly Dictionary<CharacterId, OptionButton> _watchPickers = [];
+    private SimulationRunner? _watchRunner;
+
     private void BuildShip(VBoxContainer body)
     {
         _shipReport = Ui.Text("", Ui.TextBody, Ui.Ink, 370);
@@ -1421,6 +1438,82 @@ public partial class Hud : CanvasLayer
         _rations = Ui.Button("", "Short rations: water once a day at dawn, food once at noon. The stores last longer, but the crew grow hungry, thirsty and strained.",
             () => RationingToggled?.Invoke(!_rationsOn));
         body.AddChild(_rations);
+
+        // The watch bill: who stands which watch, which has the deck, and all hands.
+        _watchBox = new VBoxContainer { Visible = false };
+        _watchBox.AddThemeConstantOverride("separation", Ui.SpaceS);
+        body.AddChild(_watchBox);
+        _watchBox.AddChild(new HSeparator());
+        _watchBox.AddChild(Ui.Text("The watch bill", Ui.TextHeading, Ui.Brass));
+        _watchReport = Ui.Text("", Ui.TextBody, Ui.Ink, 370);
+        _watchBox.AddChild(_watchReport);
+        _allHands = Ui.Button("", "All hands: both watches on deck for the work in hand, at the cost of their sleep", () =>
+        {
+            if (_watchRunner?.Campaign.Voyage is { } voyage)
+            {
+                _watchRunner.CallAllHands(!voyage.AllHands);
+            }
+        });
+        _watchBox.AddChild(_allHands);
+        _watchRows = new GridContainer { Columns = 2 };
+        _watchRows.AddThemeConstantOverride("h_separation", Ui.SpaceM);
+        _watchBox.AddChild(_watchRows);
+    }
+
+    private static readonly (Expedition.Simulation.Voyage.Watch Watch, string Name)[] WatchChoices =
+    [
+        (Expedition.Simulation.Voyage.Watch.Starboard, "Starboard watch"), (Expedition.Simulation.Voyage.Watch.Larboard, "Larboard watch"),
+        (Expedition.Simulation.Voyage.Watch.Day, "Day-worker"), (Expedition.Simulation.Voyage.Watch.None, "No watch (works when needed)"),
+    ];
+
+    // The watch bill section: rebuilt when the crew changes, refreshed every frame the panel is open.
+    private void RefreshWatchBill(SimulationRunner runner, Expedition.Simulation.Voyage.VoyageState ship)
+    {
+        _watchRunner = runner;
+        _watchBox.Visible = true;
+        var tick = runner.Campaign.Clock.Tick;
+        var onDeck = Expedition.Simulation.Voyage.WatchBill.OnDeck(tick);
+        var hour = tick % SimulationClock.TicksPerDay / SimulationClock.TicksPerHour;
+        var daysWork = hour >= Expedition.Simulation.Voyage.WatchBill.DaysWorkBegins && hour < Expedition.Simulation.Voyage.WatchBill.DaysWorkEnds;
+        _watchReport.Text =
+            $"{Capital(Expedition.Simulation.Voyage.WatchBill.NameAt(tick))}: " +
+            (ship.AllHands ? "all hands on deck." : ship.TurnedOut ? "the watch below turned out to the pumps." : daysWork ? "both watches at the day's work." : $"the {(onDeck == Expedition.Simulation.Voyage.Watch.Starboard ? "starboard" : "larboard")} watch has the deck; the other sleeps below.") +
+            "\nFour hours on and four below through the evening and night, the dog watches shifting the round each day; by day both turn to. The watch on deck keeps the helm; the watch below sleeps once tired.";
+        _allHands.Text = ship.AllHands ? "Dismiss all hands: the watch below goes below" : "All hands on deck!";
+        _allHands.Modulate = ship.AllHands ? Ui.Of(Severity.Attention) : Colors.White;
+        var crew = runner.Campaign.Crew.Where(c => c.Id != runner.Campaign.CaptainId).OrderBy(c => c.Name).ToList();
+        if (crew.Count * 2 != _watchRows.GetChildCount())
+        {
+            foreach (var child in _watchRows.GetChildren())
+            {
+                child.QueueFree();
+            }
+
+            _watchPickers.Clear();
+            foreach (var hand in crew)
+            {
+                _watchRows.AddChild(Ui.Text(hand.Name, Ui.TextBody, Ui.Ink, 150));
+                var picker = new OptionButton { FocusMode = Control.FocusModeEnum.None };
+                foreach (var (_, name) in WatchChoices)
+                {
+                    picker.AddItem(name);
+                }
+
+                var id = hand.Id;
+                picker.ItemSelected += index => _watchRunner?.SetWatch(id, WatchChoices[(int)index].Watch);
+                _watchRows.AddChild(picker);
+                _watchPickers[id] = picker;
+            }
+        }
+
+        foreach (var (id, picker) in _watchPickers)
+        {
+            var index = Array.FindIndex(WatchChoices, c => c.Watch == ship.WatchOf(id));
+            if (picker.Selected != index && !picker.HasFocus())
+            {
+                picker.Select(index);
+            }
+        }
     }
 
     private void RefreshShip(SimulationRunner runner)
@@ -1429,8 +1522,11 @@ public partial class Hud : CanvasLayer
         {
             _shipReport.Text = "The Garza lies alongside the quay at La Bocana, sails furled, taking on stores and crew.\n\nInspection and repairs before sailing come with the port's later steps.";
             _rations.Visible = false;
+            _watchBox.Visible = false;
             return;
         }
+
+        RefreshWatchBill(runner, ship);
 
         var repairs = runner.RepairsLeft();
         var hullRepairs = repairs.GetValueOrDefault(Expedition.Simulation.Voyage.ShipPart.Hull);

@@ -107,6 +107,15 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
                 $"Standing in where {Coast()?.Find(entry.Get(ChronicleParameters.To))?.Name ?? "the destination"} should be: no ruin on the headland, no lagoon behind. It is not here.",
             ChronicleEntryKind.StruckTheCoast =>
                 $"She struck in the dark, unseen surf and then rock, and was got off with the hull stove (down {entry.Get(ChronicleParameters.Damage)}, now {entry.Get(ChronicleParameters.Level)}%).",
+            ChronicleEntryKind.AllHands => entry.Get(ChronicleParameters.To) switch
+            {
+                "called" => "All hands! Both watches called on deck.",
+                "turnedOut" => entry.Get(ChronicleParameters.Reason) == "storm"
+                    ? "The storm: the watch below turned out, all hands on deck."
+                    : "The pumps are losing: the watch below turned out to them.",
+                "stoodDown" => "Pumped out and the worst past: the watch below goes below again.",
+                _ => "All hands dismissed: the watch below goes below.",
+            },
             ChronicleEntryKind.MakingForIsland => $"The captain left the passage and made for {IslandName(entry)}.",
             ChronicleEntryKind.IslandSighted => $"Land! {Capitalise(IslandName(entry))} raised from the masthead, some {entry.Get(ChronicleParameters.Level)} leagues off. " +
                                                 $"{Island(entry)?.Looks}",

@@ -119,6 +119,32 @@ public sealed class VoyageState
     /// <summary>How much sail is carried.</summary>
     public SailPlan SailPlan { get; internal set; } = SailPlan.Normal;
 
+    private readonly Dictionary<Core.CharacterId, Watch> _watches = [];
+
+    /// <summary>The watch bill: who stands which watch. Hands not in it keep no watch.</summary>
+    public IReadOnlyDictionary<Core.CharacterId, Watch> Watches => _watches;
+
+    /// <summary>True while all hands are called: both watches on deck, no one below.</summary>
+    public bool AllHands { get; internal set; }
+
+    /// <summary>True while the officer of the watch has turned the watch below out: the pumps losing, or a storm.</summary>
+    public bool TurnedOut { get; internal set; }
+
+    /// <summary>The watch a hand stands, or <see cref="Watch.None"/>.</summary>
+    public Watch WatchOf(Core.CharacterId id) => _watches.GetValueOrDefault(id);
+
+    internal void SetWatch(Core.CharacterId id, Watch watch)
+    {
+        if (watch == Watch.None)
+        {
+            _watches.Remove(id);
+        }
+        else
+        {
+            _watches[id] = watch;
+        }
+    }
+
     /// <summary>Reads one part's condition.</summary>
     public double Get(ShipPart part) => part switch
     {

@@ -552,6 +552,15 @@ public sealed record VoyageData
     /// <summary>Rigging work done towards mending the next thing carried away (format 25).</summary>
     public double Mending { get; init; }
 
+    /// <summary>The watch bill: character ID to watch name (format 30).</summary>
+    public IReadOnlyDictionary<int, string> Watches { get; init; } = new SortedDictionary<int, string>();
+
+    /// <summary>True while all hands are called (format 30).</summary>
+    public bool AllHands { get; init; }
+
+    /// <summary>True while the watch below is turned out (format 30).</summary>
+    public bool TurnedOut { get; init; }
+
     /// <summary>Position, course and reckoning, if the voyage has a route (format 26).</summary>
     public NavigationData? Navigation { get; init; }
 

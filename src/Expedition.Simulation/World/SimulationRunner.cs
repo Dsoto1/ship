@@ -386,7 +386,12 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             return;
         }
 
-        if (Content.Rules.RestAtFatigue is { } restAt && character.Needs.Fatigue >= restAt
+        if (GoBelow(character))
+        {
+            return;
+        }
+
+        if (Content.Rules.RestAtFatigue is { } usualRest && character.Needs.Fatigue >= RestThreshold(character, usualRest)
             && Content.Tasks.Values.Where(t => t.IsRest).OrderBy(t => t.Id, StringComparer.Ordinal).FirstOrDefault() is { } rest
             && Check(character, rest, materialsAlreadyUsed: false).Succeeded)
         {
@@ -394,19 +399,22 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             return;
         }
 
-        if (Campaign.QueueOf(character.Id).Count > 0 || !Campaign.Duties.TryGetValue(character.Id, out var roster))
+        if (Campaign.QueueOf(character.Id).Count > 0 || TakeTheHelm(character))
         {
             return;
         }
 
-        foreach (var task in roster.Tasks.Select(id => Content.Tasks[id]))
+        foreach (var task in Campaign.DutiesOf(character.Id).Select(id => Content.Tasks[id]))
         {
-            if (DutyNeeded(task) && Check(character, task, materialsAlreadyUsed: false).Succeeded)
+            if (DutyNeeded(task) && !(task.KeepsWatch && !OnDeck(character.Id)) && Check(character, task, materialsAlreadyUsed: false).Succeeded)
             {
                 Start(character, new TaskInstance(Campaign.Ids.NextTaskId(), character.Id, task.Id, TaskPriority.Normal) { Origin = TaskOrigin.Duty });
                 return;
             }
         }
+
+        // Nothing in their duties wants doing: a hand of the watch on deck keeps the helm and lookout.
+        StandTheWatch(character);
     }
 
     /// <summary>
@@ -569,6 +577,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
 
         StepStores();
         var weather = rules.Weather(ship.WeatherId);
+        OfficerOfTheWatch(ship, weather);
         if (Campaign.Clock.Tick >= ship.WeatherUntilTick)
         {
             var roll = Campaign.Randomness.Weather.NextDouble() * weather.Next.Values.Sum();
@@ -918,6 +927,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         }
         else
         {
+            KeepWatch(character);
             ReconsiderDuty(character);
             StartNextQueued(character);
             StartOnOwnAccord(character);
@@ -994,7 +1004,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             voyage.Apply(effects, rate * HoursPerTick);
         }
 
-        if (definition.Hazard is { } hazard && Campaign.Randomness.Tasks.Chance(hazard.ChancePerHour * HoursPerTick))
+        if (definition.Hazard is { } hazard && Campaign.Randomness.Tasks.Chance(hazard.ChancePerHour * MistakeFactor(character) * HoursPerTick))
         {
             Injure(character, definition, hazard, outcomes);
             if (!Campaign.ActiveTasks.ContainsKey(character.Id))
@@ -1166,6 +1176,10 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         NeedLedger.Add(Campaign.Clock.Tick, id, need, source, amount);
 
     /// <summary>Work-minutes produced per in-game minute: skill and attribute multipliers, slowed when tired.</summary>
+    // Below this fatigue a hand keeping watches is fresh, and works this much faster.
+    private const double FreshFatigue = 30;
+    private const double FreshWorkRate = 1.15;
+
     private double WorkRate(Character character, TaskDefinition task)
     {
         if (task.IsRest)
@@ -1187,7 +1201,11 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             rate *= 0.85;
         }
 
-        return character.Needs.Fatigue >= rules.TiredFatigue ? rate * rules.TiredWorkRateMultiplier : rate;
+        // Tired hands drag; hands keeping watches, fresh from their sleep below, work with a will.
+        var watchKeeper = Campaign.Voyage is { Outcome: VoyageOutcome.UnderWay } ship && ship.WatchOf(character.Id) != Watch.None;
+        return character.Needs.Fatigue >= rules.TiredFatigue ? rate * rules.TiredWorkRateMultiplier
+            : watchKeeper && character.Needs.Fatigue < FreshFatigue ? rate * FreshWorkRate
+            : rate;
     }
 
     private void Injure(Character character, TaskDefinition task, TaskHazard hazard, List<TaskOutcome> outcomes)
