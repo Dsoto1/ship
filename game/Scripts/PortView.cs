@@ -101,6 +101,7 @@ public partial class PortView : Node3D
         _fires.Clear();
         _foreground.Clear();
         _shells.Clear();
+        _fading.Clear();
         _roof = new ShaderMaterial { Shader = GD.Load<Shader>("res://Shaders/roof.gdshader") };
         _ground = new ShaderMaterial { Shader = GD.Load<Shader>("res://Shaders/ground.gdshader") };
         _ground.SetShaderParameter("quay_from", 29.5f);
@@ -250,7 +251,36 @@ public partial class PortView : Node3D
         switch (f.Kind)
         {
             case "building":
+                var beside = RoomsBeside(f);
+                if (beside.Count == 0)
+                {
+                    Building(f.Style ?? "house", left, right, back, front, HeightAt(middle.X, back + 0.2f));
+                    break;
+                }
+
+                // A building east of a room hides that room's east end from the camera: built into a node
+                // of its own, so it can fade while the captain is in there.
+                var scenery = _batch;
+                _batch = new MeshBatcher();
+                var shellsBefore = _shells.Keys.ToHashSet();
                 Building(f.Style ?? "house", left, right, back, front, HeightAt(middle.X, back + 0.2f));
+                var piece = new Node3D { Name = $"{f.Style}_beside" };
+                AddChild(piece);
+                _batch.Commit(piece);
+                _batch = scenery;
+                // A room's own shell (the counting house beside the Chamber) fades with it.
+                var pieces = new List<Node3D> { piece };
+                pieces.AddRange(_shells.Where(p => !shellsBefore.Contains(p.Key)).Select(p => p.Value));
+                foreach (var room in beside)
+                {
+                    if (!_fading.TryGetValue(room, out var list))
+                    {
+                        _fading[room] = list = [];
+                    }
+
+                    list.AddRange(pieces);
+                }
+
                 break;
             case "vault":
                 // Warehouse vaults under the terrace, opening onto the quay.
@@ -381,15 +411,7 @@ public partial class PortView : Node3D
                 Chamber(left, right, back, front, baseHeight);
                 break;
             case "counting":
-                House(left, right, back, front, Ochre, Stone, 3, 3f, frame: true, baseHeight);
-                AddBox(new Vector3(middleX, baseHeight + 3.4f, front + 0.6f), new Vector3(right - left, 0.15f, 1.2f), Timber);
-                for (var x = left + 0.2f; x <= right; x += 1.7f)
-                {
-                    AddBox(new Vector3(x, baseHeight + 3.9f, front + 1.15f), new Vector3(0.08f, 0.9f, 0.08f), Timber);
-                }
-
-                AddBox(new Vector3(middleX, baseHeight + 4.35f, front + 1.15f), new Vector3(right - left, 0.08f, 0.1f), Timber);
-                AddBox(new Vector3(middleX, baseHeight + 1.5f, front + 0.06f), new Vector3(1.4f, 2.6f, 0.08f), Timber);
+                CountingHouse(left, right, back, front, baseHeight);
                 break;
             case "tavern":
                 Tavern(left, right, back, front, baseHeight);
@@ -518,13 +540,47 @@ public partial class PortView : Node3D
 
     private readonly Dictionary<string, Node3D> _shells = [];
 
-    /// <summary>Lifts the roof off <paramref name="roomId"/> (the captain is in it), or puts every roof back on.</summary>
-    public void OpenRoom(string? roomId)
+    /// <summary>
+    /// Lifts the roof off <paramref name="roomId"/> (the captain is in it), or puts every roof back on;
+    /// the buildings beside it that would hide its east end fade to a ghost while he is in there.
+    /// </summary>
+    public void OpenRoom(string? roomId, float delta = 1f)
     {
         foreach (var (id, shell) in _shells)
         {
             shell.Visible = id != roomId;
         }
+
+        var faded = roomId is not null && _fading.TryGetValue(roomId, out var list) ? list : [];
+        foreach (var piece in _fading.Values.SelectMany(p => p).Distinct())
+        {
+            var target = faded.Contains(piece) ? 0.78f : 0f;
+            foreach (var mesh in piece.GetChildren().OfType<GeometryInstance3D>())
+            {
+                mesh.Transparency = Mathf.MoveToward(mesh.Transparency, target, delta * 3f);
+                mesh.CastShadow = mesh.Transparency > 0.5f ? GeometryInstance3D.ShadowCastingSetting.Off : GeometryInstance3D.ShadowCastingSetting.On;
+            }
+        }
+    }
+
+    private readonly Dictionary<string, List<Node3D>> _fading = [];
+
+    // The rooms whose building stands just west of <paramref name="building"/> (within four cells, the same
+    // rows): from the camera, this one stands in front of their east ends.
+    private List<string> RoomsBeside(LocationFeature building)
+    {
+        var found = new List<string>();
+        foreach (var room in _location.Rooms)
+        {
+            var home = _location.Features.FirstOrDefault(f => f.Kind == "building" && f.X0 <= room.X0 && f.X1 >= room.X1 && f.Y0 <= room.Y0 && f.Y1 >= room.Y1);
+            if (home is not null && home != building && building.X0 > home.X1 && building.X0 - home.X1 <= 4
+                && building.Y0 <= home.Y1 && building.Y1 >= home.Y0)
+            {
+                found.Add(room.Id);
+            }
+        }
+
+        return found;
     }
 
     // The Three Anchors: a kitchen range behind, and in front the common room on the map (rows 6-12),
@@ -730,6 +786,75 @@ public partial class PortView : Node3D
             Banner(new Vector3(right - 0.6f, baseHeight + 8f, front + 0.2f), new Color(0.62f, 0.13f, 0.12f), new Color(0.85f, 0.7f, 0.25f));
         });
         Lantern(new Vector3(5f - 1.6f, baseHeight + 2.6f, front + 0.3f));
+    }
+
+    // The Ledra-Varzi Company's counting room (cells x 12-16, y 6-10), the strongroom behind: the long desk
+    // with the counting cloth, coins in stacks, the scales and the ledgers; shelves of letter-books; the
+    // Company's iron-bound chest; a bale of sample cloth, a cone of sugar and a pepper sack from the coast.
+    private void CountingHouse(float left, float right, float back, float front, float baseHeight)
+    {
+        var room = 5.5f;
+        House(left, right, back, room, Ochre, Stone, 3, 3f, frame: true, baseHeight, detail: false);
+        RoomFloorAndWalls(left, right, room, front, 14f, baseHeight, 3f, new Color(0.45f, 0.33f, 0.21f), planks: true, Ochre.Darkened(0.2f));
+        var y = baseHeight;
+
+        // The desk (cells x 13-15, row 8) under its chequered counting cloth.
+        AddBox(Box(12.6f, 15.4f, 7.6f, 8.4f, y + 0.74f, y + 0.8f), Wood.Darkened(0.05f));
+        AddBox(Box(12.7f, 15.3f, 7.7f, 8.3f, y, y + 0.74f), Wood.Darkened(0.2f));
+        for (var i = 0; i < 6; i++)
+        {
+            for (var j = 0; j < 2; j++)
+            {
+                AddBox(new Vector3(13.05f + i * 0.4f, y + 0.805f, 7.85f + j * 0.3f), new Vector3(0.38f, 0.01f, 0.28f), (i + j) % 2 == 0 ? new Color(0.2f, 0.32f, 0.22f) : new Color(0.3f, 0.42f, 0.3f));
+            }
+        }
+
+        foreach (var (x, n) in new[] { (13.3f, 5), (13.6f, 3), (14.1f, 7) })
+        {
+            AddCylinder(new Vector3(x, y + 0.82f + n * 0.01f, 8.05f), 0.06f, n * 0.02f, new Color(0.75f, 0.62f, 0.3f));
+        }
+
+        AddBox(new Vector3(14.9f, y + 0.86f, 7.95f), new Vector3(0.5f, 0.08f, 0.36f), new Color(0.3f, 0.17f, 0.1f));
+        AddBox(new Vector3(14.6f, y + 1.1f, 8.2f), new Vector3(0.05f, 0.5f, 0.05f), new Color(0.6f, 0.5f, 0.3f));
+        AddBox(new Vector3(14.6f, y + 1.33f, 8.2f), new Vector3(0.45f, 0.03f, 0.03f), new Color(0.6f, 0.5f, 0.3f));
+        Candle(new Vector3(12.9f, y + 0.84f, 8.15f));
+        AddCylinder(new Vector3(13f, y + 0.25f, 6.85f), 0.2f, 0.5f, Wood.Darkened(0.1f));
+        AddCylinder(new Vector3(15f, y + 0.25f, 6.85f), 0.2f, 0.5f, Wood.Darkened(0.1f));
+
+        // Letter-books and ledgers on the back wall.
+        for (var shelf = 0; shelf < 3; shelf++)
+        {
+            var h = y + 0.9f + shelf * 0.62f;
+            AddBox(Box(11.6f, 16.4f, room, room + 0.35f, h, h + 0.05f), Wood);
+            for (var x = 11.75f; x < 16.3f; x += 0.17f)
+            {
+                var tall = 0.32f + ((int)(x * 37) % 5) * 0.03f;
+                AddBox(new Vector3(x, h + 0.05f + tall / 2f, room + 0.18f), new Vector3(0.13f, tall, 0.26f),
+                    ((int)(x * 13) % 3) switch { 0 => new Color(0.35f, 0.2f, 0.12f), 1 => new Color(0.45f, 0.3f, 0.16f), _ => new Color(0.5f, 0.15f, 0.12f) });
+            }
+        }
+
+        // The Company's chest, and goods from the coast: sample cloth, a sugar loaf, a sack of pepper.
+        AddBox(new Vector3(12.2f, y + 0.3f, 10f), new Vector3(0.8f, 0.6f, 0.5f), Wood.Darkened(0.3f));
+        AddBox(new Vector3(12.2f, y + 0.3f, 10f), new Vector3(0.82f, 0.06f, 0.52f), Iron);
+        AddBox(new Vector3(12.2f, y + 0.61f, 10f), new Vector3(0.82f, 0.02f, 0.52f), Iron);
+        AddBox(new Vector3(16.3f, y + 0.3f, 10.2f), new Vector3(0.6f, 0.6f, 0.5f), new Color(0.72f, 0.64f, 0.48f));
+        AddShape(new CylinderMesh { TopRadius = 0.02f, BottomRadius = 0.14f, Height = 0.4f, RadialSegments = 8, Rings = 1 }, new Vector3(16.3f, y + 0.8f, 10.2f), new Color(0.92f, 0.9f, 0.84f));
+        AddShape(new SphereMesh { Radius = 0.25f, Height = 0.4f, RadialSegments = 8, Rings = 4 }, new Vector3(15.6f, y + 0.2f, 10.4f), new Color(0.55f, 0.42f, 0.28f));
+
+        RoomShell("room.counting", () =>
+        {
+            House(left, right, room, front, Ochre, Stone, 3, 3f, frame: true, baseHeight, detail: true);
+            var middleX = (left + right) / 2f;
+            AddBox(new Vector3(middleX, baseHeight + 3.4f, front + 0.6f), new Vector3(right - left, 0.15f, 1.2f), Timber);
+            for (var x = left + 0.2f; x <= right; x += 1.7f)
+            {
+                AddBox(new Vector3(x, baseHeight + 3.9f, front + 1.15f), new Vector3(0.08f, 0.9f, 0.08f), Timber);
+            }
+
+            AddBox(new Vector3(middleX, baseHeight + 4.35f, front + 1.15f), new Vector3(right - left, 0.08f, 0.1f), Timber);
+            AddBox(new Vector3(14f, baseHeight + 1.5f, front + 0.06f), new Vector3(1.0f, 2.6f, 0.08f), Timber);
+        });
     }
 
     // Corbalán's chandlery (cells x 48-53, y 7-12), the store behind: the counter with the steelyard and

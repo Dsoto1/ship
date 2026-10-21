@@ -492,7 +492,7 @@ public partial class Main : Node3D
                 FollowCaptain((float)delta);
             }
             _port.UpdateLook(_world.Darkness, t, _portWet);
-            _port.OpenRoom(_runner.CaptainRoom?.Id);
+            _port.OpenRoom(_runner.CaptainRoom?.Id, (float)delta);
             FadeForeground((float)delta);
             ListenToThePort(hour, (float)delta);
             // Rain and fog thin the crowd; stall covers go on, the ships at anchor vanish into fog.

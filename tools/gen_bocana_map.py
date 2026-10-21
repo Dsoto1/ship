@@ -57,6 +57,11 @@ block(2, 6, 8, 10, '.')
 g[11][5] = '.'
 block(3, 8, 6, 8)              # the clerk's desk
 block(8, 9, 8, 10)             # the bench for petitioners
+# The Ledra-Varzi Company's counting room (x 12-16, y 6-10), its door on the terrace at (14, 11): the long
+# desk where Varzi and the clerk keep the books, the Company's chest.
+block(12, 6, 16, 10, '.')
+g[11][14] = '.'
+block(13, 8, 15, 8)            # the counting desk
 feature("vault", 0, 26, 5, 29); feature("vault", 10, 26, 18, 29)
 feature("notice_board", 8, 13, 9, 13, solid=False)
 feature("chart_table", 3, 16)
@@ -76,7 +81,8 @@ block(25, 10, 27, 10)          # long table
 block(31, 11, 32, 11)          # small table
 rooms = [{"id": "room.three_anchors", "name": "the Three Anchors", "x0": 24, "y0": 6, "x1": 33, "y1": 12, "round": 30},
          {"id": "room.chandlery", "name": "Corbalán's chandlery", "x0": 48, "y0": 7, "x1": 53, "y1": 12},
-         {"id": "room.chamber", "name": "the Chamber of the Ocean Sea", "x0": 2, "y0": 6, "x1": 8, "y1": 10}]
+         {"id": "room.chamber", "name": "the Chamber of the Ocean Sea", "x0": 2, "y0": 6, "x1": 8, "y1": 10},
+         {"id": "room.counting", "name": "the Company's counting house", "x0": 12, "y0": 6, "x1": 16, "y1": 10}]
 feature("building", 37, 3, 44, 13, style="chapel")
 feature("building", 47, 3, 54, 13, style="warehouse")
 # Corbalán's shop (x 48-53, y 7-12), its door on the square at (50, 13): the counter, stores stacked
@@ -172,8 +178,8 @@ spot("spot.chamber_desk", 4, 7, ["task.office_work"], "WorkBench", face="S")
 for i, (x, y) in enumerate([(8, 14), (9, 14), (7, 15), (10, 15)]):
     spot("spot.chamber_board" + ("" if i == 0 else f"_{i + 1}"), x, y, ["task.read_notices"], "LeanPoint")
 spot("spot.chart_table", 3, 17, ["task.study_charts"], "WorkBench")
-spot("spot.counting_door", 14, 12, ["task.keep_accounts"], "WorkBench", True)
-spot("spot.counting_table", 15, 16, ["task.keep_accounts"], "WorkBench"); spot("spot.counting_table_2", 16, 16, ["task.keep_accounts"], "WorkBench")
+spot("spot.counting_door", 13, 7, ["task.keep_accounts"], "WorkBench", face="S")
+spot("spot.counting_table", 15, 7, ["task.keep_accounts"], "WorkBench", face="S"); spot("spot.counting_table_2", 16, 9, ["task.keep_accounts"], "WorkBench", face="W")
 for i, x in enumerate([4, 11, 16]):
     spot(f"spot.overlook_{i + 1}", x, 23, ["task.watch_water"], "WatchWater")
 # chandler

@@ -328,6 +328,7 @@ public sealed class ShopAndChamberTests
     [Theory]
     [InlineData("person.corbalan", "room.chandlery", 50, 10)]
     [InlineData("person.clerk_chamber", "room.chamber", 4, 9)]
+    [InlineData("person.varzi", "room.counting", 13, 9)]
     public void TheyWorkInsideAndAreSeenOnlyFromInside(string person, string room, int x, int y)
     {
         var runner = AtTen();

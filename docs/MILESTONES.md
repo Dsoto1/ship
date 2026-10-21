@@ -1533,7 +1533,19 @@ Screenshots: `docs/screenshots/captain-model.jpg`, `tavern-benches.jpg`.
 Tests: 436 (3 new in `ShopAndChamberTests`). Screenshots: `docs/screenshots/chandlery-inside.jpg`,
 `chamber-inside.jpg`.
 
-**Not yet:**
-- the counting house next to the Chamber (Varzi and Leonor) is still closed;
-- the cooperage's roof, east of the chandlery, hides that room's east end;
-- the counting house's balcony hides the Chamber's east end.
+**Afterwards (owner's request):**
+- **The Company's counting house** opens too (cells x 12–16, y 6–10, door on the terrace at
+  (14, 11)). Varzi and Leonor keep the books inside: Leonor used to work at a table on the terrace.
+  The room has:
+  - the long desk under a chequered counting cloth, with stacks of coin, the scales, ledgers and a
+    candle;
+  - three shelves of letter-books;
+  - the Company's iron-bound chest;
+  - goods from the coast: a bale of sample cloth, a sugar loaf and a sack of pepper.
+- **Neighbouring buildings fade:** any building just east of a room (within four cells, the same
+  rows) is built into a node of its own. It fades to a ghost while the captain is in that room, so
+  the camera sees the whole room:
+  - the counting house beside the Chamber;
+  - the tall house beside the counting house;
+  - the chapel beside the Three Anchors;
+  - the cooperage beside the chandlery.
