@@ -581,7 +581,7 @@ public partial class Main : Node3D
                 var isCaptain = id == _runner.Campaign.CaptainId;
                 figure.Refresh(character, placement, drawTick, id == _selected, Hud.Activity(_runner, character),
                     isCaptain, pose, (float)delta, animationRate,
-                    onPort ? _port.HeightAt : null, carrying,
+                    onPort ? _port.HeightAt : _deck.HeightAt, carrying,
                     showLabel: !_departure.Playing && (!inPort || isCaptain || id == _hovered), shownName: inPort ? PortHud.KnownName(_runner, id) : null,
                     facing: spot is null ? null : FacingAt(location, spot),
                     inRain: onPort && _runner.RainingInPort && definition?.Id != "task.shelter", standAt: standAt);
@@ -1049,7 +1049,10 @@ public partial class Main : Node3D
 
         _figures.Clear();
         _pending = null;
-        var location = _content.Locations[TestDeckScenario.LocationId];
+        // The ship the crew are aboard: the Garza's own deck on the expedition, the plain deck for the test.
+        var deckId = runner.Campaign.Placements.Values.Select(p => p.LocationId).FirstOrDefault(l => l != _content.Port?.Location)
+            ?? (runner.Campaign.Port is not null ? _content.Port?.ShipLocation : null) ?? TestDeckScenario.LocationId;
+        var location = _content.Locations[deckId];
         _deck.Build(location);
         if (_content.Port is { } rules && !_portBuilt)
         {

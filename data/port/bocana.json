@@ -11,7 +11,7 @@
 // plays out near the player, with no reward (PORT_EXPERIENCE §12); cells are [x, y] on the waterfront.
 {
  "location": "location.bocana",
- "shipLocation": "location.test_deck",
+ "shipLocation": "location.garza",
  "gangway": "spot.gangway",
  "funds": 7000,
  "berths": 7,

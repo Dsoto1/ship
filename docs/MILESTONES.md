@@ -1633,3 +1633,31 @@ Screenshots: `docs/screenshots/dock-garza.jpg`, `garza-stern.jpg`, `dock-merchan
 
 **Not yet:** a proper hero model of the Garza (a modelled caravel with a carved stern, built and
 approved like the characters), rather than one put together from boxes in code.
+
+## The Garza's deck plan (first step of the ship model)
+
+The Garza had been drawn round the early test deck. She now has a deck of her own,
+`location.garza` (`tools/gen_garza_deck.py` writes `data/locations/garza.json`): a caravela redonda
+of about 22 m.
+- **Forecastle** (rows 1–4), raised 1.3 m: the lookout in its eyes, the galley fire box at its
+  break, a ladder down to the waist.
+- **Waist** (rows 5–16):
+  - the foremast with its rigging station;
+  - the main hatch over the hold, with the carpenter's repair stack beside it;
+  - the mainmast, with a pump on either side and its rigging station.
+- **Quarterdeck** (rows 18–23), raised 1.5 m, up a ladder: the helm (whipstaff) at its break, the
+  mizzen and the stern watch. The poop rises behind it.
+- Every station the voyage uses (watch, rigging, pumps, hull repair, galley) has its place. The test
+  deck stays for the test scenario.
+- **The view** draws:
+  - the raised decks at their heights, with planking, a break face and a rail that stops either side
+    of the ladder (owner: "railings on ship block the stairs");
+  - the ladders as stringers and steps, and bulwarks standing a rail's height above each deck;
+  - the mizzen stepped on the quarterdeck, the main hatch as one coaming, and the fittings at deck
+    height.
+
+  Crew stand at the height of the deck they are on.
+
+Screenshot: `docs/screenshots/garza-deck.jpg`.
+
+**Next:** the Garza's model itself, built offline from a written specification like the characters.

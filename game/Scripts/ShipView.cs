@@ -35,6 +35,7 @@ public partial class ShipView : Node3D
     private ShaderMaterial _deckMaterial = null!;
     private OmniLight3D? _galleyFire;
     private float[] _halfWidth = [];
+    private LocationDefinition _location = null!;
     private float _sternZ;
 
     /// <summary>The hull's centre line (world X) and its length from stem to stern.</summary>
@@ -60,8 +61,10 @@ public partial class ShipView : Node3D
         _furls.Clear();
         _lanterns.Clear();
         _galleyFire = null;
+        _location = location;
         MeasureHull(location);
         BuildHull();
+        BuildRaisedDecks(location);
         BuildDeckFittings(location);
         BuildStern();
         BuildMastsAndRigging(location);
@@ -171,12 +174,96 @@ public partial class ShipView : Node3D
         return Mathf.Lerp(_halfWidth[below], _halfWidth[above], row - below);
     }
 
-    // Bulwark height above the deck: the sheer rises towards bow and stern.
+    /// <summary>The deck's height at a point in cell coordinates: 0 in the waist, more on a raised deck or ladder.</summary>
+    public float HeightAt(float x, float z)
+    {
+        foreach (var area in _location.Ground)
+        {
+            if (area.HeightAt(x, z) is { } height)
+            {
+                return (float)height;
+            }
+        }
+
+        return 0f;
+    }
+
+    // How high the deck is at the ship's side in a row: what the bulwark there stands on.
+    private float SideDeck(float z) => _location.Ground.Count == 0 ? 0f : HeightAt(CentreX - HalfWidthAt(z) + 0.8f, Mathf.Clamp(z, 0, _halfWidth.Length - 1));
+
+    // Bulwark height above the waist: the sheer rises towards bow and stern, and over a raised deck the
+    // bulwark stands a rail's height above it.
     private float BulwarkTop(float z)
     {
         var bow = 1f - Mathf.SmoothStep(-2f, 4f, z);
         var stern = Mathf.SmoothStep(_sternZ - 6f, _sternZ, z);
-        return 0.7f + bow * 0.7f + stern * 0.45f;
+        var sheer = 0.7f + bow * 0.7f + stern * 0.45f;
+        return _location.Ground.Count == 0 ? sheer : Mathf.Max(sheer, SideDeck(z) + 0.85f);
+    }
+
+    // The forecastle and quarterdeck: deck planking at their height over a stout front face, the
+    // break's rail, and a ladder down where the ground ramps.
+    private void BuildRaisedDecks(LocationDefinition location)
+    {
+        var tool = new SurfaceTool();
+        tool.Begin(Mesh.PrimitiveType.Triangles);
+        foreach (var area in location.Ground.Where(a => a.ToHeight is null && a.Height > 0.01))
+        {
+            var h = (float)area.Height;
+            var z0 = Mathf.Max(area.Y0 - 0.5f, Length.Bow);
+            var z1 = Mathf.Min(area.Y1 + 0.5f, _sternZ);
+            for (var z = z0; z < z1 - 0.01f; z += 0.25f)
+            {
+                var zn = Mathf.Min(z + 0.25f, z1);
+                var (w0, w1) = (Mathf.Max(HalfWidthAt(z) - WallThickness, 0.02f), Mathf.Max(HalfWidthAt(zn) - WallThickness, 0.02f));
+                DeckQuad(tool, new(CentreX - w0, h, z), new(CentreX + w0, h, z), new(CentreX + w1, h, zn), new(CentreX - w1, h, zn));
+            }
+
+            // The break: the face of the raised deck towards the waist, with its rail along the top.
+            var breakZ = area.Y0 > 0 ? z0 : z1;
+            var width = (HalfWidthAt(breakZ) - WallThickness) * 2f;
+            AddBox(new Vector3(CentreX, h / 2f, breakZ), new Vector3(width, h, 0.1f), HullWood.Lightened(0.08f));
+            // The rail along the break stops either side of the ladder: a gap where it comes up.
+            var ladder = location.Ground.FirstOrDefault(r => r.ToHeight is not null && (Mathf.Abs(r.Y0 - 0.5f - breakZ) < 0.6f || Mathf.Abs(r.Y1 + 0.5f - breakZ) < 0.6f));
+            var (gapL, gapR) = ladder is null ? (CentreX, CentreX) : (ladder.X0 - 0.6f, ladder.X1 + 0.6f);
+            var (left, right) = (CentreX - width / 2f, CentreX + width / 2f);
+            foreach (var (from, to) in new[] { (left, gapL), (gapR, right) })
+            {
+                if (to - from < 0.1f)
+                {
+                    continue;
+                }
+
+                AddBox(new Vector3((from + to) / 2f, h + 0.5f, breakZ), new Vector3(to - from, 0.06f, 0.08f), RailCap);
+                for (var x = from; x <= to + 0.01f; x += Mathf.Max((to - from) / 3f, 0.4f))
+                {
+                    AddBox(new Vector3(x, h + 0.25f, breakZ), new Vector3(0.07f, 0.5f, 0.07f), RailCap);
+                }
+            }
+        }
+
+        tool.GenerateNormals();
+        tool.GenerateTangents();
+        AddMesh(tool.Commit(), _deckMaterial);
+
+        // Ladders where the deck ramps between levels: two stringers and steps.
+        foreach (var ramp in location.Ground.Where(a => a.ToHeight is not null))
+        {
+            var (low, high) = ((float)Math.Min(ramp.Height, ramp.ToHeight!.Value), (float)Math.Max(ramp.Height, ramp.ToHeight.Value));
+            var upAtStart = ramp.Height > ramp.ToHeight;
+            var zLow = upAtStart ? ramp.Y1 + 0.5f : ramp.Y0 - 0.5f;
+            var zHigh = upAtStart ? ramp.Y0 - 0.5f : ramp.Y1 + 0.5f;
+            foreach (var x in new[] { ramp.X0 - 0.4f, ramp.X1 + 0.4f })
+            {
+                AddSpar(new Vector3(x, low, zLow), new Vector3(x, high, zHigh), 0.05f, Spar);
+            }
+
+            for (var t = 0.15f; t < 1f; t += 0.22f)
+            {
+                var z = Mathf.Lerp(zLow, zHigh, t);
+                AddBox(new Vector3((ramp.X0 + ramp.X1) / 2f, Mathf.Lerp(low, high, t), z), new Vector3(ramp.X1 - ramp.X0 + 0.8f, 0.05f, 0.2f), Spar.Lightened(0.1f));
+            }
+        }
     }
 
     private void BuildHull()
@@ -291,7 +378,8 @@ public partial class ShipView : Node3D
                     continue;
                 }
 
-                var hatch = location.IsWalkable(cell with { X = x - 1 }) != location.IsWalkable(cell with { X = x + 1 });
+                var hatch = location.IsWalkable(cell with { X = x - 1 }) != location.IsWalkable(cell with { X = x + 1 })
+                    || !location.IsWalkable(cell with { X = x - 1 }) && !location.IsWalkable(cell with { X = x + 1 }) && location.Ground.Count > 0;
                 if (hatch)
                 {
                     // Hatch coaming with a grating on top.
@@ -390,8 +478,16 @@ public partial class ShipView : Node3D
         }
 
         masts.Sort((a, b) => a.Z.CompareTo(b.Z));
+        // Three masts in the grid: the last is the mizzen, on the quarterdeck, lateen-rigged.
+        Vector3? steppedMizzen = masts.Count >= 3 ? masts[^1] : null;
+        if (steppedMizzen is not null)
+        {
+            masts.RemoveAt(masts.Count - 1);
+        }
+
         for (var i = 0; i < masts.Count; i++)
         {
+            masts[i] = masts[i] with { Y = HeightAt(masts[i].X, masts[i].Z) };
             // The mainmast (the second, or the only one) is the tallest.
             var main = i == Math.Min(1, masts.Count - 1);
             var height = main ? 12f : 9.5f;
@@ -400,7 +496,9 @@ public partial class ShipView : Node3D
         }
 
         // Mizzen on the stern deck with a lateen sail.
-        var mizzenFoot = new Vector3(CentreX, 2.6f, (_sternZ + Length.Stern) / 2f);
+        var mizzenFoot = steppedMizzen is { } stepped
+            ? stepped with { Y = HeightAt(stepped.X, stepped.Z) }
+            : new Vector3(CentreX, 2.6f, (_sternZ + Length.Stern) / 2f);
         AddSpar(mizzenFoot, mizzenFoot + new Vector3(0, 6.5f, 0), 0.12f, Spar);
         var yardLow = mizzenFoot + new Vector3(0, 1.4f, 2.2f);
         var yardHigh = mizzenFoot + new Vector3(0, 7.6f, -3.2f);
@@ -634,7 +732,7 @@ public partial class ShipView : Node3D
     {
         foreach (var spot in location.Spots)
         {
-            var at = new Vector3(spot.X, 0, spot.Y);
+            var at = new Vector3(spot.X, HeightAt(spot.X, spot.Y), spot.Y);
             if (spot.Tasks.Contains("task.pump_bilge"))
             {
                 AddSpar(at + new Vector3(0.35f, 0, 0), at + new Vector3(0.35f, 1.0f, 0), 0.09f, Spar);

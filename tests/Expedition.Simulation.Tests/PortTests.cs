@@ -266,7 +266,7 @@ public class PortTests
         Assert.True(runner.Offer(bartolo, 1000).Succeeded);
         var hired = runner.Campaign.Characters[bartolo];
         Assert.Equal(Membership.Crew, hired.Membership);
-        Assert.Equal(TestDeckScenario.LocationId, runner.Campaign.Placements[bartolo].LocationId);
+        Assert.Equal(Shipped.Port!.ShipLocation, runner.Campaign.Placements[bartolo].LocationId);
         Assert.Contains("task.patch_hull", runner.Campaign.DutiesOf(bartolo));
         Assert.Equal(6000, runner.Campaign.Port!.Funds);
     }
@@ -381,7 +381,7 @@ public class PortTests
         Assert.Equal(CampaignPhase.Voyage, runner.Campaign.Phase);
         Assert.Null(runner.Campaign.Port);
         Assert.Equal(5, runner.Campaign.Crew.Count());
-        Assert.All(runner.Campaign.Placements, p => Assert.Equal(TestDeckScenario.LocationId, p.Value.LocationId));
+        Assert.All(runner.Campaign.Placements, p => Assert.Equal("location.garza", p.Value.LocationId));
         runner.Advance(24 * 60);
         Assert.All(runner.Campaign.Characters.Values.Where(c => c.Membership == Membership.Local), c => Assert.False(runner.Campaign.ActiveTasks.ContainsKey(c.Id)));
     }
