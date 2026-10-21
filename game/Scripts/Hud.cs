@@ -1025,9 +1025,17 @@ public partial class Hud : CanvasLayer
                 : first + $"\n   Lead: {open.Where}";
         }
 
-        return campaign.Voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } ship
-            ? $"{Ui.IconLead} Reach {ship.Destination}: about {ship.ReckonedRemaining:0} leagues to go"
-            : null;
+        if (campaign.Voyage is not { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } ship)
+        {
+            return null;
+        }
+
+        return ship.Navigation switch
+        {
+            { Sighted: true, Identified: null } => $"{Ui.IconLead} Know the coast: which mark is in view? (Chart, M)",
+            { Sighted: true } => $"{Ui.IconLead} Run along the coast for Punta Ceniza: about {ship.ReckonedRemaining:0} leagues, by what you took it for",
+            _ => $"{Ui.IconLead} Reach {ship.Destination}: about {ship.ReckonedRemaining:0} leagues to go",
+        };
     }
 
     private void BuildAlerts()

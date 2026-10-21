@@ -325,6 +325,7 @@ public sealed class Navigation
     // keeping pace (the coast gives the distance off; where along it she is, only what the captain made of it).
     private void Coast(double speed, double hours, double standOff)
     {
+        Beating = false;
         var step = speed * hours;
         var closing = Math.Min(step, Math.Max(0, Offshore - standOff));
         True = True with { X = True.X - closing };

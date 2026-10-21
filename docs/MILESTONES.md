@@ -39,13 +39,13 @@ This file tracks status and breaks the next work into tickets.
 | A-2 | Asset pass: recorded CC0 beds for surf, market crowd, tavern, wind and rain (Freesound) | Done (2026-10-19), awaiting the owner's listen |
 | R2e | Recognition and the departure sequence (steps 13, 14) | Done (2026-10-19) |
 | R3 | Visual validation: the four port scenes of PORT_EXPERIENCE §21, then Test B ship, with the hybrid pipeline (D-021) | Part one done (2026-10-19): A and C judged, all staged, baseline profiled; part two after C-1 (D-028) |
-| R4a | Wind, heading and sailing: wind direction, visibility, warning signs; why she is slow (VOYAGE §5, §20) | Planned |
-| R4b | True vs estimated position; the chart: dead reckoning, a latitude sight, uncertainty region, route legs, annotations (NAVIGATION) | Planned |
+| R4a | Wind, heading and sailing: wind direction, visibility, warning signs; why she is slow (VOYAGE §5, §20) | Largely done (2026-10-21): she turns to her course; wind direction, points of sail, tacking, braced yards, heel. Visibility and warning signs not yet |
+| R4b | True vs estimated position; the chart: dead reckoning, a latitude sight, uncertainty region, route legs, annotations (NAVIGATION) | Largely done (2026-10-21): truth and reckoning, the noon sight and astrolabe, the chart with its doubt. Route legs and annotations not yet |
 | R4c | Standing navigation orders and configurable interrupts; alerts by severity (VOYAGE §8, §35; NAV §7–9) | Planned |
 | R4d | Watch rotation and the assignment board (VOYAGE §9, §17) | Planned |
 | R4e | Localized damage, repair quality and history, cargo zones, the storm with preparation (VOYAGE §4, §21–23) | Planned |
 | R4f | Medical crisis, grievances by stages, skill growth and mentorship; events become state-caused (VOYAGE §15, §18–19, §25–26, §42) | Planned |
-| R4g | Landfall approach: soundings, sighting, identifying the coast, wrong landfall (NAV §30–31) | Planned |
+| R4g | Landfall approach: soundings, sighting, identifying the coast, wrong landfall (NAV §30–31) | Done (2026-10-21) |
 | R4h | Voyage validation: calm morning, fog, storm, aftermath; sound; the ship's visible history (VOYAGE §46) | Planned |
 | R5 | Shipwreck transition: casualties, location, salvage by accessibility, survivors' state kept (VOYAGE §39–40) | Planned |
 | R6 | Landfall camp, the first 72 hours: assessment, water, shelter, fire, stores, sanitation (SETTLEMENT §3–6) | Planned |
@@ -1976,3 +1976,92 @@ and clicks on the deck are taken into her own frame.
 Developer flag: `--wind=DEG` sets the wind's quarter until the weather changes; `--wind=222` puts it
 dead ahead. Three new tests are in `NavigationTests`. Screenshots: `docs/screenshots/voyage-beating.jpg`,
 `voyage-beam-reach.jpg`.
+
+### R4g — Landfall: the bank, the lead, raising the coast and knowing it
+
+Reaching the coast used to end the voyage on the spot. Now landfall is a piece of play (NAVIGATION
+§14, §15, §30, §31): the coast must be found, raised and known for what it is.
+
+**The far coast** (`Voyage/Coast.cs`, `data/voyage.json` "route" → "coast"). The sailing directions
+give five marks along the Ember Coast, each with how to know it and what the lead brings up off it:
+
+| Mark | Where | How to know it | Bottom |
+|---|---|---|---|
+| the Río Bermejo | 32 leagues north | a broad river mouth, the sea red off it | soft red mud |
+| the Bajos Largos | 16 leagues north | low sand spits, surf on the bars | fine grey sand |
+| **Punta Ceniza** | the destination | a rocky headland, a blackened ruin, a lagoon behind | shell and coarse sand |
+| Punta Falsa | 13 leagues south | a headland much like Ceniza, reefs breaking, no ruin, no lagoon | coral and broken rock |
+| the Manglares | 29 leagues south | an endless low wall of mangrove | black mud |
+
+Punta Falsa is Ceniza's look-alike, and the Bajos Largos and the Manglares are easily taken for each
+other.
+
+**The approach** (`SimulationRunner.Landfall.cs`):
+- **The coast is near.** Once the reckoning puts her within 30 leagues, the captain is told once.
+- **Signs of land.** Within 40 leagues, with a watch kept: land birds, weed and green branches, the
+  sea changing colour, a bank of cloud standing still in the west. They are clues, not a detector.
+- **The lead.** The bank runs out 25 leagues: beyond it the deep-sea line finds no bottom at 100
+  fathoms, and inside it the depth shoals to 4 fathoms under the coast. The cast also brings up the
+  bottom of that stretch. The captain heaves it from the chart; a navigator keeps it going every two
+  hours once the reckoning puts her on the bank. Each cast is marked on the chart at the reckoned
+  place.
+- **Raising the coast.** The masthead raises it 6 leagues off by day (less in thick weather), 1.2 at
+  night (only the surf), and hardly at all with no watch kept. Unseen, she strikes: 25 off the hull.
+- **Standing off.** Raised, the coast gives her distance off (her longitude at last) but not where
+  along it she is. She stands in to 2 leagues and stands off and on.
+- **Knowing it.** Each mark that comes into view waits for the captain's word. The best hand aboard
+  (the navigator, else whoever knows navigation best) says what they make of it. Their opinion weighs
+  what it looks like against where the reckoning puts her: a fresh sight or a known mark makes it
+  sure, many days without one leave the look to decide. The more they know, the less a look-alike
+  fools them. Left three hours without a word, they make the call.
+- **Running along it.** Taking the coast for a mark puts the reckoning there, and she runs along the
+  coast for where that puts Punta Ceniza. She has arrived only when she is truly there and knows it.
+- **The wrong landfall.** Taking Punta Falsa for Ceniza, she stands in and finds no ruin and no
+  lagoon: "It is not here", and the captain must think again (a headland ruled out stays ruled out).
+  Taking the Bajos for the Manglares, she runs north, the wrong way, until the Río Bermejo says so.
+- **Saving.** Saved in format 28. A voyage that had fetched the coast in an older save knows where she
+  is on it.
+
+**Balance.** Over the ten test crews left alone, five arrive, as before, and each knows every mark for
+what it is. The five that founder never reach the coast. A first version that gave the opinion by
+skill alone, ignoring the reckoning, had crews dithering along the coast for days (two arrived).
+
+**On the chart** (`ChartView`). Near the coast the chart becomes a coast sheet, about 60 by 85 leagues
+round Punta Ceniza, with the marks, the soundings in fathoms (a ring with a bar for no bottom), and a
+degree graticule. The side panel scrolls. Its coast section has:
+- the last cast and the Heave the lead button;
+- with land in sight, what is in view and what the best hand takes it for;
+- the marks, with the sailing directions for the one chosen (it opens on the best hand's opinion);
+- "That is what we see", and Run north / Run south to coast by eye.
+
+The noon sight steps aside once land is raised.
+
+**In the view** (`CoastView`, `coast.gdshader`). Once raised, the coast stands off to the west: grey in
+the haze at first, clearer as she closes. It is drawn from the sailing directions:
+- the Río Bermejo a gap through the land, with a red-brown stain spreading off it;
+- the Bajos Largos low sand with surf on the bars;
+- Punta Ceniza a rocky headland with a blackened ruin and the lagoon behind;
+- Punta Falsa the same headland, with reefs breaking white and no ruin;
+- the Manglares a flat dark wall.
+
+The distances are the view's, not the chart's. The land stands at the edge of the camera's view when
+first raised and nearer as she stands in, never on top of her.
+
+**The HUD.**
+- **Chips:** "Coast near: sound", "Land: what coast is this?", "Land: standing off" and "Coasting
+  north" or "Coasting south".
+- **The objective** asks which mark is in view, then counts the leagues to Ceniza by what you took it for.
+- **Alerts:** the coast is near, bottom found, land, a mark on the coast, "This is not Punta Ceniza",
+  and she has struck. A new "The coast" pause category is on by default.
+- **The ending** says how many tries it took to know Ceniza.
+
+Developer flag: `--offcoast=OFF,NORTH` puts her that many leagues off the coast and along it from
+Ceniza (for example `--offcoast=2.5,-13` off Punta Falsa). Eight tests are in `LandfallTests`.
+Screenshots: `docs/screenshots/landfall-punta-ceniza.jpg`, `landfall-punta-falsa.jpg`,
+`landfall-rio-bermejo.jpg`, `landfall-coast-sheet.jpg`.
+
+**Not yet:**
+- the lead as a crew task with someone in the chains, seen on deck;
+- night approaches drawn as darkness and surf only;
+- anchoring, the boat sent in, and what is found ashore (R6);
+- the true track drawn after landfall.

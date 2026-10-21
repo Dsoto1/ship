@@ -481,9 +481,9 @@ public partial class ChartCanvas : Control
         DrawColoredPolygon(points[..32], new Color(Red, 0.12f));
         DrawPolyline(points, new Color(Red, 0.6f), 1.2f);
         DrawCircle(centre, 4.5f, Red);
-        DrawString(font, centre + new Vector2(8, 4), _runner.Campaign.Voyage!.ShipName, HorizontalAlignment.Left, -1, 12, Red);
+        DrawString(font, centre + new Vector2(8, 16), _runner.Campaign.Voyage!.ShipName, HorizontalAlignment.Left, -1, 12, Red);
 
-        Rose(new Vector2(Size.X - 110, Size.Y - 110), 46);
+        Rose(new Vector2(Size.X - 72, Size.Y - 90), 42);
     }
 
     private static readonly Color SoundingInk = new(0.2f, 0.32f, 0.5f);
@@ -504,7 +504,7 @@ public partial class ChartCanvas : Control
         DrawColoredPolygon(shade, new Color(Land, 0.55f));
         DrawPolyline(points, InkLine, 2);
         // The name on the land, near the top of the drawn coast and clear of the graticule's labels.
-        var label = points[west ? points.Length - 4 : 1] + new Vector2(west ? -36 : 22, 0);
+        var label = points[west ? points.Length - Math.Max(4, points.Length / 4) : 1] + new Vector2(west ? -36 : 22, 0);
         if (west)
         {
             DrawSetTransform(label, -Mathf.Pi / 2);
@@ -556,7 +556,7 @@ public partial class ChartCanvas : Control
 
             // The wind: an arrow flying in from the quarter it blows from.
             var from = new Vector2(Mathf.Sin(Mathf.DegToRad((float)navigation.WindFrom)), -Mathf.Cos(Mathf.DegToRad((float)navigation.WindFrom)));
-            var tail = centre + from * radius * 1.75f;
+            var tail = centre + from * radius * 1.55f;
             var tip = centre + from * radius * 1.08f;
             var side = new Vector2(-from.Y, from.X);
             DrawLine(tail, tip, WindInk, 2.5f);

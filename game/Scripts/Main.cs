@@ -59,6 +59,7 @@ public partial class Main : Node3D
     private Node3D _shipContents = null!;
     private ShipView _deck = null!;
     private SeaAndSky _world = null!;
+    private CoastView _coastView = null!;
     private readonly List<SeaBird> _birds = [];
     private float _seaState = 1f;
     private float _gloom;
@@ -587,6 +588,7 @@ public partial class Main : Node3D
         }
         var making = voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } ? 0.3f + (float)voyage.SpeedLeaguesPerHour * 1.3f : 0f;
         _world.UpdateWorld(hour, _seaState, making, (float)delta, _camera.Target, hull, _gloom, inPort ? _portFog : 0f, inPort ? 0f : Mathf.DegToRad(_ship.RotationDegrees.Y));
+        _coastView.Show(inPort ? null : voyage?.Navigation, _runner.Coast, _content.Voyage?.Route?.Bearing ?? 0, _shipCentre, _camera.Size, _world.Darkness, _gloom, (float)delta);
         var cooking = _runner.Campaign.ActiveTasks.Values.Any(task => task.DefinitionId == "task.cook");
         // Sails turn see-through at working zoom so they never hide the crew (ART_BIBLE.md 3); zoom out to see them whole.
         // Set sails fade at working zoom so they never hide the crew; furled at the quay they hide no one.
@@ -1545,6 +1547,8 @@ public partial class Main : Node3D
     private void BuildWorld()
     {
         _world = new SeaAndSky { Name = "SeaAndSky" };
+        _coastView = new CoastView { Name = "Coast" };
+        AddChild(_coastView);
         AddChild(_world);
 
         _ship = new Node3D { Name = "Ship" };
