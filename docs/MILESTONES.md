@@ -1691,8 +1691,40 @@ The test deck keeps its generated hull.
 Screenshots: `docs/screenshots/garza-model.jpg`, `garza-model-stern.jpg`.
 
 **Not yet:**
-- the masts and rigging are still drawn in code; they read well, but tops, caps and blocks could go
-  into the model too;
 - the model has no texture of its own: the scenery material gives the timber grain, mapped in world
-  space;
-- she has not yet been checked under way at sea.
+  space.
+
+### The Garza's masts, and the voyage's wear on her
+
+**Masts in the model.** `build_ship.py` now builds the spars too:
+- tapered, octagonal lower masts with rope wooldings;
+- the tops on their crosstrees, with a low rail, and the caps;
+- the topmasts to the mastheads;
+- the yards, tapered to the arms, with slings and blocks;
+- the mizzen with its lateen yard fished in two pieces;
+- the bowsprit with its gammoning.
+
+The masts stand where the deck plan puts them, at the heights ShipView hangs the sails from (main
+12 m, fore 9.5 m). ShipView no longer draws spars for the Garza. It still draws the sails, furls,
+shrouds, ratlines, stays, flag, pennant and lanterns, because those move or change.
+
+**She shows what the voyage does to her.** `ShipView.ShowCondition(hull, rigging)` reads the
+voyage's condition each frame. The simulation already wore her down: hours at sea, storms, strikes,
+and the repairs and pumping the crew do.
+- **Rigging:** as it falls, the sails grey and stain. Then sewn patches appear, then holes open and
+  the foot frays. Below about 30% they hang in rags. This is done in `sail.gdshader` (`wear`, with a
+  `seed` for each sail).
+- **Hull:** one stove-in, splintered wound on her sides for every tenth of the hull lost. When the
+  carpenter makes a wound good, it becomes two pale new planks nailed over the hole, and those stay
+  for the rest of the session.
+- **Bilge:** as before, she rides lower; she now also lists as the water rises.
+
+Developer flags: `--sea` sails at once with no departure; `--hull=N` and `--rigging=N` force her
+condition. For example: `--hire=6 --sea --zoom=18 --hull=40 --rigging=20 --bilge=20`.
+
+Screenshots: `docs/screenshots/garza-at-sea.jpg`, `garza-damaged.jpg`.
+
+**Not yet:**
+- no parted lines or sprung spars;
+- patches made in an earlier session are not remembered after a load;
+- wounds are on the hull sides only, not on the deck or the bulwarks.

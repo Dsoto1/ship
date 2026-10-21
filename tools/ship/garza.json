@@ -12,7 +12,7 @@
  "colours": {
   "plank": "#42301f", "plankAlt": "#3a2a1b", "butt": "#2a1e14", "wale": "#2b1f15", "band": "#a8752e", "red": "#7f2a1c",
   "bottom": "#b8ad94", "boot": "#2b241d", "transom": "#3b2a1b", "window": "#1a1714", "frame": "#a8752e",
-  "rudder": "#2f2318", "deck": "#6b5136", "bulkhead": "#4a3524", "iron": "#333435", "lid": "#7f2a1c"
+  "rudder": "#2f2318", "mast": "#5c4128", "woolding": "#6e5a3c", "block": "#3a2a1b", "deck": "#6b5136", "bulkhead": "#4a3524", "iron": "#333435", "lid": "#7f2a1c"
  },
  "wales": [-0.32, 0.18],
  "band": [0.55, 0.72],

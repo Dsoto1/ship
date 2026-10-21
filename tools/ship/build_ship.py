@@ -343,6 +343,105 @@ def gunports(deck, mesh):
             mesh.box((x + side * 0.02, 0.32, z), (0.03, 0.46, 0.06), C["iron"])
 
 
+def spar(mesh, a, b, r0, r1, colour, sides=8):
+    """A tapered spar from a (radius r0) to b (radius r1), octagonal like a dressed mast."""
+    a, b = np.array(a, float), np.array(b, float)
+    axis = b - a
+    length = np.linalg.norm(axis)
+    if length < 1e-6:
+        return
+    axis /= length
+    other = np.array([1.0, 0, 0]) if abs(axis[0]) < 0.9 else np.array([0, 0, 1.0])
+    u = np.cross(axis, other)
+    u /= np.linalg.norm(u)
+    v = np.cross(axis, u)
+    ring = [u * math.cos(k * 2 * math.pi / sides) + v * math.sin(k * 2 * math.pi / sides) for k in range(sides)]
+    for k in range(sides):
+        q0, q1 = ring[k], ring[(k + 1) % sides]
+        mesh.quad(tuple(a + q0 * r0), tuple(b + q0 * r1), tuple(b + q1 * r1), tuple(a + q1 * r0), colour)
+    for k in range(1, sides - 1):
+        mesh.tri(tuple(b + ring[0] * r1), tuple(b + ring[k] * r1), tuple(b + ring[k + 1] * r1), colour)
+
+
+def disc(mesh, centre, radius, thickness, colour, sides=14):
+    cx, cy, cz = centre
+    for k in range(sides):
+        a0, a1 = k * 2 * math.pi / sides, (k + 1) * 2 * math.pi / sides
+        p0 = (cx + math.cos(a0) * radius, cy, cz + math.sin(a0) * radius)
+        p1 = (cx + math.cos(a1) * radius, cy, cz + math.sin(a1) * radius)
+        mesh.quad(p0, p1, (p1[0], cy + thickness, p1[2]), (p0[0], cy + thickness, p0[2]), colour)
+        mesh.tri((cx, cy + thickness, cz), (p1[0], cy + thickness, p1[2]), (p0[0], cy + thickness, p0[2]), colour)
+        mesh.tri((cx, cy, cz), (p0[0], cy, p0[2]), (p1[0], cy, p1[2]), colour)
+
+
+def masts(deck, mesh):
+    """The fore and main, square-rigged, and the lateen mizzen, with their tops, topmast, yards and the
+    bowsprit. Where they stand and how high the yards hang are ShipView's rule (it hangs the sails and
+    rigging from them): the mast cells of the deck plan; the main 12 m, the fore 9.5 m."""
+    spar_c, iron, rope = C["mast"], C["iron"], C["woolding"]
+    cells = [(x, y) for y, row in enumerate(deck.rows) for x, ch in enumerate(row)
+             if ch == "#" and 0 < x < len(row) - 1 and 0 < y < len(deck.rows) - 1
+             and all(deck.rows[y + dy][x + dx] == "." for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))]
+    cells.sort(key=lambda c: c[1])
+    square = cells[:-1] if len(cells) >= 3 else cells
+    for i, (x, y) in enumerate(square):
+        main = i == min(1, len(square) - 1)
+        height = 12.0 if main else 9.5
+        foot = np.array([x, deck.height_at(x, y), y], float)
+        beam = deck.half_width(y)
+        r = 0.22 if main else 0.18
+        spar(mesh, foot - [0, 0.3, 0], foot + [0, height * 0.74, 0], r, r * 0.78, spar_c)
+        # Wooldings: rope bands round the lower mast.
+        for t in np.arange(0.12, 0.62, 0.09):
+            disc(mesh, tuple(foot + [0, height * t, 0]), r * 0.97 + 0.02, 0.07, rope, 10)
+        # The top: a round platform with a low rail on the crosstrees, and the cap above it.
+        top = foot + [0, height * 0.72, 0]
+        size = 0.7 if main else 0.55
+        spar(mesh, top + [-size, -0.08, 0], top + [size, -0.08, 0], 0.06, 0.06, spar_c, 6)
+        spar(mesh, top + [0, -0.08, -size * 0.8], top + [0, -0.08, size * 0.8], 0.06, 0.06, spar_c, 6)
+        disc(mesh, tuple(top), size, 0.08, spar_c)
+        for k in range(12):
+            ang = k * math.pi / 6
+            post = top + [math.cos(ang) * size * 0.95, 0, math.sin(ang) * size * 0.95]
+            spar(mesh, post, post + [0, 0.38, 0], 0.025, 0.025, spar_c, 5)
+        disc(mesh, tuple(top + [0, 0.38, 0]), size * 0.98, 0.04, spar_c)
+        mesh.box(tuple(top + [0, 0.62, 0]), (r * 2.6, 0.22, r * 3.4), spar_c)
+        # The topmast above the cap, to the masthead.
+        spar(mesh, top + [0, -0.4, -r * 0.9], foot + [0, height + 0.15, -r * 0.9 * 0.3], r * 0.62, r * 0.38, spar_c)
+        mesh.box(tuple(foot + [0, height + 0.18, 0]), (0.16, 0.1, 0.16), spar_c)
+        # The yards: the course and, on the main, the topsail; tapered to the arms, slung at the middle.
+        yards = [(height * (0.66 if main else 0.8), beam * (1.45 if main else 1.2), 0.1)]
+        if main:
+            yards.append((height * 0.9, beam * 1.45 * 0.55, 0.07))
+        for yh, half, yr in yards:
+            centre = foot + [0, yh, 0]
+            spar(mesh, centre, centre + [-half, 0, 0], yr, yr * 0.45, spar_c)
+            spar(mesh, centre, centre + [half, 0, 0], yr, yr * 0.45, spar_c)
+            mesh.box(tuple(centre + [0, 0, 0.12]), (0.3, yr * 2.4, 0.16), iron)
+            for side in (-1, 1):
+                mesh.box(tuple(centre + [side * (half - 0.18), -0.06, 0]), (0.08, 0.14, 0.1), C["block"])
+                mesh.box(tuple(centre + [side * half * 0.5, -0.12, 0]), (0.1, 0.16, 0.1), C["block"])
+    if len(cells) >= 3:
+        x, y = cells[-1]
+        foot = np.array([x, deck.height_at(x, y), y], float)
+        spar(mesh, foot - [0, 0.2, 0], foot + [0, 6.5, 0], 0.14, 0.09, spar_c)
+        for t in (0.15, 0.3, 0.45):
+            disc(mesh, tuple(foot + [0, 6.5 * t, 0]), 0.15, 0.06, rope, 10)
+        # The lateen yard, in two pieces fished together as they were.
+        low, high = foot + [0, 1.4, 2.2], foot + [0, 7.6, -3.2]
+        mid = (low + high) / 2
+        spar(mesh, low, mid, 0.05, 0.08, spar_c)
+        spar(mesh, mid, high, 0.08, 0.035, spar_c)
+        mesh.box(tuple(foot + [0, 6.2, 0.05]), (0.22, 0.24, 0.22), C["block"])
+    # The bowsprit, from the forecastle out over the stem, with its gammoning.
+    cx = deck.centre
+    a, b = np.array([cx, 1.7, 0.8]), np.array([cx, 3.2, deck.bow - 4.5])
+    spar(mesh, a, b, 0.14, 0.07, spar_c)
+    for t in (0.45, 0.52):
+        p = a + (b - a) * t
+        disc(mesh, tuple(p - [0, 0.05, 0]), 0.17, 0.1, rope, 10)
+
+
 def write_glb(mesh, path):
     p = np.array(mesh.p, np.float32)
     c = np.array(mesh.c, np.float32)
@@ -391,6 +490,7 @@ def main():
     transom_and_poop(deck, mesh)
     forecastle(deck, mesh)
     gunports(deck, mesh)
+    masts(deck, mesh)
     write_glb(mesh, OUT)
     print(f"{OUT.relative_to(ROOT)}: {len(mesh.i) // 3} triangles")
 

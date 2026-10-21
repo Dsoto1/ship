@@ -139,6 +139,13 @@ public sealed class VoyageState
     /// <summary>Developer tool for screenshots and testing: sets the bilge level.</summary>
     public void DeveloperSetBilge(double bilge) => Bilge = Math.Clamp(bilge, 0, 99);
 
+    /// <summary>Developer only: sets the hull and rigging, to look at her damaged.</summary>
+    public void DeveloperSetCondition(double? hull, double? rigging)
+    {
+        Hull = Math.Clamp(hull ?? Hull, 1, 100);
+        Rigging = Math.Clamp(rigging ?? Rigging, 0, 100);
+    }
+
     /// <summary>Sets every value while loading a save. The loader validates them.</summary>
     internal void Restore(double sailed, double hull, double bilge, double rigging, double speed, bool watchKept, VoyageOutcome outcome)
     {

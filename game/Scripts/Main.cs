@@ -333,7 +333,9 @@ public partial class Main : Node3D
                     break;
             }
         };
-        _departure.Finished += () =>
+        _departure.Finished += SailNow;
+        _portHud.SetSailRequested += BeginDeparture;
+        void SailNow()
         {
             var result = ExpeditionScenario.SetSail(_runner);
             _hud.Visible = true;
@@ -351,8 +353,9 @@ public partial class Main : Node3D
             _hud.SetSpeedNames(VoyageSpeedNames, VoyageSpeedTips);
             _hud.ClosePanel();
             _hud.ShowStatus("Lines cast off. La Bocana falls astern.");
-        };
-        _portHud.SetSailRequested += BeginDeparture;
+        }
+
+        _sailNow = SailNow;
 
         // Each new voyage gets its own seed; the seed is saved, so a reported problem can be replayed.
         var seed = (ulong)System.Random.Shared.NextInt64();
@@ -450,7 +453,9 @@ public partial class Main : Node3D
         var t = (float)_elapsed;
         var swell = inPort ? 0.15f : 0.35f + _seaState * 0.65f;
         var leaving = inPort && _departure.Playing ? _departure.Ship : (Offset: Vector3.Zero, Turn: 0f);
-        _ship.RotationDegrees = new Vector3(Mathf.Sin(t * 0.45f) * 0.8f * swell, inPort ? -90f + leaving.Turn : 0, Mathf.Sin(t * 0.6f) * 1.6f * swell);
+        // Water in her lies to leeward: she lists as the bilge fills.
+        var list = _sink * 4.5f;
+        _ship.RotationDegrees = new Vector3(Mathf.Sin(t * 0.45f) * 0.8f * swell, inPort ? -90f + leaving.Turn : 0, Mathf.Sin(t * 0.6f) * 1.6f * swell + list);
         _ship.Position = (inPort ? _port.Berth + leaving.Offset : _shipCentre) + new Vector3(0, Mathf.Sin(t * 0.7f) * 0.08f * swell - _sink, 0);
 
         var clock = _runner.Campaign.Clock;
@@ -531,6 +536,7 @@ public partial class Main : Node3D
         var cooking = _runner.Campaign.ActiveTasks.Values.Any(task => task.DefinitionId == "task.cook");
         // Sails turn see-through at working zoom so they never hide the crew (ART_BIBLE.md 3); zoom out to see them whole.
         // Set sails fade at working zoom so they never hide the crew; furled at the quay they hide no one.
+        _deck.ShowCondition(voyage?.Hull ?? 100, voyage?.Rigging ?? 100);
         _deck.UpdateLook(_world.Darkness, inPort ? 1f : Mathf.Lerp(0.38f, 1f, Mathf.SmoothStep(18f, 32f, _camera.Size)), t, cooking, inPort ? 3.2f : SailSetting(voyage), (float)delta, furled: inPort);
         foreach (var bird in _birds)
         {
@@ -1489,6 +1495,8 @@ public partial class Main : Node3D
     private string? _developerChoice;
     private Expedition.Simulation.Voyage.SailPlan? _developerSail;
     private double? _forceBilge;
+    private double? _forceHull;
+    private double? _forceRigging;
     private string? _developerSelect;
     private string? _developerInspect;
     private string? _developerLook;
@@ -1504,6 +1512,8 @@ public partial class Main : Node3D
     private float? _developerYaw;
     private string? _developerBuy;
     private int _developerHire;
+    private bool _developerSea;
+    private Action? _sailNow;
     private int _developerAfter;
     private string? _developerScene;
     private bool _developerDepart;
@@ -1672,6 +1682,16 @@ public partial class Main : Node3D
             StartProfile();
         }
 
+        // --sea (with --hire=N) sails at once, without the departure, to look at her under way.
+        if (_developerSea && _runner.Campaign.Port is not null)
+        {
+            _sailNow?.Invoke();
+            if (_startZoom is { } zoom)
+            {
+                _camera.Size = zoom;
+            }
+        }
+
         // --depart plays the departure at once (with --shotdelay to catch a moment of it).
         if (_developerDepart && _runner.Campaign.Port is not null)
         {
@@ -1696,6 +1716,8 @@ public partial class Main : Node3D
                 case "testdeck": _testDeck = true; break;
                 case "choose": _developerChoice = value; break;
                 case "sail" when Enum.TryParse<Expedition.Simulation.Voyage.SailPlan>(value, out var plan): _developerSail = plan; break;
+                case "hull" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var hullLeft): _forceHull = hullLeft; break;
+                case "rigging" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var riggingLeft): _forceRigging = riggingLeft; break;
                 case "bilge" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var bilge): _forceBilge = bilge; break;
                 case "zoom" when float.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var zoom): _startZoom = zoom; break;
                 case "select": _developerSelect = value; break;
@@ -1717,6 +1739,7 @@ public partial class Main : Node3D
                 case "profile": _developerProfile = true; break;
                 case "shotdelay" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var wait): _shotDelay = wait; break;
                 case "hire" when int.TryParse(value, out var hands): _developerHire = hands; break;
+                case "sea": _developerSea = true; break;
                 case "after" when int.TryParse(value, out var later): _developerAfter = later; break;
                 case "yaw" when float.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var yaw): _developerYaw = yaw; break;
             }
@@ -1749,6 +1772,11 @@ public partial class Main : Node3D
             {
                 _runner.SetDuties(id, []);
             }
+        }
+
+        if (_forceHull is not null || _forceRigging is not null)
+        {
+            ship.DeveloperSetCondition(_forceHull, _forceRigging);
         }
 
         if (_forceBilge is { } bilge)

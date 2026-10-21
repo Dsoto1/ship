@@ -42,6 +42,11 @@ public partial class ShipView : Node3D
     // masts, rigging, sails, lanterns.
     private const string HullModel = "res://Assets/Ship/garza.glb";
     private bool _modelled;
+    private Node3D _damage = null!;
+    private float _wear;
+    private int _holes;
+    private int _patches;
+    private int _worstHoles;
     private float _sternZ;
 
     /// <summary>The hull's centre line (world X) and its length from stem to stern.</summary>
@@ -67,6 +72,10 @@ public partial class ShipView : Node3D
         _furls.Clear();
         _lanterns.Clear();
         _galleyFire = null;
+        _wear = 0;
+        _holes = _patches = _worstHoles = 0;
+        _damage = new Node3D { Name = "Damage" };
+        AddChild(_damage);
         _location = location;
         _modelled = location.Id == "location.garza" && ResourceLoader.Exists(HullModel);
         MeasureHull(location);
@@ -143,6 +152,91 @@ public partial class ShipView : Node3D
             sail.SetShaderParameter("opacity", sailOpacity);
         }
     }
+
+    /// <summary>
+    /// What the voyage has done to her, shown (ART_BIBLE.md 6.3): worn sails go thin, holed and ragged as
+    /// the rigging falls; shot and strike damage to the hull shows as stove-in, splintered planks on her
+    /// sides, one for every tenth of the hull lost, and those the carpenter has since made good stay as
+    /// pale new planks. The simulation keeps the numbers; this only reads them.
+    /// </summary>
+    /// <param name="hull">Hull condition, 0..100.</param>
+    /// <param name="rigging">Rigging condition, 0..100.</param>
+    public void ShowCondition(double hull, double rigging)
+    {
+        var wear = (float)Math.Clamp(1 - rigging / 100, 0, 1);
+        if (Math.Abs(wear - _wear) > 0.004f)
+        {
+            _wear = wear;
+            foreach (var sail in _sails)
+            {
+                sail.SetShaderParameter("wear", wear);
+            }
+        }
+
+        var holes = (int)Math.Clamp(Math.Round((100 - hull) / 10), 0, Wounds.Length);
+        _worstHoles = Math.Max(_worstHoles, holes);
+        if (holes == _holes && _worstHoles == _patches + holes)
+        {
+            return;
+        }
+
+        _holes = holes;
+        _patches = _worstHoles - holes;
+        foreach (var child in _damage.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        // The worst wounds stay open longest: holes are the first of the list, patches the next.
+        for (var i = 0; i < _worstHoles; i++)
+        {
+            AddWound(Wounds[i], open: i < holes);
+        }
+    }
+
+    // Where the hull takes its wounds, in order: (side, row, height above the waterline).
+    private static readonly (float Side, float Z, float Y)[] Wounds =
+    [
+        (1, 11.5f, 0.45f), (-1, 8.2f, 0.25f), (1, 15.6f, 0.1f), (-1, 13.4f, 0.55f), (1, 6.4f, 0.3f),
+        (-1, 17.2f, 0.4f), (1, 9.4f, 0.0f), (-1, 4.8f, 0.5f), (1, 13.6f, 0.75f), (-1, 10.8f, 0.05f),
+    ];
+
+    private void AddWound((float Side, float Z, float Y) at, bool open)
+    {
+        var width = HalfWidthAt(at.Z) * 1.03f + 0.03f;
+        var centre = new Vector3(CentreX + at.Side * width, at.Y, at.Z);
+        var random = new Random((int)(at.Z * 100));
+        if (!open)
+        {
+            // Made good: two lengths of new plank, paler than the weathered strakes, nailed over the hole.
+            for (var k = 0; k < 2; k++)
+            {
+                WoundBox(centre + new Vector3(at.Side * 0.02f, k * 0.17f - 0.08f, (float)random.NextDouble() * 0.2f - 0.1f),
+                    new Vector3(0.04f, 0.17f, 1.0f + k * 0.25f), new Color(0.62f, 0.5f, 0.34f));
+            }
+
+            return;
+        }
+
+        // Stove in: a dark hole, and splinters standing out round it.
+        WoundBox(centre, new Vector3(0.05f, 0.4f, 0.75f), new Color(0.06f, 0.045f, 0.03f));
+        for (var k = 0; k < 7; k++)
+        {
+            var angle = (float)(k * Math.Tau / 7 + random.NextDouble() * 0.5);
+            var foot = centre + new Vector3(at.Side * 0.03f, Mathf.Sin(angle) * 0.23f, Mathf.Cos(angle) * 0.4f);
+            var tip = foot + new Vector3(at.Side * (0.12f + (float)random.NextDouble() * 0.12f), Mathf.Sin(angle) * 0.08f, Mathf.Cos(angle) * (0.1f + (float)random.NextDouble() * 0.12f));
+            var direction = tip - foot;
+            _damage.AddChild(new MeshInstance3D
+            {
+                Mesh = new CylinderMesh { TopRadius = 0.004f, BottomRadius = 0.03f, Height = direction.Length(), RadialSegments = 4, Rings = 1 },
+                MaterialOverride = Plain(new Color(0.7f, 0.58f, 0.4f)),
+                Transform = new Transform3D(new Basis(new Quaternion(Vector3.Up, direction.Normalized())), (foot + tip) / 2f),
+            });
+        }
+    }
+
+    private void WoundBox(Vector3 position, Vector3 size, Color colour) =>
+        _damage.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = size }, MaterialOverride = Plain(colour), Position = position });
 
     // Half beam per deck row: the walkable span plus the bulwark, so the hull hugs the deck.
     private void MeasureHull(LocationDefinition location)
@@ -358,7 +452,6 @@ public partial class ShipView : Node3D
         // The test deck's small raised deck in the bows (the Garza's forecastle is in her deck plan).
         if (_modelled)
         {
-            AddSpar(new Vector3(CentreX, 1.7f, 0.8f), new Vector3(CentreX, 3.2f, Length.Bow - 4.5f), 0.12f, Spar);
             return;
         }
 
@@ -540,10 +633,15 @@ public partial class ShipView : Node3D
         var mizzenFoot = steppedMizzen is { } stepped
             ? stepped with { Y = HeightAt(stepped.X, stepped.Z) }
             : new Vector3(CentreX, 2.6f, (_sternZ + Length.Stern) / 2f);
-        AddSpar(mizzenFoot, mizzenFoot + new Vector3(0, 6.5f, 0), 0.12f, Spar);
         var yardLow = mizzenFoot + new Vector3(0, 1.4f, 2.2f);
         var yardHigh = mizzenFoot + new Vector3(0, 7.6f, -3.2f);
-        AddSpar(yardLow, yardHigh, 0.06f, Spar);
+        // The Garza's spars are in her model (tools/ship/build_ship.py); the sails and rigging stay here.
+        if (!_modelled)
+        {
+            AddSpar(mizzenFoot, mizzenFoot + new Vector3(0, 6.5f, 0), 0.12f, Spar);
+            AddSpar(yardLow, yardHigh, 0.06f, Spar);
+        }
+
         AddLateenSail(yardLow, yardHigh, mizzenFoot + new Vector3(0, 0.6f, -0.9f));
 
         // Forestay from the foremast head to the bowsprit, and a stay between the masts.
@@ -561,10 +659,13 @@ public partial class ShipView : Node3D
 
     private void AddMast(Vector3 foot, float height, float beam, bool main, bool fore)
     {
-        AddSpar(foot, foot + new Vector3(0, height, 0), main ? 0.2f : 0.16f, Spar);
+        if (!_modelled)
+        {
+            AddSpar(foot, foot + new Vector3(0, height, 0), main ? 0.2f : 0.16f, Spar);
+        }
 
         // Fighting top on the mainmast.
-        if (main)
+        if (main && !_modelled)
         {
             AddMesh(new CylinderMesh { TopRadius = 0.55f, BottomRadius = 0.4f, Height = 0.35f }, Plain(Spar), foot + new Vector3(0, height * 0.72f, 0));
         }
@@ -572,12 +673,20 @@ public partial class ShipView : Node3D
         // Course yard and sail, plus a small topsail on the mainmast.
         var courseYard = height * (main ? 0.66f : 0.8f);
         var yardHalf = beam * (main ? 1.45f : 1.2f);
-        AddSpar(foot + new Vector3(-yardHalf, courseYard, 0), foot + new Vector3(yardHalf, courseYard, 0), 0.07f, Spar);
+        if (!_modelled)
+        {
+            AddSpar(foot + new Vector3(-yardHalf, courseYard, 0), foot + new Vector3(yardHalf, courseYard, 0), 0.07f, Spar);
+        }
+
         AddSquareSail(foot + new Vector3(0, courseYard, 0.15f), yardHalf * 1.9f, courseYard - 1.9f, belly: 1.2f, tier: 0);
         if (main)
         {
             var topYard = height * 0.9f;
-            AddSpar(foot + new Vector3(-yardHalf * 0.55f, topYard, 0), foot + new Vector3(yardHalf * 0.55f, topYard, 0), 0.05f, Spar);
+            if (!_modelled)
+            {
+                AddSpar(foot + new Vector3(-yardHalf * 0.55f, topYard, 0), foot + new Vector3(yardHalf * 0.55f, topYard, 0), 0.05f, Spar);
+            }
+
             AddSquareSail(foot + new Vector3(0, topYard, 0.1f), yardHalf * 1.05f, topYard - courseYard - 0.6f, belly: 0.6f, tier: 1);
             AddPennant(foot + new Vector3(0, height + 0.05f, 0));
         }
@@ -723,6 +832,8 @@ public partial class ShipView : Node3D
     {
         tool.GenerateNormals();
         var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://Shaders/sail.gdshader") };
+        material.SetShaderParameter("seed", _sails.Count * 3.7f);
+        material.SetShaderParameter("wear", _wear);
         _sails.Add(material);
         var instance = new MeshInstance3D { Mesh = tool.Commit(), MaterialOverride = material };
         (parent ?? this).AddChild(instance);
