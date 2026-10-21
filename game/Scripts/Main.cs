@@ -1137,7 +1137,9 @@ public partial class Main : Node3D
             {
                 var character = _runner.Campaign.Characters[id];
                 var officer = id == _runner.Campaign.CaptainId || character.StatusId is "status.officer" or "status.gentleman";
-                figure = CrewFigure.Create(character.Appearance, _content.Appearance, officer, character.PersonId);
+                // The captain is no person of the port, but has a model of his own (Assets/Characters/person.captain).
+                figure = CrewFigure.Create(character.Appearance, _content.Appearance, officer,
+                    character.PersonId ?? (id == _runner.Campaign.CaptainId ? "person.captain" : null));
                 _figures[id] = figure;
             }
 

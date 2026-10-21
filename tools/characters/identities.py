@@ -253,6 +253,21 @@ def people(m, f):
         features=["a hidalgo's long, hawk-nosed face and pointed beard, greying", "a good black cloak over a madder doublet", "a sword he wears like a habit; no servant"],
         research=[("hidalgo dress: capa, jubón, gorra, sword", BERNIS)])
 
+    # The captain (ExpeditionScenario): not a person of the port, so his record carries its own name and look.
+    r["person.captain"] = dict(sex="Male", age=41, apparent=43, height=174, build="wiry",
+        posture={"stoop": -0.2, "headForward": 0.0, "shoulders": -0.1},
+        face={"width": -0.2, "jaw": 0.5, "chin": 0.3, "chinForward": 0.2, "nose": 0.4, "noseLength": 0.4, "noseBridge": 0.5, "brow": 0.6, "cheeks": -0.5, "cheekbones": 0.5, "mouth": -0.2, "sag": 0.1},
+        skin="#a87a5c", weathering=0.75, eyes="eyes.darkbrown",
+        hair=hair({"mesh": "Hair_SimpleParted", "colour": "hair.darkbrown", "grey": 0.2}, {"mesh": "Hair_Beard", "trim": 0.45, "colour": "hair.darkbrown", "grey": 0.3}, {"mesh": "Eyebrows_Regular", "colour": "hair.darkbrown", "grey": 0.1}),
+        clothing=flatten([hose(m, "wool.black"), shirt(m, "linen.bleached", wear=0.35), breeches(m, "wool.black", wear=0.45),
+                          doublet(m, "wool.woad", wear=0.5), belt(m), shoes(m, "leather.dark")]),
+        accessories=flatten([hat(0.15, 0.045, "felt.black"), [{"id": "equip_sword_01", "shape": "tool", "side": "left", "height": m["waist"] - 0.02, "material": "metal", "colour": "iron"}]]),
+        walk="walk", work="talk",
+        name="Captain Álvaro", look="The Garza's captain: a lean, sea-weathered Almaran in a woad doublet and black breeches, a short dark beard going grey.",
+        occupation="captain of the Garza", status="status.officer",
+        features=["lean and sea-weathered, a short dark beard going grey", "a woad-blue doublet, black breeches and hose, a brimmed felt hat", "a sword at his side, worn for the Company's sake"],
+        research=[("a merchant captain's dress, Almara: jubón, capa, sombrero", BERNIS)])
+
     r["person.corbalan"] = dict(sex="Male", age=55, apparent=56, height=169, build="heavy",
         posture={"stoop": 0.2, "headForward": 0.2, "shoulders": 0.1},
         face={"width": 0.6, "jaw": 0.3, "chin": -0.3, "nose": 0.6, "noseLength": 0.1, "noseBridge": 0.3, "brow": 0.2, "cheeks": 0.8, "mouth": 0.2, "sag": 0.8},
@@ -539,9 +554,10 @@ def crowd(m, f, count=24, seed=1519):
 
 
 def record(pid, spec, rules):
-    person = next((p for p in rules["people"] if p["id"] == pid), None) or {
+    person = next((p for p in rules["people"] if p["id"] == pid), None) or ({
+        "name": spec["name"], "look": spec["look"], "occupation": spec["occupation"], "status": spec["status"]} if "name" in spec else {
         "name": f"A {spec.get('kind', 'passer-by')}", "look": f"One of the waterfront crowd: {spec.get('kind', 'a passer-by')}.",
-        "occupation": spec.get("kind", ""), "status": "crowd"}
+        "occupation": spec.get("kind", ""), "status": "crowd"})
     looks = {"build": spec["build"], "posture": spec["posture"], "face": spec["face"], "skin": spec["skin"],
              "weathering": spec["weathering"], "eyes": spec["eyes"], "hair": spec["hair"]}
     return {

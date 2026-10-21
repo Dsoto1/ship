@@ -1490,3 +1490,20 @@ Tests: 428 (3 new in `TavernTests`). Screenshots: `docs/screenshots/tavern-insid
 
 Tests: 433 (5 new in `TavernEveningTests`). Screenshots: `docs/screenshots/tavern-song.jpg`,
 `tavern-dice.jpg`.
+
+## Heard and seen: dice and song sound, the captain's own model, benches (owner's request)
+
+- **Sound** (7 CC0 Freesound recordings; `tools/fetch_assets.py` fetches one-shots without looping):
+  - dice: a rattle in the cup when a game starts, then throws on the table every few seconds while
+    it goes round;
+  - songs: each written song names its voice (a man alone, a woman, a cradle song, the cook at his
+    pots, or a room of men in chorus) and plays while it is sung. It is full inside the tavern and
+    faint from the square, and the room's talk drops under it.
+- **The captain** had no model of his own and was still drawn as the old box figure. He now has one
+  (`person.captain`): lean and sea-weathered, a short dark beard going grey, a woad doublet with black
+  breeches and hose, a brimmed felt hat and a sword. His portrait is baked too.
+- **Benches:** the seats on the square in front of the tavern had tables but nothing to sit on.
+  Every outdoor seat now has a bench under it (seats in a row share one) or a stool at a table's end,
+  and the porters resting at the pier head sit on crates.
+
+Screenshots: `docs/screenshots/captain-model.jpg`, `tavern-benches.jpg`.

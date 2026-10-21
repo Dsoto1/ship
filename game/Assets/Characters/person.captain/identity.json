@@ -1,0 +1,220 @@
+{
+ "characterId": "person.captain",
+ "name": "Captain Álvaro",
+ "about": "Visual identity record (CHARACTER_ART §2), written for C-2 from person.captain's description in data/port/bocana.json: \"The Garza's captain: a lean, sea-weathered Almaran in a woad doublet and black breeches, a short dark beard going grey.\" The simulation is the truth for who they are; this says how they look. Never reroll it (§40).",
+ "sex": "Male",
+ "age": 41,
+ "apparentAge": 43,
+ "heightCm": 174,
+ "seed": 10783,
+ "looks": {
+  "build": "wiry",
+  "posture": {
+   "stoop": -0.2,
+   "headForward": 0.0,
+   "shoulders": -0.1
+  },
+  "face": {
+   "width": -0.2,
+   "jaw": 0.5,
+   "chin": 0.3,
+   "chinForward": 0.2,
+   "nose": 0.4,
+   "noseLength": 0.4,
+   "noseBridge": 0.5,
+   "brow": 0.6,
+   "cheeks": -0.5,
+   "cheekbones": 0.5,
+   "mouth": -0.2,
+   "sag": 0.1
+  },
+  "skin": "#a87a5c",
+  "weathering": 0.75,
+  "eyes": "eyes.darkbrown",
+  "hair": [
+   {
+    "mesh": "Hair_SimpleParted",
+    "colour": "hair.darkbrown",
+    "grey": 0.2
+   },
+   {
+    "mesh": "Hair_Beard",
+    "trim": 0.45,
+    "colour": "hair.darkbrown",
+    "grey": 0.3
+   },
+   {
+    "mesh": "Eyebrows_Regular",
+    "colour": "hair.darkbrown",
+    "grey": 0.1
+   }
+  ]
+ },
+ "distinctiveFeatures": [
+  "lean and sea-weathered, a short dark beard going grey",
+  "a woad-blue doublet, black breeches and hose, a brimmed felt hat",
+  "a sword at his side, worn for the Company's sake"
+ ],
+ "marks": [],
+ "occupationVisuals": "captain of the Garza",
+ "statusVisuals": "status.officer",
+ "clothing": [
+  {
+   "id": "garment_wool_hose_01",
+   "layer": "lower",
+   "shape": "shell",
+   "leg": [
+    0.09,
+    0.5519999999999999
+   ],
+   "material": "wool",
+   "colour": "wool.black",
+   "thickness": 0.003,
+   "wear": 0.4
+  },
+  {
+   "id": "garment_linen_shirt_01",
+   "layer": "base",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.6
+   ],
+   "collar": [
+    1.49,
+    1.56
+   ],
+   "sleeve": 0.69,
+   "material": "linen",
+   "colour": "linen.bleached",
+   "thickness": 0.008,
+   "loose": 0.03,
+   "drape": 0.9,
+   "band": 0.004,
+   "bandWidth": 0.02,
+   "wear": 0.35
+  },
+  {
+   "id": "garment_wool_breeches_01",
+   "layer": "lower",
+   "shape": "shell",
+   "torso": [
+    0.879,
+    1.079
+   ],
+   "leg": [
+    0.472,
+    1.049
+   ],
+   "material": "wool",
+   "colour": "wool.black",
+   "thickness": 0.011,
+   "loose": 0.022,
+   "band": 0.004,
+   "bandWidth": 0.03,
+   "wear": 0.45
+  },
+  {
+   "id": "garment_wool_doublet_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    0.9490000000000001,
+    1.6
+   ],
+   "collar": [
+    1.51,
+    1.57
+   ],
+   "material": "wool",
+   "colour": "wool.woad",
+   "thickness": 0.014,
+   "loose": 0.006,
+   "drape": 0.8,
+   "wear": 0.5,
+   "sleeve": 0.6699999999999999,
+   "band": 0.004,
+   "bandWidth": 0.025
+  },
+  {
+   "id": "garment_wool_doublet_01_skirt",
+   "layer": "outer",
+   "shape": "skirt",
+   "top": 0.9989999999999999,
+   "bottom": 0.8290000000000001,
+   "flare": 0.35,
+   "material": "wool",
+   "colour": "wool.woad",
+   "thickness": 0.022,
+   "wear": 0.5
+  },
+  {
+   "id": "garment_leather_belt_01",
+   "layer": "outer",
+   "shape": "shell",
+   "torso": [
+    1.034,
+    1.079
+   ],
+   "material": "leather",
+   "colour": "leather.dark",
+   "thickness": 0.03,
+   "hides": false,
+   "wear": 0.5
+  },
+  {
+   "id": "garment_leather_shoes_01",
+   "layer": "footwear",
+   "shape": "shell",
+   "feet": 0.116,
+   "material": "leather",
+   "colour": "leather.dark",
+   "thickness": 0.008,
+   "wear": 0.6
+  }
+ ],
+ "accessories": [
+  {
+   "id": "acc_hat_brim_01",
+   "shape": "brim",
+   "radius": 0.15,
+   "droop": 0.01,
+   "material": "felt",
+   "colour": "felt.black",
+   "raise": 0.012
+  },
+  {
+   "id": "acc_hat_crown_01",
+   "shape": "crown",
+   "radius": 0.1,
+   "topRadius": 0.095,
+   "height": 0.045,
+   "material": "felt",
+   "colour": "felt.black"
+  },
+  {
+   "id": "equip_sword_01",
+   "shape": "tool",
+   "side": "left",
+   "height": 1.049,
+   "material": "metal",
+   "colour": "iron"
+  }
+ ],
+ "equipment": [],
+ "animation": {
+  "walk": "walk",
+  "walkSpeed": 1.0,
+  "work": "talk",
+  "idle": "idle"
+ },
+ "research": [
+  {
+   "item": "a merchant captain's dress, Almara: jubón, capa, sombrero",
+   "source": "Carmen Bernis, Indumentaria española en tiempos de Carlos V (1962)",
+   "region": "Castile/Andalusia",
+   "dates": "c. 1500–1530",
+   "confidence": "medium"
+  }
+ ]
+}

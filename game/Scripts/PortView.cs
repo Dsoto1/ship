@@ -122,6 +122,7 @@ public partial class PortView : Node3D
             BuildFeature(feature);
         }
 
+        BuildSeats();
         BuildTownBehind();
         Lanes.Clear();
         Idlers.Clear();
@@ -1183,6 +1184,64 @@ public partial class PortView : Node3D
         Roof(new Vector3(41.5f, 19f, -21.5f), new Vector3(46.5f, 19f, -21.5f), 22.5f, -24f);
         Roof(new Vector3(46.5f, 19f, -26.5f), new Vector3(41.5f, 19f, -26.5f), 22.5f, -24f);
 
+    }
+
+    // Something to sit on under every seat out of doors: benches along the tavern's tables (a run of seats
+    // facing the same way becomes one bench), and a crate for the porters resting by the pier head. Seats
+    // in rooms have their own furniture; the convict's is the gaol cart.
+    private void BuildSeats()
+    {
+        var seats = _location.Spots.Where(s => s.Kind == "SitPoint" && _location.RoomAt(s.Cell) is null && !s.Id.Contains("gaol", StringComparison.Ordinal)).ToList();
+        foreach (var crate in seats.Where(s => s.Id.Contains("cargo_rest", StringComparison.Ordinal)))
+        {
+            var at = new Vector3(crate.Cell.X, HeightAt(crate.Cell.X, crate.Cell.Y), crate.Cell.Y - 0.12f);
+            AddBox(at + new Vector3(0, 0.22f, 0), new Vector3(0.62f, 0.44f, 0.5f), Wood.Darkened(0.1f));
+            AddBox(at + new Vector3(0, 0.45f, 0), new Vector3(0.64f, 0.03f, 0.52f), Wood);
+        }
+
+        var benches = seats.Where(s => !s.Id.Contains("cargo_rest", StringComparison.Ordinal)).ToList();
+        foreach (var row in benches.Where(s => s.Face is "N" or "S").GroupBy(s => (s.Cell.Y, s.Face)))
+        {
+            // Seats in a row two cells apart or closer share a bench.
+            var xs = row.Select(s => s.Cell.X).Order().ToList();
+            var start = xs[0];
+            for (var i = 1; i <= xs.Count; i++)
+            {
+                if (i < xs.Count && xs[i] - xs[i - 1] <= 2)
+                {
+                    continue;
+                }
+
+                // The bench sits a little behind the seat, away from the table it faces.
+                var behind = row.Key.Face == "S" ? -0.12f : 0.12f;
+                Bench(start - 0.6f, xs[i - 1] + 0.6f, row.Key.Y + behind, alongX: true);
+                if (i < xs.Count)
+                {
+                    start = xs[i];
+                }
+            }
+        }
+
+        foreach (var stool in benches.Where(s => s.Face is not ("N" or "S")))
+        {
+            var behind = stool.Face == "E" ? -0.12f : 0.12f;
+            Bench(stool.Cell.Y - 0.35f, stool.Cell.Y + 0.35f, stool.Cell.X + behind, alongX: false);
+        }
+    }
+
+    // A plank bench at seat height on two trestle legs, from <paramref name="from"/> to <paramref name="to"/>
+    // along x (or z), at <paramref name="across"/> on the other axis.
+    private void Bench(float from, float to, float across, bool alongX)
+    {
+        var middle = (from + to) / 2f;
+        var length = to - from;
+        Vector3 At(float along, float y) => alongX ? new Vector3(along, HeightAt(along, across) + y, across) : new Vector3(across, HeightAt(across, along) + y, along);
+        var top = alongX ? new Vector3(length, 0.06f, 0.36f) : new Vector3(0.36f, 0.06f, length);
+        AddBox(At(middle, 0.43f), top, Wood.Darkened(0.05f));
+        foreach (var leg in new[] { from + 0.12f, to - 0.12f })
+        {
+            AddBox(At(leg, 0.2f), alongX ? new Vector3(0.08f, 0.4f, 0.3f) : new Vector3(0.3f, 0.4f, 0.08f), Wood.Darkened(0.25f));
+        }
     }
 
     // ---- beyond the ends of the map: the old town to the west, the fishermen's shore to the east
