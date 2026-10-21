@@ -36,6 +36,12 @@ public partial class ShipView : Node3D
     private OmniLight3D? _galleyFire;
     private float[] _halfWidth = [];
     private LocationDefinition _location = null!;
+
+    // The Garza's hull is a built model (tools/ship/build_ship.py): her outside, stem, transom, rudder and
+    // poop. The view then draws only what is walked on and what moves: decks, inner bulwarks, rails,
+    // masts, rigging, sails, lanterns.
+    private const string HullModel = "res://Assets/Ship/garza.glb";
+    private bool _modelled;
     private float _sternZ;
 
     /// <summary>The hull's centre line (world X) and its length from stem to stern.</summary>
@@ -62,7 +68,18 @@ public partial class ShipView : Node3D
         _lanterns.Clear();
         _galleyFire = null;
         _location = location;
+        _modelled = location.Id == "location.garza" && ResourceLoader.Exists(HullModel);
         MeasureHull(location);
+        if (_modelled)
+        {
+            var model = GD.Load<PackedScene>(HullModel).Instantiate<Node3D>();
+            model.Name = "HullModel";
+            AddChild(model);
+            foreach (var mesh in model.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>())
+            {
+                mesh.MaterialOverride = SceneryMaterial.Shared;
+            }
+        }
         BuildHull();
         BuildRaisedDecks(location);
         BuildDeckFittings(location);
@@ -276,7 +293,7 @@ public partial class ShipView : Node3D
             (0.32f, -2.2f, Bottom), (0.0f, -KeelDepth, Bottom),
         ];
 
-        var stations = Stations(Length.Bow, _sternZ + 0.6f, 0.25f);
+        var stations = Stations(Length.Bow, _modelled ? _sternZ : _sternZ + 0.6f, 0.25f);
         var hull = new SurfaceTool();
         hull.Begin(Mesh.PrimitiveType.Triangles);
         var deck = new SurfaceTool();
@@ -297,15 +314,21 @@ public partial class ShipView : Node3D
                     var b = new Vector3(CentreX + side * w1 * profile[j].X, profile[j].Y * d1, z1);
                     var c = new Vector3(CentreX + side * w1 * profile[j + 1].X, profile[j + 1].Y * d1, z1);
                     var d = new Vector3(CentreX + side * w0 * profile[j + 1].X, profile[j + 1].Y * d0, z0);
-                    Quad(hull, a, b, c, d, profile[j].Colour, side < 0);
+                    if (!_modelled)
+                    {
+                        Quad(hull, a, b, c, d, profile[j].Colour, side < 0);
+                    }
                 }
 
                 // Bulwark: outer face continues the hull up, inner face is set in by the wall thickness.
                 var (t0, t1) = (BulwarkTop(z0), BulwarkTop(z1));
                 var inner0 = Mathf.Max(w0 - WallThickness, 0.02f);
                 var inner1 = Mathf.Max(w1 - WallThickness, 0.02f);
-                Quad(walls, new(CentreX + side * w0, 0, z0), new(CentreX + side * w1, 0, z1),
-                    new(CentreX + side * w1, t1, z1), new(CentreX + side * w0, t0, z0), HullWood, side > 0);
+                if (!_modelled)
+                {
+                    Quad(walls, new(CentreX + side * w0, 0, z0), new(CentreX + side * w1, 0, z1),
+                        new(CentreX + side * w1, t1, z1), new(CentreX + side * w0, t0, z0), HullWood, side > 0);
+                }
                 Quad(walls, new(CentreX + side * inner0, 0, z0), new(CentreX + side * inner1, 0, z1),
                     new(CentreX + side * inner1, t1, z1), new(CentreX + side * inner0, t0, z0), HullWood.Lightened(0.15f), side < 0);
                 Quad(walls, new(CentreX + side * inner0, t0, z0), new(CentreX + side * inner1, t1, z1),
@@ -332,7 +355,13 @@ public partial class ShipView : Node3D
         deck.GenerateTangents();
         AddMesh(deck.Commit(), _deckMaterial);
 
-        // A small raised deck in the bows ahead of the forward hatch, with its rail: the forecastle.
+        // The test deck's small raised deck in the bows (the Garza's forecastle is in her deck plan).
+        if (_modelled)
+        {
+            AddSpar(new Vector3(CentreX, 1.7f, 0.8f), new Vector3(CentreX, 3.2f, Length.Bow - 4.5f), 0.12f, Spar);
+            return;
+        }
+
         var foreBack = -0.5f;
         var foreFront = Length.Bow + 0.5f;
         var foreWidth = HalfWidthAt((foreBack + foreFront) / 2f) * 2f;
@@ -405,6 +434,18 @@ public partial class ShipView : Node3D
     // A raised stern deck behind the walkable area, with the transom, windows and the stern lantern.
     private void BuildStern()
     {
+        if (_modelled)
+        {
+            // The model has the stern; the lanterns stay here, lit at night.
+            foreach (var x in new[] { -0.55f, 0.55f })
+            {
+                AddSpar(new Vector3(CentreX + x * 0.6f, 3.1f, Length.Stern), new Vector3(CentreX + x, 3.6f, Length.Stern + 0.45f), 0.03f, Iron);
+                AddLantern(new Vector3(CentreX + x, 3.75f, Length.Stern + 0.45f), large: true);
+            }
+
+            return;
+        }
+
         var width = HalfWidthAt(_sternZ) * 2f;
         var depth = Length.Stern - _sternZ;
         var centre = new Vector3(CentreX, 0.75f, _sternZ + depth / 2f);

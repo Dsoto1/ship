@@ -1,0 +1,21 @@
+{
+ "about": "The Garza (SETTING.md §4): a caravela redonda of about 22 m, built at La Bocana forty years ago (Bartolo knew her on the stocks). Square-rigged fore and main, a lateen mizzen; a modest forecastle, a quarterdeck and a poop over a flat transom; carvel planking, two wales, a tallowed bottom. Her deck plan is data/locations/garza.json; this says how her outside looks. tools/ship/build_ship.py builds game/Assets/Ship/garza.glb from both.",
+ "deck": "data/locations/garza.json",
+ "keelDepth": 2.35,
+ "waterline": -1.05,
+ "wallThickness": 0.14,
+ "strake": 0.24,
+ "tumblehome": 0.05,
+ "maxBreadthAt": -0.35,
+ "sternTuck": -0.55,
+ "poop": {"deck": 2.6, "rail": 3.1},
+ "colours": {
+  "plank": "#42301f", "plankAlt": "#3a2a1b", "butt": "#2a1e14", "wale": "#2b1f15", "band": "#a8752e", "red": "#7f2a1c",
+  "bottom": "#b8ad94", "boot": "#2b241d", "transom": "#3b2a1b", "window": "#1a1714", "frame": "#a8752e",
+  "rudder": "#2f2318", "deck": "#6b5136", "bulkhead": "#4a3524", "iron": "#333435", "lid": "#7f2a1c"
+ },
+ "wales": [-0.32, 0.18],
+ "band": [0.55, 0.72],
+ "gunports": [6.5, 11.5, 15.5],
+ "transomWindows": 4
+}

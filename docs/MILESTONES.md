@@ -1661,3 +1661,38 @@ of about 22 m.
 Screenshot: `docs/screenshots/garza-deck.jpg`.
 
 **Next:** the Garza's model itself, built offline from a written specification like the characters.
+
+## The Garza's hull, built from her specification
+
+`tools/ship/build_ship.py` builds `game/Assets/Ship/garza.glb` (about 14,000 triangles) from her written
+specification, `tools/ship/garza.json`, and her deck plan. It shapes the hull by the same rule the game
+uses for her decks, so the two meet exactly.
+- **Hull:**
+  - carvel planking strake by strake, laid along the sheer so every line runs clean from stem to
+    stern, with staggered plank butts;
+  - two wales standing proud, the ochre band with its red line beneath, a dark boot-top at the
+    waterline and a pale tallowed bottom;
+  - tumblehome above the greatest breadth and a round bilge;
+  - aft, the run closing to the sternpost under a flat tuck.
+- **Ends:**
+  - a raked stem with hawse holes either side, and the keel;
+  - the sternpost with the rudder hung on iron pintles.
+- **Stern:**
+  - the flat transom, with four framed windows of the great cabin, mouldings, carved rosettes and the
+    red line;
+  - the poop's deck, its front bulkhead with the cabin door and two lights, and its sides and rail
+    inside.
+- **Gun-port lids** in red along the waist.
+
+The game (`ShipView`) loads it for the Garza and still draws the decks, the inner faces of the
+bulwarks, the rails, the raised decks and ladders, the masts, yards, rigging and sails, and the lanterns.
+The test deck keeps its generated hull.
+
+Screenshots: `docs/screenshots/garza-model.jpg`, `garza-model-stern.jpg`.
+
+**Not yet:**
+- the masts and rigging are still drawn in code; they read well, but tops, caps and blocks could go
+  into the model too;
+- the model has no texture of its own: the scenery material gives the timber grain, mapped in world
+  space;
+- she has not yet been checked under way at sea.
