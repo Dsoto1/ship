@@ -198,6 +198,17 @@ public partial class Hud : CanvasLayer
     /// <summary>Opens a management screen, or closes it if it is already open.</summary>
     public void TogglePanel(PanelId panel)
     {
+        // The chart is a view of its own, not a drawer: Main opens it.
+        if (panel == PanelId.Chart)
+        {
+            if (!_navButtons[panel].Disabled)
+            {
+                ChartRequested?.Invoke();
+            }
+
+            return;
+        }
+
         if (_open == panel)
         {
             ClosePanel();
@@ -694,7 +705,7 @@ public partial class Hud : CanvasLayer
                      (PanelId.Expedition, "Expedition", "X", "Objectives, the charter, and the papers of the voyage"),
                      (PanelId.Cargo, "Cargo", "C", "What is in the hold and how long it will last"),
                      (PanelId.Ship, "Ship", "H", "The Garza's condition and the captain's orders for her"),
-                     (PanelId.Chart, "Chart", "M", "The working chart comes with navigation (R4b)"),
+                     (PanelId.Chart, "Chart", "M", "The working chart: your reckoning, the noon sight, the course (at sea)"),
                      (PanelId.Chronicle, "Chronicle", "L", "The record of everything that has happened"),
                  })
         {
@@ -803,9 +814,17 @@ public partial class Hud : CanvasLayer
         }
     }
 
+    /// <summary>The captain asks for the chart.</summary>
+    public event Action? ChartRequested;
+
     private void RefreshStatus(SimulationRunner runner)
     {
         var campaign = runner.Campaign;
+        if (_navButtons.TryGetValue(PanelId.Chart, out var chartButton))
+        {
+            chartButton.Disabled = campaign.Voyage?.Navigation is null;
+        }
+
         var chips = new List<(string Icon, string Text, Severity Severity, string Tip)>();
         if (campaign.Port is { } port && runner.Content.Port is { } rules)
         {
@@ -833,6 +852,17 @@ public partial class Hud : CanvasLayer
             var sea = weather?.SeaState ?? 1;
             chips.Add((Ui.IconWind, Capital(_formatter.WeatherName(ship.WeatherId)), sea >= 2.5 ? Severity.Critical : sea >= 1.8 ? Severity.Urgent : Severity.Information,
                 "The wind and sea. Heavy weather strains the hull and rigging and makes her leak; heaving to eases it."));
+            if (ship.Navigation is { } navigation)
+            {
+                // The compass: the course steered, and at noon a reminder to take the sun.
+                chips.Add(("✦", $"{SimulationRunner.CompassPoint(navigation.Heading)}", Severity.Information,
+                    $"Course {navigation.Heading:0}° by the compass, steered from your reckoning. The chart (M) shows where you reckon she is."));
+                if (runner.CanTakeNoonSight)
+                {
+                    chips.Add(("☀", "Noon: take the sun", Severity.Attention, "The sun is near its height. Open the chart (M) and take the noon sight, or leave it to your navigator."));
+                }
+            }
+
             var (part, value, severity) = WorstPart(ship);
             chips.Add((Ui.IconShip, part, severity, $"Hull {ship.Hull:0}%, rigging {ship.Rigging:0}%, bilge {ship.Bilge:0}% water. Details in Ship (H)."));
             var (food, water) = runner.SupplyForecast();
@@ -979,7 +1009,7 @@ public partial class Hud : CanvasLayer
         }
 
         return campaign.Voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } ship
-            ? $"{Ui.IconLead} Reach {ship.Destination}: about {ship.LeaguesRemaining:0} leagues to go"
+            ? $"{Ui.IconLead} Reach {ship.Destination}: about {ship.ReckonedRemaining:0} leagues to go"
             : null;
     }
 
@@ -1362,11 +1392,11 @@ public partial class Hud : CanvasLayer
         var repairs = runner.RepairsLeft();
         var hullRepairs = repairs.GetValueOrDefault(Expedition.Simulation.Voyage.ShipPart.Hull);
         var riggingRepairs = repairs.GetValueOrDefault(Expedition.Simulation.Voyage.ShipPart.Rigging);
-        var daysLeft = ship.SpeedLeaguesPerHour > 0.05 ? ship.LeaguesRemaining / (ship.SpeedLeaguesPerHour * 24) : double.PositiveInfinity;
+        var daysLeft = ship.SpeedLeaguesPerHour > 0.05 ? ship.ReckonedRemaining / (ship.SpeedLeaguesPerHour * 24) : double.PositiveInfinity;
         string Condition(double value) => value >= 85 ? "sound" : value >= 70 ? "worn" : value >= 40 ? "damaged" : "failing";
         _shipReport.Text =
             $"{Capital(ship.ShipName)}, bound for {ship.Destination}\n" +
-            $"  About {ship.LeaguesRemaining:0} leagues to go{(double.IsInfinity(daysLeft) || daysLeft > 99 ? ", becalmed" : $", {Range(daysLeft)} at this pace")}\n" +
+            $"  About {ship.ReckonedRemaining:0} leagues to go{(double.IsInfinity(daysLeft) || daysLeft > 99 ? ", becalmed" : $", {Range(daysLeft)} at this pace")}\n" +
             $"  Wind: {_formatter.WeatherName(ship.WeatherId)} · sail: {ship.SailPlan switch { Expedition.Simulation.Voyage.SailPlan.PressOn => "pressing on", Expedition.Simulation.Voyage.SailPlan.HoveTo => "hove to", _ => "normal" }}\n" +
             $"  Watch: {(ship.WatchKept ? "kept" : "nobody on watch — she sails slowly and blind")}\n\n" +
             $"Hull — {Condition(ship.Hull)} ({ship.Hull:0}%)\n  Leaks worsen as the hull wears; heavy seas strike it.\n  Patches left: {hullRepairs} (oakum and plank)\n" +

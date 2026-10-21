@@ -116,6 +116,9 @@ public partial class Main : Node3D
     private CharacterId? _selected;
     private int _speedIndex = 1;
     private ConversationView _conversation = null!;
+    private ChartView _chart = null!;
+    private AstrolabeView _astrolabe = null!;
+    private int? _speedBeforeChart;
     private CharacterId? _singerHeard;
     private int? _speedBeforeTalk;
     private int _lastRunningSpeed = 1;
@@ -196,6 +199,31 @@ public partial class Main : Node3D
         var talkLayer = new CanvasLayer { Name = "ConversationLayer", Layer = 6 };
         AddChild(talkLayer);
         talkLayer.AddChild(_conversation);
+        // The chart and the noon sight: time stands still while the captain is at the chart.
+        _chart = new ChartView { Name = "Chart" };
+        talkLayer.AddChild(_chart);
+        _astrolabe = new AstrolabeView { Name = "Astrolabe" };
+        talkLayer.AddChild(_astrolabe);
+        _hud.ChartRequested += ToggleChart;
+        _chart.Closed += CloseChart;
+        _chart.SightRequested += () =>
+        {
+            var weather = _content.Voyage?.Weathers.FirstOrDefault(w => w.Id == _runner.Campaign.Voyage?.WeatherId);
+            _chart.Visible = false;
+            _astrolabe.Open((float)(weather?.SeaState ?? 1));
+        };
+        _astrolabe.Taken += care =>
+        {
+            if (_runner.Campaign.CaptainId is { } captain)
+            {
+                var (result, sight) = _runner.TakeNoonSight(captain, care);
+                _hud.Toast(result.Succeeded && sight is not null
+                    ? $"Noon sight: {_runner.Latitude(sight.Y)}. The reckoning is put right by it."
+                    : result.Reason, result.Succeeded ? Severity.Positive : Severity.Attention);
+            }
+
+            _chart.Open(_runner);
+        };
         _portHud.TalkRequested += id => WalkOverTo(id, "talk", () =>
         {
             var (result, said) = _runner.BeginConversation(id);
@@ -965,6 +993,7 @@ public partial class Main : Node3D
                 case Key.C: _hud.TogglePanel(PanelId.Cargo); break;
                 case Key.H: _hud.TogglePanel(PanelId.Ship); break;
                 case Key.L: _hud.TogglePanel(PanelId.Chronicle); break;
+                case Key.M: _hud.TogglePanel(PanelId.Chart); break;
                 case Key.Escape:
                     _profiler.Close();
                     // Back out one layer at a time: the open screen, then the card (§48).
@@ -1315,14 +1344,14 @@ public partial class Main : Node3D
         }
         else if (ship.Outcome == Expedition.Simulation.Voyage.VoyageOutcome.AllHandsLost)
         {
-            _hud.ShowEnding("All hands lost", $"On day {Math.Floor(days) + 1:0}, {ship.LeaguesRemaining:0} leagues short of {ship.Destination}, the last of " +
+            _hud.ShowEnding("All hands lost", $"On day {Math.Floor(days) + 1:0}, {ship.ReckonedRemaining:0} leagues short of {ship.Destination}, the last of " +
                 $"{ship.ShipName}'s company is gone. She drifts on, empty.\n\n{losses}\n\n" +
                 "Keep the water and food coming, rest the exhausted before they collapse, and think twice about the choices that cost lives.");
         }
         else
         {
             var boat = dead.Count == 0 ? $"All {alive} got into the ship's boat as she went." : $"{losses} The {alive} left alive got into the ship's boat as she went.";
-            _hud.ShowEnding("Foundered", $"On day {Math.Floor(days) + 1:0}, {ship.LeaguesRemaining:0} leagues short of {ship.Destination}, {ship.ShipName} filled faster " +
+            _hud.ShowEnding("Foundered", $"On day {Math.Floor(days) + 1:0}, {ship.ReckonedRemaining:0} leagues short of {ship.Destination}, {ship.ShipName} filled faster " +
                 $"than her crew could pump and went down.\n\n{boat} What becomes of them is a story for a later version.\n\n" +
                 "Watch the bilge, keep hands on the pumps in heavy weather, and patch the hull while there is oakum and plank to do it.");
         }
@@ -1528,6 +1557,8 @@ public partial class Main : Node3D
     private double? _forceHull;
     private double? _forceRigging;
     private string? _forceEvent;
+    private int _seaDays;
+    private string? _openView;
     private string? _forceCarryAway;
     private string? _developerSelect;
     private string? _developerInspect;
@@ -1750,6 +1781,9 @@ public partial class Main : Node3D
                 case "sail" when Enum.TryParse<Expedition.Simulation.Voyage.SailPlan>(value, out var plan): _developerSail = plan; break;
                 case "carryaway": _forceCarryAway = value; break;
                 case "event": _forceEvent = value; break;
+                case "seadays" when int.TryParse(value, out var seaDays): _seaDays = seaDays; break;
+                case "chart": _openView = "chart"; break;
+                case "astrolabe": _openView = "astrolabe"; break;
                 case "hull" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var hullLeft): _forceHull = hullLeft; break;
                 case "rigging" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var riggingLeft): _forceRigging = riggingLeft; break;
                 case "bilge" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var bilge): _forceBilge = bilge; break;
@@ -1813,6 +1847,28 @@ public partial class Main : Node3D
             ship.DeveloperSetCondition(_forceHull, _forceRigging);
         }
 
+        // --seadays=N: sail on N days, the captain keeping the reckoning (and taking the noon sights).
+        if (_seaDays > 0)
+        {
+            _runner.SetNavigator(_runner.Campaign.CaptainId);
+            _runner.Advance(_seaDays * SimulationClock.TicksPerDay);
+            _runner.SetNavigator(null);
+            if (_runner.Campaign.PendingEvent is not null && _runner.OfferedChoices().FirstOrDefault(c => c.Available) is { } first)
+            {
+                _runner.ResolveEvent(first.Choice.Id);
+            }
+        }
+
+        // --chart / --astrolabe: open them, for screenshots.
+        if (_openView == "chart")
+        {
+            Callable.From(ToggleChart).CallDeferred();
+        }
+        else if (_openView == "astrolabe")
+        {
+            Callable.From(() => _astrolabe.Open(1.2f)).CallDeferred();
+        }
+
         // --event=event.pascual_aloft: raise that event at once (if whoever it is about sailed).
         if (_forceEvent is { } forced && !_runner.DeveloperRaiseEvent(forced).Succeeded)
         {
@@ -1831,6 +1887,37 @@ public partial class Main : Node3D
             ship.DeveloperSetBilge(bilge);
             _sink = (float)bilge / 100f * 0.8f;
         }
+    }
+
+    // Opens the chart (time stands still while it is open), or closes it.
+    private void ToggleChart()
+    {
+        if (_chart.Visible)
+        {
+            _chart.Visible = false;
+            CloseChart();
+            return;
+        }
+
+        if (_runner.Campaign.Voyage?.Navigation is null)
+        {
+            return;
+        }
+
+        _speedBeforeChart ??= _speedIndex;
+        SetSpeed(0);
+        _chart.Open(_runner);
+    }
+
+    private void CloseChart()
+    {
+        if (_astrolabe.Visible)
+        {
+            return;
+        }
+
+        SetSpeed(_speedBeforeChart ?? 1);
+        _speedBeforeChart = null;
     }
 
     private string NameOf(ChronicleEntry entry) =>

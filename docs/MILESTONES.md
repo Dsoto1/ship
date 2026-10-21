@@ -1880,3 +1880,56 @@ Screenshot: `docs/screenshots/crew-pascual-aloft.jpg`.
 - talking to the crew at sea (the conversation view is port-only);
 - events for the others (Rodrigo, Wat, Leonor, Ulloa, Bartolo, Gil, Nuño);
 - friction between shipmates beyond the existing quarrel event.
+
+### Navigation: the chart, the noon sight, the compass
+
+Until now the voyage was a distance, leagues sailed out of 560. Now it has a place on the sea.
+
+**The model** (`Voyage/Navigation.cs`, `SimulationRunner.Navigation.cs`, `data/voyage.json` "route").
+- **Positions** are in leagues east and north of La Bocana (36°30′ N, 6°18′ W). The Ember Coast runs
+  north and south through Punta Ceniza, at bearing 222° and 560 leagues.
+- **How she is steered.** She steers by the captain's reckoning, the way it was done: first for the
+  destination's latitude at an offing 60 leagues out, then due west down that latitude until the
+  coast is raised.
+- **Why the reckoning goes wrong.** The truth moves with the set of the sea: a steady northerly
+  current, plus each spell of weather's own. The reckoning moves by course and log, and the log is
+  never quite right. So the two drift apart.
+- **The noon sight** puts the reckoned latitude right, within an error that grows with the sea
+  running and shrinks with care. Nothing at sea gives the longitude.
+- **Landfall.** Fetching the coast off the mark means coasting along it. Measured with the test crew:
+  daily sights bring her in about 1.5 leagues from her mark (2.4 at worst); with none, about 20
+  (30 at worst).
+- **The navigator.** The captain can appoint one, who takes the sight at 12:29 if he has not. Their
+  care follows their skill, and taking the sight shows that skill: Velho's or Wat's navigation is seen.
+- **Saving.** Navigation has its own random stream, so the weather and events dice are unchanged. It
+  is saved (format 26); older voyages are placed on the route by how far they had sailed.
+
+**The chart** (Chart, M; `ChartView`). It shows only the captain's reckoning, never the truth:
+- the coasts and a graticule of degrees;
+- the reckoned track, with a red bar for each noon sight's latitude;
+- the Garza where you reckon her, inside an ellipse of doubt: the latitude since the last sight, the
+  longitude since the port;
+- the course to steer, dashed: to the latitude, then down it;
+- a compass rose with the course needle;
+- beside it, the reckoning in words (position, course, speed by the log, leagues to go, how far it
+  may be out), the last sight, the navigator, and the astrolabe.
+
+Time stands still while the chart is open.
+
+**The astrolabe** (`AstrolabeView`). Between 11:30 and 12:30 you take the sun yourself. It climbs
+through the alidade's sights to the noon line and falls again, while the ship's roll swings the ring,
+harder in a seaway. Mark the reading (Space) when it stands highest and the ring is still: the nearer
+the true height, the better the latitude.
+
+**The compass.** At sea the HUD shows the course as a point of the compass ("SW by S"), and "Noon: take
+the sun" while the sight can be taken. The HUD's leagues to go are now the captain's reckoning, not
+the truth.
+
+Developer flags: `--seadays=N` sails on N days with the captain keeping the reckoning; `--chart` and
+`--astrolabe` open those views. For example: `--hire=6 --sea --seadays=9 --chart`. Six tests are in
+`NavigationTests`. Screenshots: `docs/screenshots/voyage-chart.jpg`, `voyage-astrolabe.jpg`.
+
+**Not yet:**
+- sounding with the lead near the coast;
+- the true track drawn after landfall, to show how far out the reckoning was;
+- a binnacle and compass on the deck.
