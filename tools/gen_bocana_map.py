@@ -100,6 +100,11 @@ feature("fire", 35, 17)
 feature("stall", 44, 22, 45, 22, style="fish"); feature("stall", 48, 22, 49, 22, style="fish")
 feature("stall", 38, 24, 39, 24, style="produce"); feature("stall", 24, 23, 25, 23, style="cloth")
 feature("stall", 34, 26, 35, 26, style="tools")
+# Date palms on the square and the terrace, as in any port of the south; more goods out on the quay.
+for x, y in [(21, 21), (45, 17), (36, 20), (55, 19), (1, 21), (17, 22)]:
+    feature("palm", x, y)
+feature("cargo", 57, 33, style="jars"); feature("cargo", 17, 33, style="sacks"); feature("cargo", 6, 33, style="baskets")
+feature("cargo", 33, 31, style="jars")
 feature("well", 30, 21, 31, 22)
 feature("cargo", 52, 17, 53, 18, style="casks")       # the chandler's yard
 

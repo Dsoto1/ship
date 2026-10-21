@@ -1549,3 +1549,40 @@ Tests: 436 (3 new in `ShopAndChamberTests`). Screenshots: `docs/screenshots/chan
   - the tall house beside the counting house;
   - the chapel beside the Three Anchors;
   - the cooperage beside the chandlery.
+
+## Port polish towards the owner's board (the "Port & Preparation" panel)
+
+- **Preparation checklist** (top left, in port), ticked from the simulation as it is done:
+  - sign on hands (n/4);
+  - find someone who knows the way;
+  - find someone to treat the sick (optional);
+  - buy stores for the passage (days of the 22 needed);
+  - settle with the sellers, when anything is owed;
+  - sail with the convoy, with the time left.
+
+  Each item has a tooltip saying how. The old objective line at the bottom left now shows only at sea.
+- **Icon bar:** People, Expedition, Cargo, Ship, Chart, Chronicle and Menu each have an icon above
+  the label. They are Kenney's CC0 Board Game Icons and Game Icons, made white by
+  `tools/make_icons.py`; the ship's anchor is drawn from the DejaVu glyph.
+- **Hover label:** pointing at someone in port shows:
+  - their name (or their look, if you have not met);
+  - their trade;
+  - "Available for hire" once you know they want a berth, or which room they are in;
+  - what the mouse does.
+
+  **Right-click on a person** now walks over and talks with them.
+- **Light and colour:**
+  - daylight is more golden, shade warmer, haze lighter;
+  - saturation and contrast are lifted a little (`SeaAndSky` adjustments).
+- **Dressing:**
+  - market awnings are dyed (madder red, saffron, woad) where they were all undyed canvas;
+  - six date palms stand on the square and the terrace;
+  - more goods on the quay: oil and wine jars in straw, a heap of sacks, the catch in baskets
+    beside a net.
+- **Developer:** `--hover=person.gil` shows the hover label in a screenshot.
+
+Screenshots: `docs/screenshots/port-ui.jpg`, `port-warm-morning.jpg`, `port-warm-afternoon.jpg`.
+
+**Not yet** (from the board): the board's painterly lighting and denser rooftops would need a
+lighting and post-processing pass of their own; the people are still smaller on screen than the
+board draws them.

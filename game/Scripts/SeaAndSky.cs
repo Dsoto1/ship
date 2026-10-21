@@ -36,6 +36,10 @@ public partial class SeaAndSky : Node3D
             TonemapMode = Godot.Environment.ToneMapper.Filmic,
             TonemapExposure = 0.9f,
             TonemapWhite = 6f,
+            // A warm southern port: colours a little richer and the light a little harder than the screen gives raw.
+            AdjustmentEnabled = true,
+            AdjustmentSaturation = 1.16f,
+            AdjustmentContrast = 1.06f,
             GlowEnabled = true,
             GlowIntensity = 0.4f,
             GlowHdrThreshold = 1.4f,
@@ -185,9 +189,9 @@ public static class Lighting
         // Sunrise at six, the hour the convoy sails (R3 scene D: the departure is a dawn scene).
         new(4.6f, new Color(0.7f, 0.6f, 0.75f), 0f, new Color(0.3f, 0.34f, 0.52f), 0.42f, new Color(0.12f, 0.14f, 0.22f), 0.0035f, 1.0f),
         new(6f, new Color(1f, 0.66f, 0.4f), 1.5f, new Color(0.5f, 0.56f, 0.72f), 0.48f, new Color(0.64f, 0.68f, 0.76f), 0.003f, 0.95f),
-        new(9f, new Color(1f, 0.92f, 0.8f), 1.35f, new Color(0.62f, 0.68f, 0.78f), 0.55f, new Color(0.66f, 0.74f, 0.8f), 0.002f, 0.92f),
-        new(13f, new Color(1f, 0.97f, 0.92f), 1.6f, new Color(0.68f, 0.72f, 0.78f), 0.6f, new Color(0.7f, 0.77f, 0.83f), 0.0012f, 0.88f),
-        new(16.5f, new Color(1f, 0.86f, 0.66f), 1.4f, new Color(0.68f, 0.66f, 0.66f), 0.55f, new Color(0.74f, 0.72f, 0.7f), 0.0016f, 0.92f),
+        new(9f, new Color(1f, 0.87f, 0.68f), 1.45f, new Color(0.7f, 0.67f, 0.64f), 0.55f, new Color(0.78f, 0.74f, 0.68f), 0.0016f, 0.94f),
+        new(13f, new Color(1f, 0.93f, 0.8f), 1.7f, new Color(0.72f, 0.7f, 0.68f), 0.58f, new Color(0.8f, 0.78f, 0.74f), 0.001f, 0.9f),
+        new(16.5f, new Color(1f, 0.8f, 0.56f), 1.55f, new Color(0.72f, 0.64f, 0.6f), 0.55f, new Color(0.82f, 0.72f, 0.62f), 0.0014f, 0.93f),
         new(18.6f, new Color(1f, 0.6f, 0.34f), 1.55f, new Color(0.62f, 0.52f, 0.55f), 0.46f, new Color(0.8f, 0.62f, 0.52f), 0.002f, 0.95f),
         new(19.8f, new Color(0.9f, 0.5f, 0.4f), 0.2f, new Color(0.38f, 0.38f, 0.55f), 0.44f, new Color(0.22f, 0.2f, 0.3f), 0.003f, 1.0f),
         new(21f, new Color(0.6f, 0.68f, 0.95f), 0f, new Color(0.25f, 0.31f, 0.52f), 0.42f, new Color(0.06f, 0.08f, 0.14f), 0.0018f, 1.05f),

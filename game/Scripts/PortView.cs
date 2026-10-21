@@ -325,6 +325,9 @@ public partial class PortView : Node3D
             case "fire":
                 CookFire(middle);
                 break;
+            case "palm":
+                Palm(middle, (f.X0 * 31 + f.Y0 * 17) % 5);
+                break;
             case "stall":
                 Stall(middle, right - left, f.Style ?? "produce");
                 break;
@@ -1254,11 +1257,13 @@ public partial class PortView : Node3D
     {
         width = Mathf.Max(width, 2f);
         var seed = (int)(at.X * 7 + at.Z * 13);
+        // Dyed awnings the sun has faded unevenly: madder red, saffron, woad; the fish stalls salt-greyed.
+        Color[] dyed = [new Color(0.7f, 0.2f, 0.14f), new Color(0.82f, 0.6f, 0.22f), new Color(0.3f, 0.42f, 0.55f), new Color(0.62f, 0.26f, 0.18f), Canvas.Darkened(0.06f)];
         var canvas = style switch
         {
-            "produce" => new Color(0.72f, 0.5f, 0.38f),   // a faded madder red
-            "fish" => new Color(0.66f, 0.68f, 0.66f),      // salt-greyed
-            _ => Canvas.Darkened(0.05f + (seed % 3) * 0.04f),
+            "produce" => new Color(0.7f, 0.22f, 0.15f),
+            "fish" => new Color(0.66f, 0.68f, 0.66f),
+            _ => dyed[Math.Abs(seed) % dyed.Length],
         };
         Trestle(at, width, 0.9f);
         RainCover(at, width);
@@ -1361,6 +1366,34 @@ public partial class PortView : Node3D
                 }
 
                 Cask(at + new Vector3(0, 1.12f, 0), true);
+                break;
+            case "jars":
+                // Oil and wine in tall jars, some lying in straw.
+                foreach (var (dx, dz, lying) in new[] { (-0.3f, -0.2f, false), (0.25f, -0.25f, false), (0f, 0.25f, false), (0.4f, 0.3f, true) })
+                {
+                    var jar = at + new Vector3(dx, lying ? 0.2f : 0.38f, dz);
+                    AddShape(new SphereMesh { Radius = 0.2f, Height = 0.6f, RadialSegments = 10, Rings = 6 }, jar, new Color(0.66f, 0.42f, 0.28f), lying ? new Vector3(0, 0, 90) : null);
+                    AddCylinder(jar + (lying ? new Vector3(0.32f, 0, 0) : new Vector3(0, 0.32f, 0)), 0.07f, 0.1f, new Color(0.6f, 0.38f, 0.25f), rotation: lying ? new Vector3(0, 0, 90) : null);
+                }
+
+                AddBox(at + new Vector3(0.1f, 0.04f, 0.05f), new Vector3(1.1f, 0.08f, 0.9f), new Color(0.78f, 0.68f, 0.4f));
+                break;
+            case "sacks":
+                foreach (var (dx, dz, dy) in new[] { (-0.3f, -0.15f, 0f), (0.3f, -0.15f, 0f), (0f, 0.3f, 0f), (0f, 0f, 0.42f) })
+                {
+                    AddShape(new SphereMesh { Radius = 0.34f, Height = 0.5f, RadialSegments = 8, Rings = 4 }, at + new Vector3(dx, 0.25f + dy, dz), new Color(0.74f, 0.65f, 0.48f).Darkened(dy > 0 ? 0f : 0.06f));
+                }
+
+                break;
+            case "baskets":
+                // The night's catch in baskets, and a net heaped beside them.
+                foreach (var (dx, dz) in new[] { (-0.3f, 0f), (0.3f, 0.1f), (0f, -0.35f) })
+                {
+                    AddCylinder(at + new Vector3(dx, 0.17f, dz), 0.26f, 0.34f, new Color(0.62f, 0.5f, 0.3f));
+                    AddCylinder(at + new Vector3(dx, 0.33f, dz), 0.22f, 0.04f, new Color(0.62f, 0.66f, 0.68f));
+                }
+
+                AddShape(new SphereMesh { Radius = 0.4f, Height = 0.3f, RadialSegments = 8, Rings = 4 }, at + new Vector3(0.1f, 0.1f, 0.45f), new Color(0.4f, 0.36f, 0.28f));
                 break;
             case "bales":
                 AddBox(at + new Vector3(0, 0.35f, 0), new Vector3(width, 0.7f, Mathf.Max(depth, 0.9f)), new Color(0.72f, 0.66f, 0.5f));
@@ -1743,6 +1776,42 @@ public partial class PortView : Node3D
         }
 
         Piece(new Vector3(0.1f, 0.3f, 0.2f), new Vector3(length * 0.9f, 0.05f, 0.08f), Wood.Lightened(0.1f), 4f);
+    }
+
+    // A date palm: a ringed trunk leaning a little and curving back, and a head of drooping fronds.
+    private void Palm(Vector3 at, int variant)
+    {
+        var lean = new Vector3(0.12f + variant * 0.03f, 0, variant % 2 == 0 ? 0.08f : -0.06f);
+        var top = at;
+        const int Segments = 7;
+        for (var i = 0; i < Segments; i++)
+        {
+            var t = i / (float)Segments;
+            var next = at + new Vector3(0, (i + 1) * 0.9f, 0) + lean * (i + 1) * (1.2f - t);
+            var middle = (top + next) / 2f;
+            var up = (next - top).Normalized();
+            var basis = new Basis(new Quaternion(Vector3.Up, up));
+            _batch.AddColoured(new CylinderMesh { TopRadius = 0.15f - t * 0.04f, BottomRadius = 0.18f - t * 0.04f, Height = 0.92f, RadialSegments = 7, Rings = 1 },
+                new Transform3D(basis, middle), new Color(0.45f, 0.36f, 0.26f).Darkened(i % 2 * 0.08f));
+            top = next;
+        }
+
+        // Each frond in two lengths, the outer narrower and hanging lower, so the head arches.
+        var green = new Color(0.32f, 0.42f, 0.2f);
+        for (var i = 0; i < 14; i++)
+        {
+            var yaw = i * Mathf.Tau / 14f + variant;
+            var rise = i % 2 == 0 ? -12f : 8f;
+            var inner = new Basis(Vector3.Up, yaw) * new Basis(Vector3.Right, Mathf.DegToRad(rise));
+            var mid = top + inner * new Vector3(0, 0, 0.9f);
+            var outer = new Basis(Vector3.Up, yaw) * new Basis(Vector3.Right, Mathf.DegToRad(rise + 38f + (i % 3) * 10f));
+            var tip = mid + outer * new Vector3(0, 0, 1.0f);
+            var colour = green.Lightened((i % 4) * 0.05f).Darkened(i % 2 == 0 ? 0.08f : 0f);
+            _batch.AddColoured(new BoxMesh { Size = new Vector3(0.42f, 0.025f, 0.95f) }, new Transform3D(inner, (top + mid) / 2f), colour);
+            _batch.AddColoured(new BoxMesh { Size = new Vector3(0.26f, 0.025f, 1.05f) }, new Transform3D(outer, (mid + tip) / 2f), colour.Darkened(0.06f));
+        }
+
+        AddShape(new SphereMesh { Radius = 0.22f, Height = 0.4f, RadialSegments = 8, Rings = 4 }, top + new Vector3(0, -0.15f, 0), new Color(0.55f, 0.38f, 0.16f));
     }
 
     // An orange tree on the plaza, or a dark cypress on the hill.
