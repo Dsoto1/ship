@@ -48,6 +48,22 @@
       "pull": 0.0,
       "gain": 1.7,
       "saturate": 1.35
+    },
+    "table": {
+      "use": "Tables in the Three Anchors and on the quay",
+      "source": "Artlist generation 01a15efb-1169-78a6-963d-35a34f25b0e5, from a 3/4 view cropped from a reference sheet the user supplied (source and licence not recorded: prototype-only until cleared), 2026-10-21",
+      "triangles": 500,
+      "height": 0.78,
+      "tones": 4,
+      "pull": 0.25
+    },
+    "bench": {
+      "use": "Benches in the tavern, the Chamber and out of doors",
+      "source": "Artlist generation 01a15efb-14a2-77e0-88db-97266ac1a641, from a 3/4 view cropped from a reference sheet the user supplied (source and licence not recorded: prototype-only until cleared), 2026-10-21",
+      "triangles": 350,
+      "height": 0.46,
+      "tones": 4,
+      "pull": 0.25
     }
   }
 }

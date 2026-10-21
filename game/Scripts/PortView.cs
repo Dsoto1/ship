@@ -315,6 +315,8 @@ public partial class PortView : Node3D
                 AddBox(middle + new Vector3(0, 0.8f, 0), new Vector3(1.0f, 0.01f, 0.7f), new Color(0.86f, 0.8f, 0.64f));
                 AddBox(middle + new Vector3(0, 0.37f, 0), new Vector3(0.12f, 0.74f, 0.12f), Timber);
                 break;
+            case "table" when Prop("table", middle, right - left, 0):
+                break;
             case "table":
                 AddBox(middle + new Vector3(0, 0.72f, 0), new Vector3(right - left, 0.08f, 0.85f), Wood);
                 AddBox(middle + new Vector3(0, 0.36f, 0), new Vector3(0.12f, 0.72f, 0.5f), Wood.Darkened(0.2f));
@@ -658,16 +660,22 @@ public partial class PortView : Node3D
         // Two tables with their benches, cups and a jug, a candle on each.
         foreach (var (x0, x1, z) in new[] { (24.5f, 27.5f, 10f), (30.5f, 32.5f, 11f) })
         {
-            AddBox(Box(x0, x1, z - 0.45f, z + 0.45f, baseHeight + 0.72f, baseHeight + 0.78f), Wood);
-            foreach (var x in new[] { x0 + 0.2f, x1 - 0.2f })
+            if (!Prop("table", new Vector3((x0 + x1) / 2f, baseHeight, z), x1 - x0, 0))
             {
-                AddBox(new Vector3(x, baseHeight + 0.36f, z), new Vector3(0.1f, 0.72f, 0.7f), Wood.Darkened(0.15f));
+                AddBox(Box(x0, x1, z - 0.45f, z + 0.45f, baseHeight + 0.72f, baseHeight + 0.78f), Wood);
+                foreach (var x in new[] { x0 + 0.2f, x1 - 0.2f })
+                {
+                    AddBox(new Vector3(x, baseHeight + 0.36f, z), new Vector3(0.1f, 0.72f, 0.7f), Wood.Darkened(0.15f));
+                }
             }
 
             foreach (var bench in new[] { z - 0.85f, z + 0.85f })
             {
-                AddBox(Box(x0, x1, bench - 0.18f, bench + 0.18f, baseHeight + 0.4f, baseHeight + 0.46f), Wood.Darkened(0.05f));
-                AddBox(Box(x0 + 0.1f, x1 - 0.1f, bench - 0.08f, bench + 0.08f, baseHeight, baseHeight + 0.4f), Wood.Darkened(0.25f));
+                if (!Prop("bench", new Vector3((x0 + x1) / 2f, baseHeight, bench), x1 - x0, 0))
+                {
+                    AddBox(Box(x0, x1, bench - 0.18f, bench + 0.18f, baseHeight + 0.4f, baseHeight + 0.46f), Wood.Darkened(0.05f));
+                    AddBox(Box(x0 + 0.1f, x1 - 0.1f, bench - 0.08f, bench + 0.08f, baseHeight, baseHeight + 0.4f), Wood.Darkened(0.25f));
+                }
             }
 
             AddCylinder(new Vector3((x0 + x1) / 2f, baseHeight + 0.9f, z), 0.07f, 0.22f, new Color(0.62f, 0.42f, 0.28f));
@@ -1649,12 +1657,55 @@ public partial class PortView : Node3D
         var middle = (from + to) / 2f;
         var length = to - from;
         Vector3 At(float along, float y) => alongX ? new Vector3(along, HeightAt(along, across) + y, across) : new Vector3(across, HeightAt(across, along) + y, along);
+        if (Prop("bench", At(middle, 0), length, alongX ? 0 : 90))
+        {
+            return;
+        }
+
         var top = alongX ? new Vector3(length, 0.06f, 0.36f) : new Vector3(0.36f, 0.06f, length);
         AddBox(At(middle, 0.43f), top, Wood.Darkened(0.05f));
         foreach (var leg in new[] { from + 0.12f, to - 0.12f })
         {
             AddBox(At(leg, 0.2f), alongX ? new Vector3(0.08f, 0.4f, 0.3f) : new Vector3(0.3f, 0.4f, 0.08f), Wood.Darkened(0.25f));
         }
+    }
+
+    private static readonly Dictionary<string, (Mesh Mesh, float Length)?> Props = [];
+
+    // A prop from game/Assets/Props (made by tools/props from Artlist models), standing at
+    // <paramref name="at"/>, stretched along its length to <paramref name="length"/> and turned
+    // <paramref name="yaw"/> degrees. False if the prop has not been made, so the caller draws its own.
+    private bool Prop(string name, Vector3 at, float length, float yaw)
+    {
+        if (!Props.TryGetValue(name, out var prop))
+        {
+            var path = $"res://Assets/Props/{name}.glb";
+            prop = null;
+            if (ResourceLoader.Exists(path))
+            {
+                var scene = GD.Load<PackedScene>(path).Instantiate<Node3D>();
+                var mesh = scene.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>().First().Mesh;
+                scene.Free();
+                prop = (mesh, mesh.GetAabb().Size.X);
+            }
+
+            Props[name] = prop;
+        }
+
+        if (prop is not { } found)
+        {
+            return false;
+        }
+
+        AddChild(new MeshInstance3D
+        {
+            Mesh = found.Mesh,
+            MaterialOverride = SceneryMaterial.Shared,
+            Position = at,
+            RotationDegrees = new Vector3(0, yaw, 0),
+            Scale = new Vector3(length / found.Length, 1, 1),
+        });
+        return true;
     }
 
     // ---- beyond the ends of the map: the old town to the west, the fishermen's shore to the east

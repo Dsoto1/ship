@@ -1801,5 +1801,13 @@ Both models came from reference sheets the user supplied; they are prototype-onl
 is cleared (`docs/ASSETS.md`). Screenshots: `docs/screenshots/port-stalls-furls.jpg`,
 `garza-galley.jpg`.
 
-**Next, by the same measure:** the tavern's table and benches (briefs 2 and 3), then the quay's
-outdoor benches, which would reuse the same bench.
+- **Tables and benches** (Artlist, 300 credits each). The trestle table with braced feet and the
+  splay-legged bench. A new `PortView.Prop(name, at, length, yaw)` stretches a prop along its length
+  and falls back to the old boxes when the prop is missing. It is used by:
+  - the Three Anchors' tables and benches;
+  - the quay's `table` features;
+  - every `Bench(...)`: the benches outside the tavern, the Chamber's waiting bench, and the short
+    seats for side-facing sitters.
+
+  People sit at the right height on them, and the cups and candles stand on the new tops.
+  Screenshot: `docs/screenshots/tavern-tables-benches.jpg`.
