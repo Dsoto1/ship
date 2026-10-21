@@ -1945,16 +1945,16 @@ and clicks on the deck are taken into her own frame.
 
 **The wind** (`Navigation`, `data/voyage.json` "route").
 - **Direction.** Each spell of weather brings a wind from its own quarter, mostly from the prevailing
-  NNE (25°, give or take 50°). The wind is drawn from the navigation stream.
+  NNE (25°, give or take 85°), so head winds come often. The wind is drawn from the navigation stream.
 - **How near the wind she can sail.** No nearer than six points (67.5°). When the course she wants lies
   nearer the wind than that, she beats to windward. She lies as close as she will on one tack, and
   goes about once the wanted course is 12° the other side of the wind, or once she has held that
   board for 10 hours with the course across the wind. A head wind makes her zigzag, a board of most of
   a day each.
-- **Points of sail** set her speed: 0.8 close-hauled, 1.0 with the wind on the beam, 1.12 on the
+- **Points of sail** set her speed: 0.88 close-hauled, 1.02 with the wind on the beam, 1.12 on the
   quarter, 1.02 dead astern.
-- **Balance.** Measured over the ten test crews, the prevailing wind leaves the passage about as long
-  as it was: six of ten arrive, and they beat 0–10% of the time.
+- **Balance.** Measured over the ten test crews: five of ten arrive, as before the wind had a direction.
+  They beat 7–29% of the time, with up to 11 tacks a passage. (A spread of 90° left only four arriving.)
 - **Saving.** Saved in format 27 (wind, tack, hours on the board). A format 26 voyage takes the
   prevailing wind.
 
