@@ -1605,3 +1605,31 @@ board draws them.
 - **The harbour water** is a clearer blue-green by day.
 
 Screenshot: `docs/screenshots/dock-garza.jpg`.
+
+## The dock, continued: the Garza's look, a second ship, the hoist, washing, gulls, light
+
+- **The Garza** (`ShipView`), still a placeholder until the hero ship is approved (ART_BIBLE §6.1),
+  now looks a good deal more like one:
+  - **Stern:** a poop, a second, narrower tier on the stern castle, with a painted band, transom
+    windows framed in ochre, its own rail and two stern lanterns on iron brackets. The mizzen now
+    steps from it.
+  - **Sheer:** the line of the rail rises higher to bow and stern.
+  - **Rigging:** ratlines across the shrouds, the rope ladders up the masts, and the shrouds come
+    down to channels outside the hull with their deadeyes.
+  - **Flag:** a red flag with a gold cross flies at the foremast head.
+- **A merchantman** is moored at the west end of the quay, below the terrace. She is warped to two
+  bollards, her yards have furled canvas lashed with gaskets, a plank runs down to the quay, and
+  bales and sacks are coming off with a docker lifting.
+- **The shear legs work:** the load on the fall swings, is lowered into the lighter, comes up empty
+  and goes down again, with two dockers hauling on the fall.
+- **Washing:** shirts, sheets, a red petticoat and smocks hang on lines across the alley between
+  the tavern and the chapel and between the houses behind.
+- **Gulls** perch on the bollards, a ridge, the chapel and the merchantman's stern.
+- **Light:**
+  - a stronger sun, with a little less fill in the shade, for more of the board's contrast;
+  - a little more glow and contact shadow.
+
+Screenshots: `docs/screenshots/dock-garza.jpg`, `garza-stern.jpg`, `dock-merchantman.jpg`.
+
+**Not yet:** a proper hero model of the Garza (a modelled caravel with a carved stern, built and
+approved like the characters), rather than one put together from boxes in code.

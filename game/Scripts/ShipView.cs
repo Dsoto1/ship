@@ -176,7 +176,7 @@ public partial class ShipView : Node3D
     {
         var bow = 1f - Mathf.SmoothStep(-2f, 4f, z);
         var stern = Mathf.SmoothStep(_sternZ - 6f, _sternZ, z);
-        return 0.7f + bow * 0.55f + stern * 0.3f;
+        return 0.7f + bow * 0.7f + stern * 0.45f;
     }
 
     private void BuildHull()
@@ -341,7 +341,34 @@ public partial class ShipView : Node3D
         }
 
         AddBox(new Vector3(CentreX, 1.98f, Length.Stern - 0.1f), new Vector3(width, 0.06f, 0.08f), RailCap);
-        AddLantern(new Vector3(CentreX, 2.5f, Length.Stern + 0.1f), large: true);
+
+        // The poop: a second, narrower tier on the stern castle, its transom with windows, and the two
+        // stern lanterns on their brackets; it is what makes her a ship in the harbour's skyline.
+        var poopWidth = width * 0.86f;
+        var poopDepth = depth * 0.8f;
+        var poop = new Vector3(CentreX, 1.5f + 0.55f, Length.Stern - poopDepth / 2f);
+        AddBox(poop, new Vector3(poopWidth, 1.1f, poopDepth), HullWood.Lightened(0.03f));
+        AddBox(poop + new Vector3(0, 0.58f, 0), new Vector3(poopWidth + 0.1f, 0.06f, poopDepth + 0.1f), RailCap);
+        AddBox(poop + new Vector3(0, 0.15f, poopDepth / 2f + 0.03f), new Vector3(poopWidth * 0.95f, 0.26f, 0.04f), Band);
+        AddBox(new Vector3(CentreX, 2.0f, Length.Stern - poopDepth - 0.01f), new Vector3(0.6f, 0.9f, 0.04f), Wale);
+        foreach (var x in new[] { -0.9f, -0.3f, 0.3f, 0.9f })
+        {
+            AddBox(new Vector3(CentreX + x * poopWidth / 2.2f, 1.0f, Length.Stern + 0.01f), new Vector3(0.32f, 0.38f, 0.05f), new Color(0.1f, 0.09f, 0.08f));
+            AddBox(new Vector3(CentreX + x * poopWidth / 2.2f, 1.0f, Length.Stern + 0.04f), new Vector3(0.38f, 0.05f, 0.03f), Band);
+        }
+
+        for (var i = 0; i <= 5; i++)
+        {
+            var x = CentreX - poopWidth / 2f + i * poopWidth / 5f;
+            AddBox(new Vector3(x, 2.85f, Length.Stern - 0.08f), new Vector3(0.07f, 0.45f, 0.07f), RailCap);
+        }
+
+        AddBox(new Vector3(CentreX, 3.08f, Length.Stern - 0.08f), new Vector3(poopWidth, 0.05f, 0.07f), RailCap);
+        foreach (var x in new[] { -0.55f, 0.55f })
+        {
+            AddSpar(new Vector3(CentreX + x * 0.6f, 2.6f, Length.Stern), new Vector3(CentreX + x, 3.3f, Length.Stern + 0.45f), 0.03f, Iron);
+            AddLantern(new Vector3(CentreX + x, 3.45f, Length.Stern + 0.45f), large: true);
+        }
 
         // Tiller and rudder head.
         AddSpar(new Vector3(CentreX, 1.6f, Length.Stern - 0.3f), new Vector3(CentreX, 1.65f, Length.Stern - 2.0f), 0.05f, Spar);
@@ -373,7 +400,7 @@ public partial class ShipView : Node3D
         }
 
         // Mizzen on the stern deck with a lateen sail.
-        var mizzenFoot = new Vector3(CentreX, 1.5f, (_sternZ + Length.Stern) / 2f);
+        var mizzenFoot = new Vector3(CentreX, 2.6f, (_sternZ + Length.Stern) / 2f);
         AddSpar(mizzenFoot, mizzenFoot + new Vector3(0, 6.5f, 0), 0.12f, Spar);
         var yardLow = mizzenFoot + new Vector3(0, 1.4f, 2.2f);
         var yardHigh = mizzenFoot + new Vector3(0, 7.6f, -3.2f);
@@ -416,14 +443,36 @@ public partial class ShipView : Node3D
             AddPennant(foot + new Vector3(0, height + 0.05f, 0));
         }
 
-        // Shrouds: three a side from below the top to the bulwark, slightly aft of the mast.
+        // Shrouds: three a side from below the top down to the channel outside the hull, with ratlines
+        // across them every half metre, the ladders the topmen go up by.
+        var head = foot + new Vector3(0, height * 0.7f, 0);
         foreach (var side in new[] { -1f, 1f })
         {
+            var points = new Vector3[3];
             for (var k = 0; k < 3; k++)
             {
-                var deckPoint = new Vector3(CentreX + side * (beam - 0.05f), BulwarkTop(foot.Z) , foot.Z + 0.35f + k * 0.45f);
-                AddRope(foot + new Vector3(0, height * 0.7f, 0), deckPoint);
+                points[k] = new Vector3(CentreX + side * (beam + 0.12f), BulwarkTop(foot.Z) - 0.12f, foot.Z - 0.1f + k * 0.5f);
+                AddRope(head, points[k]);
             }
+
+            // The channel: a plank standing out from the hull where the shrouds' deadeyes are set up.
+            AddBox(new Vector3(CentreX + side * (beam + 0.08f), BulwarkTop(foot.Z) - 0.2f, foot.Z + 0.4f), new Vector3(0.22f, 0.07f, 1.6f), Wale);
+            foreach (var point in points)
+            {
+                AddMesh(new SphereMesh { Radius = 0.07f, Height = 0.12f, RadialSegments = 6, Rings = 3 }, Plain(Wale), point + new Vector3(0, 0.15f, 0));
+            }
+
+            var rise = (head - points[1]).Length();
+            for (var f = 0.5f / rise; f < 0.92f; f += 0.5f / rise)
+            {
+                AddSpar(points[0].Lerp(head, f), points[2].Lerp(head, f), 0.009f, Rope);
+            }
+        }
+
+        // A flag at the foremast head, the Crown's red and gold.
+        if (fore)
+        {
+            AddFlag(foot + new Vector3(0, height + 0.1f, 0), new Color(0.62f, 0.13f, 0.12f), new Color(0.85f, 0.7f, 0.25f));
         }
 
         AddLantern(foot + new Vector3(0, 2.4f, -0.25f), large: false);
@@ -552,6 +601,19 @@ public partial class ShipView : Node3D
         tool.SetUV(uvA); tool.AddVertex(a);
         tool.SetUV(uvC); tool.AddVertex(c);
         tool.SetUV(uvD); tool.AddVertex(d);
+    }
+
+    // A small square flag flying aft from a masthead: a field and a cross.
+    private void AddFlag(Vector3 top, Color field, Color cross)
+    {
+        var flag = new Node3D { Position = top };
+        AddChild(flag);
+        var material = new StandardMaterial3D { AlbedoColor = field, CullMode = BaseMaterial3D.CullModeEnum.Disabled, Roughness = 0.9f };
+        flag.AddChild(new MeshInstance3D { Mesh = new QuadMesh { Size = new Vector2(1.3f, 0.85f) }, MaterialOverride = material, Position = new Vector3(0, -0.45f, 0.68f), RotationDegrees = new Vector3(0, 90, 0) });
+        var bars = new StandardMaterial3D { AlbedoColor = cross, CullMode = BaseMaterial3D.CullModeEnum.Disabled, Roughness = 0.9f };
+        flag.AddChild(new MeshInstance3D { Mesh = new QuadMesh { Size = new Vector2(1.3f, 0.14f) }, MaterialOverride = bars, Position = new Vector3(0.01f, -0.45f, 0.68f), RotationDegrees = new Vector3(0, 90, 0) });
+        flag.AddChild(new MeshInstance3D { Mesh = new QuadMesh { Size = new Vector2(0.14f, 0.85f) }, MaterialOverride = bars, Position = new Vector3(0.01f, -0.45f, 0.68f), RotationDegrees = new Vector3(0, 90, 0) });
+        AddSpar(top + new Vector3(0, -0.9f, 0), top + new Vector3(0, 0.15f, 0), 0.02f, Spar);
     }
 
     private void AddPennant(Vector3 top)

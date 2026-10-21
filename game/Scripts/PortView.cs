@@ -102,6 +102,7 @@ public partial class PortView : Node3D
         _foreground.Clear();
         _shells.Clear();
         _fading.Clear();
+        _hoists.Clear();
         _roof = new ShaderMaterial { Shader = GD.Load<Shader>("res://Shaders/roof.gdshader") };
         _ground = new ShaderMaterial { Shader = GD.Load<Shader>("res://Shaders/ground.gdshader") };
         _ground.SetShaderParameter("quay_from", 29.5f);
@@ -150,6 +151,7 @@ public partial class PortView : Node3D
     /// <summary>Lanterns, forge and cook fire by the light of day; wet stone in rain.</summary>
     public void UpdateLook(float darkness, float time, float wetness = 0f)
     {
+        WorkHoists(time);
         var flicker = 0.9f + 0.1f * Mathf.Sin(time * 11f) * Mathf.Sin(time * 4.3f);
         foreach (var light in _lanterns)
         {
@@ -494,11 +496,38 @@ public partial class PortView : Node3D
             }
 
             Spar(head, foot + new Vector3(0, 0, -3.2f), 0.025f, Rope);
-            Spar(head, head + new Vector3(0, -2.6f, 0), 0.02f, Rope);
             AddBox(head + new Vector3(0, -0.25f, 0), new Vector3(0.18f, 0.32f, 0.12f), Wood.Darkened(0.2f));
-            AddBox(head + new Vector3(0, -2.85f, 0), new Vector3(0.7f, 0.5f, 0.5f), new Color(0.46f, 0.32f, 0.18f));
-            AddBox(head + new Vector3(0, -2.85f, 0), new Vector3(0.72f, 0.05f, 0.52f), Rope);
         });
+
+        // The fall and its load hang from a pivot at the block, so the load can swing and be worked
+        // up and down (UpdateLook).
+        var pivot = new Node3D { Position = foot + new Vector3(0, height - 0.4f, 1.2f) };
+        AddChild(pivot);
+        var fall = new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 0.02f, BottomRadius = 0.02f, Height = 1f, RadialSegments = 6 }, MaterialOverride = Material(Rope) };
+        pivot.AddChild(fall);
+        var load = new Node3D();
+        pivot.AddChild(load);
+        load.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(0.7f, 0.5f, 0.5f) }, MaterialOverride = Material(new Color(0.46f, 0.32f, 0.18f)) });
+        load.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(0.72f, 0.05f, 0.52f) }, MaterialOverride = Material(Rope) });
+        _hoists.Add((pivot, fall, load, height - 1.4f, _hoists.Count * 7.3f));
+    }
+
+    private readonly List<(Node3D Pivot, MeshInstance3D Fall, Node3D Load, float Drop, float Phase)> _hoists = [];
+
+    // A hoist's load: down over the lighter, a pause, back up empty, a pause; swinging a little all the while.
+    private void WorkHoists(float time)
+    {
+        foreach (var (pivot, fall, load, drop, phase) in _hoists)
+        {
+            var t = Mathf.PosMod((time + phase) / 24f, 1f);
+            var lowered = t < 0.4f ? Mathf.SmoothStep(0f, 0.4f, t) : t < 0.5f ? 1f : t < 0.9f ? 1f - Mathf.SmoothStep(0.5f, 0.9f, t) : 0f;
+            var length = Mathf.Lerp(2.2f, drop, lowered);
+            load.Position = new Vector3(0, -length - 0.25f, 0);
+            load.Visible = t < 0.5f || t > 0.9f;
+            fall.Scale = new Vector3(1, length, 1);
+            fall.Position = new Vector3(0, -length / 2f, 0);
+            pivot.Rotation = new Vector3(Mathf.Sin(time * 0.8f + phase) * 0.05f, 0, Mathf.Sin(time * 1.1f + phase) * 0.07f);
+        }
     }
 
     // A pole between two points.
@@ -1132,7 +1161,11 @@ public partial class PortView : Node3D
                 Spar(at + new Vector3(x, 1.8f, 0), at + new Vector3(x, 1.8f + height, 0), 0.16f, Timber);
                 var yard = at + new Vector3(x, 1.8f + height * 0.72f, 0);
                 Spar(yard + new Vector3(0, 0, -height * 0.32f), yard + new Vector3(0, 0, height * 0.32f), 0.07f, Timber);
-                Spar(yard + new Vector3(0, -0.12f, -height * 0.28f), yard + new Vector3(0, -0.12f, height * 0.28f), 0.11f, Canvas.Darkened(0.35f));
+                Spar(yard + new Vector3(0, -0.12f, -height * 0.28f), yard + new Vector3(0, -0.12f, height * 0.28f), 0.2f, Canvas.Darkened(0.12f));
+                for (var g = -2; g <= 2; g++)
+                {
+                    Spar(yard + new Vector3(-0.21f, -0.12f, g * height * 0.11f), yard + new Vector3(0.21f, -0.12f, g * height * 0.11f), 0.03f, Rope);
+                }
                 Spar(at + new Vector3(x, 1.8f + height, 0), at + new Vector3(x + 2.5f, 2.2f, 2.6f), 0.015f, Rope);
                 Spar(at + new Vector3(x, 1.8f + height, 0), at + new Vector3(x + 2.5f, 2.2f, -2.6f), 0.015f, Rope);
             }
@@ -1622,11 +1655,11 @@ public partial class PortView : Node3D
             Arch(new Vector3(x, 0, 25.52f), 1.9f, 2.2f);
         }
 
-        Cargo(new Vector3(-8f, 0, 28.5f), 2f, 1.4f, "casks");
+        Cargo(new Vector3(-4f, 0, 28.5f), 2f, 1.4f, "casks");
         Cargo(new Vector3(-17f, 0, 27.5f), 2.4f, 1f, "bales");
         Cargo(new Vector3(-26f, 0, 28f), 2f, 2f, "crates");
         ShearLegs(new Vector3(-21f, 0, 33.6f), 6f);
-        foreach (var (x, mast) in new[] { (-9f, false), (-15f, true), (-24f, false), (-31f, true), (-38f, false) })
+        foreach (var (x, mast) in new[] { (-27f, true), (-33f, false), (-38f, false) })
         {
             Boat(new Vector3(x, SeaAndSky.WaterLevel + 0.45f, 37.2f), 4.5f + rng.Randf() * 1.5f, mast);
         }
@@ -1648,6 +1681,21 @@ public partial class PortView : Node3D
         Idlers.Add((new Vector3(-37.6f, 0, 30.6f), Mathf.Pi, Pose.Praying));
         Idlers.Add((new Vector3(-30f, 0, 33.8f), 0f, Pose.Leaning));
         Idlers.Add((new Vector3(-25f, Terrace, 23.9f), 0f, Pose.Leaning));
+
+        // A merchantman alongside the quay below the terrace, unloading: moored fore and aft to bollards,
+        // a plank down to the quay, bales coming off her.
+        Merchantman(new Vector3(-12f, SeaAndSky.WaterLevel, 38.3f), 18f);
+        foreach (var (shipX, bollardX) in new[] { (-19.5f, -22f), (-4.5f, -2f) })
+        {
+            AddCylinder(new Vector3(bollardX, 0.25f, 34.2f), 0.18f, 0.5f, DarkStone);
+            Spar(new Vector3(shipX, 0.9f, 35.8f), new Vector3(bollardX, 0.4f, 34.2f), 0.025f, Rope);
+        }
+
+        AddBox(new Vector3(-10f, 0.25f, 35.4f), new Vector3(0.7f, 0.06f, 2.2f), Wood, rotation: new Vector3(-22f, 0, 0));
+        Cargo(new Vector3(-8f, 0, 32.5f), 2.2f, 1f, "bales");
+        Cargo(new Vector3(-13f, 0, 32.8f), 1.6f, 1.2f, "sacks");
+        Idlers.Add((new Vector3(-10f, 0, 33.6f), Mathf.Pi, Pose.Lifting));
+        Idlers.Add((new Vector3(-8.8f, 0, 31.6f), 0.4f, Pose.Talking));
 
         AddCylinder(new Vector3(-48f, 3.5f, 30f), 4f, 11f, DarkStone.Lightened(0.08f));
         for (var a = 0; a < 12; a++)
@@ -1826,6 +1874,42 @@ public partial class PortView : Node3D
         AddBox(mule + new Vector3(0, 1.3f, 0), new Vector3(0.5f, 0.06f, 0.62f), new Color(0.55f, 0.2f, 0.15f));
     }
 
+    // A line strung between two houses, sagging, with washing pegged along it: shirts, a sheet, a red
+    // petticoat, a child's smock.
+    private void WashingLine(Vector3 from, Vector3 to, int seed)
+    {
+        Color[] wash = [new Color(0.9f, 0.88f, 0.82f), new Color(0.82f, 0.76f, 0.62f), new Color(0.66f, 0.22f, 0.16f), new Color(0.4f, 0.5f, 0.62f), new Color(0.86f, 0.84f, 0.78f)];
+        const int Segments = 6;
+        Vector3 At(float t) => from.Lerp(to, t) + new Vector3(0, -Mathf.Sin(t * Mathf.Pi) * 0.35f, 0);
+        for (var i = 0; i < Segments; i++)
+        {
+            Spar(At(i / (float)Segments), At((i + 1) / (float)Segments), 0.012f, Rope);
+        }
+
+        var length = from.DistanceTo(to);
+        var along = (to - from).Normalized();
+        var yaw = Mathf.Atan2(along.X, along.Z) - Mathf.Pi / 2f;
+        for (var t = 0.15f; t < 0.9f; t += Mathf.Max(0.18f, 0.9f / length))
+        {
+            var colour = wash[(seed + (int)(t * 10)) % wash.Length];
+            var size = new Vector2(0.45f + (seed + (int)(t * 7)) % 3 * 0.15f, 0.55f + (int)(t * 13) % 2 * 0.3f);
+            AddBox(At(t) + new Vector3(0, -size.Y / 2f - 0.02f, 0), new Vector3(size.X, size.Y, 0.02f), SceneryMaterial.Cloth(colour), rotation: new Vector3(0, Mathf.RadToDeg(yaw), (seed % 3 - 1) * 4f));
+        }
+    }
+
+    // A gull at rest: white body, grey back and wings, yellow bill, facing <paramref name="yaw"/>.
+    private void Gull(Vector3 at, float yaw)
+    {
+        var turn = new Basis(Vector3.Up, yaw);
+        void Part(Mesh mesh, Vector3 offset, Color colour, Vector3? tilt = null) =>
+            _batch.AddColoured(mesh, new Transform3D(turn * Basis.FromEuler((tilt ?? Vector3.Zero) * Mathf.Pi / 180f), at + turn * offset), colour);
+        Part(new CapsuleMesh { Radius = 0.08f, Height = 0.32f, RadialSegments = 8, Rings = 2 }, new Vector3(0, 0.1f, 0), new Color(0.94f, 0.94f, 0.92f), new Vector3(80, 0, 0));
+        Part(new BoxMesh { Size = new Vector3(0.17f, 0.03f, 0.26f) }, new Vector3(0, 0.15f, -0.03f), new Color(0.55f, 0.58f, 0.62f), new Vector3(-8, 0, 0));
+        Part(new SphereMesh { Radius = 0.055f, Height = 0.1f, RadialSegments = 8, Rings = 4 }, new Vector3(0, 0.22f, 0.12f), new Color(0.95f, 0.95f, 0.93f));
+        Part(new BoxMesh { Size = new Vector3(0.025f, 0.02f, 0.07f) }, new Vector3(0, 0.21f, 0.19f), new Color(0.9f, 0.72f, 0.2f));
+        Part(new BoxMesh { Size = new Vector3(0.1f, 0.015f, 0.1f) }, new Vector3(0, 0.12f, -0.2f), new Color(0.2f, 0.2f, 0.22f), new Vector3(-10, 0, 0));
+    }
+
     // A date palm: a ringed trunk leaning a little and curving back, and a head of drooping fronds.
     private void Palm(Vector3 at, int variant)
     {
@@ -1885,8 +1969,30 @@ public partial class PortView : Node3D
 
         Lantern(new Vector3(9.6f, 5f, 24f), onPost: true);
 
+        // Washing hung across the alley between the tavern and the chapel, and between the houses behind.
+        WashingLine(new Vector3(34.4f, 5.6f, 7f), new Vector3(36.6f, 5.4f, 7.4f), 2);
+        WashingLine(new Vector3(34.4f, 4.4f, 10.5f), new Vector3(36.6f, 4.6f, 10.2f), 3);
+        WashingLine(new Vector3(45.4f, 5.2f, 6f), new Vector3(46.6f, 5.0f, 6.4f), 1);
+        WashingLine(new Vector3(19.6f, 5.2f, 5f), new Vector3(22.4f, 5.4f, 5.6f), 2);
+        WashingLine(new Vector3(8f, 7.4f, -0.8f), new Vector3(14f, 7.6f, -0.8f), 5);
+        WashingLine(new Vector3(52f, 4.8f, -0.8f), new Vector3(60f, 5.1f, -0.8f), 6);
+
+        // Gulls about the quay: on the bollards, the gangway rail, a roof ridge, the merchantman's stern.
+        foreach (var (at, yaw) in new[]
+                 {
+                     (new Vector3(14f, 0.62f, 34f), 0.3f), (new Vector3(35f, 0.62f, 34f), 2.4f), (new Vector3(48f, 0.62f, 34f), -1.2f),
+                     (new Vector3(27.5f, 0.62f, 34f), 1.4f), (new Vector3(41.3f, 12.4f, 8.5f), 0.8f), (new Vector3(51f, 10.6f, 8f), -0.4f),
+                     (new Vector3(-19f, 4.2f, 38.3f), 1.9f),
+                 })
+        {
+            Gull(at, yaw);
+        }
+
         // The shear-legs that swing loads down into the lighter at the east pier.
         ShearLegs(new Vector3(43.5f, 0, 33.6f), 6.5f);
+        // Two dockers on the fall, hauling and easing the load down into the lighter.
+        Idlers.Add((new Vector3(43.3f, 0, 30.7f), 0f, Pose.Roping));
+        Idlers.Add((new Vector3(44.1f, 0, 30.2f), 0.2f, Pose.Roping));
         MooringAndGangway();
     }
 
