@@ -872,13 +872,21 @@ public partial class Hud : CanvasLayer
         }
     }
 
+    // What squalls have carried away, for the ship panel: work on the rigging mends the yard first, then the lines.
+    private static string CarriedAway(Expedition.Simulation.Voyage.VoyageState ship) =>
+        (ship.YardSprung ? "  The main topsail yard is sprung: no topsail until it is fished.\n" : "")
+        + (ship.PartedLines.Count > 0 ? $"  Lines parted aloft: {ship.PartedLines.Count}.\n" : "")
+        + (ship.YardSprung || ship.PartedLines.Count > 0 ? "  Repairing the rigging mends the yard first, then the lines.\n" : "");
+
     // The ship's most worrying system, in a word or two (§62: no number soup).
     private static (string Text, double Value, Severity Severity) WorstPart(Expedition.Simulation.Voyage.VoyageState ship)
     {
         if (ship.Bilge > 60) return ($"Bilge {ship.Bilge:0}% — pump!", ship.Bilge, Severity.Critical);
         if (ship.Hull < 40) return ($"Hull failing ({ship.Hull:0}%)", ship.Hull, Severity.Critical);
         if (ship.Bilge > 30) return ($"Bilge rising ({ship.Bilge:0}%)", ship.Bilge, Severity.Urgent);
+        if (ship.YardSprung) return ("Topsail yard sprung", ship.Rigging, Severity.Urgent);
         if (ship.Rigging < 40) return ($"Rigging failing ({ship.Rigging:0}%)", ship.Rigging, Severity.Urgent);
+        if (ship.PartedLines.Count > 0) return (ship.PartedLines.Count == 1 ? "A line parted aloft" : $"{ship.PartedLines.Count} lines parted aloft", ship.Rigging, Severity.Attention);
         if (ship.Hull < 70 || ship.Rigging < 70) return ("Worn: needs repair", Math.Min(ship.Hull, ship.Rigging), Severity.Attention);
         return ("Sound", 100, Severity.Positive);
     }
@@ -1363,7 +1371,7 @@ public partial class Hud : CanvasLayer
             $"  Watch: {(ship.WatchKept ? "kept" : "nobody on watch — she sails slowly and blind")}\n\n" +
             $"Hull — {Condition(ship.Hull)} ({ship.Hull:0}%)\n  Leaks worsen as the hull wears; heavy seas strike it.\n  Patches left: {hullRepairs} (oakum and plank)\n" +
             $"Bilge — {ship.Bilge:0}% water\n  The pumps must keep ahead of the leaks; above 80% she founders.\n" +
-            $"Rigging — {Condition(ship.Rigging)} ({ship.Rigging:0}%)\n  Worn rigging slows her.\n  Repairs left: {riggingRepairs} (rope)\n";
+            $"Rigging — {Condition(ship.Rigging)} ({ship.Rigging:0}%)\n  Worn rigging slows her.\n{CarriedAway(ship)}  Repairs left: {riggingRepairs} (rope)\n";
         _rations.Visible = true;
         _rations.Text = runner.Campaign.Rationing ? "Short rations — restore full" : "Full rations — cut to short";
         _rations.Modulate = runner.Campaign.Rationing ? Ui.Of(Severity.Attention) : Colors.White;
@@ -1405,7 +1413,7 @@ public partial class Hud : CanvasLayer
         {
             "people" => e.Kind is ChronicleEntryKind.Injury or ChronicleEntryKind.SurvivalStateChanged or ChronicleEntryKind.RelationshipChanged
                 or ChronicleEntryKind.CrewHired or ChronicleEntryKind.Noticed or ChronicleEntryKind.LeftPort or ChronicleEntryKind.LeadHeard,
-            "ship" => e.Kind is ChronicleEntryKind.WeatherChanged or ChronicleEntryKind.HullStruck or ChronicleEntryKind.BilgeAlarm
+            "ship" => e.Kind is ChronicleEntryKind.WeatherChanged or ChronicleEntryKind.HullStruck or ChronicleEntryKind.RiggingCarriedAway or ChronicleEntryKind.BilgeAlarm
                 or ChronicleEntryKind.Foundered or ChronicleEntryKind.SailPlanChanged or ChronicleEntryKind.Landfall,
             "port" => e.Kind is ChronicleEntryKind.CrewHired or ChronicleEntryKind.LeadHeard or ChronicleEntryKind.Noticed
                 or ChronicleEntryKind.LeftPort or ChronicleEntryKind.ConvoyWarning or ChronicleEntryKind.LateFee,

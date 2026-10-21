@@ -39,6 +39,12 @@ public enum ChronicleEntryKind
     /// <summary>A heavy sea struck the hull and opened a seam (parameters: damage, level = hull now).</summary>
     HullStruck,
 
+    /// <summary>
+    /// Something carried away aloft in heavy weather (parameters: to = "yard" or "line", need = the
+    /// line's number, level = rigging now).
+    /// </summary>
+    RiggingCarriedAway,
+
     /// <summary>The bilge rose past an alarm level (parameter: level).</summary>
     BilgeAlarm,
 

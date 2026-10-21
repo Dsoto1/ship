@@ -399,6 +399,15 @@ public sealed record VoyageData
     /// <summary>Rigging condition.</summary>
     public required double Rigging { get; init; }
 
+    /// <summary>Lines carried away, by number (format 25).</summary>
+    public IReadOnlyList<int> PartedLines { get; init; } = [];
+
+    /// <summary>Whether the main topsail yard is sprung (format 25).</summary>
+    public bool YardSprung { get; init; }
+
+    /// <summary>Rigging work done towards mending the next thing carried away (format 25).</summary>
+    public double Mending { get; init; }
+
     /// <summary>Weather ID.</summary>
     public required string Weather { get; init; }
 

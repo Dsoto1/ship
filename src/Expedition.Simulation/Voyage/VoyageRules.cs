@@ -15,6 +15,18 @@ public sealed record VoyageRules
     /// <summary>Speed fraction left with the rigging in tatters (0); full speed at 100.</summary>
     public required double RiggingSpeedFloor { get; init; }
 
+    /// <summary>How many lines aloft can carry away (the view shows which is which).</summary>
+    public int PartingLines { get; init; } = 7;
+
+    /// <summary>
+    /// When something carries away, the chance it is the main topsail yard rather than a line; twice
+    /// as likely with the rigging below 30.
+    /// </summary>
+    public double YardSpringChance { get; init; } = 0.25;
+
+    /// <summary>Speed multiplier while the topsail yard is sprung and the topsail cannot be set.</summary>
+    public double SprungYardSpeed { get; init; } = 0.88;
+
     /// <summary>Speed multiplier when nobody is standing watch (no one at the helm or on lookout).</summary>
     public required double NoWatchSpeedMultiplier { get; init; }
 
@@ -77,6 +89,11 @@ public sealed record VoyageRules
             {
                 errors.Add($"Weather '{weather.Id}': hullStrikeChancePerHour must be 0..1.");
             }
+
+            if (weather.RiggingStrikeChancePerHour is < 0 or > 1 || weather.RiggingStrikeDamage < 0)
+            {
+                errors.Add($"Weather '{weather.Id}': riggingStrikeChancePerHour must be 0..1 and riggingStrikeDamage not negative.");
+            }
         }
 
         return errors;
@@ -128,6 +145,12 @@ public sealed record WeatherDefinition
 
     /// <summary>Hull points lost when a sea strikes.</summary>
     public double HullStrikeDamage { get; init; }
+
+    /// <summary>Chance per hour of a squall carrying something away aloft: a line parts, or a yard is sprung.</summary>
+    public double RiggingStrikeChancePerHour { get; init; }
+
+    /// <summary>Rigging points lost when something carries away.</summary>
+    public double RiggingStrikeDamage { get; init; }
 
     /// <summary>Shortest spell of this weather, in hours.</summary>
     public required int MinHours { get; init; }

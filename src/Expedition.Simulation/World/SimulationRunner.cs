@@ -521,12 +521,18 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             ]);
         }
 
+        if (weather.RiggingStrikeChancePerHour > 0 && Campaign.Randomness.Weather.Chance(weather.RiggingStrikeChancePerHour * plan.Wear * HoursPerTick))
+        {
+            CarryAway(ship, rules, weather);
+        }
+
         ship.WatchKept = Campaign.ActiveTasks.Values.Any(task =>
             Content.Tasks[task.DefinitionId].KeepsWatch && Campaign.Characters[task.CharacterId].CanWork
             && !(Campaign.Placements.TryGetValue(task.CharacterId, out var placement) && placement.IsMoving));
         ship.SpeedLeaguesPerHour = weather.WindLeaguesPerHour
             * (rules.RiggingSpeedFloor + (1 - rules.RiggingSpeedFloor) * ship.Rigging / 100)
             * (ship.WatchKept ? 1 : rules.NoWatchSpeedMultiplier)
+            * (ship.YardSprung ? rules.SprungYardSpeed : 1)
             * plan.Speed;
         ship.LeaguesSailed += ship.SpeedLeaguesPerHour * HoursPerTick;
 
@@ -547,6 +553,34 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             Campaign.Record(ChronicleEntryKind.Landfall, [new(ChronicleParameters.To, ship.Destination)]);
             Campaign.TryTransitionTo(CampaignPhase.Landfall, $"sighted {ship.Destination}");
         }
+    }
+
+    // A squall carries something away aloft: the main topsail yard is sprung, or a line parts. Either
+    // costs rigging and stays so until the crew mend it (VoyageState.Apply).
+    private void CarryAway(VoyageState ship, VoyageRules rules, WeatherDefinition weather)
+    {
+        var random = Campaign.Randomness.Weather;
+        var whole = Enumerable.Range(0, rules.PartingLines).Where(l => !ship.PartedLines.Contains(l)).ToList();
+        var yard = !ship.YardSprung && (whole.Count == 0 || random.Chance(rules.YardSpringChance * (ship.Rigging < 30 ? 2 : 1)));
+        if (!yard && whole.Count == 0)
+        {
+            return;
+        }
+
+        ship.Apply(new ShipEffects { Rigging = -weather.RiggingStrikeDamage }, 1);
+        if (yard)
+        {
+            ship.YardSprung = true;
+            Campaign.Record(ChronicleEntryKind.RiggingCarriedAway, [new(ChronicleParameters.To, "yard"), new(ChronicleParameters.Level, Number(ship.Rigging))]);
+            return;
+        }
+
+        var line = whole[random.NextInt(whole.Count)];
+        ship.Part(line);
+        Campaign.Record(ChronicleEntryKind.RiggingCarriedAway, [
+            new(ChronicleParameters.To, "line"), new(ChronicleParameters.Need, line.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+            new(ChronicleParameters.Level, Number(ship.Rigging)),
+        ]);
     }
 
     /// <summary>

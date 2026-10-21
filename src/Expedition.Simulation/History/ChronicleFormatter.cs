@@ -82,6 +82,9 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
                 : "The crew are back on full rations.",
             ChronicleEntryKind.HullStruck =>
                 $"A heavy sea struck {Ship()} and opened a seam (hull down {entry.Get(ChronicleParameters.Damage)}, now {entry.Get(ChronicleParameters.Level)}%).",
+            ChronicleEntryKind.RiggingCarriedAway => entry.Get(ChronicleParameters.To) == "yard"
+                ? $"A squall sprang the main topsail yard on {Ship()}; the topsail cannot be set until it is fished (rigging now {entry.Get(ChronicleParameters.Level)}%)."
+                : $"A line parted aloft on {Ship()} and flies loose (rigging now {entry.Get(ChronicleParameters.Level)}%).",
             ChronicleEntryKind.BilgeAlarm => $"The bilge is {entry.Get(ChronicleParameters.Level)}% full and rising. Man the pumps!",
             ChronicleEntryKind.Foundered => $"{Capitalise(entry.Get(ChronicleParameters.To) ?? "The ship")} filled and foundered.",
             ChronicleEntryKind.Landfall => $"Land! {Capitalise(entry.Get(ChronicleParameters.To) ?? "The coast")} sighted from the masthead.",

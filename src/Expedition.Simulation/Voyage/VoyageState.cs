@@ -121,12 +121,86 @@ public sealed class VoyageState
         _ => Rigging,
     };
 
-    /// <summary>Applies a change, keeping each value within 0..100.</summary>
+    private readonly SortedSet<int> _parted = [];
+
+    /// <summary>
+    /// Lines carried away in heavy weather, by number (0 up to <see cref="VoyageRules.PartingLines"/>):
+    /// which shroud or stay is the view's to say. They stay parted until the rigging is worked on.
+    /// </summary>
+    public IReadOnlySet<int> PartedLines => _parted;
+
+    /// <summary>True once the main topsail yard has been sprung in a blow; the topsail cannot be set.</summary>
+    public bool YardSprung { get; internal set; }
+
+    /// <summary>Rigging work done since the last thing was mended, towards the next (see <see cref="Apply"/>).</summary>
+    public double Mending { get; internal set; }
+
+    /// <summary>Points of rigging work it takes to fish a sprung yard.</summary>
+    public const double YardMendWork = 12;
+
+    /// <summary>Points of rigging work it takes to splice and set up a parted line.</summary>
+    public const double LineMendWork = 5;
+
+    /// <summary>
+    /// Applies a change, keeping each value within 0..100. Work on the rigging also mends what heavy
+    /// weather carried away: the yard first, then the lines, one at a time as the work adds up.
+    /// </summary>
     internal void Apply(ShipEffects effects, double scale)
     {
         Hull = Math.Clamp(Hull + effects.Hull * scale, 0, 100);
         Bilge = Math.Clamp(Bilge + effects.Bilge * scale, 0, 100);
         Rigging = Math.Clamp(Rigging + effects.Rigging * scale, 0, 100);
+        if (effects.Rigging * scale <= 0 || (!YardSprung && _parted.Count == 0))
+        {
+            return;
+        }
+
+        Mending += effects.Rigging * scale;
+        while (true)
+        {
+            if (YardSprung && Mending >= YardMendWork)
+            {
+                Mending -= YardMendWork;
+                YardSprung = false;
+            }
+            else if (!YardSprung && _parted.Count > 0 && Mending >= LineMendWork)
+            {
+                Mending -= LineMendWork;
+                _parted.Remove(_parted.Min);
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        if (!YardSprung && _parted.Count == 0)
+        {
+            Mending = 0;
+        }
+    }
+
+    /// <summary>A line carries away.</summary>
+    internal void Part(int line) => _parted.Add(line);
+
+    /// <summary>Developer only: carries away these lines and, if asked, springs the yard.</summary>
+    public void DeveloperCarryAway(IEnumerable<int> lines, bool yard)
+    {
+        foreach (var line in lines)
+        {
+            _parted.Add(line);
+        }
+
+        YardSprung |= yard;
+    }
+
+    /// <summary>Sets what is carried away while loading a save. The loader validates it.</summary>
+    internal void RestoreCarriedAway(IEnumerable<int> parted, bool yardSprung, double mending)
+    {
+        _parted.Clear();
+        _parted.UnionWith(parted);
+        YardSprung = yardSprung;
+        Mending = mending;
     }
 
     /// <summary>Developer tool for screenshots and testing: holds this weather until changed.</summary>

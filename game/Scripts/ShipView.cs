@@ -47,7 +47,7 @@ public partial class ShipView : Node3D
     private int _holes;
     private int _patches;
     private int _worstHoles;
-    private readonly List<(float Below, Node3D Whole, Node3D Parted, List<Node3D> Ends)> _lines = [];
+    private readonly List<(Node3D Whole, Node3D Parted, List<Node3D> Ends)> _lines = [];
     private Node3D? _topYard;
     private Node3D? _topYardBroken;
     private Node3D? _topsail;
@@ -136,7 +136,7 @@ public partial class ShipView : Node3D
         }
 
         // The ends of parted lines swing as she rolls.
-        foreach (var (_, _, _, ends) in _lines)
+        foreach (var (_, _, ends) in _lines)
         {
             for (var i = 0; i < ends.Count; i++)
             {
@@ -180,7 +180,9 @@ public partial class ShipView : Node3D
     /// </summary>
     /// <param name="hull">Hull condition, 0..100.</param>
     /// <param name="rigging">Rigging condition, 0..100.</param>
-    public void ShowCondition(double hull, double rigging)
+    /// <param name="parted">Lines carried away in heavy weather, by number (VoyageState.PartedLines).</param>
+    /// <param name="sprung">Whether the main topsail yard has been sprung (VoyageState.YardSprung).</param>
+    public void ShowCondition(double hull, double rigging, IReadOnlySet<int>? parted = null, bool sprung = false)
     {
         var wear = (float)Math.Clamp(1 - rigging / 100, 0, 1);
         if (Math.Abs(wear - _wear) > 0.004f)
@@ -192,14 +194,15 @@ public partial class ShipView : Node3D
             }
         }
 
-        // Lines part one by one as the rigging goes, and at the last the main topsail yard is sprung.
-        foreach (var (below, whole, parted, _) in _lines)
+        // What squalls have carried away: parted lines, numbered in the order they are rigged, and the yard.
+        for (var i = 0; i < _lines.Count; i++)
         {
-            whole.Visible = rigging >= below;
-            parted.Visible = rigging < below;
+            var gone = parted?.Contains(i) == true;
+            _lines[i].Whole.Visible = !gone;
+            _lines[i].Parted.Visible = gone;
         }
 
-        _sprung = rigging < SprungBelow;
+        _sprung = sprung;
         if (_topYard is not null && _topYardBroken is not null)
         {
             _topYard.Visible = !_sprung;
@@ -268,17 +271,10 @@ public partial class ShipView : Node3D
         }
     }
 
-    // The rigging's condition below which each breakable line parts, in the order they are rigged.
-    private static readonly float[] PartsBelow = [44, 22, 36, 12, 30, 18, 40, 26, 15, 33];
-
-    /// <summary>Below this the main topsail yard is sprung (ShowCondition).</summary>
-    public const float SprungBelow = 14;
-
     // A line that can part: drawn whole, and parted, with both ends hanging from where they are made
     // fast, slack, swinging.
     private void AddLine(Vector3 from, Vector3 to)
     {
-        var below = PartsBelow[_lines.Count % PartsBelow.Length];
         var whole = new Node3D();
         AddChild(whole);
         whole.AddChild(RopePiece(from, to));
@@ -304,7 +300,7 @@ public partial class ShipView : Node3D
             ends.Add(pivot);
         }
 
-        _lines.Add((below, whole, parted, ends));
+        _lines.Add((whole, parted, ends));
     }
 
     private MeshInstance3D RopePiece(Vector3 from, Vector3 to)

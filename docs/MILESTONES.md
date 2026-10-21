@@ -1717,21 +1717,34 @@ and the repairs and pumping the crew do.
 - **Hull:** one stove-in, splintered wound on her sides for every tenth of the hull lost. When the
   carpenter makes a wound good, it becomes two pale new planks nailed over the hole, and those stay
   for the rest of the session.
-- **Lines part.** Seven lines can part: the middle shroud of each three, the forestay and the stays
-  between the masts. Each has its own threshold of rigging condition, from 44% down to 12%. A parted
-  line hangs in two slack ends, frayed at the tip, swinging with the sea.
-- **The yard springs.** Below 14% rigging (`ShipView.SprungBelow`) the main topsail yard snaps in the
-  slings. Each half hangs from its yardarm with splintered inner ends and rags of the topsail, and the
-  topsail itself is gone. ShipView draws this yard, not the model, so that it can break.
-- Repairs that bring the rigging back above a threshold restore that line or the yard.
+- **Storms carry things away.** Gales and storms now have a chance each hour of a squall carrying
+  something away aloft (`riggingStrikeChancePerHour`: gale 0.06, storm 0.22). It is scaled by the
+  sail plan's wear, so heaving to is safer. Each strike costs rigging (4 in a gale, 6 in a storm).
+  - It either parts one of the seven lines (`VoyageRules.PartingLines`: the middle shrouds, the
+    forestay and the two stays between the masts),
+  - or springs the main topsail yard (`YardSpringChance` 0.25, doubled below 30% rigging).
+
+  A sprung yard means no topsail, and she makes 12% less way.
+- **The crew mend it.** Rigging work mends what was carried away, the yard first and then the lines.
+  Fishing the yard takes 12 points of work and splicing a line takes 5 (`VoyageState.Apply`). The
+  state is in `VoyageState.PartedLines`, `YardSprung` and `Mending`, which are saved (format 25).
+- **Alerts and HUD.** The chronicle records each one, and there is an alert: "The topsail yard is
+  sprung" (urgent) or "A line has parted aloft". The ship chip and the ship panel say what is
+  carried away.
+- **In the view,** a parted line hangs in two slack ends, frayed at the tip and swinging with the
+  sea. When the yard is sprung, each half hangs from its yardarm with splintered inner ends and rags
+  of the topsail, and the topsail itself is gone. ShipView draws this yard, not the model, so that it
+  can break.
 - **Bilge:** as before, she rides lower; she now also lists as the water rises.
 
 Developer flags: `--sea` sails at once with no departure; `--hull=N` and `--rigging=N` force her
-condition. For example: `--hire=6 --sea --zoom=18 --hull=40 --rigging=20 --bilge=20`.
+condition. `--carryaway=0,3,yard` parts those lines and springs the yard. For example:
+`--hire=6 --sea --zoom=18 --hull=40 --rigging=20 --bilge=20`, or
+`--sea --weather=weather.storm --carryaway=1,3,5,yard`.
 
-Screenshots: `docs/screenshots/garza-at-sea.jpg`, `garza-damaged.jpg`, `garza-sprung.jpg` (rigging at 10%).
+Screenshots: `docs/screenshots/garza-at-sea.jpg`, `garza-damaged.jpg`, `garza-sprung.jpg`, `garza-storm-carried.jpg`.
 
 **Not yet:**
-- only the main topsail yard can break; the lines part at fixed thresholds, not from a storm;
+- only the main topsail yard can break, and nothing falls to the deck or hurts anyone below;
 - patches made in an earlier session are not remembered after a load;
 - wounds are on the hull sides only, not on the deck or the bulwarks.

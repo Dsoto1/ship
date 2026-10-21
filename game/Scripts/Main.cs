@@ -536,7 +536,7 @@ public partial class Main : Node3D
         var cooking = _runner.Campaign.ActiveTasks.Values.Any(task => task.DefinitionId == "task.cook");
         // Sails turn see-through at working zoom so they never hide the crew (ART_BIBLE.md 3); zoom out to see them whole.
         // Set sails fade at working zoom so they never hide the crew; furled at the quay they hide no one.
-        _deck.ShowCondition(voyage?.Hull ?? 100, voyage?.Rigging ?? 100);
+        _deck.ShowCondition(voyage?.Hull ?? 100, voyage?.Rigging ?? 100, voyage?.PartedLines, voyage?.YardSprung == true);
         _deck.UpdateLook(_world.Darkness, inPort ? 1f : Mathf.Lerp(0.38f, 1f, Mathf.SmoothStep(18f, 32f, _camera.Size)), t, cooking, inPort ? 3.2f : SailSetting(voyage), (float)delta, furled: inPort);
         foreach (var bird in _birds)
         {
@@ -1234,6 +1234,8 @@ public partial class Main : Node3D
                 ChronicleEntryKind.WeatherChanged when entry.Get(ChronicleParameters.To) is "weather.storm" => (Severity.Critical, AutoPause.Weather, "A storm breaks"),
                 ChronicleEntryKind.WeatherChanged when entry.Get(ChronicleParameters.To) is "weather.gale" => (Severity.Urgent, AutoPause.Weather, "A gale is blowing"),
                 ChronicleEntryKind.HullStruck => (Severity.Urgent, AutoPause.ShipDamage, "The hull is struck"),
+                ChronicleEntryKind.RiggingCarriedAway when entry.Get(ChronicleParameters.To) is "yard" => (Severity.Urgent, AutoPause.ShipDamage, "The topsail yard is sprung"),
+                ChronicleEntryKind.RiggingCarriedAway => (Severity.Attention, AutoPause.ShipDamage, "A line has parted aloft"),
                 ChronicleEntryKind.BilgeAlarm => (Severity.Critical, AutoPause.ShipDamage, "The bilge is rising"),
                 ChronicleEntryKind.Injury => (Severity.Urgent, AutoPause.InjuryAndDeath, "Someone is hurt"),
                 ChronicleEntryKind.SurvivalStateChanged when entry.Get(ChronicleParameters.To) is "Dead" => (Severity.Critical, AutoPause.InjuryAndDeath, "A death aboard"),
@@ -1497,6 +1499,7 @@ public partial class Main : Node3D
     private double? _forceBilge;
     private double? _forceHull;
     private double? _forceRigging;
+    private string? _forceCarryAway;
     private string? _developerSelect;
     private string? _developerInspect;
     private string? _developerLook;
@@ -1716,6 +1719,7 @@ public partial class Main : Node3D
                 case "testdeck": _testDeck = true; break;
                 case "choose": _developerChoice = value; break;
                 case "sail" when Enum.TryParse<Expedition.Simulation.Voyage.SailPlan>(value, out var plan): _developerSail = plan; break;
+                case "carryaway": _forceCarryAway = value; break;
                 case "hull" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var hullLeft): _forceHull = hullLeft; break;
                 case "rigging" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var riggingLeft): _forceRigging = riggingLeft; break;
                 case "bilge" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var bilge): _forceBilge = bilge; break;
@@ -1777,6 +1781,13 @@ public partial class Main : Node3D
         if (_forceHull is not null || _forceRigging is not null)
         {
             ship.DeveloperSetCondition(_forceHull, _forceRigging);
+        }
+
+        // --carryaway=0,3,yard: those lines parted and the topsail yard sprung.
+        if (_forceCarryAway is { } carried)
+        {
+            var parts = carried.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            ship.DeveloperCarryAway(parts.Select(p => int.TryParse(p, out var line) ? line : -1).Where(l => l >= 0), parts.Contains("yard"));
         }
 
         if (_forceBilge is { } bilge)

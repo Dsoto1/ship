@@ -30,13 +30,15 @@
     {
       "id": "weather.gale", "name": "a gale", "windLeaguesPerHour": 1.2, "seaState": 2.0, "gloom": 0.5,
       "leakMultiplier": 2.4, "hullWearPerHour": 0.45, "riggingWearPerHour": 1.0,
-      "hullStrikeChancePerHour": 0.05, "hullStrikeDamage": 6, "minHours": 4, "maxHours": 14,
+      "hullStrikeChancePerHour": 0.05, "hullStrikeDamage": 6,
+      "riggingStrikeChancePerHour": 0.06, "riggingStrikeDamage": 4, "minHours": 4, "maxHours": 14,
       "next": { "weather.fresh": 3, "weather.storm": 1.4, "weather.fair": 1 }
     },
     {
       "id": "weather.storm", "name": "a storm", "windLeaguesPerHour": 0.4, "seaState": 2.8, "gloom": 0.85,
       "leakMultiplier": 5.0, "hullWearPerHour": 1.3, "riggingWearPerHour": 2.4,
-      "hullStrikeChancePerHour": 0.15, "hullStrikeDamage": 12, "minHours": 4, "maxHours": 12,
+      "hullStrikeChancePerHour": 0.15, "hullStrikeDamage": 12,
+      "riggingStrikeChancePerHour": 0.22, "riggingStrikeDamage": 6, "minHours": 4, "maxHours": 12,
       "next": { "weather.gale": 3, "weather.fresh": 1 }
     }
   ]

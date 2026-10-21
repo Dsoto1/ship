@@ -139,6 +139,73 @@ public class VoyageTests
     }
 
     [Fact]
+    public void StormsCarryAwayLinesAndSpringTheYard()
+    {
+        var (runner, ship, crew) = Setup();
+        HoldWeather(ship, "weather.storm");
+        runner.AssignTask(crew[3], "task.pump_bilge");
+
+        runner.Advance(24 * 60);
+
+        var carried = runner.Campaign.Chronicle.Entries.Where(e => e.Kind == ChronicleEntryKind.RiggingCarriedAway).ToList();
+        Assert.NotEmpty(carried);
+        Assert.Equal(carried.Count(e => e.Get(ChronicleParameters.To) == "line"), ship.PartedLines.Count);
+        Assert.Equal(carried.Any(e => e.Get(ChronicleParameters.To) == "yard"), ship.YardSprung);
+        Assert.All(ship.PartedLines, line => Assert.InRange(line, 0, Shipped.Voyage!.PartingLines - 1));
+        var formatter = new ChronicleFormatter(runner.Campaign, Shipped);
+        Assert.All(carried, e => Assert.Contains("aloft", formatter.Format(e).Replace("topsail yard", "aloft", StringComparison.Ordinal), StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void CalmWeatherCarriesNothingAway()
+    {
+        var (runner, ship, _) = Setup();
+        HoldWeather(ship, "weather.fair");
+        runner.Advance(3 * 24 * 60);
+        Assert.Empty(ship.PartedLines);
+        Assert.False(ship.YardSprung);
+    }
+
+    [Fact]
+    public void ASprungYardSlowsHerAndRiggingWorkMendsYardThenLines()
+    {
+        var (runner, ship, crew) = Setup();
+        HoldWeather(ship, "weather.calm");
+        runner.AssignTask(crew[0], "task.stand_watch");
+        runner.Advance(5);
+        var sound = ship.SpeedLeaguesPerHour;
+        ship.DeveloperCarryAway([4, 1], yard: true);
+        runner.Advance(1);
+        Assert.True(ship.SpeedLeaguesPerHour < sound * 0.95);
+
+        ship.Apply(new ShipEffects { Rigging = VoyageState.YardMendWork - 1 }, 1);
+        Assert.True(ship.YardSprung);
+        ship.Apply(new ShipEffects { Rigging = 1 + VoyageState.LineMendWork }, 1);
+        Assert.False(ship.YardSprung);
+        Assert.Equal([4], ship.PartedLines);
+        ship.Apply(new ShipEffects { Rigging = -10 }, 1);
+        Assert.Equal([4], ship.PartedLines);
+        ship.Apply(new ShipEffects { Rigging = VoyageState.LineMendWork }, 1);
+        Assert.Empty(ship.PartedLines);
+        Assert.Equal(0, ship.Mending);
+    }
+
+    [Fact]
+    public void WhatCarriedAwayIsSaved()
+    {
+        var (runner, ship, _) = Setup();
+        ship.DeveloperCarryAway([2, 6], yard: true);
+        ship.Apply(new ShipEffects { Rigging = 3 }, 1);
+        var json = SaveSerializer.Serialize(runner.Campaign);
+
+        var loaded = SaveSerializer.Deserialize(json, Shipped).Voyage!;
+
+        Assert.Equal([2, 6], loaded.PartedLines);
+        Assert.True(loaded.YardSprung);
+        Assert.Equal(3, loaded.Mending, 6);
+    }
+
+    [Fact]
     public void SheArrivesWhenTheDistanceIsRun()
     {
         var runner = TestDeckScenario.Create(Shipped, withDuties: true, withVoyage: false);
@@ -266,6 +333,7 @@ public class VoyageTests
     [InlineData("weather")]
     [InlineData("outcome")]
     [InlineData("distance")]
+    [InlineData("parted")]
     public void TamperedVoyagesAreRejected(string tampering)
     {
         var root = JsonNode.Parse(SaveSerializer.Serialize(Setup().Runner.Campaign))!.AsObject();
@@ -276,6 +344,7 @@ public class VoyageTests
             case "weather": voyage["weather"] = "weather.frogs"; break;
             case "outcome": voyage["outcome"] = "Raptured"; break;
             case "distance": voyage["totalLeagues"] = -5; break;
+            case "parted": voyage["partedLines"] = new JsonArray(99); break;
         }
 
         Assert.Throws<SaveLoadException>(() => SaveSerializer.Deserialize(root.ToJsonString(), Shipped));

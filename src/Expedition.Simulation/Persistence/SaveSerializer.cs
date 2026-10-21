@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 24;
+    public const int CurrentSchemaVersion = 25;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -177,6 +177,18 @@ public static class SaveSerializer
                 return root;
             },
             // Format 24 added songs in the tavern.
+            // Format 25 added what heavy weather carries away aloft: nothing yet.
+            [24] = root =>
+            {
+                if (root["voyage"] is JsonObject voyage)
+                {
+                    voyage["partedLines"] = new JsonArray();
+                    voyage["yardSprung"] = false;
+                    voyage["mending"] = 0;
+                }
+
+                return root;
+            },
             [23] = root =>
             {
                 if (root["port"] is JsonObject port)
@@ -592,6 +604,7 @@ public static class SaveSerializer
                     LeaguesSailed = voyage.LeaguesSailed, Hull = voyage.Hull, Bilge = voyage.Bilge, Rigging = voyage.Rigging,
                     Weather = voyage.WeatherId, WeatherUntilTick = voyage.WeatherUntilTick, Speed = voyage.SpeedLeaguesPerHour,
                     WatchKept = voyage.WatchKept, Outcome = voyage.Outcome.ToString(), SailPlan = voyage.SailPlan.ToString(),
+                    PartedLines = voyage.PartedLines.ToList(), YardSprung = voyage.YardSprung, Mending = voyage.Mending,
                 }
                 : null,
             Knowledge = campaign.Knowledge.Entries.Select(k => new KnowledgeData
@@ -993,6 +1006,13 @@ public static class SaveSerializer
             voyage.Restore(savedVoyage.LeaguesSailed, savedVoyage.Hull, savedVoyage.Bilge, savedVoyage.Rigging, savedVoyage.Speed,
                 savedVoyage.WatchKept, ParseEnum<Voyage.VoyageOutcome>(savedVoyage.Outcome, "voyage outcome"));
             voyage.SailPlan = ParseEnum<Voyage.SailPlan>(savedVoyage.SailPlan, "sail plan");
+            if (savedVoyage.PartedLines.Any(l => l < 0 || l >= rules.PartingLines) || savedVoyage.PartedLines.Distinct().Count() != savedVoyage.PartedLines.Count
+                || savedVoyage.Mending is < 0 or > 100 || double.IsNaN(savedVoyage.Mending))
+            {
+                throw new SaveLoadException("The voyage lists a parted line that is not aboard, or invalid mending.");
+            }
+
+            voyage.RestoreCarriedAway(savedVoyage.PartedLines, savedVoyage.YardSprung, savedVoyage.Mending);
             campaign.SetVoyage(voyage);
         }
 
