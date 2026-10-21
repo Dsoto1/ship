@@ -44,6 +44,9 @@ public sealed record VoyageRules
     /// <summary>Bilge levels that raise an alarm when crossed, rising.</summary>
     public IReadOnlyList<double> BilgeAlarms { get; init; } = [50, 80];
 
+    /// <summary>The course, the set of the sea and how positions are reckoned; null for a voyage reckoned only by distance.</summary>
+    public RouteRules? Route { get; init; }
+
     /// <summary>Weather the voyage starts in.</summary>
     public required string StartingWeather { get; init; }
 
@@ -61,6 +64,11 @@ public sealed record VoyageRules
         if (ids.Count != Weathers.Count)
         {
             errors.Add("Voyage: weather IDs must be unique.");
+        }
+
+        if (Route is { } route)
+        {
+            errors.AddRange(route.Validate());
         }
 
         if (!ids.Contains(StartingWeather))

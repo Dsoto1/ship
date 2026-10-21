@@ -275,8 +275,9 @@ public class VoyageTests
             }
         }
 
-        // Most crews make it unaided, but not all: the captain's choices are meant to matter.
-        Assert.InRange(arrivals.Count, 6, 9);
+        // Most crews make it unaided, but not all: the captain's choices are meant to matter. With no
+        // noon sights the set of the sea puts her off her course, a dozen leagues more to run.
+        Assert.InRange(arrivals.Count, 5, 9);
         Assert.All(arrivals, day => Assert.InRange(day, 17, 32));
     }
 

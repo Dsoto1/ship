@@ -253,6 +253,7 @@ public sealed partial class SimulationRunner
         if (effect.Leagues != 0 && Campaign.Voyage is { Outcome: VoyageOutcome.UnderWay } passage)
         {
             passage.LeaguesSailed = Math.Clamp(passage.LeaguesSailed + effect.Leagues, 0, passage.TotalLeagues);
+            passage.Navigation?.Shift(effect.Leagues);
         }
 
         foreach (var character in Resolve(effect.Who, pending).ToList())

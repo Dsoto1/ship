@@ -86,6 +86,7 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
                 ? $"A squall sprang the main topsail yard on {Ship()}; the topsail cannot be set until it is fished (rigging now {entry.Get(ChronicleParameters.Level)}%)."
                 : $"A line parted aloft on {Ship()} and flies loose (rigging now {entry.Get(ChronicleParameters.Level)}%).",
             ChronicleEntryKind.ClaimTested => ClaimLine(who, entry),
+            ChronicleEntryKind.NoonSight => $"Noon sight by {who}: latitude {entry.Get(ChronicleParameters.Level)}.",
             ChronicleEntryKind.BilgeAlarm => $"The bilge is {entry.Get(ChronicleParameters.Level)}% full and rising. Man the pumps!",
             ChronicleEntryKind.Foundered => $"{Capitalise(entry.Get(ChronicleParameters.To) ?? "The ship")} filled and foundered.",
             ChronicleEntryKind.Landfall => $"Land! {Capitalise(entry.Get(ChronicleParameters.To) ?? "The coast")} sighted from the masthead.",

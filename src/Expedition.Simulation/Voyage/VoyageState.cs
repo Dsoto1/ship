@@ -83,8 +83,14 @@ public sealed class VoyageState
     /// <summary>Distance made good so far.</summary>
     public double LeaguesSailed { get; internal set; }
 
-    /// <summary>Distance still to go.</summary>
-    public double LeaguesRemaining => Math.Max(0, TotalLeagues - LeaguesSailed);
+    /// <summary>Distance still to go, truly: with a route, from where she really is.</summary>
+    public double LeaguesRemaining => Navigation?.TrueRemaining ?? Math.Max(0, TotalLeagues - LeaguesSailed);
+
+    /// <summary>Distance still to go as the captain reckons it: what the interface may show.</summary>
+    public double ReckonedRemaining => Navigation?.ReckonedRemaining ?? LeaguesRemaining;
+
+    /// <summary>Position, course and reckoning, if the voyage has a route.</summary>
+    public Navigation? Navigation { get; internal set; }
 
     /// <summary>Hull condition, 0..100.</summary>
     public double Hull { get; internal set; } = 100;

@@ -477,7 +477,18 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
 
         var weather = rules.Weather(rules.StartingWeather);
         var until = Campaign.Clock.Tick + WeatherSpell(weather);
-        Campaign.SetVoyage(new VoyageState(shipName, destination, leagues, weather.Id, until));
+        var voyage = new VoyageState(shipName, destination, leagues, weather.Id, until);
+        if (rules.Route is { } route)
+        {
+            var bearing = route.Bearing * Math.PI / 180;
+            voyage.Navigation = new Navigation(new ChartPoint(Math.Sin(bearing) * leagues, Math.Cos(bearing) * leagues), route.Offing);
+            voyage.Navigation.Heading = voyage.Navigation.CourseFrom(new ChartPoint(0, 0));
+            SetTheSea(voyage.Navigation, route, weather);
+            voyage.Navigation.LogError = 1 + Gaussian(Campaign.Randomness.Navigation) * route.SpeedErrorSd;
+            voyage.Navigation.Mark();
+        }
+
+        Campaign.SetVoyage(voyage);
         return CommandResult.Ok();
     }
 
@@ -507,6 +518,10 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             weather = rules.Weather(next);
             ship.WeatherId = next;
             ship.WeatherUntilTick = Campaign.Clock.Tick + WeatherSpell(weather);
+            if (ship.Navigation is { } reckoning && rules.Route is { } setOf)
+            {
+                SetTheSea(reckoning, setOf, weather);
+            }
         }
 
         var bilgeBefore = ship.Bilge;
@@ -535,6 +550,9 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             * (ship.YardSprung ? rules.SprungYardSpeed : 1)
             * plan.Speed;
         ship.LeaguesSailed += ship.SpeedLeaguesPerHour * HoursPerTick;
+        var landfall = ship.Navigation is { } navigation && rules.Route is { } course
+            ? SailTheRoute(ship, navigation, course)
+            : ship.LeaguesRemaining <= 0;
 
         foreach (var level in rules.BilgeAlarms.Where(level => bilgeBefore < level && ship.Bilge >= level))
         {
@@ -547,7 +565,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             Campaign.Record(ChronicleEntryKind.Foundered, [new(ChronicleParameters.To, ship.ShipName)]);
             Campaign.TryTransitionTo(CampaignPhase.ShipwreckSurvival, $"{ship.ShipName} filled and foundered");
         }
-        else if (ship.LeaguesRemaining <= 0)
+        else if (landfall)
         {
             ship.Outcome = VoyageOutcome.Arrived;
             Campaign.Record(ChronicleEntryKind.Landfall, [new(ChronicleParameters.To, ship.Destination)]);

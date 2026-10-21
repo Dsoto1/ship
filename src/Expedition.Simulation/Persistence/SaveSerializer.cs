@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 25;
+    public const int CurrentSchemaVersion = 26;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -177,6 +177,24 @@ public static class SaveSerializer
                 return root;
             },
             // Format 24 added songs in the tavern.
+            // Format 26 added navigation: a random stream for it, and the voyage's position (placed on the
+            // route by how far she had sailed, when the save is loaded).
+            [25] = root =>
+            {
+                var seed = ulong.Parse(root["seed"]!.GetValue<string>(), CultureInfo.InvariantCulture);
+                var (state, increment) = new SimulationRandom(seed, RandomStreams.StreamNumber(RandomStreams.NavigationName)).SaveState();
+                if (root["randomStreams"] is JsonObject streams)
+                {
+                    streams[RandomStreams.NavigationName] = new JsonObject
+                    {
+                        ["state"] = state.ToString(CultureInfo.InvariantCulture),
+                        ["increment"] = increment.ToString(CultureInfo.InvariantCulture),
+                    };
+                }
+
+                return root;
+            },
+
             // Format 25 added what heavy weather carries away aloft: nothing yet.
             [24] = root =>
             {
@@ -605,6 +623,16 @@ public static class SaveSerializer
                     Weather = voyage.WeatherId, WeatherUntilTick = voyage.WeatherUntilTick, Speed = voyage.SpeedLeaguesPerHour,
                     WatchKept = voyage.WatchKept, Outcome = voyage.Outcome.ToString(), SailPlan = voyage.SailPlan.ToString(),
                     PartedLines = voyage.PartedLines.ToList(), YardSprung = voyage.YardSprung, Mending = voyage.Mending,
+                    Navigation = voyage.Navigation is { } n
+                        ? new NavigationData
+                        {
+                            True = [n.True.X, n.True.Y], Reckoned = [n.Reckoned.X, n.Reckoned.Y], Drift = [n.Drift.X, n.Drift.Y],
+                            LogError = n.LogError, Heading = n.Heading, Landed = n.Landed, RunningDown = n.RunningDown, LastSightDay = n.LastSightDay,
+                            Navigator = n.Navigator?.Value,
+                            Track = n.Track.Select(p => (IReadOnlyList<double>)[p.X, p.Y]).ToList(),
+                            Sights = n.Sights.Select(s => new NoonSightData { Day = s.Day, Taker = s.Taker.Value, Y = s.Y, Error = s.Error }).ToList(),
+                        }
+                        : null,
                 }
                 : null,
             Knowledge = campaign.Knowledge.Entries.Select(k => new KnowledgeData
@@ -1013,6 +1041,35 @@ public static class SaveSerializer
             }
 
             voyage.RestoreCarriedAway(savedVoyage.PartedLines, savedVoyage.YardSprung, savedVoyage.Mending);
+            if (rules.Route is { } route)
+            {
+                var bearing = route.Bearing * Math.PI / 180;
+                var navigation = new Voyage.Navigation(new Voyage.ChartPoint(Math.Sin(bearing) * savedVoyage.TotalLeagues, Math.Cos(bearing) * savedVoyage.TotalLeagues), route.Offing);
+                if (savedVoyage.Navigation is { } saved)
+                {
+                    if (new[] { saved.True, saved.Reckoned, saved.Drift }.Any(p => p.Count != 2 || p.Any(double.IsNaN))
+                        || saved.Track.Any(p => p.Count != 2) || saved.LogError is <= 0 or > 2
+                        || (saved.Navigator is { } who && !campaign.Characters.ContainsKey(new CharacterId(who)))
+                        || saved.Sights.Any(s => !campaign.Characters.ContainsKey(new CharacterId(s.Taker))))
+                    {
+                        throw new SaveLoadException("The voyage's navigation is invalid.");
+                    }
+
+                    Voyage.ChartPoint Point(IReadOnlyList<double> p) => new(p[0], p[1]);
+                    navigation.Restore(Point(saved.True), Point(saved.Reckoned), Point(saved.Drift), saved.LogError, saved.Heading, saved.Landed, saved.RunningDown,
+                        saved.LastSightDay, saved.Navigator is { } navigator ? new CharacterId(navigator) : null, saved.Track.Select(Point),
+                        saved.Sights.Select(s => new Voyage.NoonSight(s.Day, new CharacterId(s.Taker), s.Y, s.Error)));
+                }
+                else
+                {
+                    // An older voyage, reckoned by distance only: put her on the course, as far along it as she had come.
+                    var along = Math.Min(savedVoyage.LeaguesSailed, savedVoyage.TotalLeagues);
+                    var here = new Voyage.ChartPoint(Math.Sin(bearing) * along, Math.Cos(bearing) * along);
+                    navigation.Restore(here, here, new Voyage.ChartPoint(route.Current[0], route.Current[1]), 1, route.Bearing, false, false, -1, null, [here], []);
+                }
+
+                voyage.Navigation = navigation;
+            }
             campaign.SetVoyage(voyage);
         }
 

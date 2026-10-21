@@ -51,6 +51,9 @@ public enum ChronicleEntryKind
     /// </summary>
     ClaimTested,
 
+    /// <summary>The noon sight was taken (parameters: level = the latitude found, need = its likely error in leagues).</summary>
+    NoonSight,
+
     /// <summary>The bilge rose past an alarm level (parameter: level).</summary>
     BilgeAlarm,
 

@@ -10,6 +10,16 @@
   // Nobody at the helm or on lookout: she yaws about and the sails are not trimmed.
   "noWatchSpeedMultiplier": 0.4,
   "bilgeAlarms": [50, 80],
+  // The passage on the chart: south-west from La Bocana (36°30′ N, 6°18′ W) to the Ember Coast, which
+  // runs north and south. The steady set of these waters is to the north, a league a day or so; each
+  // spell of weather adds its own. A careful noon sight in a calm finds the latitude within about three
+  // leagues; nothing gives the longitude at sea.
+  "route": {
+    "bearing": 222, "startLatitude": 36.5, "startLongitude": -6.3, "leaguesPerDegree": 17.5,
+    "current": [0.0, 0.03], "currentVariation": 0.06, "speedErrorSd": 0.09, "sightError": 3,
+    "offing": 60,
+    "landfallTolerance": 4, "sightFrom": 11.5, "sightUntil": 12.5
+  },
   "startingWeather": "weather.fair",
   "weathers": [
     {

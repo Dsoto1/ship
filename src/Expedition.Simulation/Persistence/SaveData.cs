@@ -375,6 +375,59 @@ public sealed record DutyData
     public required IReadOnlyList<string> Tasks { get; init; }
 }
 
+/// <summary>A saved voyage's navigation. Added in format 26.</summary>
+public sealed record NavigationData
+{
+    /// <summary>Where she truly is: [east, north] leagues from the port.</summary>
+    public required IReadOnlyList<double> True { get; init; }
+
+    /// <summary>Where the captain reckons she is.</summary>
+    public required IReadOnlyList<double> Reckoned { get; init; }
+
+    /// <summary>The set of the sea this spell, leagues an hour [east, north].</summary>
+    public required IReadOnlyList<double> Drift { get; init; }
+
+    /// <summary>The log's error today, as a factor.</summary>
+    public required double LogError { get; init; }
+
+    /// <summary>The course steered, degrees.</summary>
+    public required double Heading { get; init; }
+
+    /// <summary>True once the coast is raised.</summary>
+    public bool Landed { get; init; }
+
+    /// <summary>True once she is running down the destination's latitude.</summary>
+    public bool RunningDown { get; init; }
+
+    /// <summary>The day of the last noon sight, or -1.</summary>
+    public long LastSightDay { get; init; } = -1;
+
+    /// <summary>Who takes the noon sight if the captain does not.</summary>
+    public int? Navigator { get; init; }
+
+    /// <summary>The reckoned track, as [east, north] pairs.</summary>
+    public IReadOnlyList<IReadOnlyList<double>> Track { get; init; } = [];
+
+    /// <summary>Noon sights taken.</summary>
+    public IReadOnlyList<NoonSightData> Sights { get; init; } = [];
+}
+
+/// <summary>One saved noon sight.</summary>
+public sealed record NoonSightData
+{
+    /// <summary>Day taken.</summary>
+    public required long Day { get; init; }
+
+    /// <summary>Who took it.</summary>
+    public required int Taker { get; init; }
+
+    /// <summary>The latitude it gave, leagues north of the port.</summary>
+    public required double Y { get; init; }
+
+    /// <summary>How far it was out (hidden truth).</summary>
+    public required double Error { get; init; }
+}
+
 /// <summary>A saved voyage. Added in format 11.</summary>
 public sealed record VoyageData
 {
@@ -407,6 +460,9 @@ public sealed record VoyageData
 
     /// <summary>Rigging work done towards mending the next thing carried away (format 25).</summary>
     public double Mending { get; init; }
+
+    /// <summary>Position, course and reckoning, if the voyage has a route (format 26).</summary>
+    public NavigationData? Navigation { get; init; }
 
     /// <summary>Weather ID.</summary>
     public required string Weather { get; init; }
