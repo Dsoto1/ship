@@ -47,6 +47,9 @@ public sealed record VoyageRules
     /// <summary>The course, the set of the sea and how positions are reckoned; null for a voyage reckoned only by distance.</summary>
     public RouteRules? Route { get; init; }
 
+    /// <summary>How heavy weather is met: warning, preparation, leaks, cargo.</summary>
+    public StormRules Storms { get; init; } = new();
+
     /// <summary>Weather the voyage starts in.</summary>
     public required string StartingWeather { get; init; }
 

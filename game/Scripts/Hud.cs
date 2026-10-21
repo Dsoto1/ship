@@ -862,6 +862,18 @@ public partial class Hud : CanvasLayer
                     $"Course {navigation.Heading:0}° by the compass, steered from your reckoning; the wind from the {SimulationRunner.CompassPoint(navigation.WindFrom)}. " +
                     (navigation.Beating ? "It is too near the course she wants, so she beats to windward, tack upon tack. " : "") +
                     "The chart (M) shows where you reckon she is."));
+                if (runner.StormComing && ship.Prepared.Count < Expedition.Simulation.Voyage.Preparations.All.Count)
+                {
+                    chips.Add(("⚑", "Heavy weather: prepare", Severity.Urgent,
+                        "A blow is coming or on her. Batten down, lash the cargo, strike the topmasts: the Ship panel (H) has them."));
+                }
+
+                if (ship.Leaks.Any(l => l.Repair == Expedition.Simulation.Voyage.LeakRepair.Open))
+                {
+                    chips.Add(("✚", $"Leaks open: {ship.Leaks.Count(l => l.Repair == Expedition.Simulation.Voyage.LeakRepair.Open)}", Severity.Urgent,
+                        "A leak is open. Plug it (Ship panel, H), and patch it with plank when you can."));
+                }
+
                 if (ship.Watches.Count > 0)
                 {
                     var hour = runner.Campaign.Clock.Tick % SimulationClock.TicksPerDay / SimulationClock.TicksPerHour;
@@ -1424,6 +1436,9 @@ public partial class Hud : CanvasLayer
             .Select(g => $"\n{g.Item1}{(g.Item3.Length > 0 ? $" — {g.Item3}" : "")}\n" + string.Join("\n", g.Item2.OrderBy(p => content.Items[p.Key].Name).Select(Line))));
     }
 
+    private VBoxContainer _stormBox = null!;
+    private Label _stormReport = null!;
+    private readonly Dictionary<string, Button> _stormButtons = [];
     private VBoxContainer _watchBox = null!;
     private Label _watchReport = null!;
     private Button _allHands = null!;
@@ -1438,6 +1453,34 @@ public partial class Hud : CanvasLayer
         _rations = Ui.Button("", "Short rations: water once a day at dawn, food once at noon. The stores last longer, but the crew grow hungry, thirsty and strained.",
             () => RationingToggled?.Invoke(!_rationsOn));
         body.AddChild(_rations);
+
+        // Heavy weather: the signs, the preparations, the leaks.
+        _stormBox = new VBoxContainer { Visible = false };
+        _stormBox.AddThemeConstantOverride("separation", Ui.SpaceS);
+        body.AddChild(_stormBox);
+        _stormBox.AddChild(new HSeparator());
+        _stormBox.AddChild(Ui.Text("Heavy weather", Ui.TextHeading, Ui.Brass));
+        _stormReport = Ui.Text("", Ui.TextBody, Ui.Ink, 370);
+        _stormBox.AddChild(_stormReport);
+        foreach (var (work, label, tip) in new[]
+                 {
+                     ("hatches", "Batten down the hatches", "Less water below in a seaway, and the stores kept dry"),
+                     ("cargo", "Lash the cargo", "Nothing breaks loose in the hold to stove casks and strain the hull"),
+                     ("aloft", "Strike the topmasts", "Far less wear and carrying away aloft; she sails slower until they are swayed up"),
+                     ("plug", "Plug the worst leak", "Fast, with oakum and a wedge; the next blow may burst it. A proper patch needs plank."),
+                 })
+        {
+            var order = work;
+            var button = Ui.Button(label, tip, () =>
+            {
+                if (_watchRunner is { } runner)
+                {
+                    ShowResult(runner.OrderStormWork(order), $"{label}: a hand is on it.");
+                }
+            });
+            _stormBox.AddChild(button);
+            _stormButtons[work] = button;
+        }
 
         // The watch bill: who stands which watch, which has the deck, and all hands.
         _watchBox = new VBoxContainer { Visible = false };
@@ -1465,6 +1508,42 @@ public partial class Hud : CanvasLayer
         (Expedition.Simulation.Voyage.Watch.Starboard, "Starboard watch"), (Expedition.Simulation.Voyage.Watch.Larboard, "Larboard watch"),
         (Expedition.Simulation.Voyage.Watch.Day, "Day-worker"), (Expedition.Simulation.Voyage.Watch.None, "No watch (works when needed)"),
     ];
+
+    // The heavy weather section: what is coming, what is done, and every leak with how it was met.
+    private void RefreshStorm(SimulationRunner runner, Expedition.Simulation.Voyage.VoyageState ship)
+    {
+        _stormBox.Visible = true;
+        var lines = new List<string>();
+        var coming = ship.NextWeatherId is { } next ? runner.Content.Voyage?.Weathers.FirstOrDefault(w => w.Id == next) : null;
+        lines.Add(runner.StormComing
+            ? coming is { SeaState: >= 1.8 } ? $"Heavy weather is coming: {_formatter.WeatherName(coming.Id)}. Prepare while there is time." : "It is blowing hard."
+            : "Fair enough for now. Watch the sky and the swell.");
+        string Done(string key, string yes, string no) => ship.Prepared.Contains(key) ? $"  ✓ {yes}" : $"  · {no}";
+        lines.Add(Done("hatches", "Hatches battened", "Hatches open"));
+        lines.Add(Done("cargo", "Cargo lashed", "Cargo not lashed"));
+        lines.Add(Done("aloft", "Topmasts struck (she sails slower)", "Topmasts up"));
+        if (ship.Leaks.Count > 0)
+        {
+            lines.Add("Leaks:");
+            foreach (var leak in ship.Leaks)
+            {
+                var day = new SimulationClock(leak.Tick).Day + 1;
+                var how = leak.Repair switch
+                {
+                    Expedition.Simulation.Voyage.LeakRepair.Open => "OPEN",
+                    Expedition.Simulation.Voyage.LeakRepair.Plugged => $"plugged day {new SimulationClock(leak.RepairedTick).Day + 1}",
+                    _ => $"made good day {new SimulationClock(leak.RepairedTick).Day + 1}",
+                };
+                lines.Add($"  {Capital(leak.Where)}, sprung day {day}: {how}");
+            }
+        }
+
+        _stormReport.Text = string.Join("\n", lines);
+        foreach (var (work, button) in _stormButtons)
+        {
+            button.Disabled = work == "plug" ? ship.Leaks.All(l => l.Repair != Expedition.Simulation.Voyage.LeakRepair.Open) : ship.Prepared.Contains(work);
+        }
+    }
 
     // The watch bill section: rebuilt when the crew changes, refreshed every frame the panel is open.
     private void RefreshWatchBill(SimulationRunner runner, Expedition.Simulation.Voyage.VoyageState ship)
@@ -1523,10 +1602,12 @@ public partial class Hud : CanvasLayer
             _shipReport.Text = "The Garza lies alongside the quay at La Bocana, sails furled, taking on stores and crew.\n\nInspection and repairs before sailing come with the port's later steps.";
             _rations.Visible = false;
             _watchBox.Visible = false;
+            _stormBox.Visible = false;
             return;
         }
 
         RefreshWatchBill(runner, ship);
+        RefreshStorm(runner, ship);
 
         var repairs = runner.RepairsLeft();
         var hullRepairs = repairs.GetValueOrDefault(Expedition.Simulation.Voyage.ShipPart.Hull);

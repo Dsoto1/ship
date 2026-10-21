@@ -283,7 +283,8 @@ public class VoyageTests
 
         // Most crews make it unaided, but not all: the captain's choices are meant to matter. With no
         // noon sights the set of the sea puts her off her course, a dozen leagues more to run.
-        Assert.InRange(arrivals.Count, 5, 9);
+        // (Heavy weather springs leaks and shifts cargo since R4e: about half arrive.)
+        Assert.InRange(arrivals.Count, 4, 9);
         Assert.All(arrivals, day => Assert.InRange(day, 17, 32));
     }
 

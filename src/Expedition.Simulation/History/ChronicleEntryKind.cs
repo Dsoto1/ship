@@ -90,6 +90,33 @@ public enum ChronicleEntryKind
     /// <summary>All hands were called on deck, or dismissed (parameter: to = called or dismissed).</summary>
     AllHands,
 
+    /// <summary>Heavy weather foreseen from its signs (parameter: to = the weather coming; character: who said so).</summary>
+    StormWarning,
+
+    /// <summary>A preparation for heavy weather done (parameter: to = aloft, cargo or hatches; character: who).</summary>
+    Prepared,
+
+    /// <summary>Fair again: topmasts swayed up, lashings cast off, hatches opened.</summary>
+    PreparationsUndone,
+
+    /// <summary>A heavy sea sprang a leak (parameters: to = where, level = how bad).</summary>
+    LeakSprung,
+
+    /// <summary>A leak plugged in a hurry (parameter: to = where; character: who).</summary>
+    LeakPlugged,
+
+    /// <summary>A leak made good with plank (parameter: to = where; character: who).</summary>
+    LeakPatched,
+
+    /// <summary>A plugged leak burst open again in heavy weather (parameter: to = where).</summary>
+    LeakReopened,
+
+    /// <summary>Cargo not lashed shifted and stove casks (parameters: to = item, level = lost).</summary>
+    CargoShifted,
+
+    /// <summary>Stores wetted below open hatches (parameters: to = item, level = lost).</summary>
+    StoresWetted,
+
     /// <summary>The captain made for an island (parameter: to = island ID).</summary>
     MakingForIsland,
 

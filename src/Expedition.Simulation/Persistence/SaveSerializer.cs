@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 30;
+    public const int CurrentSchemaVersion = 31;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -194,6 +194,9 @@ public static class SaveSerializer
 
                 return root;
             },
+
+            // Format 31 added heavy weather met: the weather foreseen, preparations, leaks.
+            [30] = root => root,
 
             // Format 30 added the watch bill: an older voyage keeps no watches until the captain sets them.
             [29] = root => root,
@@ -636,6 +639,8 @@ public static class SaveSerializer
                     WatchKept = voyage.WatchKept, Outcome = voyage.Outcome.ToString(), SailPlan = voyage.SailPlan.ToString(),
                     PartedLines = voyage.PartedLines.ToList(), YardSprung = voyage.YardSprung, Mending = voyage.Mending,
                     Watches = new SortedDictionary<int, string>(voyage.Watches.ToDictionary(pair => pair.Key.Value, pair => pair.Value.ToString())), AllHands = voyage.AllHands, TurnedOut = voyage.TurnedOut,
+                    NextWeather = voyage.NextWeatherId, Prepared = voyage.Prepared.Order(StringComparer.Ordinal).ToList(),
+                    Leaks = voyage.Leaks.Select(l => new LeakData { Id = l.Id, Where = l.Where, Severity = l.Severity, Repair = l.Repair.ToString(), Tick = l.Tick, RepairedTick = l.RepairedTick }).ToList(),
                     Navigation = voyage.Navigation is { } n
                         ? new NavigationData
                         {
@@ -1078,6 +1083,17 @@ public static class SaveSerializer
 
             voyage.AllHands = savedVoyage.AllHands;
             voyage.TurnedOut = savedVoyage.TurnedOut;
+            if ((savedVoyage.NextWeather is { } foreseen && rules.Weathers.All(w => w.Id != foreseen))
+                || savedVoyage.Prepared.Any(p => !Voyage.Preparations.All.Contains(p))
+                || savedVoyage.Leaks.Any(l => !Enum.TryParse<Voyage.LeakRepair>(l.Repair, out _) || l.Severity < 0))
+            {
+                throw new SaveLoadException("The voyage's weather foreseen, preparations or leaks are invalid.");
+            }
+
+            voyage.RestoreStorm(savedVoyage.NextWeather, savedVoyage.Prepared, savedVoyage.Leaks.Select(l => new Voyage.Leak
+            {
+                Id = l.Id, Where = l.Where, Severity = l.Severity, Repair = Enum.Parse<Voyage.LeakRepair>(l.Repair), Tick = l.Tick, RepairedTick = l.RepairedTick,
+            }));
             if (rules.Route is { } route)
             {
                 var bearing = route.Bearing * Math.PI / 180;

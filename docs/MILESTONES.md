@@ -43,7 +43,7 @@ This file tracks status and breaks the next work into tickets.
 | R4b | True vs estimated position; the chart: dead reckoning, a latitude sight, uncertainty region, route legs, annotations (NAVIGATION) | Largely done (2026-10-21): truth and reckoning, the noon sight and astrolabe, the chart with its doubt. Route legs and annotations not yet |
 | R4c | Standing navigation orders and configurable interrupts; alerts by severity (VOYAGE §8, §35; NAV §7–9) | Planned |
 | R4d | Watch rotation and the assignment board (VOYAGE §9, §17) | Done (2026-10-21): the watch bill, the round, the day's work, all hands, the turned-out watch, tired hands' mistakes |
-| R4e | Localized damage, repair quality and history, cargo zones, the storm with preparation (VOYAGE §4, §21–23) | Planned |
+| R4e | Localized damage, repair quality and history, cargo zones, the storm with preparation (VOYAGE §4, §21–23) | Done (2026-10-21): warning, three preparations, leaks plugged or patched with their history, cargo shifting, stores wetted. Cargo zones not yet |
 | R4f | Medical crisis, grievances by stages, skill growth and mentorship; events become state-caused (VOYAGE §15, §18–19, §25–26, §42) | Planned |
 | R4g | Landfall approach: soundings, sighting, identifying the coast, wrong landfall (NAV §30–31) | Done (2026-10-21) |
 | R4h | Voyage validation: calm morning, fog, storm, aftermath; sound; the ship's visible history (VOYAGE §46) | Planned |
@@ -2222,3 +2222,70 @@ Saved in format 30: the bill, all hands, turned out. Tests: `WatchTests` (7). Sc
 - named posts (helmsman, lookout aloft);
 - the bosun's call heard at the change of watch;
 - a watch officer of the crew's own choosing.
+
+### R4e — Heavy weather met: warning, preparation, leaks
+
+Storms used to just happen to the ship. Now they are seen coming, prepared for and met
+(VOYAGE_EXPERIENCE §4, §21–23).
+
+**The warning** (`SimulationRunner.Storms.cs`). Six hours before a spell ends, the next weather is
+decided. If it is a gale or a storm its signs are seen, and the most seasoned hand says what they
+mean:
+- **a gale:** "a long swell rising out of the south-west, and mares' tails high up: wind coming";
+- **a storm:** "the sun went down red in a brassy haze, the swell heavier by the hour and the birds
+  gone".
+
+The warning is an urgent alert and pauses the game.
+
+**Three preparations** (crew tasks; each can be a standing duty that wakes when heavy weather is
+foreseen or blowing):
+
+| Preparation | Time | What it does in heavy weather |
+|---|---|---|
+| Batten down the hatches | 1 h | a quarter less water shipped; no stores wetted |
+| Lash the cargo | 1.5 h | nothing shifts |
+| Strike the topmasts (and send the topsail yard down) | 2 h | rigging wear down to 40%, carrying away to 35% of open; she sails at 85% until the topmasts are swayed up |
+
+When it is fair again and nothing heavy is foreseen, the crew undo them.
+
+**Leaks** (`Voyage/Storms.cs`).
+- **Springing.** About half the heavy seas that strike the hull spring a leak at a named place (the
+  starboard bow, under the counter, at the garboard strake), as bad as the blow.
+- **Plug the leak.** 30 minutes and one oakum; it stops three quarters of the water, but a plug can
+  burst again in heavy weather.
+- **Patch the hull.** Now also makes good the worst leak not yet made good, with plank and oakum.
+- **History.** Every leak and its repairs are kept: "the starboard bow, sprung day 9, plugged day 9,
+  made good day 11".
+
+**Cargo and stores.** Cargo not lashed shifts in heavy seas: a store loses 8% (casks stove) and the
+hull is strained. Open hatches let water wet the stores.
+
+**What preparing saves.** The same storm of a day, six voyages each way:
+
+| | Prepared | Unprepared |
+|---|---|---|
+| Carrying away aloft | less | more |
+| Rope left | at least as much | less |
+| Stores | more | less |
+| Cargo shifted | never | it shifts |
+
+The test crews' riggers and carpenter now carry the preparations and the plug as standing duties.
+Over the ten test crews, four arrive (it was five): heavy weather costs more now.
+
+**On the ship and the HUD.**
+- **The Ship panel** has a "Heavy weather" section: what is coming, each preparation done or not with
+  a button to have it done (by the freshest hand on deck not at the helm), and every leak with its
+  history and "Plug the worst leak".
+- **Chips:** "Heavy weather: prepare" and "Leaks open".
+- **Alerts:** heavy weather coming, a leak sprung, a plug burst, cargo shifted, stores wetted.
+- **The model.** With the topmasts struck, the topsail and its yard are gone from aloft.
+
+The weather that follows a spell is now drawn six hours early, which changes each seed's weather a
+little. Saved in format 31: the weather foreseen, the preparations, the leaks. Tests: `StormTests` (5).
+Screenshot: `docs/screenshots/heavy-weather.jpg`.
+
+**Not yet:**
+- cargo zones (fore, main, aft holds) and what is where;
+- steering damage;
+- sails torn, as their own part;
+- the pumps themselves failing.

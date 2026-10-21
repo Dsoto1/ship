@@ -280,6 +280,11 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             return CommandResult.Rejected(weather);
         }
 
+        if (StormWorkProblem(task) is { } stormWork)
+        {
+            return CommandResult.Rejected(stormWork);
+        }
+
         var missingTools = task.RequiredTools.Where(tool => Available(character, tool) == 0).ToList();
         if (missingTools.Count > 0)
         {
@@ -448,6 +453,12 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             return false;
         }
 
+        if ((when.OpenLeak == true && (Campaign.Voyage is not { } leaking || LeakFor(leaking, "plug") is null))
+            || (when.StormComing == true && !StormComing))
+        {
+            return false;
+        }
+
         var hour = Campaign.Clock.TimeOfDay.TotalHours;
         return when.StartBetween is not { } windows || windows.Any(w => hour >= w[0] && hour < w[1]);
     }
@@ -578,11 +589,10 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         StepStores();
         var weather = rules.Weather(ship.WeatherId);
         OfficerOfTheWatch(ship, weather);
+        Forewarn(ship, rules, weather);
         if (Campaign.Clock.Tick >= ship.WeatherUntilTick)
         {
-            var roll = Campaign.Randomness.Weather.NextDouble() * weather.Next.Values.Sum();
-            var next = weather.Next.OrderBy(n => n.Key, StringComparer.Ordinal).SkipWhile(n => (roll -= n.Value) > 0).Select(n => n.Key).FirstOrDefault()
-                       ?? weather.Next.Keys.Order(StringComparer.Ordinal).Last();
+            var next = NextWeather(ship, weather);
             if (next != weather.Id)
             {
                 Campaign.Record(ChronicleEntryKind.WeatherChanged, [new(ChronicleParameters.From, weather.Id), new(ChronicleParameters.To, next)]);
@@ -599,17 +609,28 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
 
         var bilgeBefore = ship.Bilge;
         var plan = rules.Plan(ship.SailPlan);
-        var leak = (rules.BaseLeakPerHour + (100 - ship.Hull) * rules.LeakPerHullPointLost) * weather.LeakMultiplier * plan.Leak;
-        ship.Apply(new ShipEffects { Bilge = leak, Hull = -weather.HullWearPerHour * plan.Wear, Rigging = -weather.RiggingWearPerHour * plan.Wear }, HoursPerTick);
+        // Heavy weather met prepared or not: battened hatches ship less water, struck topmasts wear less.
+        var heavy = weather.SeaState >= rules.Storms.HeavySeaState;
+        var battened = heavy && ship.Prepared.Contains(Preparations.Hatches) ? rules.Storms.BattenedLeak : 1;
+        var struck = ship.Prepared.Contains(Preparations.Aloft);
+        var leak = (rules.BaseLeakPerHour + (100 - ship.Hull) * rules.LeakPerHullPointLost + LeakInflow(ship)) * weather.LeakMultiplier * plan.Leak * battened;
+        var aloftWear = heavy && struck ? rules.Storms.AloftWear : 1;
+        ship.Apply(new ShipEffects { Bilge = leak, Hull = -weather.HullWearPerHour * plan.Wear, Rigging = -weather.RiggingWearPerHour * plan.Wear * aloftWear }, HoursPerTick);
         if (weather.HullStrikeChancePerHour > 0 && Campaign.Randomness.Weather.Chance(weather.HullStrikeChancePerHour * plan.Wear * HoursPerTick))
         {
             ship.Apply(new ShipEffects { Hull = -weather.HullStrikeDamage }, 1);
             Campaign.Record(ChronicleEntryKind.HullStruck, [
                 new(ChronicleParameters.Damage, Number(weather.HullStrikeDamage)), new(ChronicleParameters.Level, Number(ship.Hull)),
             ]);
+            if (Campaign.Randomness.Weather.Chance(rules.Storms.LeakChancePerStrike))
+            {
+                SpringALeak(ship, rules, weather);
+            }
         }
 
-        if (weather.RiggingStrikeChancePerHour > 0 && Campaign.Randomness.Weather.Chance(weather.RiggingStrikeChancePerHour * plan.Wear * HoursPerTick))
+        MeetTheWeather(ship, rules, weather);
+        if (weather.RiggingStrikeChancePerHour > 0
+            && Campaign.Randomness.Weather.Chance(weather.RiggingStrikeChancePerHour * plan.Wear * (struck ? rules.Storms.AloftCarryAway : 1) * HoursPerTick))
         {
             CarryAway(ship, rules, weather);
         }
@@ -622,6 +643,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             * (ship.WatchKept ? 1 : rules.NoWatchSpeedMultiplier)
             * (ship.YardSprung ? rules.SprungYardSpeed : 1)
             * (HeldForIsland(ship) ? 0 : 1)
+            * (struck ? rules.Storms.AloftSpeed : 1)
             * (ship.Navigation is { Sighted: false } sailing && rules.Route is { } points ? points.SpeedOnPoint(sailing.OffWind) : 1)
             * plan.Speed;
         ship.LeaguesSailed += ship.SpeedLeaguesPerHour * HoursPerTick;
@@ -1039,6 +1061,8 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             {
                 ship.Apply(repair, 1);
             }
+
+            FinishStormWork(character, definition);
 
             if (definition.CrewOnComplete is { } relief)
             {

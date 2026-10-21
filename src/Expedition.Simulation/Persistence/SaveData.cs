@@ -561,6 +561,16 @@ public sealed record VoyageData
     /// <summary>True while the watch below is turned out (format 30).</summary>
     public bool TurnedOut { get; init; }
 
+    /// <summary>The weather foreseen to follow this spell, or null (format 31).</summary>
+    public string? NextWeather { get; init; }
+
+    /// <summary>The preparations for heavy weather in place (format 31).</summary>
+    public IReadOnlyList<string> Prepared { get; init; } = [];
+
+    /// <summary>Every leak sprung, with its repair (format 31).</summary>
+    public IReadOnlyList<LeakData> Leaks { get; init; } = [];
+
+
     /// <summary>Position, course and reckoning, if the voyage has a route (format 26).</summary>
     public NavigationData? Navigation { get; init; }
 
@@ -736,4 +746,27 @@ public sealed record DebtData
 
     /// <summary>Sueldos owed.</summary>
     public required int Amount { get; init; }
+}
+
+
+/// <summary>One saved leak (format 31).</summary>
+public sealed record LeakData
+{
+    /// <summary>Its number.</summary>
+    public required int Id { get; init; }
+
+    /// <summary>Where.</summary>
+    public required string Where { get; init; }
+
+    /// <summary>How bad, open.</summary>
+    public required double Severity { get; init; }
+
+    /// <summary>Open, Plugged or Patched.</summary>
+    public required string Repair { get; init; }
+
+    /// <summary>When sprung.</summary>
+    public required long Tick { get; init; }
+
+    /// <summary>When last repaired, or -1.</summary>
+    public long RepairedTick { get; init; } = -1;
 }

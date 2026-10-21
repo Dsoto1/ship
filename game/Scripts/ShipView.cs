@@ -53,6 +53,7 @@ public partial class ShipView : Node3D
     private float _brace;
     private float _stream;
     private Node3D? _topYard;
+    private bool _struck;
     private Node3D? _topYardBroken;
     private Node3D? _topsail;
     private bool _sprung;
@@ -201,7 +202,7 @@ public partial class ShipView : Node3D
         foreach (var (sail, tier) in _squareSails)
         {
             // A sprung yard carries no sail: the topsail went with it.
-            sail.Visible = !furled && !(_sprung && sail == _topsail);
+            sail.Visible = !furled && !((_sprung || _struck) && sail == _topsail);
             var set = furled ? 0.05f : tier == 1 ? Mathf.Clamp(1.9f - seaState * 0.75f, 0.08f, 1f) : Mathf.Clamp(2.3f - seaState * 0.65f, 0.4f, 1f);
             var scale = Mathf.Lerp(sail.Scale.Y, set, Mathf.Clamp(delta * 1.5f, 0, 1));
             sail.Scale = new Vector3(1, delta == 0 ? set : scale, furled ? 0.12f : Mathf.Lerp(0.3f, 1f, Mathf.Clamp(seaState, 0.2f, 1f)));
@@ -235,7 +236,8 @@ public partial class ShipView : Node3D
     /// <param name="rigging">Rigging condition, 0..100.</param>
     /// <param name="parted">Lines carried away in heavy weather, by number (VoyageState.PartedLines).</param>
     /// <param name="sprung">Whether the main topsail yard has been sprung (VoyageState.YardSprung).</param>
-    public void ShowCondition(double hull, double rigging, IReadOnlySet<int>? parted = null, bool sprung = false)
+    /// <param name="struck">Whether the topmasts are struck for heavy weather: the topsail and its yard sent down.</param>
+    public void ShowCondition(double hull, double rigging, IReadOnlySet<int>? parted = null, bool sprung = false, bool struck = false)
     {
         var wear = (float)Math.Clamp(1 - rigging / 100, 0, 1);
         if (Math.Abs(wear - _wear) > 0.004f)
@@ -256,9 +258,11 @@ public partial class ShipView : Node3D
         }
 
         _sprung = sprung;
+        _struck = struck;
         if (_topYard is not null && _topYardBroken is not null)
         {
-            _topYard.Visible = !_sprung;
+            // Struck for heavy weather, the topsail yard is sent down on deck: gone from aloft.
+            _topYard.Visible = !_sprung && !_struck;
             _topYardBroken.Visible = _sprung;
         }
 

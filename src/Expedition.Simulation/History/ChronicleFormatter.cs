@@ -116,6 +116,20 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
                 "stoodDown" => "Pumped out and the worst past: the watch below goes below again.",
                 _ => "All hands dismissed: the watch below goes below.",
             },
+            ChronicleEntryKind.StormWarning => $"{StormSigns(entry.Get(ChronicleParameters.To))} {(entry.Characters.Count > 0 ? $"{who} says it will blow hard before long." : "")}".Trim(),
+            ChronicleEntryKind.Prepared => entry.Get(ChronicleParameters.To) switch
+            {
+                "aloft" => $"{who} and the topmen struck the topmasts and sent down the topsail yard.",
+                "cargo" => $"{who} lashed and chocked the cargo in the hold.",
+                _ => $"{who} battened down the hatches and covered the gratings.",
+            },
+            ChronicleEntryKind.PreparationsUndone => "Fair again: the topmasts swayed up, the lashings cast off, the hatches opened.",
+            ChronicleEntryKind.LeakSprung => $"A heavy sea sprang a leak {entry.Get(ChronicleParameters.To)}.",
+            ChronicleEntryKind.LeakPlugged => $"{who} plugged the leak {entry.Get(ChronicleParameters.To)} with oakum and a wedge: it will hold, for now.",
+            ChronicleEntryKind.LeakPatched => $"{who} made good the leak {entry.Get(ChronicleParameters.To)} with plank and oakum.",
+            ChronicleEntryKind.LeakReopened => $"The plug {entry.Get(ChronicleParameters.To)} burst in the seas: the leak is open again.",
+            ChronicleEntryKind.CargoShifted => $"Cargo not lashed broke loose in the hold and shifted: {entry.Get(ChronicleParameters.Level)} of {ItemWord(entry.Get(ChronicleParameters.To))} lost, the hull strained.",
+            ChronicleEntryKind.StoresWetted => $"Water down the open hatches wetted the stores: {entry.Get(ChronicleParameters.Level)} of {ItemWord(entry.Get(ChronicleParameters.To))} spoiled.",
             ChronicleEntryKind.MakingForIsland => $"The captain left the passage and made for {IslandName(entry)}.",
             ChronicleEntryKind.IslandSighted => $"Land! {Capitalise(IslandName(entry))} raised from the masthead, some {entry.Get(ChronicleParameters.Level)} leagues off. " +
                                                 $"{Island(entry)?.Looks}",
@@ -132,6 +146,12 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
     }
 
     private Voyage.CoastRules? Coast() => content.Voyage?.Route?.Coast;
+
+    private string ItemWord(string? id) => id is not null && content.Items.TryGetValue(id, out var item) ? item.Name.ToLowerInvariant() : "the stores";
+
+    private static string StormSigns(string? coming) => coming == "weather.storm"
+        ? "The sun went down red in a brassy haze, the swell heavier by the hour and the birds gone: something bad is coming."
+        : "A long swell rising out of the south-west, and mares' tails high up: wind coming."; 
 
     private Voyage.Island? Island(ChronicleEntry entry) => content.Voyage?.Route?.Islands.FirstOrDefault(i => i.Id == entry.Get(ChronicleParameters.To));
 

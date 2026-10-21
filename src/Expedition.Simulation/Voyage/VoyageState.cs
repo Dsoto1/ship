@@ -130,6 +130,39 @@ public sealed class VoyageState
     /// <summary>True while the officer of the watch has turned the watch below out: the pumps losing, or a storm.</summary>
     public bool TurnedOut { get; internal set; }
 
+    /// <summary>The weather that comes when this spell ends, once foreseen (some hours before), or null.</summary>
+    public string? NextWeatherId { get; internal set; }
+
+    private readonly HashSet<string> _prepared = [];
+    private readonly List<Leak> _leaks = [];
+
+    /// <summary>The preparations for heavy weather in place (see <see cref="Preparations"/>).</summary>
+    public IReadOnlySet<string> Prepared => _prepared;
+
+    /// <summary>Every leak sprung this voyage, with how it was met: the ship's history.</summary>
+    public IReadOnlyList<Leak> Leaks => _leaks;
+
+    internal void Prepare(string preparation) => _prepared.Add(preparation);
+
+    internal void ClearPreparations() => _prepared.Clear();
+
+    internal void Spring(Leak leak) => _leaks.Add(leak);
+
+    internal void Mend(Leak leak, LeakRepair repair, long tick)
+    {
+        var index = _leaks.FindIndex(l => l.Id == leak.Id);
+        _leaks[index] = leak with { Repair = repair, RepairedTick = tick };
+    }
+
+    internal void RestoreStorm(string? nextWeather, IEnumerable<string> prepared, IEnumerable<Leak> leaks)
+    {
+        NextWeatherId = nextWeather;
+        _prepared.Clear();
+        _prepared.UnionWith(prepared);
+        _leaks.Clear();
+        _leaks.AddRange(leaks);
+    }
+
     /// <summary>The watch a hand stands, or <see cref="Watch.None"/>.</summary>
     public Watch WatchOf(Core.CharacterId id) => _watches.GetValueOrDefault(id);
 

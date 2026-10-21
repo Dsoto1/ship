@@ -51,6 +51,8 @@
     "name": "Patch the hull",
     "durationMinutes": 180,
     "shipOnComplete": { "hull": 15 },
+    // And the worst leak not yet made good, made good.
+    "repairsLeak": "patch",
     "dutyWhen": { "hullBelow": 75 },
     "skill": "skill.ship_repair",
     "minSkill": 1,
@@ -89,6 +91,49 @@
     "needsWeather": { "seaStateBelow": 1.6 },
     "yield": { "item": "item.fish", "perHour": 2.2, "bestInCalm": true, "onTheBank": 2.5 },
     "needsPerHour": { "fatigue": 1.0, "stress": -0.5 }
+  },
+  {
+    "id": "task.plug_leak",
+    "name": "Plug the leak",
+    "durationMinutes": 30,
+    // In a hurry, with oakum and a wedge: most of the water stopped, but the next blow may burst it.
+    "skill": "skill.ship_repair",
+    "consumes": { "item.oakum": 1 },
+    "repairsLeak": "plug",
+    "dutyWhen": { "openLeak": true },
+    "needsPerHour": { "fatigue": 5.0, "stress": 0.5 }
+  },
+  {
+    "id": "task.strike_topmasts",
+    "name": "Strike the topmasts",
+    "durationMinutes": 120,
+    // Topmasts struck and the topsail yard sent down before a blow: far less wear and carrying away
+    // aloft, but she sails slower until they are swayed up again in fair weather.
+    "skill": "skill.rigging",
+    "attribute": "attribute.strength",
+    "prepares": "aloft",
+    "dutyWhen": { "stormComing": true },
+    "needsPerHour": { "fatigue": 6.0 },
+    "hazard": { "chancePerHour": 0.02, "healthDamage": 15, "condition": "condition.bruised" }
+  },
+  {
+    "id": "task.lash_cargo",
+    "name": "Lash the cargo",
+    "durationMinutes": 90,
+    // Casks chocked and lashed so nothing breaks loose in a seaway.
+    "attribute": "attribute.strength",
+    "prepares": "cargo",
+    "dutyWhen": { "stormComing": true },
+    "needsPerHour": { "fatigue": 5.0 }
+  },
+  {
+    "id": "task.batten_down",
+    "name": "Batten down the hatches",
+    "durationMinutes": 60,
+    // Tarpaulins over the hatches and gratings, battened: less water below, the stores kept dry.
+    "prepares": "hatches",
+    "dutyWhen": { "stormComing": true },
+    "needsPerHour": { "fatigue": 3.0 }
   },
   {
     "id": "task.water_ashore",

@@ -57,10 +57,10 @@ public static class TestDeckScenario
     private static readonly string[][] Duties =
     [
         ["task.stand_watch"],
-        ["task.repair_rigging", "task.stand_watch"],
+        ["task.strike_topmasts", "task.repair_rigging", "task.stand_watch"],
         ["task.cook", "task.pump_bilge"],
-        ["task.pump_bilge", "task.stand_watch"],
-        ["task.patch_hull", "task.pump_bilge"],
+        ["task.batten_down", "task.lash_cargo", "task.pump_bilge", "task.stand_watch"],
+        ["task.plug_leak", "task.patch_hull", "task.pump_bilge"],
         ["task.pump_bilge", "task.stand_watch"],
     ];
 

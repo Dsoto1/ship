@@ -599,7 +599,8 @@ public partial class Main : Node3D
         var cooking = _runner.Campaign.ActiveTasks.Values.Any(task => task.DefinitionId == "task.cook");
         // Sails turn see-through at working zoom so they never hide the crew (ART_BIBLE.md 3); zoom out to see them whole.
         // Set sails fade at working zoom so they never hide the crew; furled at the quay they hide no one.
-        _deck.ShowCondition(voyage?.Hull ?? 100, voyage?.Rigging ?? 100, voyage?.PartedLines, voyage?.YardSprung == true);
+        _deck.ShowCondition(voyage?.Hull ?? 100, voyage?.Rigging ?? 100, voyage?.PartedLines, voyage?.YardSprung == true,
+            voyage?.Prepared.Contains(Expedition.Simulation.Voyage.Preparations.Aloft) == true);
         _deck.UpdateLook(_world.Darkness, inPort ? 1f : Mathf.Lerp(0.38f, 1f, Mathf.SmoothStep(18f, 32f, _camera.Size)), t, cooking, inPort ? 3.2f : SailSetting(voyage), (float)delta, furled: inPort);
         _deck.SetWind(inPort || voyage?.Navigation is not { } windOn ? null : (float)-windOn.OffWind, (float)delta);
         foreach (var bird in _birds)
@@ -1334,6 +1335,11 @@ public partial class Main : Node3D
                 ChronicleEntryKind.LandmarkSighted => (Severity.Attention, AutoPause.Landfall, "A mark on the coast"),
                 ChronicleEntryKind.NotTheDestination => (Severity.Urgent, AutoPause.Landfall, "This is not Punta Ceniza"),
                 ChronicleEntryKind.StruckTheCoast => (Severity.Critical, AutoPause.ShipDamage, "She has struck"),
+                ChronicleEntryKind.StormWarning => (Severity.Urgent, AutoPause.Weather, "Heavy weather coming"),
+                ChronicleEntryKind.LeakSprung => (Severity.Urgent, AutoPause.ShipDamage, "A leak sprung"),
+                ChronicleEntryKind.LeakReopened => (Severity.Urgent, AutoPause.ShipDamage, "A plug has burst"),
+                ChronicleEntryKind.CargoShifted => (Severity.Attention, AutoPause.ShipDamage, "Cargo shifted"),
+                ChronicleEntryKind.StoresWetted => (Severity.Attention, AutoPause.ShipDamage, "Stores wetted"),
                 ChronicleEntryKind.AllHands when entry.Get(ChronicleParameters.To) == "turnedOut" => (Severity.Urgent, AutoPause.ShipDamage, "The watch below turned out"),
                 ChronicleEntryKind.IslandSighted => (Severity.Positive, AutoPause.Landfall, "Land! The island"),
                 ChronicleEntryKind.Anchored => (Severity.Positive, AutoPause.Landfall, "At anchor"),

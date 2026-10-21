@@ -91,6 +91,12 @@ public sealed record TaskDefinition
 
     /// <summary>What the work brings into the ship's stores as it goes (water caught, fish), or null.</summary>
     public TaskYield? Yield { get; init; }
+
+    /// <summary>The preparation for heavy weather this work puts in place when done (Voyage.Preparations), or null.</summary>
+    public string? Prepares { get; init; }
+
+    /// <summary>"plug" or "patch": the work deals with a leak when done (the worst open one; for a patch, the worst not made good).</summary>
+    public string? RepairsLeak { get; init; }
 }
 
 /// <summary>
@@ -147,6 +153,12 @@ public sealed record DutyCondition
 
     /// <summary>Only starting within one of these hour windows, each [from, to), for example meal times.</summary>
     public IReadOnlyList<double[]>? StartBetween { get; init; }
+
+    /// <summary>Only while a leak is open.</summary>
+    public bool? OpenLeak { get; init; }
+
+    /// <summary>Only while heavy weather is foreseen or blowing.</summary>
+    public bool? StormComing { get; init; }
 }
 
 /// <summary>Chance of injury while doing a task.</summary>
