@@ -49,7 +49,7 @@ This file tracks status and breaks the next work into tickets.
 | R4h | Voyage validation: calm morning, fog, storm, aftermath; sound; the ship's visible history (VOYAGE §46) | First pass (2026-10-22): all four staged and judged Partly (docs/VOYAGE_VALIDATION.md); visible history and sea sounds added; six things to do next |
 | R5 | Shipwreck transition: casualties, location, salvage by accessibility, survivors' state kept (VOYAGE §39–40) | Done (2026-10-22): the transition and its report; survival ashore is R6 |
 | R6 | Landfall camp, the first 72 hours: assessment, water, shelter, fire, stores, sanitation (SETTLEMENT §3–6) | Done (2026-10-22): going ashore from the anchorage or the wreck, the site to be scouted, the camp's works by the captain's priorities and four hard choices, wet nights, swamp fever, spoiled stores, the first days' report; the beach drawn with its works (docs/R6_LANDFALL_CAMP.md) |
-| R7 | Establishment: construction projects, storage and spoilage, the first garden, seasons (SETTLEMENT §7–19) | First pass done (2026-10-22): buildings raised phase by phase with materials, tools and quality, and worn by the weather; tools kept, broken and mended; spoilage by place; the wet season and its storm; the garden as an experiment; the first season judged at day 90 (docs/R7_ESTABLISHMENT.md) |
+| R7 | Establishment: construction projects, storage and spoilage, the first garden, seasons (SETTLEMENT §7–19) | First pass done (2026-10-22): buildings raised phase by phase with materials, tools and quality, and worn by the weather; tools kept, broken and mended; spoilage by place; the wet season and its storm; the garden as an experiment; the first season judged at day 90; buildings placed by the captain, where the ground matters (docs/R7_ESTABLISHMENT.md) |
 | R8 | The world around: exploration, the Ahuneri and Tesiwa, trade, the charter (SETTLEMENT §26–33) | Planned |
 | 5c | Recruitment rules in full: investigation, references, counteroffers | Later (core moves into V4) |
 | 5d | Godot waterfront recruitment scene | Later, once the voyage is fun |
@@ -2733,3 +2733,12 @@ and survives the first season in the test runs.
 
 **Screenshots:** `docs/screenshots/r7-day13-posts.jpg`, `r7-day35-frames.jpg`, `r7-day64-roofs.jpg`
 and `r7-camp-panel.jpg`.
+
+**Placing buildings** (owner: "yes build it"). The fixed plots are gone: "+ Hut" shows the building's
+outline under the mouse, green or red, with a notice of what is wrong or what the ground means; click
+sets it down, R turns it, right-click or Esc gives up. It may not go on the wet sand, rocks, other
+buildings, the camp's places or the paths from the hearth to the water and the landing. Trees on its
+ground mean more clearing and give poles. Siting matters: stores keep drier high on the beach, the
+infirmary works better away from the huts, a garden does better at the forest's edge. Saved in format
+39, with old saves' plots turned into places. Tests: 553 in all. Screenshots: `r7-place-allowed.jpg`,
+`r7-place-refused.jpg`.

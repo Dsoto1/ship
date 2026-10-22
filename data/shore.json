@@ -29,20 +29,21 @@
     "reportHours": 72
   },
   // Making the camp last, the first season (R7, docs/R7_ESTABLISHMENT.md). Each building is raised in
-  // phases, each phase a task done so many times on the building's plot; its quality is the work's.
+  // phases, each phase a task done so many times where it is placed; its quality is the work's. Width and
+  // depth are its footprint in cells (metres), before it is turned.
   "settlement": {
     "buildings": [
-      { "id": "building.hut", "name": "Hut", "plot": "hut", "berths": 4,
+      { "id": "building.hut", "width": 4, "depth": 3, "name": "Hut", "plot": "hut", "berths": 4,
         "phases": [ { "task": "task.clear_ground", "times": 1 }, { "task": "task.set_posts", "times": 2 }, { "task": "task.raise_frame", "times": 2 }, { "task": "task.thatch_roof", "times": 3 } ] },
-      { "id": "building.storehouse", "name": "Storehouse", "plot": "store", "stores": true,
+      { "id": "building.storehouse", "width": 5, "depth": 4, "name": "Storehouse", "plot": "store", "stores": true,
         "phases": [ { "task": "task.clear_ground", "times": 2 }, { "task": "task.set_posts", "times": 3 }, { "task": "task.raise_frame", "times": 3 }, { "task": "task.thatch_roof", "times": 3 }, { "task": "task.fit_out", "times": 2 } ] },
-      { "id": "building.cookhouse", "name": "Cookhouse", "plot": "cook", "cooks": true,
+      { "id": "building.cookhouse", "width": 4, "depth": 4, "name": "Cookhouse", "plot": "cook", "cooks": true,
         "phases": [ { "task": "task.clear_ground", "times": 1 }, { "task": "task.set_posts", "times": 2 }, { "task": "task.raise_frame", "times": 1 }, { "task": "task.thatch_roof", "times": 2 } ] },
-      { "id": "building.infirmary", "name": "Infirmary", "plot": "infirmary", "sickBerths": 6,
+      { "id": "building.infirmary", "width": 5, "depth": 4, "name": "Infirmary", "plot": "infirmary", "sickBerths": 6,
         "phases": [ { "task": "task.clear_ground", "times": 1 }, { "task": "task.set_posts", "times": 2 }, { "task": "task.raise_frame", "times": 2 }, { "task": "task.thatch_roof", "times": 3 } ] },
-      { "id": "building.workshop", "name": "Workshop", "plot": "workshop", "mends": true,
+      { "id": "building.workshop", "width": 4, "depth": 4, "name": "Workshop", "plot": "workshop", "mends": true,
         "phases": [ { "task": "task.clear_ground", "times": 1 }, { "task": "task.set_posts", "times": 2 }, { "task": "task.raise_frame", "times": 2 }, { "task": "task.thatch_roof", "times": 2 } ] },
-      { "id": "building.garden", "name": "Garden", "plot": "garden", "beds": 6,
+      { "id": "building.garden", "width": 8, "depth": 5, "name": "Garden", "plot": "garden", "beds": 6,
         "phases": [ { "task": "task.clear_ground", "times": 3 }, { "task": "task.dig_beds", "times": 3 }, { "task": "task.fence_garden", "times": 2 } ] }
     ],
     // [RESEARCH] What a garden of European seed might make of a wet tropical shore: to be checked. Suitability

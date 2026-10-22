@@ -115,6 +115,26 @@ public partial class Main : Node3D
     private bool _portBuilt;
     private bool _follow = true;
     private CharacterId? _hovered;
+
+    // A building being set down on the beach (R7): which, turned or not, and the cell under the mouse.
+    private string? _placingBuilding;
+    private bool _placeTurned;
+    private GridPosition? _placeAt;
+    private bool _placePinned;
+    private string? _ghostOrder;
+
+    // A developer's building order: hut, or hut@12:13 to set it down there, hut@12:13t turned.
+    private static (string Id, int? X, int? Y, bool Turned) ParseBuildOrder(string order)
+    {
+        var parts = order.Split('@');
+        var id = "building." + parts[0];
+        if (parts.Length < 2 || parts[1].TrimEnd('t').Split(':') is not [var xs, var ys] || !int.TryParse(xs, out var x) || !int.TryParse(ys, out var y))
+        {
+            return (id, null, null, false);
+        }
+
+        return (id, x, y, parts[1].EndsWith('t'));
+    }
     private PendingAction? _pending;
     private int _crewSeen;
 
@@ -219,6 +239,7 @@ public partial class Main : Node3D
         talkLayer.AddChild(_astrolabe);
         _hud.ChartRequested += ToggleChart;
         _hud.BelowRequested += ToggleBelow;
+        _hud.PlaceRequested += StartPlacing;
         _chart.Closed += CloseChart;
         _chart.SightRequested += () =>
         {
@@ -662,7 +683,7 @@ public partial class Main : Node3D
                 _runner.Campaign.ActiveTasks.TryGetValue(id, out var task);
                 var definition = task is null ? null : _content.Tasks[task.DefinitionId];
                 var location = _content.Locations[placement.LocationId];
-                var spot = task?.SpotId is { } spotId ? location.FindSpot(spotId) : null;
+                var spot = task?.SpotId is { } spotId ? _runner.SpotIn(location.Id, spotId) : null;
                 // A cask is rolled, not carried; everything else the task carries is held.
                 var carrying = definition?.Carries == "cask" ? null : definition?.Carries;
                 // The departure's farewells, staged (R3 scene D): whoever has come to see this hand off
@@ -990,6 +1011,12 @@ public partial class Main : Node3D
     {
         if (_runner is null || _departure.Playing)
         {
+            return;
+        }
+
+        if (_placingBuilding is not null && Placing(@event))
+        {
+            GetViewport().SetInputAsHandled();
             return;
         }
 
@@ -1737,6 +1764,99 @@ public partial class Main : Node3D
         return best;
     }
 
+    // ================================================================ setting buildings down (R7)
+
+    private void StartPlacing(string buildingId)
+    {
+        if (_runner.Campaign.Camp is null || _content.Shore?.Settlement?.Building(buildingId) is null)
+        {
+            return;
+        }
+
+        _placingBuilding = buildingId;
+        _placeTurned = false;
+        _placeAt = null;
+        _hud.ClosePanel();
+        UpdatePlacing(GetViewport().GetMousePosition());
+    }
+
+    private void StopPlacing()
+    {
+        _placingBuilding = null;
+        _placeAt = null;
+        _camp.ShowGhost(null, 0, 0, false, false);
+        _hud.ShowPlacing(null);
+    }
+
+    // The outline follows the mouse, and the notice says what the ground there means.
+    private void UpdatePlacing(Vector2 mouse)
+    {
+        if (_placingBuilding is not { } id || _content.Shore?.Settlement?.Building(id) is not { } building)
+        {
+            return;
+        }
+
+        PlaceAt(_placePinned ? _placeAt : CellUnder(mouse) ?? _placeAt);
+    }
+
+    private void PlaceAt(GridPosition? cell)
+    {
+        if (_placingBuilding is not { } id || _content.Shore?.Settlement?.Building(id) is not { } building)
+        {
+            return;
+        }
+
+        _placeAt = cell;
+        var how = $"{building.Name}: click to set it down · R to turn it · right-click or Esc to give up.";
+        if (_placeAt is not { } at)
+        {
+            _hud.ShowPlacing(how);
+            return;
+        }
+
+        var check = _runner.Placement(id, at.X, at.Y, _placeTurned);
+        _camp.ShowGhost(building, at.X, at.Y, _placeTurned, check.Allowed);
+        var said = check.Allowed ? check.Notes : check.Problems;
+        _hud.ShowPlacing(how + (said.Count > 0 ? "\n" + string.Join("\n", said) : ""), check.Allowed);
+    }
+
+    // Input while setting a building down; true when it was used.
+    private bool Placing(InputEvent @event)
+    {
+        switch (@event)
+        {
+            case InputEventMouseMotion motion:
+                UpdatePlacing(motion.Position);
+                return false;
+            case InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left } click:
+                UpdatePlacing(click.Position);
+                if (_placeAt is { } at)
+                {
+                    var placed = _runner.PlaceBuilding(_placingBuilding!, at.X, at.Y, _placeTurned);
+                    var name = _content.Shore!.Settlement!.Building(_placingBuilding!)!.Name;
+                    _hud.ShowResult(placed, $"{name} ordered: the hands will start on it as the priorities allow.");
+                    if (placed.Succeeded)
+                    {
+                        StopPlacing();
+                    }
+                }
+
+                return true;
+            case InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Right }:
+                StopPlacing();
+                return true;
+            case InputEventKey { Pressed: true, Echo: false, Keycode: Key.R }:
+                _placeTurned = !_placeTurned;
+                UpdatePlacing(GetViewport().GetMousePosition());
+                return true;
+            case InputEventKey { Pressed: true, Echo: false, Keycode: Key.Escape }:
+                StopPlacing();
+                return true;
+            default:
+                return false;
+        }
+    }
+
     private GridPosition? CellUnder(Vector2 screenPosition)
     {
         if (_camera.GroundPointUnder(screenPosition) is not { } point)
@@ -2099,6 +2219,7 @@ public partial class Main : Node3D
                 case "ashore": _ashoreAt = value.Length > 0 ? value : "coast.punta_ceniza"; break;
                 case "camphours" when int.TryParse(value, out var campHours): _campHours = campHours; break;
                 case "build": _buildOrders = value; break;
+                case "ghost": _ghostOrder = value; break;
                 case "crewlife": _crewLife = true; break;
                 case "legs": _legs = true; break;
                 case "below": _developerBelow = true; break;
@@ -2457,9 +2578,13 @@ public partial class Main : Node3D
                     _runner.Advance(Math.Min(_campHours, 72) * 60);
                     _campHours -= Math.Min(_campHours, 72);
                     var wanted = orders == "all" ? ["hut", "hut", "storehouse", "cookhouse", "garden", "infirmary", "workshop"] : orders.Split(',');
-                    foreach (var building in wanted)
+                    foreach (var (id, x, y, turned) in wanted.Select(ParseBuildOrder))
                     {
-                        _runner.OrderBuilding("building." + building);
+                        var ordered = x is { } bx && y is { } by ? _runner.PlaceBuilding(id, bx, by, turned) : _runner.OrderBuilding(id);
+                        if (!ordered.Succeeded)
+                        {
+                            GD.PushWarning($"--build {id}: {ordered.Reason}");
+                        }
                     }
                 }
 
@@ -2474,6 +2599,15 @@ public partial class Main : Node3D
                 if (_startZoom is { } closer)
                 {
                     _camera.Size = closer;
+                }
+
+                // --ghost=hut@12:13: a building being set down there, its outline and notice shown (for screenshots).
+                if (_ghostOrder is { } ghost && ParseBuildOrder(ghost) is { X: { } gx, Y: { } gy } order)
+                {
+                    StartPlacing(order.Id);
+                    _placeTurned = order.Turned;
+                    _placePinned = true;
+                    PlaceAt(new GridPosition(gx, gy));
                 }
             }
         }

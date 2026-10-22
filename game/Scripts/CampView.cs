@@ -34,7 +34,9 @@ public partial class CampView : Node3D
     private Node3D _flames = null!;
     private Node3D _boat = null!;
     private string _shown = "";
-    private readonly List<(Node3D Tree, MeshInstance3D Stump)> _edgeTrees = [];
+    private readonly List<(Node3D Tree, MeshInstance3D Stump, int X, int Y)> _edgeTrees = [];
+    private Node3D _ghost = null!;
+    private string _ghostShown = "";
     private Node3D _settlement = null!;
     private Node3D _wet = null!;
     private StandardMaterial3D _groundMaterial = null!;
@@ -78,6 +80,9 @@ public partial class CampView : Node3D
         AddChild(_settlement);
         _wet = new Node3D { Name = "Wet", Visible = false };
         AddChild(_wet);
+        _ghost = new Node3D { Name = "Ghost", Visible = false };
+        AddChild(_ghost);
+        _ghostShown = "";
         BuildPuddles();
         _flames = new Node3D { Name = "Flames", Visible = false };
         AddChild(_flames);
@@ -195,7 +200,7 @@ public partial class CampView : Node3D
         // The forest's edge, tree by tree, so the ones felled for poles can be taken away (R7): a stump
         // left in each one's place. Nearest the camp go first.
         _edgeTrees.Clear();
-        var edge = new List<(Vector3 At, float Height, float Crown, Color Leaves)>();
+        var edge = new List<(Vector3 At, float Height, float Crown, Color Leaves, int X, int Y)>();
         for (var y = 0; y < _location.Height; y++)
         {
             for (var x = 0; x < _location.Width; x++)
@@ -204,13 +209,13 @@ public partial class CampView : Node3D
                 {
                     var at = new Vector3(x + rng.RandfRange(-0.3f, 0.3f), 0, y + rng.RandfRange(-0.3f, 0.3f));
                     at.Y = HeightAt(Mathf.Clamp(at.X, 1, _location.Width - 2), at.Z);
-                    edge.Add((at, 3.2f + rng.Randf() * 2.5f, 1.4f + rng.Randf() * 0.9f, rng.Randf() < 0.5f ? Leaf : DarkLeaf));
+                    edge.Add((at, 3.2f + rng.Randf() * 2.5f, 1.4f + rng.Randf() * 0.9f, rng.Randf() < 0.5f ? Leaf : DarkLeaf, x, y));
                 }
             }
         }
 
         var middle = new Vector3(_location.Width / 2f, 0, 17);
-        foreach (var (at, height, crown, leaves) in edge.OrderBy(e => (e.At - middle).LengthSquared()))
+        foreach (var (at, height, crown, leaves, cx, cy) in edge.OrderBy(e => (e.At - middle).LengthSquared()))
         {
             var tree = new Node3D { Position = at };
             AddChild(tree);
@@ -218,7 +223,7 @@ public partial class CampView : Node3D
             Add(tree, new SphereMesh { Radius = crown, Height = crown * 1.5f, RadialSegments = 8, Rings = 4 }, leaves, new Vector3(0, height + crown * 0.3f, 0));
             var stump = Add(this, new CylinderMesh { TopRadius = 0.2f, BottomRadius = 0.25f, Height = 0.35f, RadialSegments = 6 }, Bark.Lightened(0.15f), at + new Vector3(0, 0.17f, 0));
             stump.Visible = false;
-            _edgeTrees.Add((tree, stump));
+            _edgeTrees.Add((tree, stump, cx, cy));
         }
 
         // Behind and on the flanks, the forest goes on.
@@ -445,9 +450,74 @@ public partial class CampView : Node3D
         }
     }
 
-    // Where a plot's building stands: behind its two work places, towards the forest.
-    private Vector3? PlotCentre(string plot) =>
-        _location.FindSpot($"plot.{plot}.a") is { } a ? new Vector3(a.X + 0.5f, HeightAt(a.X + 0.5f, a.Y + 2f), a.Y + 2f) : null;
+    // The middle of a building's ground.
+    private Vector3 Middle(Footprint ground)
+    {
+        var x = (ground.X0 + ground.X1) / 2f;
+        var z = (ground.Y0 + ground.Y1) / 2f;
+        return new Vector3(x, HeightAt(x, z), z);
+    }
+
+    // A building's own frame: at the middle of its ground, turned a quarter if it was set down turned.
+    private Node3D Holder(Footprint ground, bool turned)
+    {
+        var holder = new Node3D { Position = Middle(ground), RotationDegrees = new Vector3(0, turned ? 90 : 0, 0) };
+        _settlement.AddChild(holder);
+        return holder;
+    }
+
+    /// <summary>
+    /// The outline of a building being set down, green where it may go and red where it may not, with its
+    /// front (where the hands work) marked; null hides it.
+    /// </summary>
+    public void ShowGhost(BuildingDefinition? building, int x, int y, bool turned, bool allowed)
+    {
+        var key = building is null ? "" : $"{building.Id}:{x}:{y}:{turned}:{allowed}";
+        if (key == _ghostShown)
+        {
+            return;
+        }
+
+        _ghostShown = key;
+        foreach (var child in _ghost.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        _ghost.Visible = building is not null;
+        if (building is null)
+        {
+            return;
+        }
+
+        var ground = SimulationRunner.FootprintOf(building, x, y, turned);
+        var colour = allowed ? new Color(0.35f, 0.85f, 0.4f, 0.4f) : new Color(0.95f, 0.3f, 0.25f, 0.45f);
+        var material = new StandardMaterial3D
+        {
+            AlbedoColor = colour, Transparency = BaseMaterial3D.TransparencyEnum.Alpha, ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+            CullMode = BaseMaterial3D.CullModeEnum.Disabled,
+        };
+        var edge = new StandardMaterial3D { AlbedoColor = new Color(colour, 0.9f), ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded };
+        var middle = Middle(ground);
+        var across = ground.X1 - ground.X0 + 1;
+        var deep = ground.Y1 - ground.Y0 + 1;
+        _ghost.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(across, 0.9f, deep) }, MaterialOverride = material, Position = middle + new Vector3(0, 0.45f, 0) });
+        // Its outline on the ground, and the front, where its two work places are.
+        foreach (var (size, offset) in new[]
+                 {
+                     (new Vector3(across, 0.06f, 0.1f), new Vector3(0, 0.03f, -deep / 2f)), (new Vector3(across, 0.06f, 0.1f), new Vector3(0, 0.03f, deep / 2f)),
+                     (new Vector3(0.1f, 0.06f, deep), new Vector3(-across / 2f, 0.03f, 0)), (new Vector3(0.1f, 0.06f, deep), new Vector3(across / 2f, 0.03f, 0)),
+                 })
+        {
+            _ghost.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = size }, MaterialOverride = edge, Position = middle + offset });
+        }
+
+        foreach (var fx in new[] { x - 1, x })
+        {
+            var at = new Vector3(fx, HeightAt(fx, ground.Y0 - 1), ground.Y0 - 1);
+            _ghost.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 0.18f, BottomRadius = 0.18f, Height = 0.05f }, MaterialOverride = edge, Position = at + new Vector3(0, 0.03f, 0) });
+        }
+    }
 
     /// <summary>
     /// The settlement as it stands (R7): each building at its phase (ground cleared, posts, frame, roof going
@@ -463,8 +533,8 @@ public partial class CampView : Node3D
 
         var wet = runner.WetSeason;
         var day = (int)runner.CampDay;
-        var key = string.Join(";", camp.Projects.Select(p => $"{p.Plot}:{p.Building}:{p.Phase}:{p.Done}"))
-                  + "#" + string.Join(";", camp.Buildings.Select(b => $"{b.Plot}:{(int)(b.Condition / 15)}"))
+        var key = string.Join(";", camp.Projects.Select(p => $"{p.Plot}:{p.Building}:{p.X}:{p.Y}:{p.Turned}:{p.Phase}:{p.Done}"))
+                  + "#" + string.Join(";", camp.Buildings.Select(b => $"{b.Plot}:{b.X}:{b.Y}:{b.Turned}:{(int)(b.Condition / 15)}"))
                   + "#" + string.Join(";", camp.Beds.Select(b => $"{b.Crop}:{(int)(runner.Growth(b) * 6)}:{(int)(b.Health * 5)}"))
                   + $"#{camp.PolesCut / 4}#{wet}#{Math.Min(day, 20) / 4}";
         if (key == _settled)
@@ -482,12 +552,27 @@ public partial class CampView : Node3D
         _wet.Visible = wet;
         _groundMaterial.AlbedoColor = wet ? new Color(0.78f, 0.76f, 0.72f) : Colors.White;
 
-        // A felled tree for every four poles cut, nearest the camp first.
-        var felled = Math.Min(_edgeTrees.Count, camp.PolesCut / 4);
-        for (var i = 0; i < _edgeTrees.Count; i++)
+        // Trees on a building's ground: felled as its clearing goes on, stumps and all grubbed out once done.
+        var grounds = camp.Projects.Where(p => rules.Building(p.Building) is not null)
+            .Select(p => (Ground: SimulationRunner.FootprintOf(rules.Building(p.Building)!, p.X, p.Y, p.Turned), Cleared: p.Phase > 0, Clearing: p.Phase == 0 && p.Done > 0))
+            .Concat(camp.Buildings.Where(b => rules.Building(b.Building) is not null)
+                .Select(b => (Ground: SimulationRunner.FootprintOf(rules.Building(b.Building)!, b.X, b.Y, b.Turned), Cleared: true, Clearing: false)))
+            .ToList();
+
+        // And a felled tree for every four poles cut at the edge, nearest the camp first.
+        var felled = camp.PolesCut / 4;
+        foreach (var (tree, stump, cx, cy) in _edgeTrees)
         {
-            _edgeTrees[i].Tree.Visible = i >= felled;
-            _edgeTrees[i].Stump.Visible = i < felled;
+            var under = grounds.FirstOrDefault(g => g.Ground.Contains(cx, cy));
+            if (under.Cleared || under.Clearing)
+            {
+                tree.Visible = false;
+                stump.Visible = under.Clearing;
+                continue;
+            }
+
+            tree.Visible = felled-- <= 0;
+            stump.Visible = !tree.Visible;
         }
 
         // Paths worn between the camp's places, darker as the days go by.
@@ -497,9 +582,11 @@ public partial class CampView : Node3D
             // Trodden sand: darker, and darker again in the wet, like the ground it is worn into.
             var path = Sand.Darkened(0.1f + 0.25f * trodden) * (wet ? new Color(0.78f, 0.76f, 0.72f) : Colors.White);
             var hearth = _location.FindSpot("spot.hearth");
-            foreach (var to in new[] { "spot.landing_1", "spot.water_1", "spot.stores", "plot.hut_2.a", "plot.workshop_1.a", "plot.garden_1.a", "spot.latrine" })
+            // To the camp's places, and to the front of the first of each kind of building.
+            var fronts = camp.Buildings.GroupBy(b => b.Building).Select(g => $"plot.{g.First().Plot}.a");
+            foreach (var to in new[] { "spot.landing_1", "spot.water_1", "spot.stores", "spot.latrine" }.Concat(fronts))
             {
-                if (hearth is not null && _location.FindSpot(to) is { } end)
+                if (hearth is not null && runner.SpotIn(_location.Id, to) is { } end)
                 {
                     Path(new Vector2(hearth.X, hearth.Y), new Vector2(end.X, end.Y), path);
                 }
@@ -508,26 +595,29 @@ public partial class CampView : Node3D
 
         foreach (var project in camp.Projects)
         {
-            if (rules.Building(project.Building) is { } building && PlotCentre(project.Plot) is { } at)
+            if (rules.Building(project.Building) is { } building)
             {
                 // How far along: whole phases done, and the share of the one in hand.
-                var phase = project.Phase < building.Phases.Count ? building.Phases[project.Phase] : null;
-                var share = phase is null ? 1 : project.Done / (float)phase.Times;
-                DrawBuilding(building, at, project.Phase, share, 100, 0.5f);
+                var share = project.Phase < building.Phases.Count ? project.Done / (float)Math.Max(1, runner.PhaseTimes(project)) : 1;
+                var holder = Holder(SimulationRunner.FootprintOf(building, project.X, project.Y, project.Turned), project.Turned);
+                DrawBuilding(holder, building, Vector3.Zero, project.Phase, share, 100, 0.5f);
             }
         }
 
         foreach (var standing in camp.Buildings)
         {
-            if (rules.Building(standing.Building) is { } building && PlotCentre(standing.Plot) is { } at)
+            if (rules.Building(standing.Building) is { } building)
             {
-                DrawBuilding(building, at, building.Phases.Count, 1, (float)standing.Condition, (float)standing.Quality);
+                var holder = Holder(SimulationRunner.FootprintOf(building, standing.X, standing.Y, standing.Turned), standing.Turned);
+                DrawBuilding(holder, building, Vector3.Zero, building.Phases.Count, 1, (float)standing.Condition, (float)standing.Quality);
             }
         }
 
         // The garden's beds: green while healthy, yellowing as they waste, taller as they grow.
-        if (camp.Buildings.FirstOrDefault(b => rules.Building(b.Building)?.Beds > 0) is { } garden && PlotCentre(garden.Plot) is { } plot)
+        if (camp.Buildings.FirstOrDefault(b => rules.Building(b.Building)?.Beds > 0) is { } garden)
         {
+            var beds = Holder(SimulationRunner.FootprintOf(rules.Building(garden.Building)!, garden.X, garden.Y, garden.Turned), garden.Turned);
+            var plot = Vector3.Zero;
             for (var i = 0; i < camp.Beds.Count; i++)
             {
                 var bed = camp.Beds[i];
@@ -536,7 +626,7 @@ public partial class CampView : Node3D
                 var colour = Yellowed.Lerp(Green, (float)Math.Clamp(bed.Health, 0, 1));
                 for (var row = 0; row < 3; row++)
                 {
-                    Add(_settlement, new BoxMesh { Size = new Vector3(1.6f, 0.06f + 0.4f * grown, 0.22f) }, colour, at + new Vector3(0, 0.03f + 0.2f * grown, -0.4f + row * 0.4f));
+                    Add(beds, new BoxMesh { Size = new Vector3(1.6f, 0.06f + 0.4f * grown, 0.22f) }, colour, at + new Vector3(0, 0.03f + 0.2f * grown, -0.4f + row * 0.4f));
                 }
             }
         }
@@ -559,7 +649,7 @@ public partial class CampView : Node3D
     // One building, as far as it has got: phase 0 the ground cleared, then posts, frame, roof, and fitting
     // out; a share of the phase in hand shows that much of it. Worn by its condition: the thatch dark and
     // patchy, sagging when bad. Rougher work sags sooner.
-    private void DrawBuilding(BuildingDefinition building, Vector3 at, int phase, float share, float condition, float quality)
+    private void DrawBuilding(Node3D parent, BuildingDefinition building, Vector3 at, int phase, float share, float condition, float quality)
     {
         var isGarden = building.Beds > 0;
         var (w, d, h) = building.Id switch
@@ -582,10 +672,10 @@ public partial class CampView : Node3D
         var clear = Reached("task.clear_ground");
         if (clear > 0 || phase > 0)
         {
-            Add(_settlement, new BoxMesh { Size = new Vector3(w + 0.8f, 0.02f, d + 0.8f) }, Cleared, at + new Vector3(0, 0.01f, 0));
+            Add(parent, new BoxMesh { Size = new Vector3(w + 0.8f, 0.02f, d + 0.8f) }, Cleared, at + new Vector3(0, 0.01f, 0));
             foreach (var (cx, cz) in new[] { (-1, -1), (1, -1), (1, 1), (-1, 1) })
             {
-                Add(_settlement, new CylinderMesh { TopRadius = 0.03f, BottomRadius = 0.03f, Height = 0.5f }, Pole, at + new Vector3(cx * (w / 2 + 0.3f), 0.25f, cz * (d / 2 + 0.3f)));
+                Add(parent, new CylinderMesh { TopRadius = 0.03f, BottomRadius = 0.03f, Height = 0.5f }, Pole, at + new Vector3(cx * (w / 2 + 0.3f), 0.25f, cz * (d / 2 + 0.3f)));
             }
         }
 
@@ -595,7 +685,7 @@ public partial class CampView : Node3D
             var dug = Reached("task.dig_beds");
             for (var i = 0; i < (int)(6 * dug); i++)
             {
-                Add(_settlement, new BoxMesh { Size = new Vector3(1.8f, 0.12f, 1.2f) }, Bed, at + new Vector3(-2.2f + (i % 3) * 2.2f, 0.06f, -0.6f + (i / 3) * 1.6f));
+                Add(parent, new BoxMesh { Size = new Vector3(1.8f, 0.12f, 1.2f) }, Bed, at + new Vector3(-2.2f + (i % 3) * 2.2f, 0.06f, -0.6f + (i / 3) * 1.6f));
             }
 
             var fence = Reached("task.fence_garden");
@@ -612,7 +702,7 @@ public partial class CampView : Node3D
                     2 => new Vector3(w / 2 - f * w, 0, d / 2),
                     _ => new Vector3(-w / 2, 0, d / 2 - f * d),
                 };
-                Add(_settlement, new CylinderMesh { TopRadius = 0.03f, BottomRadius = 0.04f, Height = 0.9f }, Pole, at + p + new Vector3(0, 0.45f, 0));
+                Add(parent, new CylinderMesh { TopRadius = 0.03f, BottomRadius = 0.04f, Height = 0.9f }, Pole, at + p + new Vector3(0, 0.45f, 0));
             }
 
             return;
@@ -639,7 +729,7 @@ public partial class CampView : Node3D
         for (var i = 0; i < shown; i++)
         {
             var c = corners[(i * 5) % corners.Count];
-            Add(_settlement, new CylinderMesh { TopRadius = 0.06f, BottomRadius = 0.08f, Height = top }, Pole, at + c + new Vector3(0, top / 2, 0), new Vector3(sag * 8, 0, sag * 6));
+            Add(parent, new CylinderMesh { TopRadius = 0.06f, BottomRadius = 0.08f, Height = top }, Pole, at + c + new Vector3(0, top / 2, 0), new Vector3(sag * 8, 0, sag * 6));
         }
 
         // The frame: plates along the top, then the rafters and the ridge.
@@ -648,7 +738,7 @@ public partial class CampView : Node3D
         {
             foreach (var fz in new[] { -0.5f, 0.5f })
             {
-                Add(_settlement, new BoxMesh { Size = new Vector3(w, 0.1f, 0.1f) }, Pole, at + new Vector3(0, top, fz * d));
+                Add(parent, new BoxMesh { Size = new Vector3(w, 0.1f, 0.1f) }, Pole, at + new Vector3(0, top, fz * d));
             }
 
             var rafters = (int)Math.Ceiling(5 * frame);
@@ -657,13 +747,13 @@ public partial class CampView : Node3D
                 var x = -w / 2 + i * w / 4;
                 foreach (var side in new[] { -1, 1 })
                 {
-                    Add(_settlement, new BoxMesh { Size = new Vector3(0.07f, 0.07f, d * 0.62f) }, Pole, at + new Vector3(x, top + 0.45f, side * d * 0.25f), new Vector3(side * -34, 0, 0));
+                    Add(parent, new BoxMesh { Size = new Vector3(0.07f, 0.07f, d * 0.62f) }, Pole, at + new Vector3(x, top + 0.45f, side * d * 0.25f), new Vector3(side * -34, 0, 0));
                 }
             }
 
             if (frame >= 1)
             {
-                Add(_settlement, new BoxMesh { Size = new Vector3(w + 0.2f, 0.09f, 0.09f) }, Pole, at + new Vector3(0, top + 0.9f - sag * 0.4f, 0));
+                Add(parent, new BoxMesh { Size = new Vector3(w + 0.2f, 0.09f, 0.09f) }, Pole, at + new Vector3(0, top + 0.9f - sag * 0.4f, 0));
             }
         }
 
@@ -684,7 +774,7 @@ public partial class CampView : Node3D
                     }
 
                     var z = side * d * (0.42f - c * 0.1f);
-                    Add(_settlement, new BoxMesh { Size = new Vector3(w + 0.5f, 0.14f, d * 0.24f) }, thatch,
+                    Add(parent, new BoxMesh { Size = new Vector3(w + 0.5f, 0.14f, d * 0.24f) }, thatch,
                         at + new Vector3(0, top + 0.12f + c * 0.22f - sag * 0.3f * c / 4, z), new Vector3(side * -34 + sag * 10, 0, sag * 4));
                 }
             }
@@ -696,38 +786,38 @@ public partial class CampView : Node3D
         {
             if (building.Stores)
             {
-                Add(_settlement, new BoxMesh { Size = new Vector3(w, 0.1f, d) }, Pole.Lightened(0.15f), at + new Vector3(0, lift, 0));
+                Add(parent, new BoxMesh { Size = new Vector3(w, 0.1f, d) }, Pole.Lightened(0.15f), at + new Vector3(0, lift, 0));
                 if (fitted >= 1)
                 {
-                    Add(_settlement, new BoxMesh { Size = new Vector3(w - 0.3f, 1.4f, d - 0.3f) }, Brush.Darkened(0.1f), at + new Vector3(0, lift + 0.75f, 0));
-                    Add(_settlement, new BoxMesh { Size = new Vector3(0.9f, 1.3f, 0.06f) }, Pole.Darkened(0.2f), at + new Vector3(0, lift + 0.7f, -d / 2 + 0.1f));
+                    Add(parent, new BoxMesh { Size = new Vector3(w - 0.3f, 1.4f, d - 0.3f) }, Brush.Darkened(0.1f), at + new Vector3(0, lift + 0.75f, 0));
+                    Add(parent, new BoxMesh { Size = new Vector3(0.9f, 1.3f, 0.06f) }, Pole.Darkened(0.2f), at + new Vector3(0, lift + 0.7f, -d / 2 + 0.1f));
                 }
             }
             else if (building.Cooks)
             {
-                Add(_settlement, new CylinderMesh { TopRadius = 0.5f, BottomRadius = 0.6f, Height = 0.4f }, Stone, at + new Vector3(0, 0.2f, 0));
+                Add(parent, new CylinderMesh { TopRadius = 0.5f, BottomRadius = 0.6f, Height = 0.4f }, Stone, at + new Vector3(0, 0.2f, 0));
             }
             else if (building.SickBerths > 0)
             {
                 foreach (var dx in new[] { -1.2f, 0f, 1.2f })
                 {
-                    Add(_settlement, new BoxMesh { Size = new Vector3(0.7f, 0.35f, 1.8f) }, Sack, at + new Vector3(dx, 0.18f, 0));
+                    Add(parent, new BoxMesh { Size = new Vector3(0.7f, 0.35f, 1.8f) }, Sack, at + new Vector3(dx, 0.18f, 0));
                 }
 
-                Add(_settlement, new BoxMesh { Size = new Vector3(0.02f, 0.35f, 0.5f) }, new Color(0.95f, 0.95f, 0.9f), at + new Vector3(w / 2, top + 0.6f, 0));
+                Add(parent, new BoxMesh { Size = new Vector3(0.02f, 0.35f, 0.5f) }, new Color(0.95f, 0.95f, 0.9f), at + new Vector3(w / 2, top + 0.6f, 0));
             }
             else if (building.Mends)
             {
-                Add(_settlement, new BoxMesh { Size = new Vector3(2.0f, 0.12f, 0.6f) }, Pole.Lightened(0.1f), at + new Vector3(0, 0.8f, 0.4f));
-                Add(_settlement, new CylinderMesh { TopRadius = 0.25f, BottomRadius = 0.25f, Height = 1.6f }, Bark, at + new Vector3(0.5f, 0.25f, -0.6f), new Vector3(0, 0, 90));
+                Add(parent, new BoxMesh { Size = new Vector3(2.0f, 0.12f, 0.6f) }, Pole.Lightened(0.1f), at + new Vector3(0, 0.8f, 0.4f));
+                Add(parent, new CylinderMesh { TopRadius = 0.25f, BottomRadius = 0.25f, Height = 1.6f }, Bark, at + new Vector3(0.5f, 0.25f, -0.6f), new Vector3(0, 0, 90));
             }
             else if (building.Berths > 0)
             {
                 // Walls of woven brush on three sides, the front open.
-                Add(_settlement, new BoxMesh { Size = new Vector3(w, top * 0.8f, 0.12f) }, Brush, at + new Vector3(0, top * 0.4f, d / 2));
+                Add(parent, new BoxMesh { Size = new Vector3(w, top * 0.8f, 0.12f) }, Brush, at + new Vector3(0, top * 0.4f, d / 2));
                 foreach (var side in new[] { -1, 1 })
                 {
-                    Add(_settlement, new BoxMesh { Size = new Vector3(0.12f, top * 0.8f, d) }, Brush, at + new Vector3(side * w / 2, top * 0.4f, 0));
+                    Add(parent, new BoxMesh { Size = new Vector3(0.12f, top * 0.8f, d) }, Brush, at + new Vector3(side * w / 2, top * 0.4f, 0));
                 }
             }
         }

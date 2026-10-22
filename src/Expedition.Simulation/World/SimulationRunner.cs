@@ -1437,7 +1437,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         }
 
         var location = Content.Locations[placement.LocationId];
-        var spots = location.Spots.Where(s => s.Tasks.Contains(task.Id)).ToList();
+        var spots = (location.Id == CampLocation ? location.Spots.Concat(CampSpots()) : location.Spots).Where(s => s.Tasks.Contains(task.Id)).ToList();
         if (spots.Count == 0)
         {
             return (null, null, $"There is nowhere to {task.Name.ToLowerInvariant()} in {location.Name}.");

@@ -92,8 +92,20 @@ public sealed class CampProject
     /// <summary>The building (<see cref="BuildingDefinition.Id"/>).</summary>
     public required string Building { get; init; }
 
-    /// <summary>The plot, for example <c>hut_2</c>.</summary>
+    /// <summary>The plot, its name for the work places about it: <c>b3</c> for the third ordered, or an old fixed plot's name.</summary>
     public required string Plot { get; init; }
+
+    /// <summary>Where it stands: the cell at the middle of its footprint.</summary>
+    public required int X { get; init; }
+
+    /// <summary>See <see cref="X"/>.</summary>
+    public required int Y { get; init; }
+
+    /// <summary>Turned a quarter, its width running inland.</summary>
+    public bool Turned { get; init; }
+
+    /// <summary>Trees standing on its ground, to be felled in the clearing.</summary>
+    public int Trees { get; init; }
 
     /// <summary>The phase it is at.</summary>
     public int Phase { get; internal set; }
@@ -128,6 +140,15 @@ public sealed class CampBuilding
 
     /// <summary>Its plot.</summary>
     public required string Plot { get; init; }
+
+    /// <summary>Where it stands: the cell at the middle of its footprint.</summary>
+    public required int X { get; init; }
+
+    /// <summary>See <see cref="X"/>.</summary>
+    public required int Y { get; init; }
+
+    /// <summary>Turned a quarter.</summary>
+    public bool Turned { get; init; }
 
     /// <summary>How well it was made, 0..1.</summary>
     public required double Quality { get; init; }

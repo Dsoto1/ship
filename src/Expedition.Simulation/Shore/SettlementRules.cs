@@ -55,8 +55,14 @@ public sealed record BuildingDefinition
     /// <summary>Its name.</summary>
     public required string Name { get; init; }
 
-    /// <summary>The kind of plot it goes on (the camp map's <c>plot.&lt;kind&gt;_n</c> spots).</summary>
+    /// <summary>The kind of plot it is (for old saves and the fallback placing), for example <c>hut</c>.</summary>
     public required string Plot { get; init; }
+
+    /// <summary>Its footprint across, cells, before it is turned.</summary>
+    public int Width { get; init; } = 4;
+
+    /// <summary>Its footprint deep (from the front, the sea side, back), cells.</summary>
+    public int Depth { get; init; } = 3;
 
     /// <summary>The phases, in order.</summary>
     public IReadOnlyList<PhaseDefinition> Phases { get; init; } = [];

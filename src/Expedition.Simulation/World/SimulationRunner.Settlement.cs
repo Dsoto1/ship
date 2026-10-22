@@ -81,37 +81,9 @@ public sealed partial class SimulationRunner
 
     // ================================================================ projects
 
-    /// <summary>The plots of the camp's map that take this building, in order.</summary>
-    private IEnumerable<string> PlotsFor(BuildingDefinition building) =>
-        Content.Locations.TryGetValue(CampLocation, out var location)
-            ? location.Spots.Select(s => PlotOf(s.Id)).OfType<string>().Distinct().Where(p => p.StartsWith(building.Plot + "_", StringComparison.Ordinal))
-            : [];
-
     // The plot a camp spot belongs to: plot.hut_2.a is hut_2.
     private static string? PlotOf(string? spotId) =>
         spotId is not null && spotId.StartsWith("plot.", StringComparison.Ordinal) && spotId.Split('.') is [_, var plot, _] ? plot : null;
-
-    /// <summary>
-    /// Orders a building raised on the first free plot for it. The hands take its phases in turn, as the
-    /// priorities, the materials and the tools allow.
-    /// </summary>
-    public CommandResult OrderBuilding(string buildingId)
-    {
-        if (Campaign.Camp is not { } camp || Settling?.Building(buildingId) is not { } building)
-        {
-            return CommandResult.Rejected("There is nothing to build here.");
-        }
-
-        var taken = camp.Projects.Select(p => p.Plot).Concat(camp.Buildings.Select(b => b.Plot)).ToHashSet(StringComparer.Ordinal);
-        if (PlotsFor(building).FirstOrDefault(p => !taken.Contains(p)) is not { } plot)
-        {
-            return CommandResult.Rejected($"There is no ground left for another {building.Name.ToLowerInvariant()}.");
-        }
-
-        camp.AddProject(new CampProject { Id = camp.NextProject++, Building = building.Id, Plot = plot });
-        Campaign.Record(ChronicleEntryKind.ProjectBegun, [new(ChronicleParameters.To, building.Id), new(ChronicleParameters.From, plot)]);
-        return CommandResult.Ok();
-    }
 
     /// <summary>Gives up a building not yet finished. What went into it stays in it.</summary>
     public CommandResult CancelProject(int id)
@@ -132,7 +104,7 @@ public sealed partial class SimulationRunner
     // How many more times a project's phase wants doing, after the work already under way on it.
     private int PhaseLeft(CampProject project) =>
         PhaseOf(project) is not { } phase ? 0
-            : phase.Times - project.Done - Campaign.ActiveTasks.Values.Count(t => t.DefinitionId == phase.Task && PlotOf(t.SpotId) == project.Plot);
+            : PhaseTimes(project, phase) - project.Done - Campaign.ActiveTasks.Values.Count(t => t.DefinitionId == phase.Task && PlotOf(t.SpotId) == project.Plot);
 
     // Whether a camp spot may be worked at for a task now: a building phase only on a plot at that phase,
     // a building's own work only where it stands.
@@ -178,7 +150,7 @@ public sealed partial class SimulationRunner
 
             for (var phase = project.Phase; phase < building.Phases.Count; phase++)
             {
-                var times = building.Phases[phase].Times - (phase == project.Phase ? project.Done : 0);
+                var times = (phase == project.Phase ? PhaseTimes(project, building.Phases[phase]) - project.Done : building.Phases[phase].Times);
                 wanted += times * (Content.Tasks.TryGetValue(building.Phases[phase].Task, out var task) ? task.Consumes.GetValueOrDefault(item) : 0);
             }
         }
@@ -248,7 +220,8 @@ public sealed partial class SimulationRunner
 
     // How the infirmary helps: the sick mend faster, and pass it on less.
     private double InfirmaryCare => InfirmaryBerths > 0 ? 1.25 : 1;
-    private double InfirmaryContagion => InfirmaryBerths > 0 ? 0.7 : 1;
+    // Apart from the huts it keeps the sickness in; close by them, less so.
+    private double InfirmaryContagion => StandingOf(b => b.SickBerths > 0).Select(SitingFactor).DefaultIfEmpty(1).Min();
 
     // How well a hand does building work: their skill, and how fresh they are.
     private double WorkQuality(Character character, TaskDefinition task)
@@ -271,10 +244,12 @@ public sealed partial class SimulationRunner
         project.Done++;
         project.QualitySum += WorkQuality(character, definition);
         project.Worked++;
-        if (project.Done < phase.Times)
+        if (project.Done < PhaseTimes(project, phase))
         {
             return;
         }
+
+        Felled(project, definition);
 
         // Whatever was laid ready for this phase and not wanted goes back to the store.
         if (project.Laid > 0)
@@ -296,7 +271,7 @@ public sealed partial class SimulationRunner
 
         camp.RemoveProject(project);
         var quality = project.Worked > 0 ? project.QualitySum / project.Worked : 0.5;
-        camp.AddBuilding(new CampBuilding { Building = building.Id, Plot = plot, Quality = quality });
+        camp.AddBuilding(new CampBuilding { Building = building.Id, Plot = plot, X = project.X, Y = project.Y, Turned = project.Turned, Quality = quality });
         Campaign.Record(ChronicleEntryKind.BuildingFinished, [
             new(ChronicleParameters.To, building.Id), new(ChronicleParameters.Level, quality.ToString("0.00", CultureInfo.InvariantCulture)),
         ], character.Id);
@@ -585,12 +560,14 @@ public sealed partial class SimulationRunner
             }
         }
 
-        // The garden: each bed wastes by how ill the crop suits the shore, more in the wet, more untended.
+        // The garden: each bed wastes by how ill the crop suits the shore and the garden's ground, more in
+        // the wet, more untended.
+        var gardenGround = StandingOf(b => b.Beds > 0).Select(SitingFactor).DefaultIfEmpty(1).Min();
         foreach (var bed in camp.Beds.ToList())
         {
             var crop = rules.Crops.First(c => c.Id == bed.Crop);
             var untended = (Campaign.Clock.Tick - bed.Tended) / (double)SimulationClock.TicksPerDay > TendEveryDays + 1;
-            bed.Health -= (1 - crop.Suitability) * 0.02 + (wet ? crop.WetRot : 0) + (untended ? 0.03 : 0);
+            bed.Health -= (1 - crop.Suitability) * 0.02 * gardenGround + (wet ? crop.WetRot : 0) + (untended ? 0.03 : 0);
             if (bed.Health <= 0)
             {
                 camp.RemoveBed(bed);
@@ -653,10 +630,10 @@ public sealed partial class SimulationRunner
         ]);
     }
 
-    /// <summary>Developer tool for tests and screenshots: a building finished on its first free plot, as well made as asked.</summary>
-    public CommandResult DeveloperRaise(string buildingId, double quality = 0.6)
+    /// <summary>Developer tool for tests and screenshots: a building finished where asked, or on the first free ground, as well made as asked.</summary>
+    public CommandResult DeveloperRaise(string buildingId, double quality = 0.6, (int X, int Y)? at = null)
     {
-        var ordered = OrderBuilding(buildingId);
+        var ordered = at is { } place ? PlaceBuilding(buildingId, place.X, place.Y) : OrderBuilding(buildingId);
         if (!ordered.Succeeded || Campaign.Camp is not { } camp)
         {
             return ordered;
@@ -664,14 +641,17 @@ public sealed partial class SimulationRunner
 
         var project = camp.Projects[^1];
         camp.RemoveProject(project);
-        camp.AddBuilding(new CampBuilding { Building = buildingId, Plot = project.Plot, Quality = Math.Clamp(quality, 0, 1) });
+        camp.AddBuilding(new CampBuilding
+        {
+            Building = buildingId, Plot = project.Plot, X = project.X, Y = project.Y, Turned = project.Turned, Quality = Math.Clamp(quality, 0, 1),
+        });
         return CommandResult.Ok();
     }
 
     /// <summary>The share of each food lost a day where the stores are kept now, before the food's own spoiling: in the open, under a sail, in a storehouse.</summary>
     public double StoresPlaceFactor() =>
         Campaign.Camp is not { } camp ? 1
-        : StorehouseStands ? 0.5 - 0.35 * StandingOf(b => b.Stores).Max(b => b.Quality)
+        : StorehouseStands ? StandingOf(b => b.Stores).Min(b => (0.5 - 0.35 * b.Quality) * SitingFactor(b))
         : camp.Work(CampWorks.Cover) >= 1 ? 1.0 : 1.6;
 
     /// <summary>

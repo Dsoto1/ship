@@ -256,7 +256,8 @@ follow each phase, or decay?"):
 
 **Simulation** (`SimulationRunner.Settlement.cs`, `Shore/SettlementRules.cs`, `data/shore.json`
 "settlement", `data/tasks/settlement.json`):
-- **Projects** on plots. Each phase task works only on a plot at that phase. Quality comes from the
+- **Projects** on ground the captain chooses (see Placing buildings). Each phase task works only at a
+  building at that phase. Quality comes from the
   hand's skill and freshness. Materials laid by work that was stopped wait on the plot for the next
   start.
 - **The forest's edge:** poles and thatch, finite near the camp, then far less.
@@ -282,8 +283,8 @@ follow each phase, or decay?"):
 - **The stage** is named from what the camp can do.
 - **The first season** is judged on day 90: survived if more than half are alive, there is water, dry
   roofs for all, and food for a fortnight or a source of it.
-- **Saves:** format 38.
-- **Tests:** `SettlementTests` (11).
+- **Saves:** format 38 (39 with placing).
+- **Tests:** `SettlementTests` (11, then 15 with placing).
 
 **The camp screen:**
 - the season and the stage;
@@ -296,8 +297,52 @@ follow each phase, or decay?"):
 
 The day-90 card gives the judgement.
 
-**Developer flag:** `--build=all` (or `hut,storehouse,...`) orders buildings after the first three
-days; use it with `--ashore --camphours=N`.
+**Developer flags:**
+- `--build=all` (or `hut,storehouse,...`) orders buildings after the first three days; use it with
+  `--ashore --camphours=N`. `hut@12:13` sets one down with its middle at that cell, `hut@12:13t` turned.
+- `--ghost=storehouse@20:15` shows a building being set down there, outline and notice, for screenshots.
+
+### Placing buildings (2026-10-22, owner: "yes build it")
+
+![Setting a storehouse down high on the beach: allowed, the stores will keep drier](screenshots/r7-place-allowed.jpg)
+![A garden pushed into the forest's edge over a place the camp uses: refused](screenshots/r7-place-refused.jpg)
+
+The fixed plots are gone. The captain chooses where each building goes:
+- **Placing:** "+ Hut" (or any building) on the camp screen closes the screen. An outline of the
+  building's ground follows the mouse over the beach, green where it may go, red where it may not, with
+  its two work places marked at its front (the sea side). A notice at the foot of the screen says what
+  is wrong there, or what the ground will mean. Left-click sets it down; R turns it a quarter;
+  right-click or Esc gives up.
+- **Where it may not go:**
+  - the wet sand (rows 2 and below);
+  - rocks and driftwood;
+  - over another building, or its work places;
+  - over a place the camp already uses (the hearth, the stores, the shelters, the latrine, the cutting
+    places);
+  - across the paths from the hearth to the water and to the landing (a cell either side of each);
+  - where its front is not open ground the hands can reach.
+- **Trees** on the ground are allowed. They are felled in the clearing: a third more clearing work for
+  each three trees (rounded up), and two poles for each tree when the clearing is done. The forest's
+  trees on that ground are drawn felled while it is cleared, and gone after.
+- **Where it stands matters:**
+  - **Storehouse:** high on the beach (row 13 up) the stores spoil at 0.85 of the rate; low and damp
+    (row 8 down), at 1.3.
+  - **Infirmary:** within 6 cells of a hut it cuts contagion only to 0.9, not 0.7.
+  - **Garden:** at the forest's edge (row 15 up) the crops waste at 0.8 of the rate from the soil; on
+    the open sand (row 10 down), at 1.25.
+  - **Hut:** more than 14 cells from the hearth, a note: a long walk from the fire.
+- **Ordering without a place** (old code, `--build`, tests): the old plots first where free, then the
+  best ground for it, with the fewest trees, nearest the hearth.
+- **Saves:** format 39. Each building and work in hand has a position, whether it is turned, and its
+  trees. Older saves' fixed plots become the places those plots stood.
+- **Tests:** `SettlementTests` gained the rules (`BuildingsGoWhereTheGroundAllows`), the ground filling
+  up, trees felled for poles, siting effects (`WhereItStandsMatters`) and the old-plots migration;
+  553 in all.
+- **Balance:** the 90-day probe at Punta Ceniza and Río Bermejo still survives the first season, the
+  full set up by about day 40 to 44.
+- **Watch:** the mid-beach fills fast once two huts are down, because of the paths and the shelters'
+  places. It is enough for a camp of six to ten. If it feels cramped in play, the path corridor can
+  narrow or the R6 shelters' places be freed once huts stand.
 
 **Not yet:**
 - The landing staging and the well.

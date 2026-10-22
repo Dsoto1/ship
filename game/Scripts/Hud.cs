@@ -74,6 +74,8 @@ public partial class Hud : CanvasLayer
     private PanelContainer _paused = null!;
     private Label _pausedText = null!;
     private VBoxContainer _toasts = null!;
+    private PanelContainer _placing = null!;
+    private Label _placingText = null!;
     private PanelContainer _drawer = null!;
     private Label _drawerTitle = null!;
     private PanelId? _open;
@@ -455,6 +457,17 @@ public partial class Hud : CanvasLayer
         tween.TweenProperty(panel, "modulate:a", 0f, 0.6f);
         tween.TweenCallback(Callable.From(() => { if (IsInstanceValid(panel)) panel.QueueFree(); }));
     }
+
+    /// <summary>Shows what the ground under a building being set down means, until it is set down or given up; null hides it.</summary>
+    public void ShowPlacing(string? text, bool allowed = true)
+    {
+        _placing.Visible = text is not null;
+        _placingText.Text = text ?? "";
+        _placingText.AddThemeColorOverride("font_color", allowed ? Ui.Ink : Ui.Of(Severity.Attention));
+    }
+
+    /// <summary>A building chosen to be set down on the beach (R7): Main shows its outline under the mouse.</summary>
+    public event Action<string>? PlaceRequested;
 
     /// <summary>Shows a one-line message as a notice.</summary>
     public void ShowStatus(string message) => Toast(message);
@@ -1384,6 +1397,21 @@ public partial class Hud : CanvasLayer
 
     private void BuildToasts()
     {
+        // Setting a building down (R7): what the ground under the outline means, held while placing.
+        // At the foot of the screen, clear of the beach being looked at.
+        _placing = Ui.PanelOf(new Color(0.07f, 0.055f, 0.045f, 0.92f), Ui.Brass, Ui.SpaceL, Ui.SpaceS);
+        _placing.MouseFilter = Control.MouseFilterEnum.Ignore;
+        _placing.Visible = false;
+        _placing.AnchorLeft = _placing.AnchorRight = 0.5f;
+        _placing.AnchorTop = _placing.AnchorBottom = 1;
+        _placing.OffsetLeft = -280;
+        _placing.OffsetRight = 280;
+        _placing.OffsetBottom = -118;
+        _placing.GrowVertical = Control.GrowDirection.Begin;
+        _placingText = Ui.Text("", Ui.TextBody, Ui.Ink, 540);
+        _placing.AddChild(_placingText);
+        _root.AddChild(_placing);
+
         _toasts = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         _toasts.AddThemeConstantOverride("separation", Ui.SpaceXs);
         _centre.AddChild(_toasts);
@@ -2597,7 +2625,7 @@ public partial class Hud : CanvasLayer
         _campSeason = Ui.Text("", Ui.TextBody, Ui.Ink, 340);
         season.AddChild(_campSeason);
 
-        var build = Ui.Card(_campBox, "Building", "Raised phase by phase by the same hands, with the poles, thatch and tools to hand.");
+        var build = Ui.Card(_campBox, "Building", "Set down where you choose, then raised phase by phase by the same hands, with the poles, thatch and tools to hand.");
         var orders = new HFlowContainer();
         orders.AddThemeConstantOverride("h_separation", Ui.SpaceS);
         orders.AddThemeConstantOverride("v_separation", Ui.SpaceS);
@@ -2613,7 +2641,7 @@ public partial class Hud : CanvasLayer
                  })
         {
             var building = id;
-            orders.AddChild(Ui.Button("+ " + label, tip, () => { if (_runner is { } r) { ShowResult(r.OrderBuilding(building)); } }));
+            orders.AddChild(Ui.Button("+ " + label, tip + ". Choose where on the beach.", () => PlaceRequested?.Invoke(building)));
         }
 
         _campProjects = new VBoxContainer();
@@ -2692,8 +2720,8 @@ public partial class Hud : CanvasLayer
                 var wanting = task is null || project.Laid > 0 ? "" : string.Join(", ", task.Consumes.Where(c => runner.Campaign.SharedStore.Count(c.Key) < c.Value)
                     .Select(c => runner.Content.Items[c.Key].Name.ToLowerInvariant()));
                 var row = new HBoxContainer();
-                var text = Ui.Text($"{building.Name} ({project.Plot.Replace('_', ' ')}): {task?.Name.ToLowerInvariant() ?? "finishing"}" +
-                    (phase is null ? "" : $" {project.Done}/{phase.Times}") + $" · phase {project.Phase + 1} of {building.Phases.Count}" +
+                var text = Ui.Text($"{building.Name}: {task?.Name.ToLowerInvariant() ?? "finishing"}" +
+                    (phase is null ? "" : $" {project.Done}/{runner.PhaseTimes(project)}") + $" · phase {project.Phase + 1} of {building.Phases.Count}" +
                     (wanting.Length > 0 ? $" · wants {wanting}" : ""), Ui.TextMeta + 1, wanting.Length > 0 ? Ui.Of(Severity.Attention) : Ui.Ink, 280);
                 text.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
                 row.AddChild(text);

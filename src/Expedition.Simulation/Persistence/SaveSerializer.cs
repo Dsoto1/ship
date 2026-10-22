@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 38;
+    public const int CurrentSchemaVersion = 39;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -190,6 +190,28 @@ public static class SaveSerializer
                         ["state"] = state.ToString(CultureInfo.InvariantCulture),
                         ["increment"] = increment.ToString(CultureInfo.InvariantCulture),
                     };
+                }
+
+                return root;
+            },
+
+            // Format 39 let buildings be placed anywhere (R7): those on the old fixed plots are given the
+            // place each plot stood at.
+            [38] = root =>
+            {
+                if (root["camp"] is JsonObject camp)
+                {
+                    foreach (var list in new[] { "projects", "buildings" })
+                    {
+                        foreach (var entry in (camp[list] as JsonArray ?? []).OfType<JsonObject>())
+                        {
+                            if (World.SimulationRunner.LegacyPlot(entry["plot"]?.GetValue<string>() ?? "") is { } at)
+                            {
+                                entry["x"] = at.X;
+                                entry["y"] = at.Y;
+                            }
+                        }
+                    }
                 }
 
                 return root;
@@ -702,8 +724,12 @@ public static class SaveSerializer
                     Projects = camp.Projects.Select(p => new CampProjectData
                     {
                         Id = p.Id, Building = p.Building, Plot = p.Plot, Phase = p.Phase, Done = p.Done, QualitySum = p.QualitySum, Worked = p.Worked, Laid = p.Laid,
+                        X = p.X, Y = p.Y, Turned = p.Turned, Trees = p.Trees,
                     }).ToList(),
-                    Buildings = camp.Buildings.Select(b => new CampBuildingData { Building = b.Building, Plot = b.Plot, Quality = b.Quality, Condition = b.Condition }).ToList(),
+                    Buildings = camp.Buildings.Select(b => new CampBuildingData
+                    {
+                        Building = b.Building, Plot = b.Plot, Quality = b.Quality, Condition = b.Condition, X = b.X, Y = b.Y, Turned = b.Turned,
+                    }).ToList(),
                     Beds = camp.Beds.Select(b => new GardenBedData { Crop = b.Crop, Sown = b.Sown, Health = b.Health, Tended = b.Tended }).ToList(),
                     Broken = new SortedDictionary<string, int>(camp.Broken.ToDictionary(), StringComparer.Ordinal),
                     PolesCut = camp.PolesCut, ThatchCut = camp.ThatchCut, NextProject = camp.NextProject, Survived = camp.Survived,
@@ -946,7 +972,9 @@ public static class SaveSerializer
                 var spot = campaign.Placements.TryGetValue(task.CharacterId, out var where)
                     ? content.Locations[where.LocationId].FindSpot(saved.SpotId)
                     : null;
-                if (spot is null || !spot.Tasks.Contains(saved.DefinitionId) || !reservedSpots.Add(saved.SpotId))
+                // A building's work places ashore come with the camp, restored after the tasks.
+                var atBuilding = spot is null && where?.LocationId == World.SimulationRunner.CampLocation && saved.SpotId.StartsWith("plot.", StringComparison.Ordinal);
+                if (!atBuilding && (spot is null || !spot.Tasks.Contains(saved.DefinitionId)) || !reservedSpots.Add(saved.SpotId))
                 {
                     throw new SaveLoadException($"{worker.Name}'s task uses work spot '{saved.SpotId}', which is missing, wrong for the task, or used twice.");
                 }
@@ -1304,14 +1332,21 @@ public static class SaveSerializer
             };
             foreach (var project in savedCamp.Projects)
             {
-                var restored = new Shore.CampProject { Id = project.Id, Building = project.Building, Plot = project.Plot };
+                var restored = new Shore.CampProject
+                {
+                    Id = project.Id, Building = project.Building, Plot = project.Plot, X = project.X, Y = project.Y, Turned = project.Turned, Trees = project.Trees,
+                };
                 restored.Restore(project.Phase, project.Done, project.QualitySum, project.Worked, project.Laid);
                 camp.AddProject(restored);
             }
 
             foreach (var building in savedCamp.Buildings)
             {
-                camp.AddBuilding(new Shore.CampBuilding { Building = building.Building, Plot = building.Plot, Quality = building.Quality, Condition = building.Condition });
+                camp.AddBuilding(new Shore.CampBuilding
+                {
+                    Building = building.Building, Plot = building.Plot, Quality = building.Quality, Condition = building.Condition,
+                    X = building.X, Y = building.Y, Turned = building.Turned,
+                });
             }
 
             foreach (var bed in savedCamp.Beds)

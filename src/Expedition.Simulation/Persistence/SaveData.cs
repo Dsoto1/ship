@@ -912,6 +912,18 @@ public sealed record CampProjectData
 
     /// <summary>Materials laid ready.</summary>
     public int Laid { get; init; }
+
+    /// <summary>Where it stands. Added in format 39.</summary>
+    public int X { get; init; }
+
+    /// <summary>See <see cref="X"/>.</summary>
+    public int Y { get; init; }
+
+    /// <summary>Turned a quarter. Added in format 39.</summary>
+    public bool Turned { get; init; }
+
+    /// <summary>Trees on its ground. Added in format 39.</summary>
+    public int Trees { get; init; }
 }
 
 /// <summary>A building standing. Added in format 38.</summary>
@@ -928,6 +940,15 @@ public sealed record CampBuildingData
 
     /// <summary>Its condition.</summary>
     public double Condition { get; init; }
+
+    /// <summary>Where it stands. Added in format 39.</summary>
+    public int X { get; init; }
+
+    /// <summary>See <see cref="X"/>.</summary>
+    public int Y { get; init; }
+
+    /// <summary>Turned a quarter. Added in format 39.</summary>
+    public bool Turned { get; init; }
 }
 
 /// <summary>A garden bed. Added in format 38.</summary>

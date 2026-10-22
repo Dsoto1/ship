@@ -42,7 +42,7 @@ public sealed class SettlementTests
         Assert.True(runner.OrderBuilding("building.hut").Succeeded);
         var camp = runner.Campaign.Camp!;
         var project = Assert.Single(camp.Projects);
-        Assert.Equal("hut_1", project.Plot);
+        Assert.Equal($"b{project.Id}", project.Plot);
         var phases = new List<int>();
         for (var hour = 0; hour < 30 * 24 && camp.Projects.Count > 0; hour++)
         {
@@ -62,19 +62,112 @@ public sealed class SettlementTests
     }
 
     [Fact]
-    public void ThereIsGroundForSoManyOfEach()
+    public void BuildingsGoWhereTheGroundAllows()
     {
         var runner = Landed();
-        for (var i = 0; i < 4; i++)
+        bool Refused(int x, int y, string why) => runner.Placement("building.hut", x, y) is { Allowed: false } check
+                                                 && check.Problems.Any(p => p.Contains(why, StringComparison.Ordinal));
+
+        Assert.True(Refused(12, 3, "wet"));
+        Assert.True(Refused(28, 4, "Rocks"));
+        Assert.True(Refused(25, 6, "a place the camp already uses"));
+        Assert.True(Refused(17, 4, "path"));
+        Assert.True(runner.Placement("building.hut", 11, 13).Allowed);
+        Assert.True(runner.PlaceBuilding("building.hut", 11, 13).Succeeded);
+        Assert.True(Refused(12, 14, "Another building"));
+        Assert.False(runner.PlaceBuilding("building.hut", 12, 14).Succeeded);
+        Assert.False(runner.Placement("building.palace", 20, 12).Allowed);
+
+        // Turned, its width runs inland.
+        var hut = Shipped.Shore!.Settlement!.Building("building.hut")!;
+        var turned = SimulationRunner.FootprintOf(hut, 20, 12, turned: true);
+        Assert.Equal((hut.Depth, hut.Width), (turned.X1 - turned.X0 + 1, turned.Y1 - turned.Y0 + 1));
+    }
+
+    [Fact]
+    public void TheGroundFillsUp()
+    {
+        var runner = Landed();
+        var huts = 0;
+        while (runner.OrderBuilding("building.hut").Succeeded)
         {
-            Assert.True(runner.OrderBuilding("building.hut").Succeeded);
+            huts++;
         }
 
-        Assert.False(runner.OrderBuilding("building.hut").Succeeded);
-        Assert.True(runner.OrderBuilding("building.storehouse").Succeeded);
+        Assert.InRange(huts, 8, 60);
         Assert.False(runner.OrderBuilding("building.palace").Succeeded);
         Assert.True(runner.CancelProject(runner.Campaign.Camp!.Projects[0].Id).Succeeded);
         Assert.True(runner.OrderBuilding("building.hut").Succeeded);
+    }
+
+    [Fact]
+    public void TreesOnTheGroundAreFelledForPoles()
+    {
+        var runner = Landed();
+        runner.Advance(24 * 60);
+        var (x, y) = Enumerable.Range(18, 6).SelectMany(cy => Enumerable.Range(2, 32).Select(cx => (cx, cy)))
+            .First(at => runner.Placement("building.hut", at.cx, at.cy) is { Allowed: true, Trees: >= 3 });
+        var check = runner.Placement("building.hut", x, y);
+        Assert.Contains(check.Notes, n => n.Contains("to fell", StringComparison.Ordinal));
+        Assert.True(runner.PlaceBuilding("building.hut", x, y).Succeeded);
+        var camp = runner.Campaign.Camp!;
+        var project = camp.Projects[0];
+        Assert.Equal(check.Trees, project.Trees);
+        Assert.True(runner.PhaseTimes(project) > 1);
+
+        Assert.Equal(1 + (check.Trees + 2) / 3, runner.PhaseTimes(project));
+
+        // The clearing done, its trees are poles in the store, before any were cut at the forest's edge for it.
+        var poles = runner.Campaign.SharedStore.Count("item.poles");
+        var cut = camp.PolesCut;
+        var used = 0;
+        for (var hour = 0; hour < 20 * 24 && project.Phase == 0; hour++)
+        {
+            runner.Advance(60);
+        }
+
+        Assert.True(project.Phase > 0);
+        used = runner.Campaign.SharedStore.Count("item.poles") - poles - (camp.PolesCut - cut);
+        Assert.True(used >= check.Trees * 2 - 8, $"{used} poles gained from {check.Trees} trees");
+    }
+
+    [Fact]
+    public void WhereItStandsMatters()
+    {
+        var runner = Landed();
+        var low = runner.Placement("building.storehouse", 10, 6);
+        var high = runner.Placement("building.storehouse", 9, 14);
+        Assert.True(low.Allowed && high.Allowed, string.Join("; ", low.Problems.Concat(high.Problems)));
+        Assert.Contains(low.Notes, n => n.Contains("damp", StringComparison.Ordinal));
+        Assert.Contains(high.Notes, n => n.Contains("drier", StringComparison.Ordinal));
+
+        Assert.True(runner.DeveloperRaise("building.storehouse", 0.6, (10, 6)).Succeeded);
+        var damp = runner.StoresPlaceFactor();
+        runner.Campaign.Camp!.RemoveBuilding(runner.Campaign.Camp.Buildings[0]);
+        Assert.True(runner.DeveloperRaise("building.storehouse", 0.6, (9, 14)).Succeeded);
+        Assert.True(runner.StoresPlaceFactor() < damp);
+
+        // The sick kept close by the huts pass it on more.
+        Assert.True(runner.DeveloperRaise("building.hut", 0.6, (14, 13)).Succeeded);
+        Assert.Contains(runner.Placement("building.infirmary", 9, 15).Notes, n => n.Contains("huts", StringComparison.Ordinal));
+        Assert.DoesNotContain(runner.Placement("building.infirmary", 5, 18).Notes, n => n.Contains("huts", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ACampSavedOnTheOldPlotsKeepsItsBuildingsWhereTheyStood()
+    {
+        var runner = Landed();
+        Assert.True(runner.DeveloperRaise("building.hut").Succeeded);
+        var root = JsonNode.Parse(SaveSerializer.Serialize(runner.Campaign))!.AsObject();
+        root["schemaVersion"] = 38;
+        var building = root["camp"]!["buildings"]![0]!.AsObject();
+        building["plot"] = "hut_2";
+        building.Remove("x");
+        building.Remove("y");
+        building.Remove("turned");
+        var loaded = SaveSerializer.Deserialize(root.ToJsonString(), Shipped);
+        var hut = Assert.Single(loaded.Camp!.Buildings);
+        Assert.Equal(("hut_2", 15, 17), (hut.Plot, hut.X, hut.Y));
     }
 
     [Fact]
