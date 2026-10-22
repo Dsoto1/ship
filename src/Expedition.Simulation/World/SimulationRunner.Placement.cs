@@ -367,7 +367,7 @@ public sealed partial class SimulationRunner
         }
 
         var id = camp.NextProject++;
-        camp.AddProject(new CampProject { Id = id, Building = buildingId, Plot = $"b{id}", X = x, Y = y, Turned = turned, Trees = check.Trees });
+        camp.AddProject(new CampProject { Id = id, Building = buildingId, Plot = $"b{id}", X = x, Y = y, Turned = turned, Trees = check.Trees, Begun = Campaign.Clock.Tick });
         Campaign.Record(ChronicleEntryKind.ProjectBegun, [new(ChronicleParameters.To, buildingId), new(ChronicleParameters.From, $"b{id}")]);
         return CommandResult.Ok();
     }

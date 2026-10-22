@@ -2935,10 +2935,14 @@ public partial class Hud : CanvasLayer
         _palisade.Toggled += on => { if (_runner is { } r) { ShowResult(r.OrderPalisade(on)); } };
         build.AddChild(_palisade);
 
+        // The workplaces (step W): each building in hand and standing, its lead, its priority, why it waits.
+        var workplaces = Ui.Card(_campBox, "Workplaces", "A lead's skill sets the pace, quality and safety, and teaches.");
         _campProjects = new VBoxContainer();
-        build.AddChild(_campProjects);
+        _campProjects.AddThemeConstantOverride("separation", Ui.SpaceS);
+        workplaces.AddChild(_campProjects);
         _campStanding = Ui.Text("", Ui.TextMeta + 1, Ui.InkSoft, 340);
-        build.AddChild(_campStanding);
+        workplaces.AddChild(_campStanding);
+        _workplacesCard = workplaces.GetParent<Control>();
 
         var kit = Ui.Card(_campBox, "Tools and garden");
         _campKit = Ui.Text("", Ui.TextMeta + 1, Ui.Ink, 340);
@@ -2974,6 +2978,7 @@ public partial class Hud : CanvasLayer
         // The overview and the build menu first; the coast and the charter under the season, where they are seen.
         _campBox.MoveChild(overview.GetParent(), 0);
         _campBox.MoveChild(build.GetParent(), 1);
+        _campBox.MoveChild(_workplacesCard, 2);
         _campBox.MoveChild(world.GetParent(), 4);
         _campBox.MoveChild(charter.GetParent(), 5);
 
@@ -3002,42 +3007,7 @@ public partial class Hud : CanvasLayer
         };
         _campSeason.Text = $"Day {Math.Floor(day) + 1:0} ashore. {season} The camp is {runner.CampStage()}.{judged}";
 
-        var key = string.Join("|", camp.Projects.Select(p => $"{p.Id}:{p.Phase}:{p.Done}:{p.Laid}"))
-                  + "#" + runner.Campaign.SharedStore.Count("item.poles") / 5 + ":" + runner.Campaign.SharedStore.Count("item.thatch") / 6
-                  + ":" + runner.Campaign.SharedStore.Count("item.stone") / 3 + ":" + runner.Campaign.SharedStore.Count("item.plank");
-        if (key != _campProjectsShown)
-        {
-            _campProjectsShown = key;
-            foreach (var child in _campProjects.GetChildren())
-            {
-                child.QueueFree();
-            }
-
-            foreach (var project in camp.Projects)
-            {
-                if (rules.Building(project.Building) is not { } building)
-                {
-                    continue;
-                }
-
-                var phase = runner.PhaseOf(project);
-                var task = phase is not null && runner.Content.Tasks.TryGetValue(phase.Task, out var t) ? t : null;
-                var wanting = task is null || project.Laid > 0 ? "" : string.Join(", ", task.Consumes.Where(c => runner.Campaign.SharedStore.Count(c.Key) < c.Value)
-                    .Select(c => runner.Content.Items[c.Key].Name.ToLowerInvariant()));
-                var row = new HBoxContainer();
-                var text = Ui.Text($"{building.Name}: {task?.Name.ToLowerInvariant() ?? "finishing"}" +
-                    (phase is null ? "" : $" {project.Done}/{runner.PhaseTimes(project)}") + $" · phase {project.Phase + 1} of {building.Phases.Count}" +
-                    (wanting.Length > 0 ? $" · wants {wanting}" : ""), Ui.TextMeta + 1, wanting.Length > 0 ? Ui.Of(Severity.Attention) : Ui.Ink, 280);
-                text.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-                row.AddChild(text);
-                var id = project.Id;
-                row.AddChild(Ui.Button("×", "Give it up: what went into it stays in it", () => ShowResult(runner.CancelProject(id))));
-                _campProjects.AddChild(row);
-            }
-        }
-
-        var standing = camp.Buildings.Select(b => $"{rules.Building(b.Building)?.Name} ({(b.Quality >= 0.75 ? "sound" : b.Quality >= 0.5 ? "fair" : "rough")}, {b.Condition:0}%)").ToList();
-        _campStanding.Text = standing.Count == 0 ? "Nothing built yet." : "Standing: " + string.Join(" · ", standing);
+        RefreshWorkplaces(runner, camp, rules);
 
         var store = runner.Campaign.SharedStore;
         var tools = new[] { "item.axe", "item.adze", "item.saw", "item.spade", "item.mattock", "item.cutlass", "item.auger" }
@@ -3089,6 +3059,135 @@ public partial class Hud : CanvasLayer
     }
 
     private string _campProjectsShown = "";
+    private Control _workplacesCard = null!;
+    private readonly HashSet<string> _historyOpen = [];
+
+    private static readonly (ProjectPriority Priority, string Name)[] ProjectPriorities =
+        [(ProjectPriority.Critical, "Critical"), (ProjectPriority.High, "High"), (ProjectPriority.Normal, "Normal"), (ProjectPriority.Low, "Low"), (ProjectPriority.Paused, "Paused")];
+
+    // The workplaces: rebuilt only when something shown changes.
+    private void RefreshWorkplaces(SimulationRunner runner, CampState camp, SettlementRules rules)
+    {
+        var crew = runner.Campaign.Crew.Where(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated).OrderBy(c => c.Name).ToList();
+        var key = string.Join("|", camp.Projects.Select(p => $"{p.Id}:{p.Phase}:{p.Done}:{p.Priority}:{p.Lead}:{runner.Stalled(p)}"))
+                  + "#" + string.Join("|", camp.Buildings.Select(b => $"{b.Plot}:{b.Lead}:{(int)b.Condition}:{b.History.Count}"))
+                  + "#" + string.Join(",", crew.Select(c => c.Id.Value)) + "#" + string.Join(",", _historyOpen);
+        if (key == _campProjectsShown)
+        {
+            return;
+        }
+
+        _campProjectsShown = key;
+        foreach (var child in _campProjects.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        // A lead chosen from the company: no one, or anyone living.
+        OptionButton LeadChoice(CharacterId? lead, Action<CharacterId?> chosen)
+        {
+            var choice = new OptionButton { FocusMode = Control.FocusModeEnum.None, ClipText = true, CustomMinimumSize = new Vector2(104, 0), TooltipText = "Who leads the work here", SizeFlagsVertical = Control.SizeFlags.ShrinkCenter };
+            choice.AddThemeFontSizeOverride("font_size", Ui.TextMeta + 1);
+            choice.AddItem("No lead");
+            foreach (var person in crew)
+            {
+                var skill = person.Skills.Get("skill.carpentry");
+                choice.AddItem(skill > 0 ? $"{person.Name} ({skill})" : person.Name);
+            }
+
+            choice.Select(lead is { } id ? crew.FindIndex(c => c.Id == id) + 1 : 0);
+            choice.ItemSelected += index => chosen(index == 0 ? null : crew[(int)index - 1].Id);
+            return choice;
+        }
+
+        Control Row(string icon, string name, string state, Severity severity)
+        {
+            var row = new HBoxContainer();
+            row.AddThemeConstantOverride("separation", Ui.SpaceS);
+            row.AddChild(Ui.Icon(icon, 20));
+            var words = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(150, 0) };
+            words.AddThemeConstantOverride("separation", -2);
+            row.AddChild(words);
+            words.AddChild(Ui.Text(name, Ui.TextBody, Ui.Ink));
+            words.AddChild(Ui.Text(state, Ui.TextMeta, severity == Severity.Information ? Ui.InkSoft : Ui.Of(severity), 150));
+            return row;
+        }
+
+        string IconOf(string building) => BuildMenu.FirstOrDefault(b => b.Id == building).Icon ?? "build";
+        foreach (var project in camp.Projects)
+        {
+            if (rules.Building(project.Building) is not { } building)
+            {
+                continue;
+            }
+
+            var phase = runner.PhaseOf(project);
+            var task = phase is not null && runner.Content.Tasks.TryGetValue(phase.Task, out var t) ? t : null;
+            var stalled = runner.Stalled(project);
+            var doing = $"{Capital(task?.Name.ToLowerInvariant() ?? "finishing")}" + (phase is null ? "" : $" {project.Done}/{runner.PhaseTimes(project)}") + $", phase {project.Phase + 1} of {building.Phases.Count}";
+            var row = Row(IconOf(project.Building), building.Name, stalled ?? doing, stalled is null ? Severity.Information : project.Priority == ProjectPriority.Paused ? Severity.Information : Severity.Attention);
+            row.TooltipText = doing;
+            var id = project.Id;
+            var plot = project.Plot;
+            row.AddChild(LeadChoice(project.Lead, lead => { ShowResult(runner.SetLead(plot, lead)); _campProjectsShown = ""; }));
+            var priority = new OptionButton { FocusMode = Control.FocusModeEnum.None, ClipText = true, CustomMinimumSize = new Vector2(74, 0), SizeFlagsVertical = Control.SizeFlags.ShrinkCenter, TooltipText = "How it stands against the other work: the hands take the highest first" };
+            priority.AddThemeFontSizeOverride("font_size", Ui.TextMeta + 1);
+            foreach (var (_, label) in ProjectPriorities)
+            {
+                priority.AddItem(label);
+            }
+
+            priority.Select(Array.FindIndex(ProjectPriorities, p => p.Priority == project.Priority));
+            priority.ItemSelected += index => { ShowResult(runner.SetProjectPriority(id, ProjectPriorities[index].Priority)); _campProjectsShown = ""; };
+            row.AddChild(priority);
+            var cancel = CloseButton(() => ShowResult(runner.CancelProject(id)));
+            cancel.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+            cancel.TooltipText = "Give it up: what went into it stays in it";
+            row.AddChild(cancel);
+            _campProjects.AddChild(row);
+        }
+
+        foreach (var standing in camp.Buildings)
+        {
+            if (rules.Building(standing.Building) is not { } building)
+            {
+                continue;
+            }
+
+            var made = standing.Quality >= 0.75 ? "sound" : standing.Quality >= 0.5 ? "fair" : "rough";
+            var row = Row(IconOf(standing.Building), building.Name, $"Standing, {made} work, {standing.Condition:0}% condition",
+                standing.Condition < 40 ? Severity.Attention : Severity.Information);
+            var plot = standing.Plot;
+            row.AddChild(LeadChoice(standing.Lead, lead => { ShowResult(runner.SetLead(plot, lead)); _campProjectsShown = ""; }));
+            var open = _historyOpen.Contains(plot);
+            var history = Ui.Button(open ? "Hide" : "History", "What it has been through: when and by whom it was built, from what, and since", () =>
+            {
+                if (!_historyOpen.Remove(plot))
+                {
+                    _historyOpen.Add(plot);
+                }
+
+                _campProjectsShown = "";
+            });
+            history.AddThemeFontSizeOverride("font_size", Ui.TextMeta + 1);
+            history.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+            row.AddChild(history);
+            _campProjects.AddChild(row);
+            if (open)
+            {
+                var lines = runner.BuildingHistory(standing);
+                var record = Ui.Prose(lines.Count == 0 ? "Built before buildings kept their history." : string.Join("\n", lines), Ui.TextMeta, Ui.InkSoft, 330);
+                record.AddThemeConstantOverride("line_spacing", -2);
+                var indent = new MarginContainer();
+                indent.AddThemeConstantOverride("margin_left", 28);
+                indent.AddChild(record);
+                _campProjects.AddChild(indent);
+            }
+        }
+
+        _campStanding.Visible = camp.Projects.Count == 0 && camp.Buildings.Count == 0;
+        _campStanding.Text = "Nothing built or ordered yet: choose from Build above.";
+    }
 
     private void CampChoicesChanged()
     {

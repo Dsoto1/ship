@@ -48,6 +48,14 @@ public sealed partial class SimulationRunner
         {
             Practise(character, shown, HoursPerTick * factor * 0.5);
         }
+
+        // Working beside the lead of a workplace, a hand picks up the lead's trade, whatever the task in hand
+        // (step W): the carpenter's ways learned setting posts or thatching under a master carpenter.
+        if (Campaign.Camp is not null && Campaign.ActiveTasks.TryGetValue(character.Id, out var doing) && LeadAt(doing.SpotId) is { } lead
+            && lead.Id != character.Id && task.Skill != LeadTrade && !task.Shows.Contains(LeadTrade))
+        {
+            Practise(character, LeadTrade, HoursPerTick * factor * 0.5);
+        }
     }
 
     private void Practise(Character character, string skill, double hours)
@@ -58,7 +66,7 @@ public sealed partial class SimulationRunner
             return;
         }
 
-        var mentor = ActiveMentor(character, skill);
+        var mentor = ActiveMentor(character, skill) ?? WorkplaceTeacher(character, skill);
         var cap = mentor is null ? PracticeAloneTo : mentor.Skills.Get(skill);
         if (level >= cap)
         {

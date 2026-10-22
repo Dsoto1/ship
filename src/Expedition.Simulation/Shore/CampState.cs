@@ -86,6 +86,31 @@ public sealed record CampChoices
     public bool Forage { get; init; } = true;
 }
 
+/// <summary>How much a project matters against the others (ECONOMY_LOOP §29): the hands take the highest first.</summary>
+public enum ProjectPriority
+{
+    /// <summary>Before any other work of the camp.</summary>
+    Critical,
+
+    /// <summary>Before the ordinary projects.</summary>
+    High,
+
+    /// <summary>As ordered.</summary>
+    Normal,
+
+    /// <summary>When nothing else is to be had.</summary>
+    Low,
+
+    /// <summary>Not worked at all until taken up again.</summary>
+    Paused,
+}
+
+/// <summary>Something that happened to a building: a storm weathered, a repair (ECONOMY_LOOP §45).</summary>
+/// <param name="Tick">When.</param>
+/// <param name="Kind"><c>storm</c> or <c>repaired</c>.</param>
+/// <param name="Amount">The condition lost to the storm, or gained by the repair.</param>
+public sealed record BuildingEvent(long Tick, string Kind, double Amount);
+
 /// <summary>A building being raised on its plot, phase by phase (R7).</summary>
 public sealed class CampProject
 {
@@ -125,6 +150,48 @@ public sealed class CampProject
     /// <summary>Loads of the phase's materials laid ready on the plot by work begun and stopped: the next start uses them.</summary>
     public int Laid { get; internal set; }
 
+    /// <summary>How it stands against the other projects.</summary>
+    public ProjectPriority Priority { get; internal set; } = ProjectPriority.Normal;
+
+    /// <summary>Who leads the work, if anyone (ECONOMY_LOOP §31).</summary>
+    public CharacterId? Lead { get; internal set; }
+
+    /// <summary>When it was ordered.</summary>
+    public long Begun { get; init; }
+
+    private readonly SortedDictionary<int, int> _builders = [];
+    private readonly SortedDictionary<string, int> _used = new(StringComparer.Ordinal);
+
+    /// <summary>Who has worked on it: each hand's tasks done.</summary>
+    public IReadOnlyDictionary<int, int> Builders => _builders;
+
+    /// <summary>The materials gone into it.</summary>
+    public IReadOnlyDictionary<string, int> Used => _used;
+
+    internal void Built(CharacterId by, IReadOnlyDictionary<string, int> used)
+    {
+        _builders[by.Value] = _builders.GetValueOrDefault(by.Value) + 1;
+        foreach (var (item, count) in used)
+        {
+            _used[item] = _used.GetValueOrDefault(item) + count;
+        }
+    }
+
+    internal void RestoreRecord(ProjectPriority priority, CharacterId? lead, IReadOnlyDictionary<int, int> builders, IReadOnlyDictionary<string, int> used)
+    {
+        Priority = priority;
+        Lead = lead;
+        foreach (var (who, count) in builders)
+        {
+            _builders[who] = count;
+        }
+
+        foreach (var (item, count) in used)
+        {
+            _used[item] = count;
+        }
+    }
+
     internal void Restore(int phase, int done, double qualitySum, int worked, int laid)
     {
         Phase = phase;
@@ -158,6 +225,43 @@ public sealed class CampBuilding
 
     /// <summary>Its condition, 0..100: weather wears it, the storm most of all; at 0 it is down.</summary>
     public double Condition { get; internal set; } = 100;
+
+    /// <summary>Who leads the work there now (ECONOMY_LOOP §31).</summary>
+    public CharacterId? Lead { get; internal set; }
+
+    /// <summary>Who led its building, if anyone did.</summary>
+    public CharacterId? BuiltUnder { get; init; }
+
+    /// <summary>When it was ordered, and when finished; null for one from before buildings kept their history.</summary>
+    public long? Begun { get; init; }
+
+    /// <summary>See <see cref="Begun"/>.</summary>
+    public long? Built { get; init; }
+
+    /// <summary>Who built it: each hand's tasks done.</summary>
+    public IReadOnlyDictionary<int, int> Builders { get; init; } = new SortedDictionary<int, int>();
+
+    /// <summary>The materials that went into it.</summary>
+    public IReadOnlyDictionary<string, int> Used { get; init; } = new SortedDictionary<string, int>(StringComparer.Ordinal);
+
+    private readonly List<BuildingEvent> _history = [];
+
+    /// <summary>What it has been through since, oldest first.</summary>
+    public IReadOnlyList<BuildingEvent> History => _history;
+
+    internal void Happened(BuildingEvent happened) => _history.Add(happened);
+
+    // A storm lasting hours is one storm: its later hours add to the same entry.
+    internal void Weathered(long tick, double lost, long sameStormWithin)
+    {
+        if (_history.Count > 0 && _history[^1] is { Kind: "storm" } last && tick - last.Tick <= sameStormWithin)
+        {
+            _history[^1] = last with { Amount = last.Amount + lost };
+            return;
+        }
+
+        _history.Add(new BuildingEvent(tick, "storm", lost));
+    }
 }
 
 /// <summary>A cell of the camp walked over (R7): how worn it is, and when last trodden.</summary>

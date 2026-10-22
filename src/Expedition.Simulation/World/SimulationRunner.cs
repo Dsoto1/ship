@@ -333,6 +333,12 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         if (task.BuildPhase && preferredSpot is null)
         {
             preferredSpot = FindWorkSpot(character, task).Spot?.Id;
+            // Another's work given up to take this one may have changed which project is in turn: nothing
+            // has been taken yet, so the hand simply does not start.
+            if (preferredSpot is null)
+            {
+                return;
+            }
         }
 
         if (!order.MaterialsConsumed && task.NeedsWorkSpot && UseLaidMaterials(character, task, preferredSpot))
@@ -454,6 +460,11 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
 
         // A hand refusing work does only what keeps them alive.
         var refusing = Refusing(character.Id);
+        if (!refusing && StartCritical(character))
+        {
+            return;
+        }
+
         foreach (var task in Campaign.DutiesOf(character.Id).Select(id => Content.Tasks[id]).Where(t => !refusing || StillDoes(t)))
         {
             if (DutyNeeded(task) && !(task.KeepsWatch && !OnDeck(character.Id)) && Check(character, task, materialsAlreadyUsed: false).Succeeded)
@@ -1136,7 +1147,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             return;
         }
 
-        var rate = WorkRate(character, definition);
+        var rate = WorkRate(character, definition) * (Campaign.Camp is not null ? LeadPace(task, definition) : 1);
         if (Campaign.Camp is not null && ToolBreaks(character, definition))
         {
             AddIfPresent(outcomes, Campaign.InterruptTask(character.Id, InterruptReasons.ToolBroke));
@@ -1156,7 +1167,8 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             voyage.Apply(effects, rate * HoursPerTick);
         }
 
-        if (definition.Hazard is { } hazard && Campaign.Randomness.Tasks.Chance(hazard.ChancePerHour * MistakeFactor(character) * SeaHazard() * HoursPerTick))
+        if (definition.Hazard is { } hazard && Campaign.Randomness.Tasks.Chance(hazard.ChancePerHour * MistakeFactor(character) * SeaHazard()
+                * (Campaign.Camp is not null ? LeadSafety(task, definition) : 1) * HoursPerTick))
         {
             Injure(character, definition, hazard, outcomes);
             if (!Campaign.ActiveTasks.ContainsKey(character.Id))
@@ -1466,6 +1478,12 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         }
 
         var start = placement.CellAt(Campaign.Clock.Tick);
+        // Ashore a lead works at the place they lead first.
+        if (location.Id == CampLocation)
+        {
+            preferredSpot ??= LedSpot(character, free);
+        }
+
         if (preferredSpot is not null && free.FirstOrDefault(s => s.Id == preferredSpot) is { } preferred
             && PathIn(location, start, preferred.Cell) is { } preferredPath)
         {
@@ -1475,7 +1493,8 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         var best = free
             .Select(spot => (Spot: spot, Path: PathIn(location, start, spot.Cell)))
             .Where(candidate => candidate.Path is not null)
-            .OrderBy(candidate => candidate.Path!.Count)
+            .OrderBy(candidate => SpotPriority(candidate.Spot))
+            .ThenBy(candidate => candidate.Path!.Count)
             .FirstOrDefault();
         return best.Spot is null
             ? (null, null, $"{character.Name} cannot reach anywhere to {task.Name.ToLowerInvariant()}.")

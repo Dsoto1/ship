@@ -954,6 +954,21 @@ public sealed record CampProjectData
 
     /// <summary>Trees on its ground. Added in format 39.</summary>
     public int Trees { get; init; }
+
+    /// <summary>Its priority (a <see cref="Shore.ProjectPriority"/> name). Added in format 42.</summary>
+    public string Priority { get; init; } = nameof(Shore.ProjectPriority.Normal);
+
+    /// <summary>Who leads it, or null. Added in format 42.</summary>
+    public int? Lead { get; init; }
+
+    /// <summary>When it was ordered. Added in format 42.</summary>
+    public long Begun { get; init; }
+
+    /// <summary>Who has worked on it: tasks done by each. Added in format 42.</summary>
+    public IReadOnlyDictionary<int, int> Builders { get; init; } = new Dictionary<int, int>();
+
+    /// <summary>The materials gone into it. Added in format 42.</summary>
+    public IReadOnlyDictionary<string, int> Used { get; init; } = new Dictionary<string, int>();
 }
 
 /// <summary>A building standing. Added in format 38.</summary>
@@ -979,6 +994,40 @@ public sealed record CampBuildingData
 
     /// <summary>Turned a quarter. Added in format 39.</summary>
     public bool Turned { get; init; }
+
+    /// <summary>Who leads the work there now, or null. Added in format 42.</summary>
+    public int? Lead { get; init; }
+
+    /// <summary>Who led its building, or null. Added in format 42.</summary>
+    public int? BuiltUnder { get; init; }
+
+    /// <summary>When it was ordered, or null for one built before buildings kept their history. Added in format 42.</summary>
+    public long? Begun { get; init; }
+
+    /// <summary>When it was finished, or null. Added in format 42.</summary>
+    public long? Built { get; init; }
+
+    /// <summary>Who built it: tasks done by each. Added in format 42.</summary>
+    public IReadOnlyDictionary<int, int> Builders { get; init; } = new Dictionary<int, int>();
+
+    /// <summary>The materials that went into it. Added in format 42.</summary>
+    public IReadOnlyDictionary<string, int> Used { get; init; } = new Dictionary<string, int>();
+
+    /// <summary>What it has been through, oldest first. Added in format 42.</summary>
+    public IReadOnlyList<BuildingEventData> History { get; init; } = [];
+}
+
+/// <summary>Something that happened to a building. Added in format 42.</summary>
+public sealed record BuildingEventData
+{
+    /// <summary>When.</summary>
+    public long Tick { get; init; }
+
+    /// <summary><c>storm</c> or <c>repaired</c>.</summary>
+    public required string Kind { get; init; }
+
+    /// <summary>Condition lost or gained.</summary>
+    public double Amount { get; init; }
 }
 
 /// <summary>A cell of the camp walked over. Added in format 40.</summary>

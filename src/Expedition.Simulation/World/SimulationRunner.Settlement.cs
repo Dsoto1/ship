@@ -125,7 +125,7 @@ public sealed partial class SimulationRunner
 
         if (task.BuildPhase)
         {
-            return camp.Projects.FirstOrDefault(p => p.Plot == plot) is { } project && PhaseOf(project)?.Task == task.Id && PhaseLeft(project) > 0;
+            return camp.Projects.FirstOrDefault(p => p.Plot == plot) is { } project && PhaseOf(project)?.Task == task.Id && PhaseLeft(project) > 0 && InTurn(project);
         }
 
         var standing = camp.Buildings.FirstOrDefault(b => b.Plot == plot);
@@ -218,7 +218,7 @@ public sealed partial class SimulationRunner
         return need switch
         {
             "build" or "build_dry" => (need == "build" || !Raining)
-                                       && camp.Projects.Any(p => PhaseOf(p)?.Task == task.Id && PhaseLeft(p) > 0),
+                                       && camp.Projects.Any(p => PhaseOf(p)?.Task == task.Id && PhaseLeft(p) > 0 && InTurn(p)),
             "poles" => MaterialShort("item.poles") > 0,
             "thatch" => MaterialShort("item.thatch") > 0,
             "stone" => MaterialShort("item.stone") > 0 && StockLeft("camp_stone") > 0,
@@ -278,8 +278,9 @@ public sealed partial class SimulationRunner
         }
 
         project.Done++;
-        project.QualitySum += WorkQuality(character, definition);
+        project.QualitySum += LedQuality(character, definition, spotId, WorkQuality(character, definition));
         project.Worked++;
+        RecordWork(project, character, definition);
         if (project.Done < PhaseTimes(project, phase))
         {
             return;
@@ -307,7 +308,7 @@ public sealed partial class SimulationRunner
 
         camp.RemoveProject(project);
         var quality = project.Worked > 0 ? project.QualitySum / project.Worked : 0.5;
-        camp.AddBuilding(new CampBuilding { Building = building.Id, Plot = plot, X = project.X, Y = project.Y, Turned = project.Turned, Quality = quality });
+        camp.AddBuilding(Finished(project, quality));
         Campaign.Record(ChronicleEntryKind.BuildingFinished, [
             new(ChronicleParameters.To, building.Id), new(ChronicleParameters.Level, quality.ToString("0.00", CultureInfo.InvariantCulture)),
         ], character.Id);
@@ -347,7 +348,9 @@ public sealed partial class SimulationRunner
 
         if (definition.RepairsBuilding && camp.Buildings.Where(b => b.Plot == PlotOf(spotId)).OrderBy(b => b.Condition).FirstOrDefault() is { } worn)
         {
-            worn.Condition = Math.Min(100, worn.Condition + 40);
+            var mended = Math.Min(100, worn.Condition + 40) - worn.Condition;
+            worn.Condition += mended;
+            worn.Happened(new BuildingEvent(Campaign.Clock.Tick, "repaired", mended));
         }
 
         switch (definition.Garden)
@@ -577,7 +580,9 @@ public sealed partial class SimulationRunner
         foreach (var building in camp.Buildings.Where(Roofed).ToList())
         {
             // Roofs tied down and made fast, warned by the coast's people, stand it better (R8).
-            building.Condition -= (1.2 - building.Quality) * 3 * (0.5 + random.NextDouble()) * (Learned("know.storm") ? 0.6 : 1);
+            var lost = (1.2 - building.Quality) * 3 * (0.5 + random.NextDouble()) * (Learned("know.storm") ? 0.6 : 1);
+            building.Condition -= lost;
+            building.Weathered(Campaign.Clock.Tick, lost, OneStorm);
             if (building.Condition <= 0)
             {
                 camp.RemoveBuilding(building);

@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 41;
+    public const int CurrentSchemaVersion = 42;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -194,6 +194,10 @@ public static class SaveSerializer
 
                 return root;
             },
+
+            // Format 42 gave workplaces leads and priorities, and buildings their history (step W): an older
+            // camp's projects are of ordinary priority with no lead, and its buildings have no history.
+            [41] = root => root,
 
             // Format 41 added the world around the camp (R8): an older camp starts it knowing only what it did.
             [40] = root => root,
@@ -1608,10 +1612,15 @@ public static class SaveSerializer
         {
             Id = p.Id, Building = p.Building, Plot = p.Plot, Phase = p.Phase, Done = p.Done, QualitySum = p.QualitySum, Worked = p.Worked, Laid = p.Laid,
             X = p.X, Y = p.Y, Turned = p.Turned, Trees = p.Trees,
+            Priority = p.Priority.ToString(), Lead = p.Lead?.Value, Begun = p.Begun,
+            Builders = new SortedDictionary<int, int>(p.Builders.ToDictionary()), Used = new SortedDictionary<string, int>(p.Used.ToDictionary(), StringComparer.Ordinal),
         }).ToList(),
         Buildings = camp.Buildings.Select(b => new CampBuildingData
         {
             Building = b.Building, Plot = b.Plot, Quality = b.Quality, Condition = b.Condition, X = b.X, Y = b.Y, Turned = b.Turned,
+            Lead = b.Lead?.Value, BuiltUnder = b.BuiltUnder?.Value, Begun = b.Begun, Built = b.Built,
+            Builders = new SortedDictionary<int, int>(b.Builders.ToDictionary()), Used = new SortedDictionary<string, int>(b.Used.ToDictionary(), StringComparer.Ordinal),
+            History = b.History.Select(h => new BuildingEventData { Tick = h.Tick, Kind = h.Kind, Amount = h.Amount }).ToList(),
         }).ToList(),
         Beds = camp.Beds.Select(b => new GardenBedData { Crop = b.Crop, Sown = b.Sown, Health = b.Health, Tended = b.Tended }).ToList(),
         Broken = new SortedDictionary<string, int>(camp.Broken.ToDictionary(), StringComparer.Ordinal),
@@ -1640,6 +1649,7 @@ public static class SaveSerializer
             throw new SaveLoadException("The camp names buildings, crops or tools that do not exist.");
         }
 
+        bool Known(int? id) => id is not { } who || campaign.Characters.ContainsKey(new CharacterId(who));
         var camp = new Shore.CampState
         {
             Site = savedCamp.Site, Landed = savedCamp.Landed, ShipAtAnchor = savedCamp.ShipAtAnchor, Boat = savedCamp.Boat, LandedCount = savedCamp.LandedCount,
@@ -1649,18 +1659,42 @@ public static class SaveSerializer
             var restored = new Shore.CampProject
             {
                 Id = project.Id, Building = project.Building, Plot = project.Plot, X = project.X, Y = project.Y, Turned = project.Turned, Trees = project.Trees,
+                Begun = project.Begun,
             };
             restored.Restore(project.Phase, project.Done, project.QualitySum, project.Worked, project.Laid);
+            if (!Enum.TryParse<Shore.ProjectPriority>(project.Priority, out var priority) || !Known(project.Lead) || project.Builders.Keys.Any(id => !Known(id))
+                || project.Used.Keys.Any(i => !content.Items.ContainsKey(i)))
+            {
+                throw new SaveLoadException("A project names a priority, a person or a material that does not exist.");
+            }
+
+            restored.RestoreRecord(priority, project.Lead is { } lead ? new CharacterId(lead) : null, project.Builders, project.Used);
             camp.AddProject(restored);
         }
 
         foreach (var building in savedCamp.Buildings)
         {
-            camp.AddBuilding(new Shore.CampBuilding
+            if (!Known(building.Lead) || !Known(building.BuiltUnder) || building.Builders.Keys.Any(id => !Known(id))
+                || building.Used.Keys.Any(i => !content.Items.ContainsKey(i)) || building.History.Any(h => h.Kind is not ("storm" or "repaired")))
+            {
+                throw new SaveLoadException("A building names a person, a material or an event that does not exist.");
+            }
+
+            var standing = new Shore.CampBuilding
             {
                 Building = building.Building, Plot = building.Plot, Quality = building.Quality, Condition = building.Condition,
                 X = building.X, Y = building.Y, Turned = building.Turned,
-            });
+                BuiltUnder = building.BuiltUnder is { } under ? new CharacterId(under) : null, Begun = building.Begun, Built = building.Built,
+                Builders = new SortedDictionary<int, int>(building.Builders.ToDictionary()),
+                Used = new SortedDictionary<string, int>(building.Used.ToDictionary(), StringComparer.Ordinal),
+            };
+            standing.Lead = building.Lead is { } leads ? new CharacterId(leads) : null;
+            foreach (var happened in building.History)
+            {
+                standing.Happened(new Shore.BuildingEvent(happened.Tick, happened.Kind, happened.Amount));
+            }
+
+            camp.AddBuilding(standing);
         }
 
         foreach (var bed in savedCamp.Beds)

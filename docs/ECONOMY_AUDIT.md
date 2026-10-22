@@ -67,8 +67,8 @@ against the code as it stands: **Yes**, **Partly** or **No**, with where it is o
 | §11–12 Physical logistics, local storage | **Now kept** (THE_MOVE): each camp's stores lie in one place, the beach stack or the storehouse. What is brought in is carried there by hand, materials are taken up there on the way to the work, and between camps everything is carried. | Several stores in one camp (a workshop's tools, a cache by the work). |
 | §18 Projection and rationing | Days of food and water at sea; short rations as a standing order at sea. | Rationing ashore; projections in ranges ("~18–22 days"). |
 | §22 An intact ship has a cost | The ship rides at anchor and her hull wears. | Choosing who stays aboard, and using her afterwards for fishing, trading or exploring by sea. |
-| §28 Bottlenecks named | The camp's "still wanting" list; the first-days report. | Each project saying why it has stopped: "Storehouse stalled: no axe free". |
-| §29–30 Priorities and delegation | Camp priorities and choices; standing orders at sea. | Priorities per project, and levels (critical, paused); foremen. |
+| §28 Bottlenecks named | The camp's "still wanting" list; the first-days report; **each project says why it has stopped** (WORKPLACES.md). | For the camp's other work, not only buildings. |
+| §29–30 Priorities and delegation | Camp priorities and choices; standing orders at sea; **priorities per project, critical to paused, and leads** (WORKPLACES.md). | Leads for the camp's other work. |
 | §34 Policies | Priorities, sailcloth, scouts, foraging. | Rations, working hours, reserve targets. |
 | §43 Readiness | The port's checklist (hands, the way, stores for the passage). | The spec's two-part summary: voyage cover and landfall capability, in words, no score. |
 | §44 Self-sufficiency | The camp's stage, and the 90-day verdict. | The milestones: reliable water, first storehouse, harvest, a tool replaced locally, an apprentice trained, a stable trade. |
@@ -77,12 +77,12 @@ against the code as it stands: **Yes**, **Partly** or **No**, with where it is o
 
 | Spec | Missing | Where it goes |
 |---|---|---|
-| §31 Workplaces led by a person | Buildings give work places, but no one leads them, and the lead's skill does not shape throughput, teaching or safety. | Step W |
+| §31 Workplaces led by a person | **Done for buildings (WORKPLACES.md):** a lead's skill sets pace, quality and safety, and teaches. Not yet for the hearth, the water or the garden as a whole. | Step W, later |
 | §32 Households (now approved: couples and children) | No households, dwellings by family, or shared possessions. | Step P |
 | §33 Community condition | Each person has stress and grievances, but the community has no explainable state ("Strained: recent deaths; poor food variety; + successful harvest"). | Step C |
 | §39 Population growth as people | Only Gaspar Lezo joins. The relief ship brings no settlers. | Step P |
 | §40 Distribution | People eat from the one pool. Kitchens and households distributing comes with households. | Step P |
-| §45 Buildings carry history | Buildings record quality and condition, but not when they were built, by whom, from what, or what they survived. | Step W (small) |
+| §45 Buildings carry history | **Done (WORKPLACES.md):** when built, under whom, by whom, from what, storms and repairs. A person's record does not yet say what they led. | Step P |
 
 ## The guardrails (§58)
 
@@ -113,7 +113,7 @@ first camp then a better site, people joining, couples and children, playing on 
      ship). Hauling moves them between places. A task draws from the nearest store that holds what it needs,
      and walks there (§11–12, §46).
    - This mends the guardrail that is broken now, and makes the move real: no goods teleport to the new site.
-2. **Step W, workplaces and the history of things.**
+2. **Step W, workplaces and the history of things.** *Done (WORKPLACES.md).*
    - Workplaces have a lead, who sets quality, pace and teaching (§31).
    - Each project says why it has stopped (§28).
    - Buildings carry their history (§45).
