@@ -176,6 +176,29 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
             ChronicleEntryKind.CargoInjury =>
                 $"Cargo breaking loose caught {who}: {Condition(entry.Get(ChronicleParameters.Condition)).ToLowerInvariant()} (-{entry.Get(ChronicleParameters.Damage)} health){Because(entry)}.",
             ChronicleEntryKind.LegPlotted => $"The captain laid off a leg on the chart: {entry.Get(ChronicleParameters.Level)} laid off.",
+            ChronicleEntryKind.WentAshore => entry.Get(ChronicleParameters.Reason) == "anchored"
+                ? $"Ashore at {entry.Get(ChronicleParameters.To)}: {entry.Get(ChronicleParameters.Need)} landed through the surf to make a camp, the ship at anchor off."
+                : $"A camp made at {entry.Get(ChronicleParameters.To)} by the {entry.Get(ChronicleParameters.Need)} who came ashore.",
+            ChronicleEntryKind.CampWorkDone => entry.Get(ChronicleParameters.To) switch
+            {
+                Shore.CampWorks.Shelter => $"A shelter finished: berths under cover for {entry.Get(ChronicleParameters.Level)}.",
+                Shore.CampWorks.Fire => "A fire made on the beach, above the tide.",
+                Shore.CampWorks.Cover => "The stores stacked off the sand and covered.",
+                Shore.CampWorks.Latrine => "A latrine dug below the camp.",
+                Shore.CampWorks.SickShelter => "A shelter made for the sick.",
+                var other => $"Finished: {other}.",
+            },
+            ChronicleEntryKind.CampFound => Capitalise(entry.Get(ChronicleParameters.Reason) switch
+            {
+                "water" => $"Water found: {entry.Get(ChronicleParameters.To)}.",
+                "food" => $"Food found: {entry.Get(ChronicleParameters.To)}.",
+                _ => entry.Get(ChronicleParameters.Need) ?? $"Found: {entry.Get(ChronicleParameters.To)}.",
+            }),
+            ChronicleEntryKind.CampStoresWet => "Rain on the stores, uncovered on the sand: food is spoiling.",
+            ChronicleEntryKind.CampAllLanded => $"The last of the stores landed, in {entry.Get(ChronicleParameters.Level)} trips.",
+            ChronicleEntryKind.CampFirstDays => string.IsNullOrEmpty(entry.Get(ChronicleParameters.Reason))
+                ? $"Three days ashore. The {entry.Get(ChronicleParameters.Need)} have water, shelter and a fire."
+                : $"Three days ashore. The {entry.Get(ChronicleParameters.Need)} still want: {entry.Get(ChronicleParameters.Reason)}.",
             ChronicleEntryKind.LegReached => entry.Get(ChronicleParameters.Level) == "0"
                 ? "She reached the end of the last leg laid off, by the reckoning: back on the passage's own course."
                 : $"She reached a leg's end, by the reckoning; {entry.Get(ChronicleParameters.Level)} more laid off.",

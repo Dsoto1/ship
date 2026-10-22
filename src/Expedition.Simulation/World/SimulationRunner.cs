@@ -280,6 +280,11 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
                 $"{character.Name} lacks the skill: {task.Name} needs {SkillName(task.Skill!)} {task.MinSkill}.");
         }
 
+        if (task.StartBelowFatigue is { } fresh && character.Needs.Fatigue >= fresh)
+        {
+            return CommandResult.Rejected($"{character.Name} is too tired to set out: {task.Name.ToLowerInvariant()} wants a rested hand.");
+        }
+
         if (WeatherProblem(task) is { } weather)
         {
             return CommandResult.Rejected(weather);
@@ -471,6 +476,18 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             return false;
         }
 
+        if (when.Camp is { } wanted && !CampWants(wanted))
+        {
+            return false;
+        }
+
+        // One to tend each three sick or hurt is enough; the rest go about the other work.
+        if (task.TendsSick && Campaign.ActiveTasks.Values.Count(t => Content.Tasks[t.DefinitionId].TendsSick)
+            >= Math.Ceiling(Campaign.Crew.Count(SickOrHurt) / 3.0))
+        {
+            return false;
+        }
+
         if ((when.OpenLeak == true && (Campaign.Voyage is not { } leaking || LeakFor(leaking, "plug") is null))
             || (when.StormComing == true && !StormComing)
             || (when.SickAboard == true && !Campaign.Crew.Any(SickOrHurt))
@@ -491,6 +508,11 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
     {
         get
         {
+            if (Campaign.Camp is not null)
+            {
+                return RainingAshore;
+            }
+
             if (Campaign.Voyage is not { Outcome: VoyageOutcome.UnderWay } ship || Content.Voyage is not { } rules)
             {
                 return false;
@@ -543,6 +565,12 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         if (Campaign.Clock.Tick % 5 != 0 || !character.CanWork
             || !Campaign.ActiveTasks.TryGetValue(character.Id, out var current) || current.Origin != TaskOrigin.Duty
             || !Campaign.Duties.TryGetValue(character.Id, out var roster))
+        {
+            return;
+        }
+
+        // Away from the camp, scouting or in the boat, a hand cannot be called back to other work.
+        if (Content.Tasks[current.DefinitionId] is { Scouts: true } or { Lands: true })
         {
             return;
         }
@@ -993,6 +1021,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             StepVoyage();
             StepShipboardLife();
             StepPort();
+            StepCamp();
             CheckCommand();
             ConsiderEvents();
         }
@@ -1082,7 +1111,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         }
 
         var rate = WorkRate(character, definition);
-        if (definition.Yield is { } yield && !Bring(definition, yield, rate))
+        if (definition.Yield is { } yield && !Bring(character, yield, rate))
         {
             AddIfPresent(outcomes, Campaign.InterruptTask(character.Id, InterruptReasons.StoresFull));
             return;
@@ -1133,6 +1162,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
 
             FinishStormWork(character, definition);
             FinishCleaning(definition);
+            FinishCampWork(character, definition);
 
             if (definition.CrewOnComplete is { } relief)
             {
@@ -1153,8 +1183,16 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
 
     // What the work brings in this minute, by chance: the yield at this pace, less as the sea gets up for
     // lines and nets, more over the bank. False if it will not fit in the stores.
-    private bool Bring(TaskDefinition definition, TaskYield yield, double rate)
+    private bool Bring(Character character, TaskYield yield, double rate)
     {
+        // Ashore at the camp, what has been found there: the water, the shore's food.
+        if (yield.Ashore is "camp_water" or "camp_food")
+        {
+            return CampYield(character, yield.Ashore) is not { } taken
+                   || !Campaign.Randomness.Tasks.Chance(taken.PerHour * rate * HoursPerTick)
+                   || Campaign.SharedStore.TryAdd(taken.Item, 1, Content.Items).Succeeded;
+        }
+
         var factor = 1.0;
         if (Campaign.Voyage is { } ship && Content.Voyage is { } rules)
         {

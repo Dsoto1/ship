@@ -1,0 +1,145 @@
+// The camp ashore, the first days (docs/R6_LANDFALL_CAMP.md; SETTLEMENT_EXPERIENCE §4, §6). Each is done at its
+// place in the camp. "builds" adds to a work of the camp on completion; "dutyWhen.camp" says when the work is
+// wanted. The captain's priorities set the order the hands take them in.
+[
+  {
+    "id": "task.rig_sail_shelter",
+    "needsWorkSpot": true,
+    "name": "Rig a sail shelter",
+    "durationMinutes": 120,
+    // Two cloths of the spare sail over a ridge-pole and lashed down: dry, and quickly up. The cloth is
+    // gone for mending her sails.
+    "skill": "skill.rigging",
+    "consumes": { "item.sailcloth": 2, "item.rope": 1 },
+    "builds": "shelter",
+    "buildsAmount": 4,
+    "dutyWhen": { "camp": "sail_shelter" },
+    "needsPerHour": { "fatigue": 4.0 }
+  },
+  {
+    "id": "task.cut_brush_shelter",
+    "needsWorkSpot": true,
+    "name": "Cut a brush shelter",
+    "durationMinutes": 240,
+    // Poles cut and lashed, thatched with palm and brush: slower, and leakier in a downpour.
+    "skill": "skill.carpentry",
+    "builds": "shelter",
+    "buildsAmount": 3,
+    "dutyWhen": { "camp": "brush_shelter", "startBetween": [[6, 18]] },
+    "needsPerHour": { "fatigue": 6.0 },
+    "hazard": { "chancePerHour": 0.01, "healthDamage": 6, "condition": "condition.sprain" }
+  },
+  {
+    "id": "task.build_sick_shelter",
+    "needsWorkSpot": true,
+    "name": "Make a shelter for the sick",
+    "durationMinutes": 150,
+    // A roof apart, out of the rain and the smoke, where the sick can be laid and tended.
+    "builds": "sick_shelter",
+    "dutyWhen": { "camp": "sick_shelter" },
+    "needsPerHour": { "fatigue": 5.0 }
+  },
+  {
+    "id": "task.make_fire",
+    "needsWorkSpot": true,
+    "name": "Make a fire",
+    "durationMinutes": 60,
+    // A hearth of stones above the tide line, wood gathered and got dry, flint and steel.
+    "builds": "fire",
+    "dutyWhen": { "camp": "fire" },
+    "needsPerHour": { "fatigue": 3.0 }
+  },
+  {
+    "id": "task.tend_fire",
+    "needsWorkSpot": true,
+    "name": "Keep the fire",
+    "durationMinutes": 30,
+    // More wood brought and the fire made up, for the night and the cooking.
+    "keepsFire": true,
+    "dutyWhen": { "camp": "fire_low" },
+    "needsPerHour": { "fatigue": 2.0 }
+  },
+  {
+    "id": "task.cook_ashore",
+    "needsWorkSpot": true,
+    "name": "Cook at the fire",
+    "durationMinutes": 90,
+    // A hot meal at the fire: everyone's heart is the better for it.
+    "crewOnComplete": { "stress": -8 },
+    "skill": "skill.cooking",
+    "dutyWhen": { "startBetween": [[10, 11], [17, 18]], "camp": "cooking" },
+    "needsPerHour": { "fatigue": 2.0 }
+  },
+  {
+    "id": "task.fetch_water",
+    "needsWorkSpot": true,
+    "name": "Fetch water",
+    "durationMinutes": 180,
+    // The casks rolled or carried to the water and back, full: as much as the source gives, and the
+    // fewer trips the further it is.
+    "attribute": "attribute.strength",
+    "yield": { "item": "item.water", "perHour": 1, "ashore": "camp_water" },
+    "dutyWhen": { "camp": "water", "startBetween": [[6, 16]] },
+    "needsPerHour": { "fatigue": 5.0, "thirst": 1.0 }
+  },
+  {
+    "id": "task.land_stores",
+    "needsWorkSpot": true,
+    "name": "Land the stores",
+    "durationMinutes": 120,
+    // The boat out to the ship or the wreck and back through the surf, loaded. Without the boat, what can be
+    // swum ashore or floated in on a cask.
+    "attribute": "attribute.strength",
+    "lands": true,
+    "dutyWhen": { "camp": "land", "startBetween": [[6, 17]] },
+    "needsPerHour": { "fatigue": 6.0, "thirst": 1.0 },
+    "hazard": { "chancePerHour": 0.015, "healthDamage": 10, "condition": "condition.bruised" }
+  },
+  {
+    "id": "task.cover_stores",
+    "needsWorkSpot": true,
+    "name": "Cover the stores",
+    "durationMinutes": 90,
+    // The casks and sacks stacked off the sand on driftwood and covered: the rain spoils what is left out.
+    "builds": "cover",
+    "dutyWhen": { "camp": "cover" },
+    "needsPerHour": { "fatigue": 3.0 }
+  },
+  {
+    "id": "task.dig_latrine",
+    "needsWorkSpot": true,
+    "name": "Dig a latrine",
+    "durationMinutes": 120,
+    // Below the camp and away from the water: a camp without one grows foul, and the flux comes.
+    "skill": "skill.sanitation",
+    "builds": "latrine",
+    "dutyWhen": { "camp": "latrine" },
+    "needsPerHour": { "fatigue": 5.0 }
+  },
+  {
+    "id": "task.forage_shore",
+    "needsWorkSpot": true,
+    "name": "Gather food",
+    "durationMinutes": 180,
+    // What the shore gives, found by scouting. Picked by a hand who does not know it, strange food can make
+    // them ill.
+    "skill": "skill.foraging",
+    "yield": { "item": "item.fish", "perHour": 1, "ashore": "camp_food" },
+    "dutyWhen": { "camp": "forage", "startBetween": [[6, 16]] },
+    "needsPerHour": { "fatigue": 3.0, "stress": -0.5 }
+  },
+  {
+    "id": "task.scout",
+    "needsWorkSpot": true,
+    "name": "Scout the country",
+    "durationMinutes": 180,
+    // Away from the camp along the shore and inland, looking for water, food, a better place, and any sign
+    // of who lives here. Alone, and a long way from help: only a rested hand is sent.
+    "skill": "skill.tracking",
+    "scouts": true,
+    "startBelowFatigue": 45,
+    "dutyWhen": { "camp": "scout", "startBetween": [[6, 14]] },
+    "needsPerHour": { "fatigue": 5.0, "thirst": 1.5 },
+    "hazard": { "chancePerHour": 0.012, "healthDamage": 10, "condition": "condition.sprain" }
+  }
+]

@@ -215,9 +215,11 @@ public sealed partial class SimulationRunner
     // The fatigue an on-deck hand of the watch works up to before resting: longer than off watch, their
     // sleep being below, but not so long that the whole watch is worn out together.
     private double RestThreshold(Character character, double usual) =>
-        Campaign.Voyage is { Outcome: VoyageOutcome.UnderWay } ship && ship.WatchOf(character.Id) != Watch.None
-            ? Math.Min(usual + 10, Content.Rules.MaxFatigueToStartWork)
-            : usual;
+        Campaign.Camp is { Choices.RestTheExhausted: false }
+            ? Math.Min(usual + 20, Content.Rules.MaxFatigueToStartWork)
+            : Campaign.Voyage is { Outcome: VoyageOutcome.UnderWay } ship && ship.WatchOf(character.Id) != Watch.None
+                ? Math.Min(usual + 10, Content.Rules.MaxFatigueToStartWork)
+                : usual;
 
     /// <summary>
     /// The mate's watch bill: the crew split into two watches in turn, the cook a day-worker. Drawn up when

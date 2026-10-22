@@ -239,4 +239,22 @@ public enum ChronicleEntryKind
 
     /// <summary>She reached a leg's end by the reckoning (parameter: level = legs left).</summary>
     LegReached,
+
+    /// <summary>The survivors made camp ashore (parameters: to = the site's name, need = how many, reason = "anchored" or "wreck").</summary>
+    WentAshore,
+
+    /// <summary>A work of the camp was finished (parameters: to = the work, level = berths for a shelter).</summary>
+    CampWorkDone,
+
+    /// <summary>A scout found something (parameters: to = what was found, its ID; reason = water, food or the find's kind; character: the scout).</summary>
+    CampFound,
+
+    /// <summary>The camp's stores got wet in the rain, uncovered (parameter: level = units spoiled so far).</summary>
+    CampStoresWet,
+
+    /// <summary>The last of what was afloat was landed (parameter: level = the trips it took).</summary>
+    CampAllLanded,
+
+    /// <summary>The first days ashore are over (parameters: level = days, need = people, reason = what is still wanting).</summary>
+    CampFirstDays,
 }

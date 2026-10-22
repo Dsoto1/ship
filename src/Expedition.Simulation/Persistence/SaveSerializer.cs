@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 36;
+    public const int CurrentSchemaVersion = 37;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -194,6 +194,9 @@ public static class SaveSerializer
 
                 return root;
             },
+
+            // Format 37 added the camp ashore: an older save has none.
+            [36] = root => root,
 
             // Format 36 added legs laid off and notes on the chart: an older chart has none.
             [35] = root => root,
@@ -667,6 +670,19 @@ public static class SaveSerializer
                     BoatLaunched = wreck.BoatLaunched, Survivors = wreck.Survivors.Select(id => id.Value).ToList(), Lost = wreck.Lost.Select(id => id.Value).ToList(),
                     Saved = new SortedDictionary<string, int>(wreck.Saved.ToDictionary(), StringComparer.Ordinal), Drunk = wreck.Drunk,
                     Remains = new SortedDictionary<string, int>(wreck.Remains.ToDictionary(), StringComparer.Ordinal),
+                }
+                : null,
+            Camp = campaign.Camp is { } camp
+                ? new CampData
+                {
+                    Site = camp.Site, Landed = camp.Landed, ShipAtAnchor = camp.ShipAtAnchor, Boat = camp.Boat,
+                    Works = new SortedDictionary<string, double>(camp.Works.ToDictionary(), StringComparer.Ordinal),
+                    Found = camp.Found.ToList(), Afloat = new SortedDictionary<string, int>(camp.Afloat.ToDictionary(), StringComparer.Ordinal),
+                    Priorities = camp.Priorities.ToList(), UseSailcloth = camp.Choices.UseSailcloth, RestTheExhausted = camp.Choices.RestTheExhausted,
+                    SendScouts = camp.Choices.SendScouts, Forage = camp.Choices.Forage, FireUntil = camp.FireUntil, Spoiled = camp.Spoiled,
+                    Trips = camp.Trips, Reported = camp.Reported,
+                    NightsSheltered = new SortedDictionary<int, int>(camp.NightsSheltered.ToDictionary()),
+                    NightsExposed = new SortedDictionary<int, int>(camp.NightsExposed.ToDictionary()),
                 }
                 : null,
             Voyage = campaign.Voyage is { } voyage
@@ -1240,6 +1256,29 @@ public static class SaveSerializer
                 Survivors = savedWreck.Survivors.Select(id => new CharacterId(id)).ToList(), Lost = savedWreck.Lost.Select(id => new CharacterId(id)).ToList(),
                 Saved = savedWreck.Saved.ToDictionary(), Drunk = savedWreck.Drunk, Remains = savedWreck.Remains.ToDictionary(),
             };
+        }
+
+        if (data.Camp is { } savedCamp)
+        {
+            if (savedCamp.Afloat.Any(pair => !content.Items.ContainsKey(pair.Key) || pair.Value < 0)
+                || savedCamp.Priorities.Any(p => !Shore.CampPriorities.Default.Contains(p)) || savedCamp.Priorities.Count != Shore.CampPriorities.Default.Count
+                || savedCamp.NightsSheltered.Keys.Concat(savedCamp.NightsExposed.Keys).Any(id => !campaign.Characters.ContainsKey(new CharacterId(id))))
+            {
+                throw new SaveLoadException("The camp names stores, priorities or people that do not exist.");
+            }
+
+            var camp = new Shore.CampState { Site = savedCamp.Site, Landed = savedCamp.Landed, ShipAtAnchor = savedCamp.ShipAtAnchor, Boat = savedCamp.Boat };
+            camp.Restore(savedCamp.Works, savedCamp.Found, savedCamp.Afloat, savedCamp.NightsSheltered, savedCamp.NightsExposed);
+            camp.Priorities = savedCamp.Priorities.ToList();
+            camp.Choices = new Shore.CampChoices
+            {
+                UseSailcloth = savedCamp.UseSailcloth, RestTheExhausted = savedCamp.RestTheExhausted, SendScouts = savedCamp.SendScouts, Forage = savedCamp.Forage,
+            };
+            camp.FireUntil = savedCamp.FireUntil;
+            camp.Spoiled = savedCamp.Spoiled;
+            camp.Trips = savedCamp.Trips;
+            camp.Reported = savedCamp.Reported;
+            campaign.Camp = camp;
         }
 
         RestoreLife(campaign, content, data.Life);

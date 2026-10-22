@@ -106,6 +106,24 @@ public sealed record TaskDefinition
 
     /// <summary>"plug" or "patch": the work deals with a leak when done (the worst open one; for a patch, the worst not made good).</summary>
     public string? RepairsLeak { get; init; }
+
+    /// <summary>Ashore: the work of the camp this adds to on completion (<see cref="Shore.CampWorks"/>).</summary>
+    public string? Builds { get; init; }
+
+    /// <summary>How much it adds: berths for a shelter, 1 for the others.</summary>
+    public double BuildsAmount { get; init; } = 1;
+
+    /// <summary>Ashore: making up the camp's fire, so it burns on.</summary>
+    public bool KeepsFire { get; init; }
+
+    /// <summary>Ashore: a trip landing stores from the ship or the wreck, on completion.</summary>
+    public bool Lands { get; init; }
+
+    /// <summary>Ashore: a scouting trip, which may find the next thing about the site on completion.</summary>
+    public bool Scouts { get; init; }
+
+    /// <summary>Only a hand less tired than this sets out on it (a long trip away); null for anyone fit to work.</summary>
+    public double? StartBelowFatigue { get; init; }
 }
 
 /// <summary>
@@ -174,6 +192,13 @@ public sealed record DutyCondition
 
     /// <summary>Only when the ship is kept less clean than this (0..100).</summary>
     public double? CleanlinessBelow { get; init; }
+
+    /// <summary>
+    /// Ashore, only while the camp wants it: <c>sail_shelter</c>, <c>brush_shelter</c>, <c>sick_shelter</c>,
+    /// <c>fire</c>, <c>fire_low</c>, <c>cooking</c>, <c>water</c>, <c>land</c>, <c>cover</c>, <c>latrine</c>,
+    /// <c>forage</c> or <c>scout</c> (docs/R6_LANDFALL_CAMP.md).
+    /// </summary>
+    public string? Camp { get; init; }
 }
 
 /// <summary>Chance of injury while doing a task.</summary>

@@ -26,7 +26,8 @@ public sealed class GameContent
         IEnumerable<StatusDefinition>? statuses = null,
         Voyage.VoyageRules? voyage = null,
         IEnumerable<Events.EventDefinition>? events = null,
-        Port.PortRules? port = null)
+        Port.PortRules? port = null,
+        Shore.ShoreRules? shore = null)
     {
         var errors = new List<string>();
         Rules = rules;
@@ -70,6 +71,7 @@ public sealed class GameContent
         Voyage = voyage;
         Events = IndexById(events ?? [], e => e.Id, "event", errors);
         Port = port;
+        Shore = shore;
         if (voyage is not null)
         {
             errors.AddRange(voyage.Validate());
@@ -151,6 +153,11 @@ public sealed class GameContent
             ValidatePort(port, errors);
         }
 
+        if (shore is not null)
+        {
+            ValidateShore(shore, errors);
+        }
+
         if (errors.Count > 0)
         {
             throw new ContentValidationException(errors);
@@ -163,6 +170,36 @@ public sealed class GameContent
 
     /// <summary>The port and its people, or null if the content has none.</summary>
     public Port.PortRules? Port { get; }
+
+    /// <summary>The shore where the expedition lands, and its camp, or null if the content has none.</summary>
+    public Shore.ShoreRules? Shore { get; }
+
+    private void ValidateShore(Shore.ShoreRules rules, List<string> errors)
+    {
+        foreach (var site in rules.Sites)
+        {
+            foreach (var food in site.Food.Where(f => !Items.TryGetValue(f.Item, out var item) || item.HungerRelief <= 0))
+            {
+                errors.Add($"Shore site '{site.Id}': food '{food.Id}' gives '{food.Item}', which is not a known food.");
+            }
+
+            foreach (var water in site.Water.Where(w => w.Kind is not ("spring" or "stream" or "brackish")))
+            {
+                errors.Add($"Shore site '{site.Id}': water '{water.Id}' has kind '{water.Kind}'; use spring, stream or brackish.");
+            }
+
+            var ids = site.Water.Select(w => w.Id).Concat(site.Food.Select(f => f.Id)).Concat(site.Finds.Select(f => f.Id)).ToList();
+            foreach (var duplicate in ids.GroupBy(id => id).Where(g => g.Count() > 1))
+            {
+                errors.Add($"Shore site '{site.Id}': '{duplicate.Key}' is listed twice.");
+            }
+        }
+
+        if (rules.Sites.Count > 0 && rules.Sites.All(s => s.Id != "default"))
+        {
+            errors.Add("shore.json: there must be a 'default' site.");
+        }
+    }
 
     private void ValidatePort(Port.PortRules rules, List<string> errors)
     {

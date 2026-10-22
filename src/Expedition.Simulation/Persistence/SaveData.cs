@@ -88,6 +88,9 @@ public sealed record SaveData
     /// <summary>The crew's life aboard: practice, mentors, grievances, fresh food, promises. Added in format 34.</summary>
     public CrewLifeData? Life { get; init; }
 
+    /// <summary>The camp ashore, or null. Added in format 37.</summary>
+    public CampData? Camp { get; init; }
+
     /// <summary>Standing duties, by character ID. Added in format 10.</summary>
     public required IReadOnlyList<DutyData> Duties { get; init; }
 
@@ -796,6 +799,64 @@ public sealed record LeakData
 
     /// <summary>When last repaired, or -1.</summary>
     public long RepairedTick { get; init; } = -1;
+}
+
+/// <summary>A saved camp ashore. Added in format 37.</summary>
+public sealed record CampData
+{
+    /// <summary>The site's ID.</summary>
+    public required string Site { get; init; }
+
+    /// <summary>When they landed.</summary>
+    public required long Landed { get; init; }
+
+    /// <summary>The ship at anchor off.</summary>
+    public bool ShipAtAnchor { get; init; }
+
+    /// <summary>A boat to land stores with.</summary>
+    public bool Boat { get; init; }
+
+    /// <summary>The works, by ID.</summary>
+    public IReadOnlyDictionary<string, double> Works { get; init; } = new Dictionary<string, double>();
+
+    /// <summary>What has been found.</summary>
+    public IReadOnlyList<string> Found { get; init; } = [];
+
+    /// <summary>What is still afloat.</summary>
+    public IReadOnlyDictionary<string, int> Afloat { get; init; } = new Dictionary<string, int>();
+
+    /// <summary>The captain's priorities.</summary>
+    public IReadOnlyList<string> Priorities { get; init; } = [];
+
+    /// <summary>Roof the shelters with sailcloth.</summary>
+    public bool UseSailcloth { get; init; }
+
+    /// <summary>Rest the worn out first.</summary>
+    public bool RestTheExhausted { get; init; }
+
+    /// <summary>Send scouts out.</summary>
+    public bool SendScouts { get; init; }
+
+    /// <summary>Gather the shore's food.</summary>
+    public bool Forage { get; init; }
+
+    /// <summary>The fire burns until.</summary>
+    public long FireUntil { get; init; }
+
+    /// <summary>Food spoiled in the rain.</summary>
+    public int Spoiled { get; init; }
+
+    /// <summary>Boat trips made.</summary>
+    public int Trips { get; init; }
+
+    /// <summary>The first days' report made.</summary>
+    public bool Reported { get; init; }
+
+    /// <summary>Nights under shelter, by character ID.</summary>
+    public IReadOnlyDictionary<int, int> NightsSheltered { get; init; } = new Dictionary<int, int>();
+
+    /// <summary>Nights in the open, by character ID.</summary>
+    public IReadOnlyDictionary<int, int> NightsExposed { get; init; } = new Dictionary<int, int>();
 }
 
 /// <summary>A saved wreck. Added in format 33.</summary>

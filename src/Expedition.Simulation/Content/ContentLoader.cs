@@ -57,7 +57,9 @@ public static class ContentLoader
             : [];
         var portPath = Path.Combine(dataDirectory, "port", "bocana.json");
         var port = File.Exists(portPath) ? Read<Port.PortRules>(portPath) : null;
-        return new GameContent(rules, skills, items, tasks, locations, attributes, traits, conditions, appearance, languages, statuses, voyage, events, port);
+        var shorePath = Path.Combine(dataDirectory, "shore.json");
+        var shore = File.Exists(shorePath) ? Read<Shore.ShoreRules>(shorePath) : null;
+        return new GameContent(rules, skills, items, tasks, locations, attributes, traits, conditions, appearance, languages, statuses, voyage, events, port, shore);
     }
 
     /// <summary>Parses content from JSON strings. Intended for tests and tools.</summary>

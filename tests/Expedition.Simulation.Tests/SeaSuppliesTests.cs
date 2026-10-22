@@ -115,7 +115,9 @@ public sealed class SeaSuppliesTests
     [Fact]
     public void FreshFoodIsEatenBeforeItSpoils()
     {
-        Assert.Equal("item.fish", Shipped.Foods[0].Id);
+        // The quickest to spoil is eaten first: fresh fish before biscuit.
+        Assert.Equal(Shipped.Foods.Max(f => f.SpoilsPerDay), Shipped.Foods[0].SpoilsPerDay);
+        Assert.True(Shipped.Foods.ToList().FindIndex(f => f.Id == "item.fish") < Shipped.Foods.ToList().FindIndex(f => f.Id == "item.biscuit"));
         var (runner, _, _) = InWeather("weather.fair");
         Assert.True(runner.Campaign.SharedStore.TryAdd("item.fish", 6, Shipped.Items).Succeeded);
         var biscuit = runner.Campaign.SharedStore.Count("item.biscuit");

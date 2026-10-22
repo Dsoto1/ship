@@ -141,21 +141,28 @@ public sealed partial class SimulationRunner
     private bool WetBelow(VoyageState ship, VoyageRules rules) =>
         rules.Weather(ship.WeatherId).SeaState >= rules.Storms.HeavySeaState && !ship.Prepared.Contains(Preparations.Hatches);
 
-    // Once an hour at sea: the ship grows fouler, sickness comes and spreads, and a spreading sickness is told.
-    private void StepSickness(VoyageState ship, VoyageRules rules)
+    // Once an hour at sea: the ship grows fouler, then sickness comes and spreads.
+    private void StepShipSickness(VoyageState ship, VoyageRules rules)
+    {
+        var wet = WetBelow(ship, rules);
+        var sick = Campaign.Crew.Count(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated && Illnesses(c).Any());
+
+        // A ship grows foul by itself, faster with the sick aboard and the sea coming below.
+        Campaign.Life.Cleanliness = Math.Clamp(Campaign.Life.Cleanliness - (3 + sick + (wet ? 3 : 0)) / 24.0, 0, 100);
+        StepSickness(wet);
+    }
+
+    // Once an hour, aboard or ashore: sickness comes and spreads, and a spreading sickness is told.
+    private void StepSickness(bool wet)
     {
         var life = Campaign.Life;
         var aboard = Campaign.Crew.Where(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated).ToList();
         var sick = aboard.Where(c => Illnesses(c).Any()).ToList();
-        var wet = WetBelow(ship, rules);
-
-        // A ship grows foul by itself, faster with the sick aboard and the sea coming below.
-        life.Cleanliness = Math.Clamp(life.Cleanliness - (3 + sick.Count + (wet ? 3 : 0)) / 24.0, 0, 100);
 
         var random = Campaign.Randomness.Crew;
         foreach (var person in aboard.Where(c => c.SurvivalState == SurvivalState.Alive).OrderBy(c => c.Id.Value))
         {
-            foreach (var (illness, chance, reasons, from) in OnsetChances(person, sick, wet, ship))
+            foreach (var (illness, chance, reasons, from) in OnsetChances(person, sick, wet))
             {
                 // One roll for every illness every hour, taken or not, so one never shifts another's dice.
                 var roll = random.NextDouble();
@@ -192,7 +199,7 @@ public sealed partial class SimulationRunner
     }
 
     // For one person this hour: each illness that might come to them, how likely, and why.
-    private IEnumerable<(string Illness, double Chance, List<string> Reasons, CharacterId? From)> OnsetChances(Character person, List<Character> sick, bool wet, VoyageState ship)
+    private IEnumerable<(string Illness, double Chance, List<string> Reasons, CharacterId? From)> OnsetChances(Character person, List<Character> sick, bool wet)
     {
         var life = Campaign.Life;
         foreach (var illness in new[] { "condition.fever", "condition.flux", "condition.scurvy" })
@@ -267,7 +274,7 @@ public sealed partial class SimulationRunner
             return;
         }
 
-        StepSickness(ship, rules);
+        StepShipSickness(ship, rules);
         StepGrievances(ship, rules);
     }
 

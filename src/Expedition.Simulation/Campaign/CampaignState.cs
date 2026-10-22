@@ -476,6 +476,9 @@ public sealed class CampaignState
         return next;
     }
 
+    /// <summary>Drops every order waiting for a character, for example the ship's work when they go ashore.</summary>
+    internal void ClearQueue(CharacterId id) => _queues.Remove(id);
+
     /// <summary>Removes a waiting order by ID. Returns false if it is not queued for that character.</summary>
     internal bool RemoveQueued(CharacterId id, TaskId taskId) =>
         _queues.TryGetValue(id, out var queue) && queue.RemoveAll(task => task.Id == taskId) > 0;
@@ -539,6 +542,9 @@ public sealed class CampaignState
 
     /// <summary>The ship lost, and how the survivors came ashore; null unless she was wrecked.</summary>
     public Voyage.WreckState? Wreck { get; internal set; }
+
+    /// <summary>The camp ashore after the voyage, or null before it (docs/R6_LANDFALL_CAMP.md).</summary>
+    public Shore.CampState? Camp { get; internal set; }
 
     /// <summary>The crew's life aboard: practice, mentors, grievances, fresh food, promises, the ship kept clean.</summary>
     public CrewLife Life { get; } = new();

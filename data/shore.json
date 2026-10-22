@@ -1,0 +1,184 @@
+// The shore where the expedition lands (docs/R6_LANDFALL_CAMP.md; SETTLEMENT_EXPERIENCE §3-6; SETTING §5).
+// Each site is what is there to be found; the camp knows only what is "known" on landing, and scouting finds
+// the rest in turn (water first, then food, then the rest). A "hint" is what is seen or guessed before it is
+// found. "default" is any landing not listed.
+{
+  "rules": {
+    // Shelter: berths each completed work gives, by kind.
+    "sailBerths": 4,
+    "brushBerths": 3,
+    "sickBerths": 3,
+    // A wet night in the open: fatigue and stress an hour, and the chance of a chill (fever) an hour.
+    "exposedFatiguePerHour": 3,
+    "exposedStressPerHour": 2,
+    "chillPerWetHour": 0.012,
+    // A fire burning halves the chill and eases the night.
+    "fireHours": 6,
+    // Uncovered stores in the rain: the share of each food lost an hour.
+    "spoilPerRainHour": 0.01,
+    // What the boat brings ashore each trip, kg; and the sea it cannot pass (rain squalls make the surf).
+    "boatTripKg": 160,
+    "swimTripKg": 30,
+    // The camp grows foul by this much a day without a latrine (and with one, comes back).
+    "foulPerDay": 4,
+    "cleanPerDay": 2,
+    // Scouting: the chance each trip finds the next thing, plus this for each level of the scout's tracking or foraging.
+    "scoutChance": 0.6,
+    "scoutChancePerSkill": 0.1,
+    // The first days' report, this many hours after landing.
+    "reportHours": 72
+  },
+  "sites": [
+    {
+      "id": "coast.punta_ceniza",
+      "name": "Punta Ceniza",
+      "rain": 0.08,
+      "fever": 0.004,
+      "brush": true,
+      "seen": [
+        "A rocky headland, a beach of shell and coarse sand under it, and behind it the still water of a lagoon.",
+        "On the headland, black against the sky, what is left of the factory."
+      ],
+      "water": [
+        { "id": "water.factory_spring", "name": "the factory's spring", "kind": "spring", "perHour": 40, "walk": 14, "known": true,
+          "hint": "The sailing directions put a spring under the headland, that the factory drew from." }
+      ],
+      "food": [
+        { "id": "food.lagoon_shellfish", "name": "shellfish on the lagoon's edge", "item": "item.shellfish", "perHour": 6, "unfamiliar": true,
+          "hint": "Gulls working the lagoon's edge at low water." },
+        { "id": "food.reef_fish", "name": "fish off the point", "item": "item.fish", "perHour": 3,
+          "hint": "Fish jump in the swell off the point." }
+      ],
+      "finds": [
+        { "id": "find.factory", "kind": "ruin", "name": "the burned factory",
+          "text": "The factory is burned to the ground. The palisade is down, the storehouse a ring of black posts, and there is no sign of the garrison.",
+          "planks": 8, "hint": "The factory on the headland, burned." },
+        { "id": "find.fish_weir", "kind": "people", "name": "a fish weir",
+          "text": "A fish weir of stakes and woven cane across a channel of the lagoon, kept in repair: someone fishes here.",
+          "hint": "Lines of stakes in the lagoon." },
+        { "id": "find.spring_path", "kind": "people", "name": "a path to the spring",
+          "text": "A path worn hard runs from the spring along the lagoon, inland. It is used.",
+          "hint": null }
+      ]
+    },
+    {
+      "id": "coast.rio_bermejo",
+      "name": "the Río Bermejo",
+      "rain": 0.1,
+      "fever": 0.008,
+      "brush": true,
+      "seen": [ "A wide river mouth, its water red-brown with mud, the banks thick with forest to the edge." ],
+      "water": [
+        { "id": "water.river", "name": "the river, above the tide", "kind": "stream", "perHour": 50, "walk": 18, "known": false,
+          "hint": "The river runs fresh somewhere above the salt; how far up, no one knows." }
+      ],
+      "food": [
+        { "id": "food.river_fish", "name": "fish in the river mouth", "item": "item.fish", "perHour": 5, "hint": "The river mouth boils with fish at dusk." },
+        { "id": "food.forest_fruit", "name": "fruit at the forest's edge", "item": "item.fruit", "perHour": 3, "unfamiliar": true, "hint": null }
+      ],
+      "finds": [
+        { "id": "find.canoe_landing", "kind": "people", "name": "a canoe landing",
+          "text": "Above the bar, a landing of trodden mud where canoes have been drawn up, and the ash of a fire.", "hint": "Smoke, once, far up the river." }
+      ]
+    },
+    {
+      "id": "coast.bajos_largos",
+      "name": "the Bajos Largos",
+      "rain": 0.08,
+      "fever": 0.003,
+      "brush": false,
+      "seen": [ "Long sand spits and shoals, grey sand without a tree on it, and the forest a long way back." ],
+      "water": [
+        { "id": "water.seep", "name": "a seep dug in the sand", "kind": "brackish", "perHour": 15, "walk": 8, "known": false,
+          "hint": "No water to be seen. Sometimes water can be dug for behind a beach." },
+        { "id": "water.creek", "name": "a creek in the forest behind", "kind": "stream", "perHour": 35, "walk": 26, "known": false, "hint": null }
+      ],
+      "food": [
+        { "id": "food.sand_clams", "name": "clams in the sand", "item": "item.shellfish", "perHour": 5, "unfamiliar": true, "hint": "Holes in the wet sand at low water." }
+      ],
+      "finds": []
+    },
+    {
+      "id": "coast.punta_falsa",
+      "name": "Punta Falsa",
+      "rain": 0.07,
+      "fever": 0.002,
+      "brush": true,
+      "seen": [ "A point of broken rock, a cove of coral sand, scrub and low trees above it." ],
+      "water": [
+        { "id": "water.rock_pool", "name": "rain pools in the rocks", "kind": "spring", "perHour": 12, "walk": 10, "known": false, "hint": "The rocks above the cove might hold rain." },
+        { "id": "water.gully", "name": "a stream in a gully", "kind": "stream", "perHour": 35, "walk": 24, "known": false, "hint": null }
+      ],
+      "food": [
+        { "id": "food.reef_fish", "name": "fish on the reef", "item": "item.fish", "perHour": 4, "hint": "Fish on the reef inside the point." }
+      ],
+      "finds": [
+        { "id": "find.old_camp", "kind": "people", "name": "an old fishing camp",
+          "text": "Above the cove, the frames of shelters and a hearth of stones, used and left, a season ago.", "hint": null }
+      ]
+    },
+    {
+      "id": "coast.manglares",
+      "name": "the Manglares",
+      "rain": 0.12,
+      "fever": 0.012,
+      "brush": true,
+      "seen": [ "Mangroves standing in black mud, the water among them neither sea nor river, and the air thick with flies." ],
+      "water": [
+        { "id": "water.mangrove", "name": "water among the mangroves", "kind": "brackish", "perHour": 20, "walk": 6, "known": true, "hint": null },
+        { "id": "water.inland", "name": "a stream on higher ground", "kind": "stream", "perHour": 30, "walk": 30, "known": false, "hint": "Higher ground, inland, if it can be reached." }
+      ],
+      "food": [
+        { "id": "food.mangrove_oysters", "name": "oysters on the mangrove roots", "item": "item.shellfish", "perHour": 7, "unfamiliar": true, "hint": "Oysters crusting the roots." }
+      ],
+      "finds": []
+    },
+    {
+      "id": "castrena",
+      "name": "the coast of Castrena",
+      "rain": 0.06,
+      "fever": 0.0,
+      "brush": true,
+      "seen": [ "A coast of their own country: fields above the beach, a track, and far off a bell tower." ],
+      "water": [ { "id": "water.brook", "name": "a brook by the track", "kind": "stream", "perHour": 40, "walk": 16, "known": true, "hint": null } ],
+      "food": [ { "id": "food.fishing", "name": "fish off the beach", "item": "item.fish", "perHour": 3, "hint": null } ],
+      "finds": [
+        { "id": "find.village", "kind": "people", "name": "a village",
+          "text": "Over the hill, a fishing village of their own people. Word will go to the nearest port.", "hint": "The bell tower, inland." }
+      ]
+    },
+    {
+      "id": "island.aguada",
+      "name": "Isla de la Aguada",
+      "rain": 0.1,
+      "fever": 0.002,
+      "brush": true,
+      "seen": [ "The watering island: a beach, the green slope, the stream they knew of." ],
+      "water": [ { "id": "water.aguada", "name": "the island's stream", "kind": "stream", "perHour": 50, "walk": 12, "known": true, "hint": null } ],
+      "food": [ { "id": "food.island_fruit", "name": "fruit and birds' eggs", "item": "item.fruit", "perHour": 3, "hint": null } ],
+      "finds": []
+    },
+    {
+      "id": "island.esquiva",
+      "name": "Isla Esquiva",
+      "rain": 0.1,
+      "fever": 0.003,
+      "brush": true,
+      "seen": [ "A green island, birds thick on it, no water to be seen from the beach." ],
+      "water": [ { "id": "water.esquiva", "name": "a trickle in the rocks", "kind": "spring", "perHour": 18, "walk": 16, "known": false, "hint": "Green in a fold of the hill." } ],
+      "food": [ { "id": "food.esquiva_eggs", "name": "birds and their eggs", "item": "item.fruit", "perHour": 6, "known": true, "hint": null } ],
+      "finds": []
+    },
+    {
+      "id": "default",
+      "name": "the shore",
+      "rain": 0.08,
+      "fever": 0.004,
+      "brush": true,
+      "seen": [ "A beach, and forest behind it." ],
+      "water": [ { "id": "water.stream", "name": "a stream", "kind": "stream", "perHour": 30, "walk": 20, "known": false, "hint": "None to be seen." } ],
+      "food": [ { "id": "food.shore_shellfish", "name": "shellfish on the rocks", "item": "item.shellfish", "perHour": 5, "unfamiliar": true, "hint": null } ],
+      "finds": []
+    }
+  ]
+}

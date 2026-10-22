@@ -20,5 +20,14 @@
   { "id": "item.caulking_mallet", "name": "Caulking mallet", "category": "tool", "weightKg": 1.2, "volumeLitres": 0.8, "packedIn": "chest", "perPackage": 4 },
   { "id": "item.rope", "name": "Rope (coil)", "category": "material", "weightKg": 4.0, "volumeLitres": 6.0, "packedIn": "coil", "perPackage": 1 },
   { "id": "item.oakum", "name": "Oakum (bundle)", "category": "material", "weightKg": 1.0, "volumeLitres": 2.0, "packedIn": "bale", "perPackage": 4 },
-  { "id": "item.plank", "name": "Oak plank", "category": "material", "weightKg": 9.0, "volumeLitres": 12.0, "packedIn": "plank", "perPackage": 1 }
+  { "id": "item.plank", "name": "Oak plank", "category": "material", "weightKg": 9.0, "volumeLitres": 12.0, "packedIn": "plank", "perPackage": 1 },
+  // The ship's spare sails, cut to cloths: what mends her sails, or roofs a shelter ashore (R6).
+  { "id": "item.sailcloth", "name": "Sailcloth", "category": "material", "weightKg": 6.0, "volumeLitres": 10.0, "packedIn": "bale", "perPackage": 1 },
+  // Taken ashore (R6). Shellfish picked by a hand who does not know which are good can bring on the flux.
+  { "id": "item.shellfish", "name": "Shellfish", "category": "food", "weightKg": 0.3, "volumeLitres": 0.4, "hungerRelief": 8, "fresh": true, "spoilsPerDay": 0.5, "packedIn": "basket", "perPackage": 20 },
+  { "id": "item.shellfish_strange", "name": "Strange shellfish", "category": "food", "weightKg": 0.3, "volumeLitres": 0.4, "hungerRelief": 8, "fresh": true, "spoilsPerDay": 0.5, "packedIn": "basket", "perPackage": 20,
+    "sickens": { "condition": "condition.flux", "chance": 0.06 } },
+  // Water from a brackish seep or the mangroves: it quenches, less well, and may bring on the flux.
+  { "id": "item.water_brackish", "name": "Brackish water", "category": "water", "weightKg": 1.0, "volumeLitres": 1.0, "thirstRelief": 9, "packedIn": "cask", "perPackage": 30,
+    "sickens": { "condition": "condition.flux", "chance": 0.02 } }
 ]
