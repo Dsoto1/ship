@@ -2,9 +2,9 @@
 
 One cell is about one metre; the bow is row 0. She carries a square-rigged fore and main and a lateen
 mizzen. From bow to stern:
-  forecastle   rows 1-4, raised 1.3 m, the lookout in its eyes and the galley fire box at its break
+  forecastle   rows 1-4, raised 1.8 m (standing room under it), the lookout in its eyes and the galley fire box at its break
   waist        rows 5-16: foremast, the main hatch over the hold, mainmast with a pump either side
-  quarterdeck  rows 18-23, raised 1.5 m: the whipstaff (helm) at its break, the mizzen, the stern watch
+  quarterdeck  rows 18-23, raised 1.9 m (the steerage under it): the whipstaff (helm) at its break, the mizzen, the stern watch
 Ladders join the waist to each deck. 'ground' gives the heights; the simulation's grid is flat.
 Run: python3 tools/gen_garza_deck.py
 """
@@ -62,10 +62,10 @@ spot("spot.helm", 4, 18, ["task.stand_watch"], "WorkBench", "N")
 spot("spot.watch_stern", 4, 22, ["task.stand_watch"], "WatchWater", "S")
 
 ground = [
-    {"x0": 0, "y0": 0, "x1": 8, "y1": 4, "height": 1.3},
-    {"x0": 3, "y0": 5, "x1": 5, "y1": 5, "height": 1.3, "toHeight": 0, "along": "y"},
-    {"x0": 3, "y0": 17, "x1": 5, "y1": 17, "height": 0, "toHeight": 1.5, "along": "y"},
-    {"x0": 0, "y0": 18, "x1": 8, "y1": 24, "height": 1.5},
+    {"x0": 0, "y0": 0, "x1": 8, "y1": 4, "height": 1.8},
+    {"x0": 3, "y0": 5, "x1": 5, "y1": 5, "height": 1.8, "toHeight": 0, "along": "y"},
+    {"x0": 3, "y0": 17, "x1": 5, "y1": 17, "height": 0, "toHeight": 1.9, "along": "y"},
+    {"x0": 0, "y0": 18, "x1": 8, "y1": 24, "height": 1.9},
 ]
 # What stands on the 'o' cells (drawn by ShipView from game/Assets/Props, made by tools/props).
 features = [{"kind": "fitting", "style": "bell", "x0": 1, "y0": 4, "x1": 1, "y1": 4},

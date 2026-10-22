@@ -113,6 +113,95 @@ public partial class ShipView : Node3D
         BuildFittings(location);
         _batch.Commit(this);
         BuildShipboardDressing();
+        if (_modelled && _hatches.Count > 0)
+        {
+            BuildBoat();
+        }
+    }
+
+    // The ship's boat, carried right way up on chocks over the main hatch (owner: "boat in waist"):
+    // clinker-built, about 4.2 m, with thwarts and her oars laid in. Away while she is ashore.
+    private Node3D? _boat;
+
+    private void BuildBoat()
+    {
+        var hatch = _hatches.Aggregate(Vector3.Zero, (sum, h) => sum + h) / _hatches.Count;
+        _boat = new Node3D { Name = "Boat", Position = new Vector3(hatch.X, 0.36f, hatch.Z) };
+        AddChild(_boat);
+        const float length = 4.2f, beam = 1.55f, depth = 0.62f;
+        var planks = new StandardMaterial3D { AlbedoColor = new Color(0.5f, 0.36f, 0.22f), Roughness = 0.9f, CullMode = BaseMaterial3D.CullModeEnum.Disabled };
+        var inside = new StandardMaterial3D { AlbedoColor = new Color(0.62f, 0.47f, 0.3f), Roughness = 0.9f, CullMode = BaseMaterial3D.CullModeEnum.Disabled };
+        var vertices = new List<Vector3>();
+        var normals = new List<Vector3>();
+        const int stations = 14, strakes = 5;
+        // Half-breadth and sheer along her: fine at the stem, fuller at the transom.
+        Vector3 Point(int i, int k)
+        {
+            var t = i / (float)stations;
+            var z = (t - 0.5f) * length;
+            var fullness = Mathf.Sin(Mathf.Pi * Mathf.Clamp(t * 0.92f + 0.06f, 0, 1));
+            var half = beam / 2 * Mathf.Pow(fullness, t < 0.5f ? 0.8f : 0.45f);
+            var s = k / (float)strakes;
+            var y = depth * s + 0.12f * Mathf.Pow(Mathf.Abs(t - 0.5f) * 2, 2) * s;
+            // Each strake lapped a little outboard of the one below: clinker.
+            var x = half * Mathf.Sin(s * Mathf.Pi / 2 * 0.95f + 0.05f) + (k % 2) * 0.012f;
+            return new Vector3(x, y, z);
+        }
+
+        for (var side = -1; side <= 1; side += 2)
+        {
+            for (var i = 0; i < stations; i++)
+            {
+                for (var k = 0; k < strakes; k++)
+                {
+                    var a = Point(i, k); var b = Point(i + 1, k); var c = Point(i + 1, k + 1); var d = Point(i, k + 1);
+                    Vector3 Side(Vector3 p) => new(p.X * side, p.Y, p.Z);
+                    var normal = (Side(b) - Side(a)).Cross(Side(d) - Side(a)).Normalized() * side;
+                    foreach (var p in new[] { a, b, c, a, c, d })
+                    {
+                        vertices.Add(Side(p));
+                        normals.Add(normal);
+                    }
+                }
+            }
+        }
+
+        var arrays = new Godot.Collections.Array();
+        arrays.Resize((int)Mesh.ArrayType.Max);
+        arrays[(int)Mesh.ArrayType.Vertex] = vertices.ToArray();
+        arrays[(int)Mesh.ArrayType.Normal] = normals.ToArray();
+        var shell = new ArrayMesh();
+        shell.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
+        _boat.AddChild(new MeshInstance3D { Mesh = shell, MaterialOverride = planks });
+        // Her transom, keel and gunwales; three thwarts; the oars laid along them; the chocks under her.
+        var aft = Point(stations, strakes);
+        _boat.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(aft.X * 2 + 0.05f, depth, 0.05f) }, MaterialOverride = planks, Position = new Vector3(0, depth / 2, length / 2) });
+        _boat.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(0.08f, 0.08f, length) }, MaterialOverride = planks, Position = new Vector3(0, -0.02f, 0) });
+        foreach (var z in new[] { -1.1f, 0f, 1.05f })
+        {
+            var t = z / length + 0.5f;
+            var half = Point((int)(t * stations), strakes).X;
+            _boat.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(half * 1.9f, 0.04f, 0.22f) }, MaterialOverride = inside, Position = new Vector3(0, depth * 0.72f, z) });
+        }
+
+        foreach (var x in new[] { -0.32f, -0.12f, 0.12f, 0.32f })
+        {
+            _boat.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(0.05f, 0.04f, 3.4f) }, MaterialOverride = inside, Position = new Vector3(x, depth * 0.78f, 0.1f) });
+        }
+
+        foreach (var z in new[] { -1.2f, 1.2f })
+        {
+            _boat.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(1.2f, 0.12f, 0.16f) }, MaterialOverride = Plain(Spar), Position = new Vector3(0, -0.05f, z) });
+        }
+    }
+
+    /// <summary>Whether the ship's boat is aboard, on its chocks in the waist, or away (ashore, or lost).</summary>
+    public void ShowBoat(bool aboard)
+    {
+        if (_boat is not null && _boat.Visible != aboard)
+        {
+            _boat.Visible = aboard;
+        }
     }
 
     // The fittings on her 'o' cells (the guns, the capstan, the bell): props made with tools/props from
@@ -771,11 +860,11 @@ public partial class ShipView : Node3D
     {
         if (_modelled)
         {
-            // The model has the stern; the lanterns stay here, lit at night.
+            // The model has the stern; the lanterns stay here, on brackets at the poop rail (4.2 m), lit at night.
             foreach (var x in new[] { -0.55f, 0.55f })
             {
-                AddSpar(new Vector3(CentreX + x * 0.6f, 3.1f, Length.Stern), new Vector3(CentreX + x, 3.6f, Length.Stern + 0.45f), 0.03f, Iron);
-                AddLantern(new Vector3(CentreX + x, 3.75f, Length.Stern + 0.45f), large: true);
+                AddSpar(new Vector3(CentreX + x * 0.6f, 4.2f, Length.Stern), new Vector3(CentreX + x, 4.7f, Length.Stern + 0.45f), 0.03f, Iron);
+                AddLantern(new Vector3(CentreX + x, 4.85f, Length.Stern + 0.45f), large: true);
             }
 
             return;

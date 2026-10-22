@@ -129,14 +129,14 @@
     "y0": 0,
     "x1": 8,
     "y1": 4,
-    "height": 1.3
+    "height": 1.8
    },
    {
     "x0": 3,
     "y0": 5,
     "x1": 5,
     "y1": 5,
-    "height": 1.3,
+    "height": 1.8,
     "toHeight": 0,
     "along": "y"
    },
@@ -146,7 +146,7 @@
     "x1": 5,
     "y1": 17,
     "height": 0,
-    "toHeight": 1.5,
+    "toHeight": 1.9,
     "along": "y"
    },
    {
@@ -154,7 +154,7 @@
     "y0": 18,
     "x1": 8,
     "y1": 24,
-    "height": 1.5
+    "height": 1.9
    }
   ],
   "features": [

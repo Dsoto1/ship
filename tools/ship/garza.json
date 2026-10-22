@@ -8,7 +8,7 @@
  "tumblehome": 0.05,
  "maxBreadthAt": -0.35,
  "sternTuck": -0.55,
- "poop": {"deck": 2.6, "rail": 3.1},
+ "poop": {"deck": 3.7, "rail": 4.2},
  "colours": {
   "plank": "#42301f", "plankAlt": "#3a2a1b", "butt": "#2a1e14", "wale": "#2b1f15", "band": "#a8752e", "red": "#7f2a1c",
   "bottom": "#b8ad94", "boot": "#2b241d", "transom": "#3b2a1b", "window": "#1a1714", "frame": "#a8752e",

@@ -275,22 +275,25 @@ def transom_and_poop(deck, mesh):
         ym = (y0 + y1) / 2
         colour = C["band"] if SPEC["band"][0] <= ym <= SPEC["band"][1] else C["transom"]
         mesh.quad((cx - w0, y0, z), (cx - w1, y1, z), (cx + w1, y1, z), (cx + w0, y0, z), colour)
-    # The great cabin's windows, in moulded frames, and the mouldings across the transom.
+    # The great cabin's windows, in moulded frames, and the mouldings across the transom: the cabin is
+    # under the poop, on the quarterdeck's level, so its windows stand a little under a metre above that.
+    qd_level = deck.height_at(cx, deck.stern_z - 0.2)
+    wy = qd_level + 0.9
     n = SPEC["transomWindows"]
-    width = section(deck, z, 2.0) * 2
+    width = section(deck, z, wy) * 2
     for i in range(n):
         x = cx - width * 0.36 + i * width * 0.72 / (n - 1)
-        mesh.box((x, 2.05, z + 0.03), (0.34, 0.42, 0.04), C["window"])
+        mesh.box((x, wy, z + 0.03), (0.34, 0.42, 0.04), C["window"])
         for dy in (-0.25, 0.25):
-            mesh.box((x, 2.05 + dy, z + 0.05), (0.44, 0.06, 0.05), C["frame"])
+            mesh.box((x, wy + dy, z + 0.05), (0.44, 0.06, 0.05), C["frame"])
         for dx in (-0.2, 0.2):
-            mesh.box((x + dx, 2.05, z + 0.05), (0.05, 0.5, 0.05), C["frame"])
-    for y in (1.45, 2.6, 0.2):
+            mesh.box((x + dx, wy, z + 0.05), (0.05, 0.5, 0.05), C["frame"])
+    for y in (qd_level - 0.05, SPEC["poop"]["deck"] - 0.1, 0.2):
         w = section(deck, z, y)
         mesh.box((cx, y, z + 0.04), (w * 1.9, 0.08, 0.06), C["frame"] if y != 0.2 else C["red"])
     # Carved rosettes either side of the windows.
     for side in (-1, 1):
-        mesh.box((cx + side * width * 0.46, 2.05, z + 0.05), (0.16, 0.16, 0.05), C["frame"])
+        mesh.box((cx + side * width * 0.46, wy, z + 0.05), (0.16, 0.16, 0.05), C["frame"])
     # The poop deck, and its front bulkhead facing the quarterdeck with the cabin door and two lights.
     pd = SPEC["poop"]["deck"]
     zs = np.arange(deck.stern_z, z, 0.25)

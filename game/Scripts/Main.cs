@@ -613,6 +613,8 @@ public partial class Main : Node3D
         _deck.UpdateLook(_world.Darkness, inPort ? 1f : Mathf.Lerp(0.38f, 1f, Mathf.SmoothStep(18f, 32f, _camera.Size)), t, cooking, inPort ? 3.2f : SailSetting(voyage), (float)delta, furled: inPort);
         _deck.SetWind(inPort || voyage?.Navigation is not { } windOn ? null : (float)-windOn.OffWind, (float)delta);
         ShowShipboard(voyage, weather);
+        // The boat is away while hands are ashore watering or foraging, and gone with the wreck.
+        _deck.ShowBoat(_runner.Campaign.Wreck is null && !_runner.Campaign.ActiveTasks.Values.Any(t => _content.Tasks[t.DefinitionId].NeedsWeather?.AtAnchor == true));
         foreach (var bird in _birds)
         {
             bird.Centre = inPort ? _port.Berth + new Vector3(0, 4f, -4f) : _shipCentre + new Vector3(0, 0, -2f);
