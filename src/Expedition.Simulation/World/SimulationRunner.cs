@@ -928,7 +928,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             return CommandResult.Rejected($"No character with ID {characterId} in the campaign.");
         }
 
-        if (!Content.Locations.TryGetValue(locationId, out var location))
+        if (!TryLocation(locationId, out var location))
         {
             return CommandResult.Rejected($"Unknown location '{locationId}'.");
         }
@@ -963,7 +963,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             return CommandResult.Rejected($"{character.Name} is not at any location.");
         }
 
-        var location = Content.Locations[placement.LocationId];
+        var location = Location(placement.LocationId);
         var path = PathIn(location, placement.CellAt(Campaign.Clock.Tick), destination);
         if (path is null)
         {
@@ -1436,7 +1436,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             return (null, null, $"{character.Name} is not at any location, and {task.Name} must be done at a work spot.");
         }
 
-        var location = Content.Locations[placement.LocationId];
+        var location = Location(placement.LocationId);
         var spots = (location.Id == CampLocation ? location.Spots.Concat(CampSpots()) : location.Spots).Where(s => s.Tasks.Contains(task.Id)).ToList();
         if (spots.Count == 0)
         {
@@ -1484,7 +1484,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             Tread(path);
         }
 
-        var speed = Content.Locations[placement.LocationId].WalkCellsPerMinute ?? Content.Rules.WalkCellsPerMinute;
+        var speed = Location(placement.LocationId).WalkCellsPerMinute ?? Content.Rules.WalkCellsPerMinute;
         var minutes = Math.Max(1, (long)Math.Ceiling((path.Count - 1) / speed));
         placement.Movement = new Movement(path, now, now + minutes / SimulationClock.MinutesPerTick);
     }

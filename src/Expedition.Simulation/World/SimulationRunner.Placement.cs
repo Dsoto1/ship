@@ -141,7 +141,7 @@ public sealed partial class SimulationRunner
 
     /// <summary>A work spot in a location by ID, the camp's buildings' work places included.</summary>
     public WorkSpotDefinition? SpotIn(string locationId, string spotId) =>
-        Content.Locations.TryGetValue(locationId, out var location) && location.FindSpot(spotId) is { } spot ? spot
+        TryLocation(locationId, out var location) && location.FindSpot(spotId) is { } spot ? spot
         : locationId == CampLocation ? CampSpots().FirstOrDefault(s => s.Id == spotId) : null;
 
     // What a building set down on this ground would shut off from the hearth, people walking round it and
@@ -187,7 +187,7 @@ public sealed partial class SimulationRunner
         var problems = new List<string>();
         var notes = new List<string>();
         if (Campaign.Camp is not { } camp || Settling?.Building(buildingId) is not { } building
-            || !Content.Locations.TryGetValue(CampLocation, out var location))
+            || !TryLocation(CampLocation, out var location))
         {
             return new PlacementCheck(false, ["There is nothing to build here."], notes, 0);
         }
@@ -304,7 +304,7 @@ public sealed partial class SimulationRunner
     private const double WellLatrineDistance = 6;
 
     private bool WellFouled(int x, int y) =>
-        Content.Locations.TryGetValue(CampLocation, out var location) && location.FindSpot("spot.latrine") is { } latrine
+        TryLocation(CampLocation, out var location) && location.FindSpot("spot.latrine") is { } latrine
         && Math.Sqrt(Math.Pow(latrine.X - x, 2) + Math.Pow(latrine.Y - y, 2)) < WellLatrineDistance;
 
     // What the ground does for a building: the stores' spoiling, the infirmary's contagion, the garden's waste.
@@ -367,7 +367,7 @@ public sealed partial class SimulationRunner
     /// </summary>
     public CommandResult OrderBuilding(string buildingId)
     {
-        if (Campaign.Camp is not { } camp || Settling?.Building(buildingId) is not { } building || !Content.Locations.TryGetValue(CampLocation, out var location))
+        if (Campaign.Camp is not { } camp || Settling?.Building(buildingId) is not { } building || !TryLocation(CampLocation, out var location))
         {
             return CommandResult.Rejected("There is nothing to build here.");
         }

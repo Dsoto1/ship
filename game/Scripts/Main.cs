@@ -92,7 +92,8 @@ public partial class Main : Node3D
     // Ashore (R6): the beach of the first camp, with its people, laid on the coast in front of the anchorage.
     private CampView _camp = null!;
     private Node3D _campFigures = null!;
-    private bool _campBuilt;
+    // The camp ground drawn, by site and seed: drawn again for a new campaign or a new site.
+    private string? _campBuilt;
     private bool _reportShown;
     private PortCrowd _crowd = null!;
     private HarbourView _harbour = null!;
@@ -702,7 +703,7 @@ public partial class Main : Node3D
             {
                 _runner.Campaign.ActiveTasks.TryGetValue(id, out var task);
                 var definition = task is null ? null : _content.Tasks[task.DefinitionId];
-                var location = _content.Locations[placement.LocationId];
+                var location = _runner.Location(placement.LocationId);
                 var spot = task?.SpotId is { } spotId ? _runner.SpotIn(location.Id, spotId) : null;
                 // A cask is rolled, not carried; everything else the task carries is held.
                 var carrying = definition?.Carries == "cask" ? null : definition?.Carries;
@@ -936,7 +937,7 @@ public partial class Main : Node3D
 
         if (!here.IsMoving)
         {
-            var location = _content.Locations[here.LocationId];
+            var location = _runner.Location(here.LocationId);
             foreach (var d in new[] { (0, 1), (1, 1), (-1, 1), (1, 0), (-1, 0), (0, 2), (1, 2), (-1, 2) })
             {
                 var next = new GridPosition(place.X + d.Item1, place.Y + d.Item2);
@@ -1007,7 +1008,7 @@ public partial class Main : Node3D
             return;
         }
 
-        var location = _content.Locations[there.LocationId];
+        var location = _runner.Location(there.LocationId);
         var taken = _runner.Campaign.Placements.Where(p => p.Key != captain && p.Value.LocationId == there.LocationId)
             .Select(p => p.Value.CellAt(tick)).ToHashSet();
         var here0 = here.CellAt(tick);
@@ -1295,10 +1296,11 @@ public partial class Main : Node3D
         _camp.Visible = ashore;
         if (ashore)
         {
-            if (!_campBuilt && _content.Locations.TryGetValue(SimulationRunner.CampLocation, out var beach))
+            var builtFor = $"{_runner.Campaign.Camp!.Site}:{_runner.Campaign.Seed}";
+            if (_campBuilt != builtFor && _runner.TryLocation(SimulationRunner.CampLocation, out var beach))
             {
-                _camp.Build(beach);
-                _campBuilt = true;
+                _camp.Build(beach, _runner.CampSite?.Ground ?? "forest", _runner.Campaign.Seed);
+                _campBuilt = builtFor;
             }
 
             // The beach faces the anchorage: turned so the sea is towards the camera and the forest behind,
@@ -2150,7 +2152,7 @@ public partial class Main : Node3D
             if (_developerTalk && _runner.Campaign.CaptainId is { } captain && _runner.Campaign.Placements.TryGetValue(character.Id, out var there))
             {
                 var cell = there.CellAt(_runner.Campaign.Clock.Tick);
-                var location = _content.Locations[there.LocationId];
+                var location = _runner.Location(there.LocationId);
                 foreach (var d in new[] { (0, 1), (1, 0), (-1, 0), (0, -1) })
                 {
                     var next = new GridPosition(cell.X + d.Item1, cell.Y + d.Item2);

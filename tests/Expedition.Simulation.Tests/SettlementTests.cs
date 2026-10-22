@@ -88,8 +88,9 @@ public sealed class SettlementTests
     public void ABuildingMayNotShutTheWayFromTheHearth()
     {
         var runner = Landed();
-        // The open way through the trees to the water is four cells wide: a hut across it shuts it.
-        var shut = Enumerable.Range(18, 5).SelectMany(y => Enumerable.Range(28, 6).Select(x => runner.Placement("building.hut", x, y)))
+        // Somewhere along the way through the trees to the water, a hut across it shuts it; where the forest
+        // runs is the site's and the voyage's (CampGround), so it is looked for.
+        var shut = Enumerable.Range(14, 10).SelectMany(y => Enumerable.Range(24, 11).Select(x => runner.Placement("building.hut", x, y)))
             .Any(c => c.Problems.Any(p => p.Contains("shut the way from the hearth to the water", StringComparison.Ordinal)));
         Assert.True(shut);
     }
@@ -100,7 +101,7 @@ public sealed class SettlementTests
         var runner = Landed();
         Assert.True(runner.DeveloperRaise("building.hut", 0.6, (14, 13)).Succeeded);
         var hut = SimulationRunner.FootprintOf(Shipped.Shore!.Settlement!.Building("building.hut")!, 14, 13, false);
-        var location = Shipped.Locations[SimulationRunner.CampLocation];
+        var location = runner.Location(SimulationRunner.CampLocation);
         var path = runner.PathIn(location, new GridPosition(hut.X0 - 1, 13), new GridPosition(hut.X1 + 1, 13))!;
         Assert.NotNull(path);
         Assert.DoesNotContain(path, c => hut.Contains(c.X, c.Y));

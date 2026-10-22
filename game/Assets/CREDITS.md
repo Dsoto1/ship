@@ -35,6 +35,8 @@ clothing made on them, textures divided into one shared sheet, clips reduced to 
 | Men chanting.wav | A room of men singing a chorus | BeeProductive | https://freesound.org/s/430022/ | CC0 | `Audio/tavern/song_chorus.ogg` |
 | Board Game Icons | The screen buttons and the objectives checklist (recoloured white by tools/make_icons.py) | Kenney | https://kenney.nl/assets/board-game-icons | CC0 | `UI/icons/` (6 files) |
 | Game Icons | The menu button and the checklist's ticks (recoloured by tools/make_icons.py) | Kenney | https://kenney.nl/assets/game-icons | CC0 | `UI/icons/` (3 files) |
+| Nature Kit | The coast's trees (palms and broadleaf), bushes, broad-leaved plants, grasses, rocks, stumps, logs, flowers and fungi ashore | Kenney | https://kenney.nl/assets/nature-kit | CC0 | `Nature/` (58 files) |
+| Stylized Nature MegaKit (free edition) | The coast's broadleaf and twisted trees, bushes, ferns, broad-leaved plants, grasses, clover, flowers, fungi, rocks and pebbles ashore | Quaternius | https://quaternius.itch.io/stylized-nature-megakit | CC0 | `Nature/MegaKit/` (86 files; textures scaled to 512 px; foliage masks coloured green) |
 
 ## Generated props
 

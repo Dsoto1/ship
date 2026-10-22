@@ -746,7 +746,7 @@ public sealed partial class SimulationRunner
                 gaspar.Attributes.Set("attribute.strength", 3);
                 gaspar.Attributes.Set("attribute.endurance", 4);
                 gaspar.Appearance = AppearanceGenerator.Generate(gaspar, Content.Appearance, Campaign.Randomness.Characters);
-                var location = Content.Locations[CampLocation];
+                var location = Location(CampLocation);
                 Campaign.SetPlacement(gaspar.Id, new CharacterPlacement(CampLocation, location.FindSpot("spot.scout_1")?.Cell ?? location.FindSpot("spot.hearth")!.Cell));
                 AssignCampDuties();
                 Trust("people.oruwai", -6, 10);
@@ -1099,7 +1099,7 @@ public sealed partial class SimulationRunner
     private void Return(WorldState world, CampState camp, Journey journey)
     {
         world.EndJourney(journey);
-        var location = Content.Locations[CampLocation];
+        var location = Location(CampLocation);
         var back = location.FindSpot("spot.scout_1")?.Cell ?? location.FindSpot("spot.hearth")!.Cell;
         foreach (var id in journey.Members.Where(id => Campaign.Characters[id].SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated))
         {

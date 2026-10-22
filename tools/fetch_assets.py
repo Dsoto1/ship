@@ -102,6 +102,70 @@ def freesound(entry, credits):
                    f"https://freesound.org/s/{entry['id']}/ | CC0 | `{entry['folder']}/{entry['file']}` |")
 
 
+def itch_zip(page, file):
+    """A free pack's zip from itch.io. itch has no public API for free downloads, so this does what the
+    page does: ask for a download page, then for the file marked as the pack's free edition."""
+    import http.cookiejar
+    import re
+    import time
+    import urllib.parse
+    jar = http.cookiejar.CookieJar()
+    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+    opener.addheaders = [("User-Agent", "the-expedition-asset-fetch/1")]
+    token = re.search(r'csrf_token" value="([^"]+)"', opener.open(page).read().decode()).group(1)
+    form = urllib.parse.urlencode({"csrf_token": token}).encode()
+    listing = json.loads(opener.open(page + "/download_url", form).read())["url"]
+    time.sleep(2)
+    html = opener.open(listing).read().decode()
+    uploads = dict(zip(re.findall(r'<strong title="([^"]+)" class="name"', html), re.findall(r'data-upload_id="(\d+)"', html)))
+    upload = uploads.get(file) or sys.exit(f"no {file} on {page}")
+    time.sleep(2)
+    request = urllib.request.Request(f"{page}/file/{upload}?source=view_game&as_props=1&after_download_lightbox=true", data=form)
+    url = json.loads(opener.open(request).read())["url"]
+    return opener.open(url, timeout=900).read()
+
+
+def itch_models(entry, credits):
+    """Models from a free itch.io pack, kept in the game: the zip is cached in .cache/ (itch rate-limits
+    downloads), its licence checked to be CC0, the listed files copied from the pack's glTF folder, and
+    its textures scaled down to at most maxTexture pixels (the same names, so the models still find
+    them)."""
+    folder = ASSETS / entry["folder"]
+    if not all((folder / name).exists() for name in entry["keep"]):
+        cached = ROOT / ".cache" / "nature" / entry["file"]
+        if not cached.exists():
+            cached.parent.mkdir(parents=True, exist_ok=True)
+            cached.write_bytes(itch_zip(entry["page"], entry["file"]))
+        from PIL import Image
+        with zipfile.ZipFile(cached) as archive:
+            licence = next((n for n in archive.namelist() if "license" in n.lower()), None)
+            if licence is None or "CC0" not in archive.read(licence).decode(errors="ignore"):
+                sys.exit(f"{entry['name']}: not CC0")
+            folder.mkdir(parents=True, exist_ok=True)
+            for name in entry["keep"]:
+                data = archive.read(f"{entry['from']}/{name}")
+                if name.endswith(".png"):
+                    image = Image.open(io.BytesIO(data))
+                    if max(image.size) > entry["maxTexture"]:
+                        image = image.resize((min(image.width, entry["maxTexture"]), min(image.height, entry["maxTexture"])), Image.LANCZOS)
+                    # The pack's foliage masks are coloured by its own shader; here they are made a
+                    # ramp of the coast's greens, keeping their shading and their cut-out.
+                    if name in entry.get("colourise", {}):
+                        dark, light = entry["colourise"][name]
+                        rgba = image.convert("RGBA")
+                        grey = rgba.convert("L")
+                        lo, hi = grey.getextrema()
+                        ramp = [tuple(round(d + (l - d) * max(0, min(1, (v - lo) / max(1, hi - lo)))) for d, l in zip(dark, light)) for v in range(256)]
+                        coloured = Image.merge("RGB", [grey.point([c[k] for c in ramp]) for k in range(3)])
+                        coloured.putalpha(rgba.getchannel("A"))
+                        image = coloured
+                    image.save(folder / name, optimize=True)
+                else:
+                    (folder / name).write_bytes(data)
+                print("fetched", (folder / name).relative_to(ROOT))
+    credits.append(f"| {entry['name']} | {entry['use']} | {entry['author']} | {entry['page']} | CC0 | `{entry['folder']}/` ({len(entry['keep'])} files; textures scaled to {entry['maxTexture']} px{"; foliage masks coloured green" if entry.get("colourise") else ""}) |")
+
+
 def itch(entry, credits):
     """A free pack from itch.io, into .cache/characters/ (the sources are large and stay out of the
     repository; tools/characters/build.py makes the game's files from them). itch has no public API
@@ -169,7 +233,7 @@ def main():
     manifest = json.loads((ASSETS / "assets.json").read_text())
     credits = []
     for entry in manifest:
-        {"polyhaven": polyhaven, "kenney": kenney, "freesound": freesound, "itch": itch}[entry["source"]](entry, credits)
+        {"polyhaven": polyhaven, "kenney": kenney, "freesound": freesound, "itch": itch, "itch-models": itch_models}[entry["source"]](entry, credits)
 
     stack_arrays(manifest)
     (ASSETS / "CREDITS.md").write_text(

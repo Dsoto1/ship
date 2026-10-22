@@ -39,6 +39,12 @@ public sealed class MeshBatcher
         var vertices = arrays[(int)Mesh.ArrayType.Vertex].AsVector3Array();
         var normals = arrays[(int)Mesh.ArrayType.Normal].AsVector3Array();
         var indices = arrays[(int)Mesh.ArrayType.Index].AsInt32Array();
+        // A model's surface may come without an index: its vertices are then its triangles in order.
+        if (indices.Length == 0)
+        {
+            indices = Enumerable.Range(0, vertices.Length).ToArray();
+        }
+
         var basis = transform.Basis;
         foreach (var index in indices)
         {

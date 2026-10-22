@@ -99,7 +99,7 @@ public sealed partial class SimulationRunner
     // felled before from growing back.
     internal void Fell(GridPosition near)
     {
-        if (Campaign.Camp is not { } camp || !Content.Locations.TryGetValue(CampLocation, out var location))
+        if (Campaign.Camp is not { } camp || !TryLocation(CampLocation, out var location))
         {
             return;
         }
@@ -149,7 +149,7 @@ public sealed partial class SimulationRunner
     // A building's ground given up (the work abandoned, or it blew down): left to grow back, trees and all.
     private void GroundLeft(CampState camp, Footprint ground)
     {
-        if (!Content.Locations.TryGetValue(CampLocation, out var location))
+        if (!TryLocation(CampLocation, out var location))
         {
             return;
         }
@@ -218,7 +218,7 @@ public sealed partial class SimulationRunner
     // the water once found. Their feet wear those ways, round the buildings, as much as the work does.
     private void DailyRounds(CampState camp)
     {
-        if (!Content.Locations.TryGetValue(CampLocation, out var location) || location.FindSpot("spot.hearth") is not { } hearth)
+        if (!TryLocation(CampLocation, out var location) || location.FindSpot("spot.hearth") is not { } hearth)
         {
             return;
         }
@@ -268,4 +268,39 @@ public sealed partial class SimulationRunner
 
     // Poles cut for each tree felled at the forest's edge.
     private const int PolesPerTreeFelled = 4;
+
+    // The camp's ground, made for its site on this voyage, kept while the camp stays there.
+    private (string Site, LocationDefinition Ground)? _campGround;
+
+    /// <summary>
+    /// A location by ID. The camp's is its own ground, made from the beach's plan, the site and the voyage's
+    /// seed (<see cref="CampGround"/>); every other location is as the content gives it.
+    /// </summary>
+    public LocationDefinition Location(string id)
+    {
+        if (id == CampLocation && Campaign.Camp is { } camp && Content.Locations.TryGetValue(id, out var plan))
+        {
+            if (_campGround is not { } made || made.Site != camp.Site)
+            {
+                _campGround = (camp.Site, CampGround.Make(plan, camp.Site, CampSite?.Ground ?? "forest", Campaign.Seed));
+            }
+
+            return _campGround.Value.Ground;
+        }
+
+        return Content.Locations[id];
+    }
+
+    /// <summary>As <see cref="Location"/>, or false if there is no such location.</summary>
+    public bool TryLocation(string id, out LocationDefinition location)
+    {
+        if (Content.Locations.ContainsKey(id))
+        {
+            location = Location(id);
+            return true;
+        }
+
+        location = null!;
+        return false;
+    }
 }

@@ -93,6 +93,13 @@ public sealed record ShoreSite
     /// <summary>Whether there is rock to gather stone from (R7).</summary>
     public bool Stone { get; init; } = true;
 
+    /// <summary>
+    /// The lie of the land at the camp: "forest" (the default), "headland" (rocky, the trees thinner and
+    /// set back), "river" (the forest close and thick), "dunes" (a wide beach, scrub far back) or
+    /// "mangrove" (close, low and dense). The voyage's seed shapes it within that (CampGround).
+    /// </summary>
+    public string Ground { get; init; } = "forest";
+
     /// <summary>The water a well would give, dug at the camp; null where there is none to dig for (R7).</summary>
     public WellWater? Well { get; init; }
 
