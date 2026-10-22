@@ -166,6 +166,12 @@ public sealed partial class SimulationRunner
         var days = way.Days * (carried > 0 ? 1.5 : 1);
         var boat = camp.Boat && ByBoat(way.Path);
         var now = Campaign.Clock.Tick;
+        // Whatever is in hand is put with the stores first, and packed with the rest.
+        foreach (var person in people)
+        {
+            PutAway(person.Id);
+        }
+
         var journey = new Journey
         {
             Id = world.NextJourney++, Members = people.Select(c => c.Id).ToList(), Destination = placeId, Purpose = "move", Path = way.Path, Left = now,

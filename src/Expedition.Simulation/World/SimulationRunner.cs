@@ -340,6 +340,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             order.MaterialsConsumed = true;
         }
 
+        var fromStores = false;
         if (!order.MaterialsConsumed)
         {
             foreach (var (itemId, quantity) in task.Consumes)
@@ -348,6 +349,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             }
 
             order.MaterialsConsumed = true;
+            fromStores = Campaign.Camp is not null && task.Consumes.Count > 0;
         }
 
         if (task.NeedsWorkSpot)
@@ -356,6 +358,12 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             preferredSpot ??= task.KeepsWatch ? FreeWatchPlace(character) : null;
             var (spot, path, _) = FindWorkSpot(character, task, preferredSpot);
             order.SpotId = spot!.Id;
+            // Ashore, the materials are taken up where the stores lie, on the way to the work (step 2).
+            if (fromStores && ByWayOfStores(character, spot) is { } viaStores)
+            {
+                path = viaStores;
+            }
+
             StartWalk(character.Id, path!);
         }
         else if (ProperPlace(character, task) is { } place)
@@ -381,6 +389,11 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         }
 
         if (Campaign.Placements.TryGetValue(character.Id, out var placement) && placement.IsMoving)
+        {
+            return;
+        }
+
+        if (Stow(character))
         {
             return;
         }
@@ -421,7 +434,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             return;
         }
 
-        if (GoBelow(character))
+        if (GoBelow(character) || Stow(character))
         {
             return;
         }
@@ -1132,7 +1145,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
 
         if (definition.Yield is { } yield && !Bring(character, yield, rate))
         {
-            AddIfPresent(outcomes, Campaign.InterruptTask(character.Id, InterruptReasons.StoresFull));
+            AddIfPresent(outcomes, Campaign.InterruptTask(character.Id, Campaign.Camp is not null ? InterruptReasons.HandsFull : InterruptReasons.StoresFull));
             return;
         }
 
@@ -1192,7 +1205,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             }
 
             // A loop of work goes straight on to its next step; a demonstration does not.
-            if (definition.Then is { } next && task.Origin != TaskOrigin.Order && character.CanWork
+            if (definition.Then is { } next && task.Origin != TaskOrigin.Order && character.CanWork && !Holding(character.Id)
                 && Content.Tasks.TryGetValue(next, out var following) && FindWorkSpot(character, following).Spot is not null)
             {
                 Start(character, new TaskInstance(Campaign.Ids.NextTaskId(), character.Id, next, task.Priority) { Origin = task.Origin });
@@ -1214,13 +1227,15 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
                 return true;
             }
 
-            var added = Campaign.SharedStore.TryAdd(taken.Value.Item, 1, Content.Items).Succeeded;
-            if (added)
+            // Into their hands, to be carried to the stores (step 2): as much as one person carries.
+            if (InHandKg(character.Id) + Content.Items[taken.Value.Item].WeightKg > CarryKg)
             {
-                NoteGathered(yield.Ashore, character);
+                return false;
             }
 
-            return added;
+            Campaign.Camp!.Hold(character.Id.Value, taken.Value.Item, 1);
+            NoteGathered(yield.Ashore, character);
+            return true;
         }
 
         var factor = 1.0;

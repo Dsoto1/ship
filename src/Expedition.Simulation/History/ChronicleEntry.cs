@@ -109,6 +109,9 @@ public static class InterruptReasons
     /// <summary>There is no room in the stores for what the work brings in.</summary>
     public const string StoresFull = "storesFull";
 
+    /// <summary>Their hands are full: what the work brought in must be carried to the stores first (ashore).</summary>
+    public const string HandsFull = "handsFull";
+
     /// <summary>A tool broke in the work (ashore, R7).</summary>
     public const string ToolBroke = "toolBroke";
 

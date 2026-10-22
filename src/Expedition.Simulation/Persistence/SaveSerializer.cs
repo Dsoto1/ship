@@ -1601,6 +1601,7 @@ public static class SaveSerializer
         SendScouts = camp.Choices.SendScouts, Forage = camp.Choices.Forage, FireUntil = camp.FireUntil, Spoiled = camp.Spoiled,
         Trips = camp.Trips, Reported = camp.Reported,
         NightsSheltered = new SortedDictionary<int, int>(camp.NightsSheltered.ToDictionary()),
+        InHand = new SortedDictionary<int, IReadOnlyDictionary<string, int>>(camp.InHand.ToDictionary(h => h.Key, h => (IReadOnlyDictionary<string, int>)new SortedDictionary<string, int>(h.Value, StringComparer.Ordinal))),
         NightsExposed = new SortedDictionary<int, int>(camp.NightsExposed.ToDictionary()),
         LandedCount = camp.LandedCount,
         Projects = camp.Projects.Select(p => new CampProjectData
@@ -1691,6 +1692,18 @@ public static class SaveSerializer
         camp.NextProject = savedCamp.NextProject;
         camp.Survived = savedCamp.Survived;
         camp.Restore(savedCamp.Works, savedCamp.Found, savedCamp.Afloat, savedCamp.NightsSheltered, savedCamp.NightsExposed);
+        foreach (var (who, held) in savedCamp.InHand)
+        {
+            if (!campaign.Characters.ContainsKey(new CharacterId(who)) || held.Any(h => !content.Items.ContainsKey(h.Key) || h.Value <= 0))
+            {
+                throw new SaveLoadException("Someone at the camp holds what does not exist, or is not in the save.");
+            }
+
+            foreach (var (item, count) in held)
+            {
+                camp.Hold(who, item, count);
+            }
+        }
         camp.Priorities = savedCamp.Priorities.ToList();
         camp.Choices = new Shore.CampChoices
         {

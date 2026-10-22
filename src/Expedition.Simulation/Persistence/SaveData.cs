@@ -861,6 +861,9 @@ public sealed record CampData
     /// <summary>Nights under shelter, by character ID.</summary>
     public IReadOnlyDictionary<int, int> NightsSheltered { get; init; } = new Dictionary<int, int>();
 
+    /// <summary>What each person has in hand, not yet carried to the stores.</summary>
+    public IReadOnlyDictionary<int, IReadOnlyDictionary<string, int>> InHand { get; init; } = new Dictionary<int, IReadOnlyDictionary<string, int>>();
+
     /// <summary>Nights in the open, by character ID.</summary>
     public IReadOnlyDictionary<int, int> NightsExposed { get; init; } = new Dictionary<int, int>();
 
