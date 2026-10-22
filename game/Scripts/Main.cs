@@ -707,6 +707,17 @@ public partial class Main : Node3D
                 var spot = task?.SpotId is { } spotId ? _runner.SpotIn(location.Id, spotId) : null;
                 // A cask is rolled, not carried; everything else the task carries is held.
                 var carrying = definition?.Carries == "cask" ? null : definition?.Carries;
+                // Ashore, a load in hand on its way to the stores (step 2): carried as what it is.
+                if (carrying is null && _runner.Campaign.Camp?.InHand.GetValueOrDefault(id.Value) is { Count: > 0 } held)
+                {
+                    carrying = held.Keys.First() switch
+                    {
+                        "item.poles" or "item.plank" => "plank",
+                        "item.thatch" => "canvas",
+                        "item.stone" => "crate",
+                        _ => "basket",
+                    };
+                }
                 // The departure's farewells, staged (R3 scene D): whoever has come to see this hand off
                 // stands at the quay edge by the gangway and waves.
                 Vector3? standAt = null;

@@ -320,6 +320,27 @@ public sealed class CampState
     /// <summary>When thatch was last cut.</summary>
     public long ThatchLastCut { get; internal set; }
 
+    private readonly SortedDictionary<int, SortedDictionary<string, int>> _inHand = [];
+
+    /// <summary>
+    /// What each person has in hand, by character number: cut, gathered, drawn or caught, and not yet carried
+    /// to the stores (ECONOMY_LOOP §11). It is not in the stores until it is carried there.
+    /// </summary>
+    public IReadOnlyDictionary<int, SortedDictionary<string, int>> InHand => _inHand;
+
+    internal void Hold(int who, string item, int count)
+    {
+        if (!_inHand.TryGetValue(who, out var held))
+        {
+            held = new SortedDictionary<string, int>(StringComparer.Ordinal);
+            _inHand[who] = held;
+        }
+
+        held[item] = held.GetValueOrDefault(item) + count;
+    }
+
+    internal SortedDictionary<string, int>? Release(int who) => _inHand.Remove(who, out var held) ? held : null;
+
     /// <summary>A cell's key in <see cref="Trodden"/> and <see cref="Regrowing"/>.</summary>
     public static int Key(int x, int y) => y * 1000 + x;
 

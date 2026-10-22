@@ -952,6 +952,11 @@ public sealed partial class SimulationRunner
         var now = Campaign.Clock.Tick;
         foreach (var character in people)
         {
+            PutAway(character.Id);
+        }
+
+        foreach (var character in people)
+        {
             var left = rations;
             foreach (var food in foods)
             {

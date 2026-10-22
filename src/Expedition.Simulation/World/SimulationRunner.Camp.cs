@@ -478,6 +478,7 @@ public sealed partial class SimulationRunner
             return;
         }
 
+        StepCarrying();
         var rules = shore.Rules;
         var hour = Campaign.Clock.TimeOfDay.TotalHours;
         var night = hour is >= 21 or < 6;

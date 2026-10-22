@@ -73,6 +73,32 @@ what is still aboard her.
 
 Nothing moves that no one carried.
 
+## Stores where they lie, inside the camp
+
+The camp's stores lie in one place (`SimulationRunner.StoreCell`): the stack under the sailcloth on the beach,
+then the storehouse's door once one stands.
+
+**Bringing things in:**
+- What is cut, gathered, drawn or caught goes into the worker's hands (`CampState.InHand`), not the stores.
+- Loads are weighed, not measured: 25 kg in hand, so three poles, one stone or eight bundles of thatch.
+- When their hands are full, the work stops for the trip.
+- When the work stops, they walk the load to the stores and put it away before anything else.
+- On the way the figure carries it: poles, a bundle, stone, or a basket.
+
+**Taking things out:** a piece of work with materials walks its worker to the stores first, then to the work.
+
+**Where the storehouse stands matters:** near the work, the walks are short.
+
+**Loads never vanish:** the load of someone who falls sick or hurt, goes off with a party, or makes the move
+goes into the stores.
+
+**Tests:** `CarryingTests` (5):
+- a load in hand until carried;
+- materials taken up on the way;
+- the storehouse becomes the store;
+- a fallen worker's load taken up;
+- a load in hand saved.
+
 ## The charter
 
 The charter's site is data (`"site"` in `data/region.json`'s charter): `coast.ceniza_headland`, the headland
@@ -114,8 +140,8 @@ whatever was left. `FullArcTests` still keeps the charter.
 
 - **The headland's own map:** it uses the beach's plan on its own ground. The cliffs, the sea on three sides
   and the ruin in the middle want a map of their own.
-- **Stores within a camp are still one pool:** a worker takes poles from it wherever they stand (ECONOMY_AUDIT).
-  Stores held in places inside the camp (the beach cache, the storehouse), with materials walked to the work,
-  are the next pull request.
+- **One place of stores per camp:** the stores are not yet split between several places (a workshop's tools,
+  a cache by the forest). The boat's landing and the garden's harvest still go straight to the stores, as
+  they are beside them.
 - **Choosing what to carry:** it is by the fixed order above, not chosen.
 - **A left camp does not change while no one is there:** it does not wear, and is not robbed.
