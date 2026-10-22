@@ -2,6 +2,7 @@ using Expedition.Simulation.Characters;
 using Expedition.Simulation.Core;
 using Expedition.Simulation.History;
 using Expedition.Simulation.Tasks;
+using Expedition.Simulation.Shore;
 using Expedition.Simulation.World;
 using Godot;
 
@@ -112,6 +113,9 @@ public partial class Hud : CanvasLayer
     private Control _ending = null!;
     private Label _endingTitle = null!;
     private Label _endingText = null!;
+    private Button _endingActionButton = null!;
+    private Button _endingNewVoyage = null!;
+    private Action? _endingAction;
 
     private ChronicleFormatter _formatter = null!;
     private int _scene = -1;
@@ -242,7 +246,7 @@ public partial class Hud : CanvasLayer
             PanelId.People => "People — the roster",
             PanelId.Expedition => _runner?.Campaign.Voyage is null ? "Expedition — objectives and papers" : "The voyage — at a glance",
             PanelId.Cargo => "Cargo — the manifest",
-            PanelId.Ship => "Ship — condition and orders",
+            PanelId.Ship => _runner?.Campaign.Camp is not null ? "The camp — the first days" : "Ship — condition and orders",
             PanelId.Chart => "Chart",
             _ => "Chronicle — the record of the expedition",
         };
@@ -509,10 +513,14 @@ public partial class Hud : CanvasLayer
     public void HideEvent() => _event.Visible = false;
 
     /// <summary>Shows the end of the voyage, won or lost.</summary>
-    public void ShowEnding(string title, string text)
+    public void ShowEnding(string title, string text, string? actionLabel = null, Action? action = null)
     {
         _endingTitle.Text = title;
         _endingText.Text = text;
+        _endingAction = action;
+        _endingActionButton.Text = actionLabel ?? "";
+        _endingActionButton.Visible = action is not null;
+        _endingNewVoyage.Visible = action is null || actionLabel != "Carry on";
         _ending.Visible = true;
     }
 
@@ -581,8 +589,17 @@ public partial class Hud : CanvasLayer
         var minute = clock.Tick % SimulationClock.TicksPerDay;
         _clock.Text = $"DAY {day} · {minute / 60:00}:{minute % 60:00}";
         _place.Text = campaign.Port is not null ? "In port · La Bocana"
+            : campaign.Camp is not null ? $"Ashore · {runner.CampSite?.Name}"
             : campaign.Voyage is { } at ? $"At sea · bound for {at.Destination}"
             : campaign.Phase.ToString();
+        var shipLabel = campaign.Camp is not null ? "Camp" : "Ship";
+        if (_navButtons[PanelId.Ship].Text != shipLabel)
+        {
+            _navButtons[PanelId.Ship].Text = shipLabel;
+            _navButtons[PanelId.Ship].TooltipText = campaign.Camp is not null
+                ? "The camp ashore: what comes first, the hard choices, what is known of the place  (H)"
+                : "The Garza's condition and the captain's orders for her  (H)";
+        }
         foreach (var (button, speed) in _speedButtons)
         {
             button.SetPressedNoSignal(speed == speedIndex);
@@ -1033,7 +1050,7 @@ public partial class Hud : CanvasLayer
         }
 
         _statusPanel.Visible = chips.Count > 0;
-        _belowButton.Visible = campaign.Port is null && campaign.Voyage is not null;
+        _belowButton.Visible = campaign.Port is null && campaign.Voyage is not null && campaign.Camp is null;
         _sailOrders.Visible = campaign.Voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay };
         foreach (var (button, plan) in _sailButtons)
         {
@@ -1469,6 +1486,8 @@ public partial class Hud : CanvasLayer
         BuildPeople(_panelBodies[PanelId.People]);
         BuildCargo(_panelBodies[PanelId.Cargo]);
         BuildShip(_panelBodies[PanelId.Ship]);
+        _shipCards = _panelBodies[PanelId.Ship].GetChildren().OfType<Control>().ToList();
+        BuildCamp(_panelBodies[PanelId.Ship]);
         BuildChronicle(_panelBodies[PanelId.Chronicle]);
     }
 
@@ -2361,6 +2380,20 @@ public partial class Hud : CanvasLayer
 
     private void RefreshShip(SimulationRunner runner)
     {
+        // Ashore the screen is the camp's.
+        var ashore = runner.Campaign.Camp is not null;
+        _campBox.Visible = ashore;
+        foreach (var card in _shipCards)
+        {
+            card.Visible = !ashore;
+        }
+
+        if (ashore)
+        {
+            RefreshCamp(runner);
+            return;
+        }
+
         if (runner.Campaign.Voyage is not { } ship)
         {
             _shipReport.Text = "The Garza lies alongside the quay at La Bocana, sails furled, taking on stores and crew.\n\nInspection and repairs before sailing come with the port's later steps.";
@@ -2495,8 +2528,8 @@ public partial class Hud : CanvasLayer
         panel.AnchorBottom = 0.5f;
         panel.OffsetLeft = -300;
         panel.OffsetRight = 300;
-        panel.OffsetTop = -170;
-        panel.OffsetBottom = 170;
+        panel.OffsetTop = -230;
+        panel.OffsetBottom = 230;
         _ending.AddChild(panel);
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", Ui.SpaceL);
@@ -2510,8 +2543,169 @@ public partial class Hud : CanvasLayer
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         buttons.AddThemeConstantOverride("separation", Ui.SpaceL);
         column.AddChild(buttons);
-        buttons.AddChild(Ui.Button("New voyage", "", () => NewVoyageRequested?.Invoke()));
+        _endingActionButton = Ui.Button("", "", () => { HideEnding(); _endingAction?.Invoke(); });
+        _endingActionButton.Visible = false;
+        buttons.AddChild(_endingActionButton);
+        _endingNewVoyage = Ui.Button("New voyage", "", () => NewVoyageRequested?.Invoke());
+        buttons.AddChild(_endingNewVoyage);
         buttons.AddChild(Ui.Button("Look around", "", HideEnding));
+    }
+
+    // ================================================================ the camp ashore (R6)
+
+    private List<Control> _shipCards = [];
+    private VBoxContainer _campBox = null!;
+    private Label _campReport = null!;
+    private VBoxContainer _campKnown = null!;
+    private VBoxContainer _campPriorities = null!;
+    private Label _campWorks = null!;
+    private readonly List<CheckBox> _campChoiceBoxes = [];
+    private string _campShown = "";
+
+    private static readonly IReadOnlyDictionary<string, (string Label, string Tip)> PriorityNames = new Dictionary<string, (string, string)>
+    {
+        [CampPriorities.Medical] = ("The sick and hurt", "A shelter for the sick, and someone to tend them"),
+        [CampPriorities.Water] = ("Drinking water", "Fetching water from what has been found"),
+        [CampPriorities.Shelter] = ("Shelter", "Sail or brush shelters: a wet night in the open brings chills"),
+        [CampPriorities.Stores] = ("Landing the stores", "The boat out to the ship or the wreck and back"),
+        [CampPriorities.Fire] = ("Fire and hot food", "A fire made and kept, and meals cooked at it"),
+        [CampPriorities.Food] = ("The food kept dry", "The stores covered, and the shore's food gathered"),
+        [CampPriorities.Sanitation] = ("A latrine", "Without one the camp grows foul and the flux comes"),
+        [CampPriorities.Scouting] = ("Scouting", "Rested hands sent out to find water, food, and who else is here"),
+    };
+
+    private void BuildCamp(VBoxContainer body)
+    {
+        _campBox = new VBoxContainer { Visible = false };
+        _campBox.AddThemeConstantOverride("separation", Ui.SpaceM);
+        body.AddChild(_campBox);
+
+        var where = Ui.Card(_campBox, "The camp");
+        _campReport = Ui.Text("", Ui.TextBody, Ui.Ink, 340);
+        where.AddChild(_campReport);
+        _campWorks = Ui.Text("", Ui.TextMeta + 1, Ui.InkSoft, 340);
+        where.AddChild(_campWorks);
+
+        var priorities = Ui.Card(_campBox, "What comes first", "The hands take the first work wanted that they can do.");
+        _campPriorities = new VBoxContainer();
+        _campPriorities.AddThemeConstantOverride("separation", Ui.SpaceXs);
+        priorities.AddChild(_campPriorities);
+
+        var choices = Ui.Card(_campBox, "Hard choices");
+        foreach (var (label, tip) in new[]
+                 {
+                     ("Roof the shelters with sailcloth", "Quick and dry; the cloth is gone for mending her sails. Otherwise, brush and poles: slower, and leakier."),
+                     ("Rest the worn out first", "Rest the exhausted before they work; or work everyone hard, and risk mistakes and sickness"),
+                     ("Send out scouts", "Rested hands go out to look; or keep everyone together at the camp"),
+                     ("Gather the shore's food", "Shellfish, fish and fruit, once found; strange food can make them ill. Or keep to the ship's stores."),
+                 })
+        {
+            var box = new CheckBox { Text = label, TooltipText = tip, FocusMode = Control.FocusModeEnum.None };
+            box.Toggled += _ => CampChoicesChanged();
+            choices.AddChild(box);
+            _campChoiceBoxes.Add(box);
+        }
+
+        var known = Ui.Card(_campBox, "What we know of the place", "Pale lines are not yet seen for certain.");
+        _campKnown = new VBoxContainer();
+        known.AddChild(_campKnown);
+    }
+
+    private void CampChoicesChanged()
+    {
+        if (_runner?.Campaign.Camp is null)
+        {
+            return;
+        }
+
+        ShowResult(_runner.SetCampChoices(new CampChoices
+        {
+            UseSailcloth = _campChoiceBoxes[0].ButtonPressed, RestTheExhausted = _campChoiceBoxes[1].ButtonPressed,
+            SendScouts = _campChoiceBoxes[2].ButtonPressed, Forage = _campChoiceBoxes[3].ButtonPressed,
+        }));
+    }
+
+    private void MovePriority(int index, int by)
+    {
+        if (_runner?.Campaign.Camp is not { } camp || index + by < 0 || index + by >= camp.Priorities.Count)
+        {
+            return;
+        }
+
+        var order = camp.Priorities.ToList();
+        (order[index], order[index + by]) = (order[index + by], order[index]);
+        ShowResult(_runner.SetCampPriorities(order));
+        _campShown = "";
+    }
+
+    private void RefreshCamp(SimulationRunner runner)
+    {
+        if (runner.Campaign.Camp is not { } camp)
+        {
+            return;
+        }
+
+        var hours = (runner.Campaign.Clock.Tick - camp.Landed) / (double)SimulationClock.TicksPerHour;
+        var people = runner.Campaign.Crew.Count(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated);
+        var wanting = runner.CampWanting();
+        _campReport.Text = $"Ashore at {runner.CampSite?.Name}, {(camp.Reported ? "the first days over" : $"day {Math.Floor(hours / 24) + 1} of the first three")}. {people} of the company." +
+            (wanting.Count == 0 ? " Water, shelter and a fire: the camp has what it needs most." : $" Still wanting: {string.Join(", ", wanting)}.");
+        var afloat = camp.Afloat.Sum(p => runner.Content.Items.TryGetValue(p.Key, out var item) ? item.WeightKg * p.Value : 0);
+        _campWorks.Text = $"Berths under cover: {(int)camp.Work(CampWorks.Shelter)} of {people}" +
+            $" · fire: {(runner.CampFireBurning ? "burning" : camp.Work(CampWorks.Fire) >= 1 ? "out" : "none")}" +
+            $" · stores: {(camp.Work(CampWorks.Cover) >= 1 ? "covered" : "in the open")}" +
+            $" · latrine: {(camp.Work(CampWorks.Latrine) >= 1 ? "dug" : "none")}" +
+            $" · sick shelter: {(camp.Work(CampWorks.SickShelter) >= 1 ? "made" : "none")}" +
+            (camp.Afloat.Count > 0 ? $"\nStill {(camp.ShipAtAnchor ? "aboard her" : "in the wreck")}: {afloat:0} kg, {camp.Trips} boat trips made." : "\nEverything is ashore.") +
+            (runner.Raining ? "\nIt is raining." : "");
+
+        foreach (var (box, on) in _campChoiceBoxes.Zip(new[] { camp.Choices.UseSailcloth, camp.Choices.RestTheExhausted, camp.Choices.SendScouts, camp.Choices.Forage }))
+        {
+            box.SetPressedNoSignal(on);
+        }
+
+        // The priorities and the assessment are rebuilt only when they change.
+        var assessment = runner.CampAssessment();
+        var key = string.Join("|", camp.Priorities) + "#" + string.Join("|", assessment.Select(a => a.Text + a.Known));
+        if (key == _campShown)
+        {
+            return;
+        }
+
+        _campShown = key;
+        foreach (var child in _campPriorities.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        for (var i = 0; i < camp.Priorities.Count; i++)
+        {
+            var index = i;
+            var (label, tip) = PriorityNames.TryGetValue(camp.Priorities[i], out var named) ? named : (camp.Priorities[i], "");
+            var row = new HBoxContainer();
+            var text = Ui.Text($"{i + 1}. {label}", Ui.TextBody, Ui.Ink, 220);
+            text.TooltipText = tip;
+            text.MouseFilter = Control.MouseFilterEnum.Pass;
+            text.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            row.AddChild(text);
+            var up = Ui.Button("▲", "Higher", () => MovePriority(index, -1));
+            up.Disabled = i == 0;
+            row.AddChild(up);
+            var down = Ui.Button("▼", "Lower", () => MovePriority(index, 1));
+            down.Disabled = i == camp.Priorities.Count - 1;
+            row.AddChild(down);
+            _campPriorities.AddChild(row);
+        }
+
+        foreach (var child in _campKnown.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        foreach (var (topic, text, isKnown) in assessment)
+        {
+            _campKnown.AddChild(Ui.Text($"{topic}: {text}", Ui.TextMeta + 1, isKnown ? Ui.Ink : Ui.Uncertain, 340));
+        }
     }
 
     // ================================================================ helpers

@@ -305,6 +305,12 @@ public sealed partial class SimulationRunner
         if (definition.Builds is { } work)
         {
             camp.AddWork(work, definition.BuildsAmount);
+            if (work == CampWorks.Shelter)
+            {
+                // Which shelters stand, for the view: sail or brush.
+                camp.AddWork(definition.Consumes.ContainsKey("item.sailcloth") ? CampWorks.SailShelters : CampWorks.BrushShelters, 1);
+            }
+
             Campaign.Record(ChronicleEntryKind.CampWorkDone, [
                 new(ChronicleParameters.To, work), new(ChronicleParameters.Level, camp.Work(work).ToString("0", CultureInfo.InvariantCulture)),
             ], character.Id);

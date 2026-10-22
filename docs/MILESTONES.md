@@ -48,7 +48,7 @@ This file tracks status and breaks the next work into tickets.
 | R4g | Landfall approach: soundings, sighting, identifying the coast, wrong landfall (NAV §30–31) | Done (2026-10-21) |
 | R4h | Voyage validation: calm morning, fog, storm, aftermath; sound; the ship's visible history (VOYAGE §46) | First pass (2026-10-22): all four staged and judged Partly (docs/VOYAGE_VALIDATION.md); visible history and sea sounds added; six things to do next |
 | R5 | Shipwreck transition: casualties, location, salvage by accessibility, survivors' state kept (VOYAGE §39–40) | Done (2026-10-22): the transition and its report; survival ashore is R6 |
-| R6 | Landfall camp, the first 72 hours: assessment, water, shelter, fire, stores, sanitation (SETTLEMENT §3–6) | Planned |
+| R6 | Landfall camp, the first 72 hours: assessment, water, shelter, fire, stores, sanitation (SETTLEMENT §3–6) | Done (2026-10-22): going ashore from the anchorage or the wreck, the site to be scouted, the camp's works by the captain's priorities and four hard choices, wet nights, swamp fever, spoiled stores, the first days' report; the beach drawn with its works (docs/R6_LANDFALL_CAMP.md) |
 | R7 | Establishment: construction projects, storage and spoilage, the first garden, seasons (SETTLEMENT §7–19) | Planned |
 | R8 | The world around: exploration, the Ahuneri and Tesiwa, trade, the charter (SETTLEMENT §26–33) | Planned |
 | 5c | Recruitment rules in full: investigation, references, counteroffers | Later (core moves into V4) |
@@ -2635,3 +2635,54 @@ Saved in format 36 (legs and notes in the chart). Developer flag `--legs`. Tests
 
 **Screenshots:** `docs/screenshots/garza-cutaway-calm.jpg`, `garza-cutaway-storm.jpg` and
 `garza-cutaway-aft.jpg`.
+
+### R6 — The landfall camp: the first 72 hours (owner: "cleanup pass first, then R6")
+
+**What it is.** The voyage now goes on ashore with the same people and what they really have. Arrived,
+everything is still aboard her and the boat lands it; wrecked, what the boat saved is ashore, and a wreck
+on the coast can be got at.
+
+**The place must be found out.** Each landing site has water, food, things to build with, fever and
+rain, and things to find (`data/shore.json`):
+- **Punta Ceniza:** the spring in the sailing directions, shellfish and fish, the burned factory, a
+  fish weir and a worn path.
+- **The Bajos Largos:** sand without brush, only a brackish seep near and a creek far.
+- **The other sites:** the Río Bermejo, Punta Falsa, the Manglares, the coast of Castrena and the
+  islands, each its own.
+
+The landing card says what is known and what is only guessed. Scouts find the rest.
+
+**The captain decides what comes first, and four hard choices:**
+- **Priorities:** the sick, water, shelter, the stores, fire, food kept dry, sanitation, scouting.
+- **Choices:**
+  - the sailcloth for shelter, or kept for her;
+  - rest the worn out, or work them;
+  - send scouts, or keep together;
+  - gather the shore's food, or keep to the stores.
+
+**What can go wrong:**
+- a wet night in the open (chills);
+- the swamp's air (fever);
+- rain on uncovered stores;
+- a camp without a latrine (the flux);
+- strange shellfish and brackish water (the flux).
+
+**After three days:** the first days' report: water, nights under cover, what was found, the stores,
+what is still wanting. Then the settlement phase (R7).
+
+**Details** are in `docs/R6_LANDFALL_CAMP.md` (As built).
+
+**Saved in** format 37. Developer flags: `--ashore[=site]`, `--camphours=N`.
+
+**Tests:** `CampTests` (10); 538 in all.
+
+**Screenshots:** `docs/screenshots/r6-camp-day.jpg`, `r6-camp-anchorage.jpg`,
+`r6-camp-panel-night.jpg` and `r6-camp-after-wreck.jpg`.
+
+**Also in this pass (the cleanup):**
+- **The helm:** kept through the change of watch and against other work.
+- **A lookout** in fog and near land.
+- **Labels** kept apart.
+- **The washing** seen.
+- **Below decks:** walking there through the cutaway, and people below seen through the deck.
+- **Voices and music:** deferred by the owner, the calls to be in English.

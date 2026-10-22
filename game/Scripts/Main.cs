@@ -49,6 +49,8 @@ public partial class Main : Node3D
     // Never simulate more than this many ticks in one frame, so a slow frame cannot snowball.
     private const int MaxTicksPerFrame = 600;
     private const string QuickSaveSlot = "quicksave";
+    // How far in from the anchorage the camp's water's edge lies, metres.
+    private const float CampOffshore = 26f;
 
     private readonly Dictionary<CharacterId, CrewFigure> _figures = [];
     private GameContent _content = null!;
@@ -81,6 +83,11 @@ public partial class Main : Node3D
     private PortSound _portSound = null!;
     private ShipSound _shipSound = null!;
     private Node3D _portFigures = null!;
+    // Ashore (R6): the beach of the first camp, with its people, laid on the coast in front of the anchorage.
+    private CampView _camp = null!;
+    private Node3D _campFigures = null!;
+    private bool _campBuilt;
+    private bool _reportShown;
     private PortCrowd _crowd = null!;
     private HarbourView _harbour = null!;
     private AmbientScenes _ambient = null!;
@@ -513,10 +520,29 @@ public partial class Main : Node3D
         _ship.RotationDegrees = new Vector3(Mathf.Sin(t * 0.45f) * 0.8f * swell, inPort ? -90f + leaving.Turn : _shipYaw + wander, Mathf.Sin(t * 0.6f) * 1.6f * swell + list);
         _ship.Position = (inPort ? _port.Berth + leaving.Offset : _shipCentre) + new Vector3(0, Mathf.Sin(t * 0.7f) * 0.08f * swell - _sink, 0);
 
+        // Ashore: she lies at anchor off the beach, broadside on; a wreck lies close in, heeled and settled;
+        // foundered at sea, she is gone.
+        if (_runner.Campaign.Camp is { } ashoreCamp)
+        {
+            var wrecked = _runner.Campaign.Wreck;
+            _ship.Visible = wrecked is null || wrecked.Remains.Count > 0;
+            var settle = wrecked is null ? 0f : 1.6f;
+            _ship.RotationDegrees = new Vector3(Mathf.Sin(t * 0.45f) * 0.5f * swell, -90f, Mathf.Sin(t * 0.6f) * 1.0f * swell + (wrecked is null ? 0f : 17f));
+            _ship.Position = _shipCentre + new Vector3(0, Mathf.Sin(t * 0.7f) * 0.06f * swell - settle, wrecked is null ? 0f : 13f);
+            var landing = _runner.Campaign.ActiveTasks.Values.Any(task => _content.Tasks[task.DefinitionId].Lands);
+            var ashoreCount = _content.Items.Keys.Sum(_runner.Campaign.SharedStore.Count);
+            _camp.Show(ashoreCamp, ashoreCount, _runner.CampFireBurning, landing, _runner.CampWater() is not null, _world.Darkness, t);
+            FollowCaptain((float)delta);
+        }
+        else
+        {
+            _ship.Visible = true;
+        }
+
         var clock = _runner.Campaign.Clock;
         var hour = (float)((clock.Tick + (speed > 0 ? _tickFraction : 0)) % SimulationClock.TicksPerDay / SimulationClock.TicksPerHour);
         // The ship's bell strikes the half hours at sea, while time goes slowly enough to hear it.
-        if (inPort)
+        if (inPort || _runner.Campaign.Camp is not null)
         {
             _shipSound.Reset();
         }
@@ -525,7 +551,7 @@ public partial class Main : Node3D
             _shipSound.Clock(hour, speed switch { <= 0 => ShipSound.Bells.None, <= 1 => ShipSound.Bells.All, <= 10 => ShipSound.Bells.Watches, _ => ShipSound.Bells.None });
         }
 
-        var hull = inPort
+        var hull = inPort || !_ship.Visible
             ? new Vector4(9999, 9999, 0.1f, 0.1f)
             : HullOnTheWater();
         // The camera keeps to the port and a little past its ends, but not off into the country; the
@@ -612,12 +638,12 @@ public partial class Main : Node3D
         // Set sails fade at working zoom so they never hide the crew; furled at the quay they hide no one.
         _deck.ShowCondition(voyage?.Hull ?? 100, voyage?.Rigging ?? 100, voyage?.PartedLines, voyage?.YardSprung == true,
             voyage?.Prepared.Contains(Expedition.Simulation.Voyage.Preparations.Aloft) == true);
-        _deck.UpdateLook(_world.Darkness, inPort ? 1f : Mathf.Lerp(0.38f, 1f, Mathf.SmoothStep(18f, 32f, _camera.Size)), t, cooking, inPort ? 3.2f : SailSetting(voyage), (float)delta, furled: inPort);
+        _deck.UpdateLook(_world.Darkness, inPort ? 1f : Mathf.Lerp(0.38f, 1f, Mathf.SmoothStep(18f, 32f, _camera.Size)), t, cooking, inPort || _runner.Campaign.Camp is not null ? 3.2f : SailSetting(voyage), (float)delta, furled: inPort || _runner.Campaign.Camp is not null);
         _deck.SetWind(inPort || voyage?.Navigation is not { } windOn ? null : (float)-windOn.OffWind, (float)delta);
         ShowShipboard(voyage, weather);
         ShowBelow(voyage);
         // The boat is away while hands are ashore watering or foraging, and gone with the wreck.
-        _deck.ShowBoat(_runner.Campaign.Wreck is null && !_runner.Campaign.ActiveTasks.Values.Any(t => _content.Tasks[t.DefinitionId].NeedsWeather?.AtAnchor == true));
+        _deck.ShowBoat(_runner.Campaign.Wreck is null && _runner.Campaign.Camp is null && !_runner.Campaign.ActiveTasks.Values.Any(t => _content.Tasks[t.DefinitionId].NeedsWeather?.AtAnchor == true));
         foreach (var bird in _birds)
         {
             bird.Centre = inPort ? _port.Berth + new Vector3(0, 4f, -4f) : _shipCentre + new Vector3(0, 0, -2f);
@@ -664,16 +690,17 @@ public partial class Main : Node3D
                 // In the departure the captain leaves the quay when he goes up the gangway (R2e).
                 figure.Visible = standAt is not null || character.SurvivalState != SurvivalState.Missing && !inside && !(id == _runner.Campaign.CaptainId && _departure.Boarded && _departure.Playing);
                 var onPort = placement.LocationId == _runner.Content.Port?.Location;
+                var onShore = placement.LocationId == SimulationRunner.CampLocation;
                 var isCaptain = id == _runner.Campaign.CaptainId;
                 figure.Refresh(character, placement, drawTick, id == _selected, Hud.Activity(_runner, character),
                     isCaptain, pose, (float)delta, animationRate,
-                    onPort ? _port.HeightAt : _deck.HeightAt, carrying,
+                    onPort ? _port.HeightAt : onShore ? _camp.HeightAt : _deck.HeightAt, carrying,
                     showLabel: !_departure.Playing && (!inPort || isCaptain || id == _hovered), shownName: inPort ? PortHud.KnownName(_runner, id) : null,
                     facing: spot is null ? null : FacingAt(location, spot),
-                    inRain: onPort && _runner.RainingInPort && definition?.Id != "task.shelter", standAt: standAt,
-                    place: onPort ? null : _deck.Place);
+                    inRain: (onPort && _runner.RainingInPort && definition?.Id != "task.shelter") || (onShore && _runner.Raining), standAt: standAt,
+                    place: onPort || onShore ? null : _deck.Place);
                 // Below decks with the cutaway off, people are drawn faintly through the deck, so no one vanishes.
-                figure.ShowThroughDeck(!onPort && !_deck.Cutaway && _deck.IsBelow(placement.CellAt(_runner.Campaign.Clock.Tick)));
+                figure.ShowThroughDeck(!onPort && !onShore && !_deck.Cutaway && _deck.IsBelow(placement.CellAt(_runner.Campaign.Clock.Tick)));
                 figure.Outline(inPort && !_departure.Playing ? RecruitRim(id) : Colors.Transparent);
             }
         }
@@ -1150,8 +1177,8 @@ public partial class Main : Node3D
         _figures.Clear();
         _pending = null;
         // The ship the crew are aboard: the Garza's own deck on the expedition, the plain deck for the test.
-        var deckId = runner.Campaign.Placements.Values.Select(p => p.LocationId).FirstOrDefault(l => l != _content.Port?.Location)
-            ?? (runner.Campaign.Port is not null ? _content.Port?.ShipLocation : null) ?? TestDeckScenario.LocationId;
+        var deckId = runner.Campaign.Placements.Values.Select(p => p.LocationId).FirstOrDefault(l => l != _content.Port?.Location && l != SimulationRunner.CampLocation)
+            ?? (runner.Campaign.Port is not null || runner.Campaign.Camp is not null ? _content.Port?.ShipLocation : null) ?? TestDeckScenario.LocationId;
         var location = _content.Locations[deckId];
         _deck.Build(location);
         if (_content.Port is { } rules && !_portBuilt)
@@ -1187,6 +1214,7 @@ public partial class Main : Node3D
         _formatter = new ChronicleFormatter(runner.Campaign, _content);
         _chronicleSeen = runner.Campaign.Chronicle.Entries.Count;
         _endingShown = runner.Campaign.Voyage is { Outcome: not Expedition.Simulation.Voyage.VoyageOutcome.UnderWay };
+        _reportShown = runner.Campaign.Camp?.Reported == true;
         _sink = 0;
         _hud.HideAlert();
         _hud.HideEnding();
@@ -1215,6 +1243,26 @@ public partial class Main : Node3D
             player.StreamPaused = !inPort;
         }
         _portFigures.Visible = inPort;
+        var ashore = _runner.Campaign.Camp is not null;
+        _camp.Visible = ashore;
+        if (ashore)
+        {
+            if (!_campBuilt && _content.Locations.TryGetValue(SimulationRunner.CampLocation, out var beach))
+            {
+                _camp.Build(beach);
+                _campBuilt = true;
+            }
+
+            // The beach faces the anchorage: turned so the sea is towards the camera and the forest behind,
+            // the camp's middle abreast of her, its water's edge some way in.
+            _camp.RotationDegrees = new Vector3(0, 180, 0);
+            _camp.Position = _shipCentre + new Vector3(_camp.Centre.X, 0, -CampOffshore);
+            _camera.Target = _camp.ToGlobal(_camp.Centre);
+            _camera.Size = 22f;
+            _follow = false;
+            return;
+        }
+
         if (!inPort)
         {
             _ship.RotationDegrees = Vector3.Zero;
@@ -1265,7 +1313,8 @@ public partial class Main : Node3D
                 _figures[id] = figure;
             }
 
-            var parent = placement.LocationId == _content.Port?.Location ? _portFigures : _shipContents;
+            var parent = placement.LocationId == _content.Port?.Location ? _portFigures
+                : placement.LocationId == SimulationRunner.CampLocation ? _campFigures : _shipContents;
             if (figure.GetParent() != parent)
             {
                 figure.GetParent()?.RemoveChild(figure);
@@ -1323,6 +1372,13 @@ public partial class Main : Node3D
         for (; _chronicleSeen < entries.Count; _chronicleSeen++)
         {
             var entry = entries[_chronicleSeen];
+            if (entry.Kind == ChronicleEntryKind.CampFirstDays && !_reportShown)
+            {
+                _reportShown = true;
+                SetSpeed(0);
+                ShowFirstDays();
+            }
+
             if (entry.Kind == ChronicleEntryKind.RiggingCarriedAway)
             {
                 if (entry.Get(ChronicleParameters.To) == "yard")
@@ -1429,7 +1485,8 @@ public partial class Main : Node3D
                 (wrongMarks > 0 ? $" It took {wrongMarks + 1} tries to know it." : "") + "\n\n" +
                 $"{losses} {alive} of {crew.Count} come to the coast, with water for about {water:0} days and food for about {food:0}. " +
                 $"The hull stands at {ship.Hull:0}% and the rigging at {ship.Rigging:0}%.\n\n" +
-                "What waits ashore, and what became of the old factory at Punta Ceniza, is still to be written.");
+                "The factory on the headland is black against the sky. Everything she carries is still aboard her; the boat must land it.",
+                _runner.CanGoAshore ? "Go ashore" : null, _runner.CanGoAshore ? GoAshore : null);
         }
         else if (ship.Outcome == Expedition.Simulation.Voyage.VoyageOutcome.AllHandsLost)
         {
@@ -1469,11 +1526,62 @@ public partial class Main : Node3D
             (wreck.Lost.Count > 0 ? $"Lost: {Names(wreck.Lost)}.\n" : "Not a soul was lost.\n") +
             $"Got into the boat: {Stores(wreck.Saved)}." + (wreck.Drunk > 0 ? $" Of the water and wine, {wreck.Drunk} measures drunk on the way." : "") + "\n" +
             (wreck.Remains.Count > 0 ? $"Still in the wreck, to be got at: {Stores(wreck.Remains)}.\n" : "Everything else went down with her.\n") +
-            "\nThey come ashore as they were: bruised, half drowned, worn out, their quarrels and loyalties with them. " +
-            "What they make of it ashore is the next part of the story (R6).");
+            "\nThey come ashore as they were: bruised, half drowned, worn out, their quarrels and loyalties with them.",
+            _runner.CanGoAshore ? "Make camp" : null, _runner.CanGoAshore ? GoAshore : null);
     }
 
     private static string Capital(string text) => text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];
+
+    // Ashore (R6): the survivors land, the beach is shown, and the captain is told what is known of the place
+    // and what is only guessed (SETTLEMENT §3).
+    private void GoAshore()
+    {
+        var result = _runner.GoAshore();
+        if (!result.Succeeded)
+        {
+            _hud.ShowStatus(result.Reason);
+            return;
+        }
+
+        SyncFigures();
+        ShowWorld();
+        _hud.SetSpeedNames(PortSpeedNames, PortSpeedTips);
+        var site = _runner.CampSite;
+        _hud.ShowEnding($"Ashore at {site?.Name ?? "the shore"}", CampLines(_runner.CampAssessment()) +
+            "\n\nThe first three days are for water, shelter, fire and the stores. Rank what matters most in the Camp screen (H).",
+            "Carry on", () => _hud.OpenPanel(PanelId.Ship));
+    }
+
+    // The assessment's lines for a card: what is only guessed is marked so.
+    private static string CampLines(IEnumerable<(string Topic, string Text, bool Known)> lines) =>
+        string.Join("\n", lines.Select(l => $"{l.Topic}: {l.Text}" + (l.Known ? "" : "  (not yet seen for certain)")));
+
+    // After 72 hours ashore, what the first days came to.
+    private void ShowFirstDays()
+    {
+        if (_runner.Campaign.Camp is not { } camp)
+        {
+            return;
+        }
+
+        var people = _runner.Campaign.Crew.Where(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated).ToList();
+        var lost = _runner.Campaign.Chronicle.Entries.Count(e => e.Tick >= camp.Landed && e.Kind == ChronicleEntryKind.SurvivalStateChanged
+                                                                   && e.Get(ChronicleParameters.To) is "Dead" or "Missing");
+        var exposed = camp.NightsExposed.Values.Sum();
+        var sheltered = camp.NightsSheltered.Values.Sum();
+        var found = _runner.Campaign.Chronicle.Entries.Where(e => e.Tick >= camp.Landed && e.Kind == ChronicleEntryKind.CampFound)
+            .Select(e => e.Get(ChronicleParameters.To)).ToList();
+        var sick = people.Count(SimulationRunner.SickOrHurt);
+        var wanting = _runner.CampWanting();
+        var afloatKg = camp.Afloat.Sum(p => _content.Items.TryGetValue(p.Key, out var item) ? item.WeightKg * p.Value : 0);
+        _hud.ShowEnding("The first days", $"Three days ashore at {_runner.CampSite?.Name}. {people.Count} alive" + (lost > 0 ? $", {lost} lost since landing" : "") + (sick > 0 ? $"; {sick} sick or hurt." : ".") + "\n\n" +
+            $"Nights: {sheltered} under cover, {exposed} out in the open.\n" +
+            $"Water: {(_runner.CampWater() is { } water ? $"{water.Name} ({water.Kind})" : "none found")}.\n" +
+            $"Found: {(found.Count == 0 ? "nothing yet" : string.Join(", ", found))}.\n" +
+            $"Stores: {(camp.Afloat.Count == 0 ? "all ashore" : $"{afloatKg:0} kg still afloat")}" + (camp.Spoiled > 0 ? $"; {camp.Spoiled} spoiled in the rain." : ".") + "\n" +
+            (wanting.Count == 0 ? "\nThey have water, shelter and a fire. Now the place must be made to last." : $"\nStill wanting: {string.Join(", ", wanting)}."),
+            "Carry on", () => { });
+    }
 
     private void CarryOn()
     {
@@ -1614,6 +1722,17 @@ public partial class Main : Node3D
             point = high;
         }
 
+        if (_runner.Campaign.Camp is not null)
+        {
+            var local = _camp.ToLocal(point);
+            if (_camera.GroundPointUnder(screenPosition, _camp.Position.Y + _camp.HeightAt(local.X, local.Z)) is { } onSand)
+            {
+                local = _camp.ToLocal(onSand);
+            }
+
+            return new GridPosition(Mathf.RoundToInt(local.X), Mathf.RoundToInt(local.Z));
+        }
+
         if (_runner.Campaign.Port is null)
         {
             // In the cutaway, a click goes through the opened decks to the spaces below.
@@ -1658,6 +1777,10 @@ public partial class Main : Node3D
 
         _port = new PortView { Name = "PortView" };
         AddChild(_port);
+        _camp = new CampView { Name = "CampView", Visible = false };
+        AddChild(_camp);
+        _campFigures = new Node3D { Name = "CampFigures" };
+        _camp.AddChild(_campFigures);
         _portSound = new PortSound { Name = "PortSound" };
         AddChild(_portSound);
         _shipSound = new ShipSound { Name = "ShipSound" };
@@ -1707,6 +1830,8 @@ public partial class Main : Node3D
     private (double Offshore, double North)? _offCoast;
     private string? _seaWeather;
     private bool _founder;
+    private string? _ashoreAt;
+    private int _campHours;
     private bool _crewLife;
     private bool _legs;
     private bool _developerBelow;
@@ -1935,6 +2060,8 @@ public partial class Main : Node3D
                 case "wind" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var wind): _forceWind = wind; break;
                 case "seaweather": _seaWeather = value; break;
                 case "founder": _founder = true; break;
+                case "ashore": _ashoreAt = value.Length > 0 ? value : "coast.punta_ceniza"; break;
+                case "camphours" when int.TryParse(value, out var campHours): _campHours = campHours; break;
                 case "crewlife": _crewLife = true; break;
                 case "legs": _legs = true; break;
                 case "below": _developerBelow = true; break;
@@ -2261,6 +2388,26 @@ public partial class Main : Node3D
         if (_founder)
         {
             _runner.DeveloperFounder();
+        }
+
+        // --ashore[=coast.bajos_largos]: the voyage over there, and the camp made; --camphours=N: N hours on.
+        // With --founder, they come ashore from the wreck instead.
+        if (_ashoreAt is { } site)
+        {
+            var landed = _founder ? _runner.GoAshore() : _runner.DeveloperLand(site);
+            if (landed.Succeeded)
+            {
+                _runner.Advance(_campHours * 60);
+                _endingShown = true;
+                _reportShown = _runner.Campaign.Camp!.Reported;
+                SyncFigures();
+                ShowWorld();
+                _hud.SetSpeedNames(PortSpeedNames, PortSpeedTips);
+                if (_startZoom is { } closer)
+                {
+                    _camera.Size = closer;
+                }
+            }
         }
 
         // --panel=ship (people, cargo, ...): open that screen, once at sea if she is sailing.

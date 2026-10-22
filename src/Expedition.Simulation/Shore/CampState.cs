@@ -20,6 +20,12 @@ public static class CampWorks
     /// <summary>The sick shelter: 1 once made.</summary>
     public const string SickShelter = "sick_shelter";
 
+    /// <summary>How many sail shelters stand (of the berths in <see cref="Shelter"/>).</summary>
+    public const string SailShelters = "shelters_sail";
+
+    /// <summary>How many brush shelters stand.</summary>
+    public const string BrushShelters = "shelters_brush";
+
     /// <summary>Every work, in the order they are shown.</summary>
     public static readonly IReadOnlyList<string> All = [Shelter, Fire, Cover, Latrine, SickShelter];
 }
