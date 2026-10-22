@@ -76,6 +76,7 @@ public partial class CampView : Node3D
         }
 
         _location = location;
+        _canoes = null;
         BuildGround();
         BuildForest();
         _works = new Node3D { Name = "Works" };
@@ -411,6 +412,44 @@ public partial class CampView : Node3D
                 Add(_works, new CylinderMesh { TopRadius = 0.25f, BottomRadius = 0.25f, Height = 0.65f }, Cask, at + new Vector3(dx, 0.33f, 0), new Vector3(0, 0, 90));
             }
         }
+
+        // The palisade (R8): stakes round the camp, set from the gate by the landing round both ways, as far as
+        // it has got; the gate left open on the sea side.
+        var palisade = (float)camp.Work(CampWorks.Palisade);
+        if (palisade > 0)
+        {
+            var batch = new MeshBatcher();
+            const float x0 = 3f, x1 = 33f, y0 = 4f, y1 = 17.5f, gate = 2f, gateX = 18f;
+            var ring = new List<Vector2>();
+            // From the gate's west post west along the front, up the west side, along the back, down the east side,
+            // and back along the front to the gate's east post.
+            void Run(Vector2 from, Vector2 to)
+            {
+                var n = Math.Max(1, (int)(from.DistanceTo(to) / 0.45f));
+                for (var i = 0; i < n; i++)
+                {
+                    ring.Add(from.Lerp(to, i / (float)n));
+                }
+            }
+
+            Run(new Vector2(gateX - gate, y0), new Vector2(x0, y0));
+            Run(new Vector2(x0, y0), new Vector2(x0, y1));
+            Run(new Vector2(x0, y1), new Vector2(x1, y1));
+            Run(new Vector2(x1, y1), new Vector2(x1, y0));
+            Run(new Vector2(x1, y0), new Vector2(gateX + gate, y0));
+            var shown = (int)(ring.Count * Math.Min(1, palisade));
+            var stake = new CylinderMesh { TopRadius = 0.04f, BottomRadius = 0.09f, Height = 2.2f, RadialSegments = 5 };
+            for (var i = 0; i < shown; i++)
+            {
+                // Laid round from both ends at once, so the two halves meet at the back.
+                var k = i % 2 == 0 ? i / 2 : ring.Count - 1 - i / 2;
+                var p = ring[k];
+                var height = 2f + 0.25f * Mathf.Sin(k * 2.3f);
+                batch.AddColoured(stake, new Transform3D(Basis.Identity.Scaled(new Vector3(1, height / 2.2f, 1)), new Vector3(p.X, HeightAt(p.X, p.Y) + height / 2, p.Y)), Pole.Darkened(0.1f + 0.1f * ((k * 7) % 3) / 2f));
+            }
+
+            batch.Commit(_works);
+        }
     }
 
     // A ridge-pole tent of two sail cloths, open at the ends.
@@ -458,6 +497,29 @@ public partial class CampView : Node3D
                 MaterialOverride = water, Position = at, Scale = new Vector3(1, 1, rng.RandfRange(0.5f, 1.4f)),
             });
         }
+    }
+
+    private Node3D? _canoes;
+
+    /// <summary>A people's canoes drawn up on the beach while they are at the camp (R8); null for none.</summary>
+    public void ShowVisitors(string? community)
+    {
+        if (_canoes is null)
+        {
+            _canoes = new Node3D { Name = "Canoes" };
+            AddChild(_canoes);
+            // Two dugouts, long and narrow, drawn up on the sand beside the landing, a paddle across each.
+            foreach (var (x, angle) in new[] { (12.5f, 14f), (14.2f, 6f) })
+            {
+                var canoe = new Node3D { Position = new Vector3(x, HeightAt(x, 1.2f), 1.2f), RotationDegrees = new Vector3(0, angle, 0) };
+                Add(canoe, new CylinderMesh { TopRadius = 0.32f, BottomRadius = 0.32f, Height = 5.2f, RadialSegments = 8 }, Hull.Darkened(0.25f), new Vector3(0, 0.12f, 0), new Vector3(90, 0, 0));
+                Add(canoe, new BoxMesh { Size = new Vector3(0.5f, 0.08f, 4.6f) }, Hull.Darkened(0.5f), new Vector3(0, 0.4f, 0));
+                Add(canoe, new BoxMesh { Size = new Vector3(1.3f, 0.04f, 0.1f) }, Pole.Lightened(0.1f), new Vector3(0, 0.46f, 0.8f), new Vector3(0, 25, 0));
+                _canoes.AddChild(canoe);
+            }
+        }
+
+        _canoes.Visible = community is not null;
     }
 
     // The middle of a building's ground.

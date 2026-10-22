@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 40;
+    public const int CurrentSchemaVersion = 41;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -194,6 +194,9 @@ public static class SaveSerializer
 
                 return root;
             },
+
+            // Format 41 added the world around the camp (R8): an older camp starts it knowing only what it did.
+            [40] = root => root,
 
             // Format 40 wore paths by feet and let the vegetation grow back (R7): none yet in an older camp.
             [39] = root => root,
@@ -741,6 +744,8 @@ public static class SaveSerializer
                         .Select(t => new TroddenCellData { X = t.Cell.X, Y = t.Cell.Y, Steps = t.Value.Steps, Last = t.Value.Last }).ToList(),
                     Regrowing = camp.Regrowing.Select(r => (Cell: Shore.CampState.Cell(r.Key), r.Value))
                         .Select(r => new RegrowingCellData { X = r.Cell.X, Y = r.Cell.Y, Tree = r.Value.Tree, Since = r.Value.Since }).ToList(),
+                    PalisadeOrdered = camp.PalisadeOrdered,
+                    World = campaign.World is { } world ? SaveWorld(world) : null,
                 }
                 : null,
             Voyage = campaign.Voyage is { } voyage
@@ -1395,7 +1400,9 @@ public static class SaveSerializer
             camp.Spoiled = savedCamp.Spoiled;
             camp.Trips = savedCamp.Trips;
             camp.Reported = savedCamp.Reported;
+            camp.PalisadeOrdered = savedCamp.PalisadeOrdered;
             campaign.Camp = camp;
+            campaign.World = savedCamp.World is { } world ? RestoreWorld(world) : null;
         }
 
         RestoreLife(campaign, content, data.Life);
@@ -1648,5 +1655,103 @@ public static class SaveSerializer
         {
             life.Promise(new Promise(promise.Cause, promise.Due));
         }
+    }
+
+    private static WorldData SaveWorld(Shore.WorldState world) => new()
+    {
+        Places = world.Places.Select(p => new KnownPlaceData { Id = p.Key, Level = p.Value.Level.ToString(), Source = p.Value.Source }).ToList(),
+        Routes = world.Routes.ToList(),
+        Communities = world.Communities.Select(c => new CommunityData
+        {
+            Id = c.Key, Trust = c.Value.Trust, Grievance = c.Value.Grievance, Met = c.Value.Met, Watched = c.Value.Watched, NextVisit = c.Value.NextVisit,
+            GiftOwedSince = c.Value.GiftOwedSince, Received = new SortedDictionary<string, int>(c.Value.Received, StringComparer.Ordinal),
+            Leave = c.Value.Leave.ToList(), Grievous = c.Value.Grievous,
+        }).ToList(),
+        Learned = new SortedDictionary<string, string>(world.Learned.ToDictionary(), StringComparer.Ordinal),
+        Journeys = world.Journeys.Select(j => new JourneyData
+        {
+            Id = j.Id, Members = j.Members.Select(m => m.Value).ToList(), Destination = j.Destination, Purpose = j.Purpose, Path = j.Path.ToList(),
+            Left = j.Left, Arrives = j.Arrives, Returns = j.Returns, Arrived = j.Arrived, Logs = j.Logs, Report = j.Report.ToList(),
+        }).ToList(),
+        Meeting = world.Meeting is { } m
+            ? new MeetingData { Kind = m.Kind, Community = m.Community, Tick = m.Tick, Round = m.Round, GiftItem = m.Gift?.Item, GiftCount = m.Gift?.Count ?? 0, Item = m.Item }
+            : null,
+        NextJourney = world.NextJourney, PeaceBroken = world.PeaceBroken, PalisadeExplained = world.PalisadeExplained, PalisadeNoticed = world.PalisadeNoticed,
+        LetterSent = world.LetterSent, Brennish = world.Brennish, BrennishWarned = world.BrennishWarned, LogsSold = world.LogsSold, Thefts = world.Thefts,
+        Charter = world.Charter,
+    };
+
+    private static Shore.WorldState RestoreWorld(WorldData saved)
+    {
+        var world = new Shore.WorldState
+        {
+            NextJourney = saved.NextJourney, PeaceBroken = saved.PeaceBroken, PalisadeExplained = saved.PalisadeExplained, PalisadeNoticed = saved.PalisadeNoticed,
+            LetterSent = saved.LetterSent, Brennish = saved.Brennish, BrennishWarned = saved.BrennishWarned, LogsSold = saved.LogsSold, Thefts = saved.Thefts,
+            Charter = saved.Charter,
+        };
+        foreach (var place in saved.Places)
+        {
+            if (!Enum.TryParse<Shore.PlaceKnowledge>(place.Level, out var level))
+            {
+                throw new SaveLoadException($"The coast's place '{place.Id}' is known as '{place.Level}', which is not a level of knowing.");
+            }
+
+            var known = world.Know(place.Id);
+            known.Level = level;
+            known.Source = place.Source;
+        }
+
+        foreach (var route in saved.Routes)
+        {
+            world.KnowRoute(route);
+        }
+
+        foreach (var data in saved.Communities)
+        {
+            var state = world.Community(data.Id);
+            state.Trust = data.Trust;
+            state.Grievance = data.Grievance;
+            state.Met = data.Met;
+            state.Watched = data.Watched;
+            state.NextVisit = data.NextVisit;
+            state.GiftOwedSince = data.GiftOwedSince;
+            state.Grievous = data.Grievous;
+            foreach (var (item, count) in data.Received)
+            {
+                state.Received[item] = count;
+            }
+
+            foreach (var leave in data.Leave)
+            {
+                state.Leave.Add(leave);
+            }
+        }
+
+        foreach (var (topic, from) in saved.Learned)
+        {
+            world.Learn(topic, from);
+        }
+
+        foreach (var data in saved.Journeys)
+        {
+            var journey = new Shore.Journey
+            {
+                Id = data.Id, Members = data.Members.Select(m => new CharacterId(m)).ToList(), Destination = data.Destination, Purpose = data.Purpose,
+                Path = data.Path.ToList(), Left = data.Left, Arrives = data.Arrives, Returns = data.Returns, Arrived = data.Arrived, Logs = data.Logs,
+            };
+            journey.Report.AddRange(data.Report);
+            world.AddJourney(journey);
+        }
+
+        if (saved.Meeting is { } meeting)
+        {
+            world.Meeting = new Shore.Meeting
+            {
+                Kind = meeting.Kind, Community = meeting.Community, Tick = meeting.Tick, Round = meeting.Round, Item = meeting.Item,
+                Gift = meeting.GiftItem is { } gift ? (gift, meeting.GiftCount) : null,
+            };
+        }
+
+        return world;
     }
 }

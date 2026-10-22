@@ -135,6 +135,7 @@ public sealed partial class SimulationRunner
     private void Sicken(Character character, Items.ItemDefinition ration)
     {
         if (ration.Sickens is not { } sickness || character.Health.Conditions.Contains(sickness.Condition)
+            || (sickness.SafeWith is { } knowledge && Learned(knowledge))
             || !Campaign.Randomness.Stores.Chance(sickness.Chance))
         {
             return;

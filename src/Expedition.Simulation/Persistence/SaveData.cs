@@ -894,6 +894,12 @@ public sealed record CampData
     /// <summary>The cells growing back. Added in format 40.</summary>
     public IReadOnlyList<RegrowingCellData> Regrowing { get; init; } = [];
 
+    /// <summary>The palisade ordered. Added in format 41.</summary>
+    public bool PalisadeOrdered { get; init; }
+
+    /// <summary>The world around the camp (R8), or null. Added in format 41.</summary>
+    public WorldData? World { get; init; }
+
     /// <summary>The next project's number. Added in format 38.</summary>
     public int NextProject { get; init; } = 1;
 
@@ -1151,4 +1157,165 @@ public sealed record ChartNoteData
 
     /// <summary>The captain's own, or the voyage's mark.</summary>
     public bool ByCaptain { get; init; }
+}
+
+/// <summary>The world around the camp (R8). Added in format 41.</summary>
+public sealed record WorldData
+{
+    /// <summary>Places known.</summary>
+    public IReadOnlyList<KnownPlaceData> Places { get; init; } = [];
+
+    /// <summary>Routes known, by key.</summary>
+    public IReadOnlyList<string> Routes { get; init; } = [];
+
+    /// <summary>Each people's standing.</summary>
+    public IReadOnlyList<CommunityData> Communities { get; init; } = [];
+
+    /// <summary>What has been learned, by topic, with who told it.</summary>
+    public IReadOnlyDictionary<string, string> Learned { get; init; } = new Dictionary<string, string>();
+
+    /// <summary>Parties away.</summary>
+    public IReadOnlyList<JourneyData> Journeys { get; init; } = [];
+
+    /// <summary>The meeting waiting, or null.</summary>
+    public MeetingData? Meeting { get; init; }
+
+    /// <summary>The next journey's number.</summary>
+    public int NextJourney { get; init; } = 1;
+
+    /// <summary>The trade peace broken.</summary>
+    public bool PeaceBroken { get; init; }
+
+    /// <summary>The palisade explained to Mahenu.</summary>
+    public bool PalisadeExplained { get; init; }
+
+    /// <summary>The palisade seen going up.</summary>
+    public bool PalisadeNoticed { get; init; }
+
+    /// <summary>When a letter home went; 0 for none.</summary>
+    public long LetterSent { get; init; }
+
+    /// <summary>The Brennish ship's visit, 0..3.</summary>
+    public int Brennish { get; init; }
+
+    /// <summary>She was warned off.</summary>
+    public bool BrennishWarned { get; init; }
+
+    /// <summary>Logs sold to her.</summary>
+    public int LogsSold { get; init; }
+
+    /// <summary>Thefts.</summary>
+    public int Thefts { get; init; }
+
+    /// <summary>The charter's judgement, or null.</summary>
+    public string? Charter { get; init; }
+}
+
+/// <summary>A place known.</summary>
+public sealed record KnownPlaceData
+{
+    /// <summary>The place.</summary>
+    public required string Id { get; init; }
+
+    /// <summary>How well: reported, seen, visited.</summary>
+    public required string Level { get; init; }
+
+    /// <summary>Who told it.</summary>
+    public string Source { get; init; } = "";
+}
+
+/// <summary>A people's standing.</summary>
+public sealed record CommunityData
+{
+    /// <summary>The people.</summary>
+    public required string Id { get; init; }
+
+    /// <summary>Trust.</summary>
+    public double Trust { get; init; }
+
+    /// <summary>Grievance.</summary>
+    public double Grievance { get; init; }
+
+    /// <summary>Met.</summary>
+    public bool Met { get; init; }
+
+    /// <summary>Days watched.</summary>
+    public int Watched { get; init; }
+
+    /// <summary>Next visit.</summary>
+    public long NextVisit { get; init; }
+
+    /// <summary>A gift owed since.</summary>
+    public long GiftOwedSince { get; init; }
+
+    /// <summary>What they have had in trade.</summary>
+    public IReadOnlyDictionary<string, int> Received { get; init; } = new Dictionary<string, int>();
+
+    /// <summary>Leave given.</summary>
+    public IReadOnlyList<string> Leave { get; init; } = [];
+
+    /// <summary>A theft to take up with them.</summary>
+    public string? Grievous { get; init; }
+}
+
+/// <summary>A party away.</summary>
+public sealed record JourneyData
+{
+    /// <summary>Its number.</summary>
+    public int Id { get; init; }
+
+    /// <summary>Who went.</summary>
+    public IReadOnlyList<int> Members { get; init; } = [];
+
+    /// <summary>Where to.</summary>
+    public required string Destination { get; init; }
+
+    /// <summary>Why.</summary>
+    public required string Purpose { get; init; }
+
+    /// <summary>The way.</summary>
+    public IReadOnlyList<string> Path { get; init; } = [];
+
+    /// <summary>Set out.</summary>
+    public long Left { get; init; }
+
+    /// <summary>Arrive.</summary>
+    public long Arrives { get; init; }
+
+    /// <summary>Back.</summary>
+    public long Returns { get; init; }
+
+    /// <summary>Arrived yet.</summary>
+    public bool Arrived { get; init; }
+
+    /// <summary>Logs.</summary>
+    public int Logs { get; init; }
+
+    /// <summary>Their report so far.</summary>
+    public IReadOnlyList<string> Report { get; init; } = [];
+}
+
+/// <summary>A meeting waiting.</summary>
+public sealed record MeetingData
+{
+    /// <summary>Its kind.</summary>
+    public required string Kind { get; init; }
+
+    /// <summary>The people.</summary>
+    public string? Community { get; init; }
+
+    /// <summary>When.</summary>
+    public long Tick { get; init; }
+
+    /// <summary>How far it has got.</summary>
+    public int Round { get; init; }
+
+    /// <summary>Their gift's item.</summary>
+    public string? GiftItem { get; init; }
+
+    /// <summary>How many.</summary>
+    public int GiftCount { get; init; }
+
+    /// <summary>A theft's item.</summary>
+    public string? Item { get; init; }
 }

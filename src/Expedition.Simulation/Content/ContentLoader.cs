@@ -59,6 +59,13 @@ public static class ContentLoader
         var port = File.Exists(portPath) ? Read<Port.PortRules>(portPath) : null;
         var shorePath = Path.Combine(dataDirectory, "shore.json");
         var shore = File.Exists(shorePath) ? Read<Shore.ShoreRules>(shorePath) : null;
+        // The coast around the camp and its peoples (R8), with the shore.
+        var regionPath = Path.Combine(dataDirectory, "region.json");
+        if (shore is not null && File.Exists(regionPath))
+        {
+            shore = shore with { Region = Read<Shore.RegionRules>(regionPath) };
+        }
+
         return new GameContent(rules, skills, items, tasks, locations, attributes, traits, conditions, appearance, languages, statuses, voyage, events, port, shore);
     }
 

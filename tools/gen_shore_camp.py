@@ -65,6 +65,9 @@ spot("spot.scout_2", 5, 23, ["task.scout"], face="S")
 spot("spot.stone_1", 27, 2, ["task.gather_stone"], kind="HammerStation")
 spot("spot.stone_2", 7, 4, ["task.gather_stone"], kind="HammerStation")
 spot("spot.headland", 34, 7, ["task.salvage_timbers"], kind="HammerStation", face="E")
+# R8: where the palisade's stakes are cut and set from, at either end of the camp.
+spot("spot.palisade_1", 4, 8, ["task.raise_palisade"], kind="HammerStation")
+spot("spot.palisade_2", 30, 6, ["task.raise_palisade"], kind="HammerStation")
 for id_, (x, y) in CUTS.items():
     spot(id_, x, y, ["task.cut_poles"] if "poles" in id_ else ["task.cut_thatch"], kind="HammerStation", face="S")
 

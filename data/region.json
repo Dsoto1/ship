@@ -1,0 +1,143 @@
+// The Ember Coast around the great lagoon (R8, docs/R8_THE_WORLD_AROUND.md; SETTLEMENT_EXPERIENCE §26-35;
+// SETTING §3, §5). Positions are in leagues, east (x) and north (y) of Punta Ceniza. Everything here exists
+// whether or not the expedition has found it: "known" is what the Company's sailing directions give on
+// landing (seen or reported); the rest is found by going there or by being told.
+// [RESEARCH] The peoples are invented for a fictional coast; to be checked in the plausibility pass.
+{
+  "places": [
+    { "id": "place.punta_ceniza", "name": "Punta Ceniza", "kind": "headland", "x": 0, "y": 0, "site": "coast.punta_ceniza", "known": "seen",
+      "text": "The headland, and on it the burned factory: posts like black teeth, the palisade down, the spring below.",
+      "report": "The Company's factory, on the headland, by the spring.", "ground": "people.oruwai" },
+    { "id": "place.lagoon_shore", "name": "the lagoon shore", "kind": "shore", "x": 1.5, "y": 1,
+      "text": "The seaward shore of the great lagoon: fish weirs of stakes and woven cane across the channels, kept in good repair.",
+      "report": "Fish weirs along the lagoon's shore.", "ground": "people.mahenu" },
+    { "id": "place.mahenu", "name": "Mahenu", "kind": "village", "x": 4, "y": 1.5, "people": "people.mahenu", "known": "reported",
+      "text": "Mahenu: long houses of poles and thatch in a ring about a cleared ground, canoes drawn up below, gardens of roots and grain going back into the forest.",
+      "report": "A village on the lagoon's east shore, that traded with the factory." },
+    { "id": "place.fishing_camp", "name": "Oruwai's fishing camp", "kind": "camp", "x": 1, "y": 3,
+      "text": "A fishing camp on a sandbar at the lagoon's mouth: drying racks, the frames of shelters, and the black marks of a fire on the sand, old now. No one camps here.",
+      "report": "A fishing camp at the lagoon's mouth, left empty.", "ground": "people.oruwai" },
+    { "id": "place.oruwai", "name": "Oruwai", "kind": "village", "x": 2.5, "y": 5, "people": "people.oruwai",
+      "text": "Oruwai: a ring of long houses on a rise at the lagoon's north end, with a fence of stakes about it, and the dye-wood forest dark behind.",
+      "report": "A second village, at the north of the lagoon, by the dye-wood." },
+    { "id": "place.dyewood", "name": "the dye-wood stands", "kind": "forest", "x": 4, "y": 6.5, "wood": true,
+      "text": "Embrawood, the red dye-wood, in stands among the forest, the big trees ringed with cut marks of many seasons, each household's trees known to it.",
+      "report": "The red wood grows inland of the lagoon's north end.", "ground": "people.oruwai" },
+    { "id": "place.river_mouth", "name": "the Río Bermejo mouth", "kind": "river", "x": -3, "y": 6, "site": "coast.rio_bermejo", "known": "reported",
+      "text": "The Río Bermejo comes down red-brown over the bar, wide and slow, the forest to the water on both banks.",
+      "report": "A great river, a day and a half north along the shore." },
+    { "id": "place.tesiwa_landing", "name": "the canoe landing", "kind": "landing", "x": -1, "y": 10,
+      "text": "Up the river, a landing of beaten earth where big dugouts are drawn up, a lean-to for traders, and the path inland.",
+      "report": "A landing up the river, where the river people come down to trade.", "ground": "people.tesiwa" },
+    { "id": "place.kessat", "name": "Kessat", "kind": "town", "x": 0, "y": 13, "people": "people.tesiwa",
+      "text": "Kessat: houses close together on terraces above the river, smoke from the salt-boilers, and above it all the hill.",
+      "report": "The river people's town, in the valley above the falls.", "ground": "people.tesiwa" },
+    { "id": "place.hill", "name": "the hill", "kind": "sacred", "x": 2, "y": 14.5, "sacred": true,
+      "text": "A green hill above Kessat, its top bare, a path to it marked with posts. No one goes up it but those whose right it is.",
+      "report": "A hill above the river people's town that is not to be climbed.", "ground": "people.tesiwa" },
+    { "id": "place.salt_pans", "name": "the salt pans", "kind": "shore", "x": -4, "y": 9,
+      "text": "Salt pans behind the dunes north of the river, worked in the dry season by the river people.",
+      "report": "Salt pans north of the river.", "ground": "people.tesiwa" },
+    { "id": "place.brennish_cove", "name": "the Brennish cove", "kind": "cove", "x": -6, "y": 11,
+      "text": "A deep cove behind a spit, out of sight of the open sea, with the ashes of fires, broken casks, and a cross cut in a tree in the Brennish way.",
+      "report": "A cove where the Brennish ships put in." },
+    { "id": "place.bajos_largos", "name": "the Bajos Largos", "kind": "shore", "x": -8, "y": 3, "site": "coast.bajos_largos",
+      "text": "Long grey shoals and sand spits, without a tree.", "report": "Long shoals to the north-west." },
+    { "id": "place.punta_falsa", "name": "Punta Falsa", "kind": "headland", "x": 6, "y": -6, "site": "coast.punta_falsa",
+      "text": "A false point of broken rock, a cove of coral sand.", "report": "A point to the south, that looks like Punta Ceniza from the sea." },
+    { "id": "place.manglares", "name": "the Manglares", "kind": "swamp", "x": 9, "y": -2, "site": "coast.manglares",
+      "text": "Mangroves in black mud, the lagoon's far end bleeding into them.", "report": "Mangrove swamps beyond the lagoon." }
+  ],
+  "routes": [
+    { "from": "place.punta_ceniza", "to": "place.lagoon_shore", "days": 0.5, "way": "beach" },
+    { "from": "place.lagoon_shore", "to": "place.mahenu", "days": 0.5, "way": "lagoon" },
+    { "from": "place.lagoon_shore", "to": "place.fishing_camp", "days": 0.5, "way": "beach" },
+    { "from": "place.fishing_camp", "to": "place.oruwai", "days": 0.5, "way": "lagoon" },
+    { "from": "place.oruwai", "to": "place.dyewood", "days": 0.5, "way": "forest" },
+    { "from": "place.mahenu", "to": "place.dyewood", "days": 1, "way": "forest" },
+    { "from": "place.punta_ceniza", "to": "place.river_mouth", "days": 1.5, "way": "beach", "known": true },
+    { "from": "place.river_mouth", "to": "place.tesiwa_landing", "days": 1.5, "way": "river" },
+    { "from": "place.tesiwa_landing", "to": "place.kessat", "days": 1, "way": "forest" },
+    { "from": "place.kessat", "to": "place.hill", "days": 0.5, "way": "forest" },
+    { "from": "place.river_mouth", "to": "place.salt_pans", "days": 1, "way": "beach" },
+    { "from": "place.salt_pans", "to": "place.brennish_cove", "days": 1, "way": "beach" },
+    { "from": "place.river_mouth", "to": "place.bajos_largos", "days": 2, "way": "beach" },
+    { "from": "place.punta_ceniza", "to": "place.punta_falsa", "days": 2.5, "way": "beach" },
+    { "from": "place.punta_falsa", "to": "place.manglares", "days": 1.5, "way": "beach" },
+    { "from": "place.mahenu", "to": "place.manglares", "days": 2, "way": "lagoon" },
+    { "from": "place.oruwai", "to": "place.tesiwa_landing", "days": 2, "way": "forest" }
+  ],
+  // The peoples (SETTING §5). Values are what a thing is worth to them, in their own reckoning; "offers" is
+  // what they will part with and what it costs them. Temperament: how readily they trade, how cautious they
+  // are of strangers. They act on their own each day by these and by how the newcomers have dealt with them.
+  "communities": [
+    {
+      "id": "people.mahenu", "name": "Mahenu", "people": "the Ahuneri", "place": "place.mahenu", "language": "language.ahuneri",
+      "trust": 8, "trade": 0.8, "caution": 0.35, "giftCulture": true, "firstVisitDay": 3, "visitEveryDays": 6,
+      "about": "Mahenu traded logs and food to the old factory for iron. Its council is for renewed trade, on its own terms; it has not forgotten the ship that took people from a fishing camp.",
+      "persons": [
+        { "id": "person.narehwa", "name": "Narehwa", "role": "speaker of Mahenu's council", "about": "Grey, unhurried, and listens longer than she speaks. She carries the council's word and will not say what it has not agreed." },
+        { "id": "person.ahiro", "name": "Ahiro", "role": "a young man of Mahenu", "about": "Fourteen or so, quick, with a castaway's grey eyes. Ximena's son." }
+      ],
+      "wants": { "item.axe": 12, "item.cutlass": 10, "item.trade_knives": 6, "item.trade_cloth": 8, "item.fishhooks": 1.5, "item.sailcloth": 6 },
+      "offers": { "item.cassava_bread": 1, "item.maize": 1, "item.smoked_fish": 1.5, "item.fruit": 0.7, "item.embrawood": 4, "item.cassava_cuttings": 2, "item.seed_maize": 2 }
+    },
+    {
+      "id": "people.oruwai", "name": "Oruwai", "people": "the Ahuneri", "place": "place.oruwai", "language": "language.ahuneri",
+      "trust": -6, "trade": 0.55, "caution": 0.75, "giftCulture": true, "firstVisitDay": 12, "visitEveryDays": 10,
+      "about": "Oruwai holds the dye-wood and the fishing grounds at the lagoon's mouth. Its council would keep the newcomers weak and at a distance, and has reason to.",
+      "persons": [
+        { "id": "person.hiruwe", "name": "Hiruwe", "role": "speaker of Oruwai's council", "about": "Lean and watchful. He looks at the camp's tools before he looks at the people holding them." },
+        { "id": "person.wenari", "name": "Wenari", "role": "a canoe-builder of Oruwai", "about": "Broad-handed and cheerful; trades whatever the council allows and asks about every tool he sees." }
+      ],
+      "wants": { "item.axe": 14, "item.cutlass": 10, "item.trade_knives": 7, "item.trade_cloth": 6, "item.fishhooks": 1.5 },
+      "offers": { "item.embrawood": 3, "item.smoked_fish": 1.5, "item.cassava_bread": 1.2 }
+    },
+    {
+      "id": "people.tesiwa", "name": "Kessat", "people": "the Tesiwa", "place": "place.kessat", "language": "language.tesiwa",
+      "trust": 0, "trade": 0.7, "caution": 0.5, "giftCulture": false, "firstVisitDay": 20, "visitEveryDays": 12,
+      "about": "The river people of Kessat hold the river route inland. They resent the lagoon villages' hold on the foreigners' trade, and they have been trading with the Brennish.",
+      "persons": [
+        { "id": "person.sattek", "name": "Sattek", "role": "war captain of Kessat for the season", "about": "Tall, scarred along one arm, and proud of it. He speaks for Kessat this season and wants the trade to come up the river." },
+        { "id": "person.kuusit", "name": "Kuusit", "role": "keeper of the hill", "about": "Old, of the lineage that keeps the hill. Says little to strangers and nothing about the hill." },
+        { "id": "person.teskaat", "name": "Teskaat", "role": "a trader of Kessat", "about": "Knows a little Brennish and a good deal of the lagoon's trade tongue; comes quietly, and counts everything twice." }
+      ],
+      "wants": { "item.trade_cloth": 10, "item.sailcloth": 8, "item.axe": 8, "item.trade_knives": 5, "item.wine": 4, "item.fishhooks": 2 },
+      "offers": { "item.maize": 1, "item.smoked_meat": 1.5, "item.fruit": 0.8 }
+    }
+  ],
+  // What the peoples know and will tell, to those they trust enough, through an interpreter good enough.
+  "knowledge": [
+    { "id": "know.ground", "name": "whose ground it is", "from": ["people.mahenu", "people.oruwai"], "trust": -5, "language": 1,
+      "text": "The headland and the lagoon's mouth are the fishing grounds of Oruwai's households; the shore by the weirs, Mahenu's. The factory was built on Oruwai's ground. No one asked." },
+    { "id": "know.roots", "name": "their roots and grain", "from": ["people.mahenu", "people.oruwai"], "trust": 12, "language": 1,
+      "text": "Cassava from cuttings, and maize from seed, in ground burned and hoed; they grow here as nothing from the seed chest will.",
+      "gives": { "item.cassava_cuttings": 4, "item.seed_maize": 4 } },
+    { "id": "know.bitter_cassava", "name": "how to make bitter cassava safe", "from": ["people.mahenu"], "trust": 25, "language": 2,
+      "text": "The roots are grated, the juice pressed out in a woven tube, the meal dried and baked. Eaten raw, they sicken and can kill." },
+    { "id": "know.fever_lore", "name": "how they keep off the fever", "from": ["people.mahenu"], "trust": 18, "language": 2,
+      "text": "Sleep up off the ground, in hammocks, in smoke, away from standing water; and not on the low ground in the wet." },
+    { "id": "know.storm", "name": "the storm at the change of season", "from": ["people.oruwai", "people.mahenu"], "trust": 10, "language": 2,
+      "text": "When the wet comes in, a great wind comes with it, about the tenth day: they tie down their roofs and draw up the canoes." },
+    { "id": "know.route_dyewood", "name": "the way to the dye-wood", "from": ["people.oruwai", "people.mahenu"], "trust": 10, "language": 1,
+      "text": "The red wood grows behind Oruwai, half a day into the forest; by the lagoon's edge from the fishing camp, then the trail.",
+      "reveals": ["place.fishing_camp", "place.oruwai", "place.dyewood"] },
+    { "id": "know.route_kessat", "name": "the way up the river", "from": ["people.tesiwa", "people.mahenu"], "trust": 5, "language": 1,
+      "text": "Up the Río Bermejo to the canoe landing, a day and a half, and then a day's walk up the valley to Kessat. From Oruwai there is a forest trail.",
+      "reveals": ["place.tesiwa_landing", "place.kessat"] },
+    { "id": "know.brennish", "name": "who trades with whom", "from": ["people.tesiwa", "people.mahenu"], "trust": 25, "language": 2,
+      "text": "The Brennish ships put in at a cove beyond the salt pans and trade iron to Kessat for salt, food and wood the Tesiwa do not own.",
+      "reveals": ["place.salt_pans", "place.brennish_cove"] },
+    { "id": "know.garrison_tesiwa", "name": "Kessat's tale of the factory", "from": ["people.tesiwa"], "trust": 12, "language": 1,
+      "text": "Sattek laughs. The lagoon people burned the foreigners' house, he says, and it was Kessat's Brennish iron that cut its gate." },
+    { "id": "know.garrison_oruwai", "name": "Oruwai's tale of the factory", "from": ["people.oruwai"], "trust": 25, "language": 2,
+      "text": "Hiruwe speaks flatly. The foreigners came to the fishing camp in the second wet and took six of their people, to make Oruwai cut wood for them. Oruwai cut no wood. Oruwai burned their house. Four of the six came home." },
+    { "id": "know.garrison_mahenu", "name": "what happened to the garrison", "from": ["people.mahenu"], "trust": 42, "language": 3,
+      "text": "Narehwa tells it all, slowly. The garrison's commander took Oruwai's people for wood; Oruwai and men of Kessat burned the factory; most of the garrison died at the gate. Two ran to Mahenu, and Mahenu would not give them up, though Oruwai still holds it against them. One died of the fever. The other, Gaspar Lezo, lives at Mahenu still, and will speak to you if you come." }
+  ],
+  // The Company's charter (SETTING §3), judged when the relief ship comes.
+  "charter": { "reliefDay": 180, "logs": 40, "aliveShare": 0.5, "aliveAtLeast": 4, "palisade": true },
+  // An interloper's ship at the cove (SETTLEMENT §32).
+  "brennish": { "ship": "the Merle", "master": "Master Corran Hale", "arriveDay": 50, "stayDays": 12,
+    "sells": { "item.wine_hob": 18, "item.biscuit_hob": 14, "item.axe": 70 }, "buysLog": 25 }
+}

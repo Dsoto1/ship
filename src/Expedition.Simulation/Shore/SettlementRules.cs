@@ -179,4 +179,7 @@ public sealed record CropDefinition
 
     /// <summary>Sown only in the dry season.</summary>
     public bool DrySowingOnly { get; init; }
+
+    /// <summary>What must be learned of the coast's people before it can be grown (R8), or null.</summary>
+    public string? Knowledge { get; init; }
 }

@@ -58,4 +58,7 @@ public sealed record ItemSickness
 
     /// <summary>Chance, 0..1, for each unit eaten or drunk.</summary>
     public required double Chance { get; init; }
+
+    /// <summary>Knowledge (R8, <c>know.*</c>) that makes it safe once learned: bitter cassava prepared as the coast does.</summary>
+    public string? SafeWith { get; init; }
 }
