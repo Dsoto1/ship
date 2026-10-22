@@ -88,6 +88,27 @@ public sealed class IslandTests
     }
 
     [Fact]
+    public void EachVoyageMeetsTheAguadaTheEsquivaAndOneIslandOfEachBand()
+    {
+        var oceans = Enumerable.Range(1, 30)
+            .Select(seed => TestDeckScenario.Create(Shipped, (ulong)seed, withDuties: false).Islands.Select(i => i.Id).ToList())
+            .ToList();
+        foreach (var islands in oceans)
+        {
+            Assert.Contains("island.aguada", islands);
+            Assert.Contains("island.esquiva", islands);
+            foreach (var band in new[] { "near", "middle", "far" })
+            {
+                Assert.Single(islands, id => Shipped.Voyage!.Route!.Islands.First(i => i.Id == id).Band == band);
+            }
+        }
+
+        // Not the same ocean every time, but the same for the same seed.
+        Assert.True(oceans.Select(o => string.Join(",", o)).Distinct().Count() > 3);
+        Assert.Equal(oceans[4], TestDeckScenario.Create(Shipped, 5, withDuties: false).Islands.Select(i => i.Id).ToList());
+    }
+
+    [Fact]
     public void AReportedIslandIsThereForSomeVoyagesAndNotForOthers()
     {
         var esquiva = Islands.Single(i => i.Id == "island.esquiva");

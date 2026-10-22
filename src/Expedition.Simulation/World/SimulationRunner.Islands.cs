@@ -19,7 +19,38 @@ public sealed partial class SimulationRunner
     public Island? AnchoredAt =>
         Campaign.Voyage is { Outcome: VoyageOutcome.UnderWay, Navigation.Call: { Anchored: true } call } ? IslandById(call.Island) : null;
 
-    private Island? IslandById(string id) => Content.Voyage?.Route?.Islands.FirstOrDefault(i => i.Id == id);
+    private Island? IslandById(string id) => Islands.FirstOrDefault(i => i.Id == id);
+
+    /// <summary>
+    /// The islands of this voyage's ocean: those every voyage has, and one of each band, picked by the
+    /// campaign's seed so every replay agrees and nothing need be saved.
+    /// </summary>
+    public IReadOnlyList<Island> Islands =>
+        _islands ??= (Content.Voyage?.Route?.Islands ?? [])
+            .Where(i => i.Band is null || PickedInBand(i)).ToList();
+
+    private IReadOnlyList<Island>? _islands;
+
+    private bool PickedInBand(Island island)
+    {
+        var band = (Content.Voyage?.Route?.Islands ?? []).Where(i => i.Band == island.Band).OrderBy(i => i.Id, StringComparer.Ordinal).ToList();
+        var pick = (int)(SeedHash(island.Band!, Campaign.Seed) % (ulong)band.Count);
+        return band[pick].Id == island.Id;
+    }
+
+    // A number from a name and the seed, the same on every replay.
+    private static ulong SeedHash(string name, ulong seed)
+    {
+        var hash = 14695981039346656037UL;
+        foreach (var c in name)
+        {
+            hash = (hash ^ c) * 1099511628211UL;
+        }
+
+        var z = (seed ^ hash) * 0xBF58476D1CE4E5B9UL;
+        z = (z ^ (z >> 27)) * 0x94D049BB133111EBUL;
+        return z ^ (z >> 31);
+    }
 
     /// <summary>
     /// Where an island truly is, and whether it is there at all: a charted island is where the chart says;

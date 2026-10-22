@@ -22,6 +22,12 @@ public sealed record Island
     /// <summary>True for an island only reported: drawn dashed, perhaps not there.</summary>
     public bool Reported { get; init; }
 
+    /// <summary>
+    /// The stretch of the passage it lies in (<c>near</c>, <c>middle</c>, <c>far</c>), for this world's
+    /// other islands: each voyage's seed picks one of each band. Null for an island every voyage has.
+    /// </summary>
+    public string? Band { get; init; }
+
     /// <summary>For a reported island, the chance it is there at all.</summary>
     public double ExistsChance { get; init; } = 1;
 

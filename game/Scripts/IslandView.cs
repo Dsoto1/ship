@@ -65,7 +65,11 @@ public partial class IslandView : Node3D
 
         _built = island.Id;
         // A high island for a long sighting range, a low one for a short.
-        var peak = island.SightingLeagues >= 9 ? 9f : 2.5f;
+        var peak = island.SightingLeagues >= 11 ? 14f : island.SightingLeagues >= 9 ? 9f : 2.5f;
+        // Bare rock where there is no water to grow anything; green where there is.
+        var barren = island.Spring <= 0;
+        var low = barren ? new Color(0.45f, 0.44f, 0.41f) : new Color(0.2f, 0.32f, 0.18f);
+        var high = barren ? new Color(0.62f, 0.61f, 0.58f) : new Color(0.32f, 0.38f, 0.27f);
         var radius = island.SightingLeagues >= 9 ? 14f : 11f;
         const int rings = 10;
         const int segments = 28;
@@ -79,7 +83,7 @@ public partial class IslandView : Node3D
             var height = ring == rings ? -0.5f : peak * Mathf.Pow(Mathf.Max(0, 1 - t * t), 1.4f) * (1f + 0.15f * Mathf.Sin(theta * 2f)) + 0.15f;
             var colour = t > 0.93f ? new Color(0.86f, 0.87f, 0.83f)
                 : t > 0.82f ? new Color(0.76f, 0.7f, 0.52f)
-                : new Color(0.2f, 0.32f, 0.18f).Lerp(new Color(0.32f, 0.38f, 0.27f), Mathf.Clamp(height / peak, 0, 1));
+                : low.Lerp(high, Mathf.Clamp(height / peak, 0, 1));
             return (new Vector3(Mathf.Sin(theta) * r, water + height, Mathf.Cos(theta) * r), colour);
         }
 

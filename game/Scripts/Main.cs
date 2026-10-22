@@ -670,7 +670,7 @@ public partial class Main : Node3D
         _shipSound.Sea(inPort || ashore || voyage is null ? 0f : _seaState, inPort || ashore || weather is null ? 0f : (float)weather.WindLeaguesPerHour, Mathf.Max(_seaFog, _deck.Cutaway ? 0.7f : 0f), pumping, (float)delta);
         _coastView.Show(inPort ? null : voyage?.Navigation, _runner.Coast, _content.Voyage?.Route?.Bearing ?? 0, _shipCentre, _camera.Size, _world.Darkness, _gloom, (float)delta);
         var raised = inPort || voyage?.Navigation is not { Call: { Sighted: true } call } ? null
-            : _content.Voyage?.Route?.Islands.FirstOrDefault(i => i.Id == call.Island);
+            : _runner.Islands.FirstOrDefault(i => i.Id == call.Island);
         _islandView.Show(raised, raised is null ? default : _runner.IslandTruth(raised).At, voyage?.Navigation, voyage?.Navigation?.Call?.Anchored == true,
             _content.Voyage?.Route?.Bearing ?? 0, _shipCentre, _camera.Size, _world.Darkness, _gloom, (float)delta);
         var cooking = _runner.Campaign.ActiveTasks.Values.Any(task => task.DefinitionId == "task.cook");
