@@ -64,7 +64,7 @@ against the code as it stands: **Yes**, **Partly** or **No**, with where it is o
 | Spec | Now | Missing |
 |---|---|---|
 | §7 Same goods, continuous state | Quantity persists. Provenance only where it matters: Hob's sacks and barrels are their own items, spoil and sicken. | Containers with a history (a cask that leaked, a barrel used for water ashore). |
-| §11–12 Physical logistics, local storage | Stores are landed by hand, boat-load by boat-load, and kept dry or not by where they lie. | The camp's store is one pool: a task takes its poles from it wherever the worker stands. **"Don't teleport resources globally" is broken here.** |
+| §11–12 Physical logistics, local storage | **Now kept** (THE_MOVE): each camp's stores lie in one place, the beach stack or the storehouse. What is brought in is carried there by hand, materials are taken up there on the way to the work, and between camps everything is carried. | Several stores in one camp (a workshop's tools, a cache by the work). |
 | §18 Projection and rationing | Days of food and water at sea; short rations as a standing order at sea. | Rationing ashore; projections in ranges ("~18–22 days"). |
 | §22 An intact ship has a cost | The ship rides at anchor and her hull wears. | Choosing who stays aboard, and using her afterwards for fishing, trading or exploring by sea. |
 | §28 Bottlenecks named | The camp's "still wanting" list; the first-days report. | Each project saying why it has stopped: "Storehouse stalled: no axe free". |
@@ -91,7 +91,7 @@ against the code as it stands: **Yes**, **Partly** or **No**, with where it is o
 | No separate settlement inventory | **Yes:** the shared store follows from ship to camp. |
 | No reset at landfall | **Yes.** |
 | No anonymous workers | **Yes.** |
-| No teleporting resources globally | **No** ashore: one pool (above). |
+| No teleporting resources globally | **Yes**, since THE_MOVE: carried within a camp and between camps. |
 | No enormous production chains | **Yes.** |
 | No dozens of meaningless resources | **Yes.** |
 | No infinite labour without rest | **Yes:** fatigue and rest. |
