@@ -244,4 +244,81 @@ public sealed class WorldTests
         loaded.Advance(8 * 24 * 60);
         Assert.Equal(SaveSerializer.Serialize(runner.Campaign), SaveSerializer.Serialize(loaded.Campaign));
     }
+
+    [Fact]
+    public void TheGarrisonsSurvivorIsFoundAtMahenuAndMayJoinTheCamp()
+    {
+        var runner = Landed(ahuneri: 3);
+        runner.Advance(24 * 60);
+        var world = World(runner);
+        var party = runner.Campaign.Crew.Where(c => c.Id != runner.Campaign.CaptainId && c.CanWork).Take(2).Select(c => c.Id).ToList();
+        // Not before his story is known: Mahenu keeps him.
+        Assert.True(runner.SendParty(party, "place.mahenu", "visit").Succeeded);
+        for (var hour = 0; hour < 10 * 24 && world.Journeys.Count > 0; hour++)
+        {
+            runner.Advance(60);
+            runner.DeveloperDismissMeeting();
+        }
+
+        Assert.Equal(0, world.Survivor);
+        runner.DeveloperLearn("know.garrison_mahenu");
+        Assert.True(runner.SendParty(party, "place.mahenu", "visit").Succeeded);
+        for (var hour = 0; hour < 12 * 24 && world.Meeting?.Kind != "survivor"; hour++)
+        {
+            runner.Advance(60);
+            if (world.Meeting?.Kind is { } kind && kind != "survivor")
+            {
+                runner.DeveloperDismissMeeting();
+            }
+        }
+
+        Assert.Equal("Gaspar Lezo", runner.DescribeMeeting()!.Value.Title);
+        Assert.Contains(runner.MeetingChoices(), c => c.Id == "join" && c.Note!.Contains("Oruwai", StringComparison.Ordinal));
+        var crew = runner.Campaign.Crew.Count();
+        var oruwai = world.Communities["people.oruwai"].Trust;
+        Assert.True(runner.ResolveMeeting("join").Result.Succeeded);
+        Assert.Null(world.Meeting);
+        Assert.Equal(3, world.Survivor);
+        Assert.Equal(crew + 1, runner.Campaign.Crew.Count());
+        var gaspar = runner.Campaign.Crew.Single(c => c.Name == "Gaspar Lezo");
+        Assert.Equal(4, gaspar.Languages.Get("language.ahuneri"));
+        Assert.True(runner.Campaign.Placements.ContainsKey(gaspar.Id));
+        Assert.True(world.Communities["people.oruwai"].Trust < oruwai);
+        // He interprets now, and is saved with the camp.
+        Assert.Equal(gaspar.Id, runner.Interpreter(Shipped.Shore!.Region!.Community("people.mahenu")!).Who!.Id);
+        var json = SaveSerializer.Serialize(runner.Campaign);
+        Assert.Equal(json, SaveSerializer.Serialize(new SimulationRunner(SaveSerializer.Deserialize(json, Shipped), Shipped).Campaign));
+    }
+
+    [Fact]
+    public void AMeetingEndsOfItselfAndAQuestionRefusedIsNotPressed()
+    {
+        var runner = Landed(ahuneri: 3);
+        var world = World(runner);
+        for (var hour = 0; hour < 10 * 24 && world.Meeting is null; hour++)
+        {
+            runner.Advance(60);
+        }
+
+        var choices = runner.MeetingChoices();
+        var gift = choices.First(c => c.Id.StartsWith("answer:", StringComparison.Ordinal) || c.Id == "accept").Id;
+        runner.ResolveMeeting(gift);
+        // Mahenu gives no leave for Oruwai's wood: it is not theirs to give.
+        Assert.DoesNotContain(runner.MeetingChoices(), c => c.Id == "leave:wood");
+        var rounds = 0;
+        while (world.Meeting is not null && rounds++ < 40)
+        {
+            var next = runner.MeetingChoices().FirstOrDefault(c => c.Available && c.Id.StartsWith("ask:", StringComparison.Ordinal))
+                       ?? runner.MeetingChoices().FirstOrDefault(c => c.Available && c.Id.StartsWith("trade:", StringComparison.Ordinal))
+                       ?? runner.MeetingChoices().First(c => c.Available && c.Id != "farewell");
+            var asked = runner.ResolveMeeting(next.Id);
+            if (next.Id.StartsWith("ask:", StringComparison.Ordinal) && asked.Resolution is { Succeeded: false } && world.Meeting is not null)
+            {
+                Assert.False(runner.MeetingChoices().Single(c => c.Id == next.Id).Available);
+            }
+        }
+
+        Assert.Null(world.Meeting);
+        Assert.InRange(rounds, 1, 16);
+    }
 }

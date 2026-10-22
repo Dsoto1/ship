@@ -169,6 +169,12 @@ public sealed partial class SimulationRunner
             wanted += camp.Buildings.Count(b => b.Condition < RepairBelow) * 4;
         }
 
+        // The palisade ordered wants its stakes: what is left of it to raise, at a tenth a turn.
+        if (camp.PalisadeOrdered && Content.Tasks.TryGetValue("task.raise_palisade", out var raise) && raise.BuildsAmount > 0)
+        {
+            wanted += (int)Math.Ceiling(Math.Round((1 - camp.Work(CampWorks.Palisade)) / raise.BuildsAmount, 6)) * raise.Consumes.GetValueOrDefault(item);
+        }
+
         // Planks with no ruin to salvage them from are sawn from poles at the workshop.
         if (item == "item.poles" && StockLeft("camp_timber") <= 0 && StandingOf(b => b.Mends).Any()
             && Content.Tasks.TryGetValue("task.pit_saw_planks", out var saw) && saw.Makes.GetValueOrDefault("item.plank") is > 0 and var made)

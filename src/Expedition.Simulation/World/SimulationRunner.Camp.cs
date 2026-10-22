@@ -4,6 +4,7 @@ using Expedition.Simulation.Characters;
 using Expedition.Simulation.Core;
 using Expedition.Simulation.History;
 using Expedition.Simulation.Shore;
+using Expedition.Simulation.Items;
 using Expedition.Simulation.Tasks;
 using Expedition.Simulation.Voyage;
 
@@ -128,6 +129,9 @@ public sealed partial class SimulationRunner
             camp.Find(known);
         }
 
+        // Ashore the stores are no longer held to the hold's room: they are stacked under cover, in the
+        // storehouse, or (the logs) on the beach.
+        Campaign.SharedStore.Capacity = InventoryCapacity.Unlimited;
         Campaign.Camp = camp;
         BeginWorld(camp);
 

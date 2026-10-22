@@ -116,6 +116,9 @@ public sealed class Meeting
 
     /// <summary>The item taken, for a theft.</summary>
     public string? Item { get; init; }
+
+    /// <summary>What was put to them and refused at this meeting: not to be pressed again until they next come.</summary>
+    public HashSet<string> Refused { get; init; } = [];
 }
 
 /// <summary>
@@ -174,6 +177,9 @@ public sealed class WorldState
 
     /// <summary>Thefts from the camp.</summary>
     public int Thefts { get; internal set; }
+
+    /// <summary>Gaspar Lezo, the garrison's survivor at Mahenu: 0 not met; 1 met by a party; 2 come to the camp to talk; 3 joined; 4 stays at Mahenu, until a party sees him there again.</summary>
+    public int Survivor { get; internal set; }
 
     /// <summary>The charter's judgement when the relief ship came: kept, in part, or revoked; null before.</summary>
     public string? Charter { get; internal set; }

@@ -1674,11 +1674,11 @@ public static class SaveSerializer
             Left = j.Left, Arrives = j.Arrives, Returns = j.Returns, Arrived = j.Arrived, Logs = j.Logs, Report = j.Report.ToList(),
         }).ToList(),
         Meeting = world.Meeting is { } m
-            ? new MeetingData { Kind = m.Kind, Community = m.Community, Tick = m.Tick, Round = m.Round, GiftItem = m.Gift?.Item, GiftCount = m.Gift?.Count ?? 0, Item = m.Item }
+            ? new MeetingData { Kind = m.Kind, Community = m.Community, Tick = m.Tick, Round = m.Round, GiftItem = m.Gift?.Item, GiftCount = m.Gift?.Count ?? 0, Item = m.Item, Refused = m.Refused.Order(StringComparer.Ordinal).ToList() }
             : null,
         NextJourney = world.NextJourney, PeaceBroken = world.PeaceBroken, PalisadeExplained = world.PalisadeExplained, PalisadeNoticed = world.PalisadeNoticed,
         LetterSent = world.LetterSent, Brennish = world.Brennish, BrennishWarned = world.BrennishWarned, LogsSold = world.LogsSold, Thefts = world.Thefts,
-        Charter = world.Charter,
+        Survivor = world.Survivor, Charter = world.Charter,
     };
 
     private static Shore.WorldState RestoreWorld(WorldData saved)
@@ -1687,7 +1687,7 @@ public static class SaveSerializer
         {
             NextJourney = saved.NextJourney, PeaceBroken = saved.PeaceBroken, PalisadeExplained = saved.PalisadeExplained, PalisadeNoticed = saved.PalisadeNoticed,
             LetterSent = saved.LetterSent, Brennish = saved.Brennish, BrennishWarned = saved.BrennishWarned, LogsSold = saved.LogsSold, Thefts = saved.Thefts,
-            Charter = saved.Charter,
+            Survivor = saved.Survivor, Charter = saved.Charter,
         };
         foreach (var place in saved.Places)
         {
@@ -1749,6 +1749,7 @@ public static class SaveSerializer
             {
                 Kind = meeting.Kind, Community = meeting.Community, Tick = meeting.Tick, Round = meeting.Round, Item = meeting.Item,
                 Gift = meeting.GiftItem is { } gift ? (gift, meeting.GiftCount) : null,
+                Refused = [.. meeting.Refused],
             };
         }
 
