@@ -1,0 +1,137 @@
+# The economy loop against the game as built
+
+**Authority:** `docs/ECONOMY_LOOP.md`, the owner's cross-phase spec, 2026-10-22.
+**Status:** audit, 2026-10-22. Each line of the spec's acceptance (§59) and guardrails (§58) is checked
+against the code as it stands: **Yes**, **Partly** or **No**, with where it is or what is missing.
+
+## What already holds
+
+**One economy across every phase (§1, §21, §55)**
+- **Yes.** The characters, tasks, tools, inventory, needs and chronicle are one model, from the port to the
+  camp.
+- Cargo bought in port is what is aboard, and what reaches land; nothing resets at landfall:
+  - at anchor, the stores come ashore by the boat;
+  - after a wreck, they are what the boat saved, plus what can be got at from the wreck.
+
+**People, not workers (§2, §4, §5)**
+- **Yes.** Every task is done by a named person with skills, injuries and relationships.
+- Port candidates are multi-skilled, and what they claim is checked against what is known (claimed, rumoured,
+  observed).
+- Berths and the purse limit the roster.
+
+**Watches are the ship's workplaces (§9)**
+- **Yes:** the watch bill (R4d).
+
+**Tools, knowledge and apprentices (§13–15)**
+- **Yes.**
+  - Tools are required by tasks, wear out and break, and can be mended at the workshop.
+  - Knowledge lives in people (languages, skills) and in the coast's lore, which a people tells (R8).
+  - Mentorship teaches by working alongside (R4f).
+
+**Food, water and health (§16–17, §19)**
+- **Yes.**
+  - **Food:** bought, eaten, spoiling, foraged, fished, grown, traded.
+  - **Water:** casks, then the spring, then the well.
+  - **Health:** sickness and injury take people off work, nursing takes labour, and overwork hurts people.
+
+**Crises from causes (§20)**
+- **Partly.** The camp's cascades are real: wet season → fever → fewer hands → the work stops. The 180-day
+  test runs show them.
+- At sea many crises are still event cards.
+
+**Construction (§24–25)**
+- **Yes.** The camp grows by stages. Buildings go up phase by phase, with real materials, tools, labour and
+  time, and their quality comes from the work.
+
+**Organic paths (§26)**
+- **Yes.** Paths wear where feet go and grow back (R7, NATURAL_GROUND).
+
+**Exploration (§37)**
+- **Yes.** Parties carry food, take days, and bring back the coast (R8).
+
+**External communities (§38)**
+- **Yes.** Three peoples with their own trust, grievances, wants, ground and lore.
+
+**The rest of this group**
+- **Short production chains (§27):** **Yes.**
+- **Failure continues (§46):** **Partly.** The wreck continues the game, and so does a charter failed at day
+  180. Relocation is not built yet (step 2 below).
+- **Save and load (§51):** **Yes**, mid-storm and mid-build.
+
+## What is partly there
+
+| Spec | Now | Missing |
+|---|---|---|
+| §7 Same goods, continuous state | Quantity persists. Provenance only where it matters: Hob's sacks and barrels are their own items, spoil and sicken. | Containers with a history (a cask that leaked, a barrel used for water ashore). |
+| §11–12 Physical logistics, local storage | Stores are landed by hand, boat-load by boat-load, and kept dry or not by where they lie. | The camp's store is one pool: a task takes its poles from it wherever the worker stands. **"Don't teleport resources globally" is broken here.** |
+| §18 Projection and rationing | Days of food and water at sea; short rations as a standing order at sea. | Rationing ashore; projections in ranges ("~18–22 days"). |
+| §22 An intact ship has a cost | The ship rides at anchor and her hull wears. | Choosing who stays aboard, and using her afterwards for fishing, trading or exploring by sea. |
+| §28 Bottlenecks named | The camp's "still wanting" list; the first-days report. | Each project saying why it has stopped: "Storehouse stalled: no axe free". |
+| §29–30 Priorities and delegation | Camp priorities and choices; standing orders at sea. | Priorities per project, and levels (critical, paused); foremen. |
+| §34 Policies | Priorities, sailcloth, scouts, foraging. | Rations, working hours, reserve targets. |
+| §43 Readiness | The port's checklist (hands, the way, stores for the passage). | The spec's two-part summary: voyage cover and landfall capability, in words, no score. |
+| §44 Self-sufficiency | The camp's stage, and the 90-day verdict. | The milestones: reliable water, first storehouse, harvest, a tool replaced locally, an apprentice trained, a stable trade. |
+
+## What is not there yet
+
+| Spec | Missing | Where it goes |
+|---|---|---|
+| §31 Workplaces led by a person | Buildings give work places, but no one leads them, and the lead's skill does not shape throughput, teaching or safety. | Step W |
+| §32 Households (now approved: couples and children) | No households, dwellings by family, or shared possessions. | Step P |
+| §33 Community condition | Each person has stress and grievances, but the community has no explainable state ("Strained: recent deaths; poor food variety; + successful harvest"). | Step C |
+| §39 Population growth as people | Only Gaspar Lezo joins. The relief ship brings no settlers. | Step P |
+| §40 Distribution | People eat from the one pool. Kitchens and households distributing comes with households. | Step P |
+| §45 Buildings carry history | Buildings record quality and condition, but not when they were built, by whom, from what, or what they survived. | Step W (small) |
+
+## The guardrails (§58)
+
+| Guardrail | Kept? |
+|---|---|
+| No separate settlement inventory | **Yes:** the shared store follows from ship to camp. |
+| No reset at landfall | **Yes.** |
+| No anonymous workers | **Yes.** |
+| No teleporting resources globally | **No** ashore: one pool (above). |
+| No enormous production chains | **Yes.** |
+| No dozens of meaningless resources | **Yes.** |
+| No infinite labour without rest | **Yes:** fatigue and rest. |
+| Not every crisis a random card | **Partly:** the camp's are causal; the sea's are mostly cards. |
+| No vending-machine communities | **Yes:** they have their own minds, and trade is at their valuation. |
+| Delegation keeps names | **Yes** (there is little delegation yet). |
+| No opaque happiness number | **Yes:** there is no number at all yet. |
+
+## The order I propose
+
+Each step is one pull request, built on the last. It folds in the steps already agreed with the owner (the
+first camp then a better site, people joining, couples and children, playing on past day 180).
+
+1. **Step 2, the move: stores where they lie, and hauling.**
+   - **The move:** the first camp is temporary. Parties find and judge sites; the charter scores where the
+     settlement stands. Moving is done by the people themselves: packs, the boat, trips along the shore.
+   - **Stores where they lie:** stores held in places (the beach cache, the storehouse, the workshop, the
+     ship). Hauling moves them between places. A task draws from the nearest store that holds what it needs,
+     and walks there (§11–12, §46).
+   - This mends the guardrail that is broken now, and makes the move real: no goods teleport to the new site.
+2. **Step W, workplaces and the history of things.**
+   - Workplaces have a lead, who sets quality, pace and teaching (§31).
+   - Each project says why it has stopped (§28).
+   - Buildings carry their history (§45).
+   - Priorities per project (§29).
+3. **Step C, the community's condition and its policies.**
+   - The community's condition in words, with its causes (§33).
+   - Rations ashore, working hours and reserve targets (§18, §34).
+   - Self-sufficiency milestones (§44).
+   - Projections given in ranges.
+4. **Step P, people.**
+   - **Arrivals:** the relief ship's settlers when the charter is kept, castaways, Brennish deserters, people of
+     the coast who choose to come (§39).
+   - **Households:** couples, including with people of the coast, shaped by both sides' customs (§32).
+   - **Children and years:** births, and children growing up over years after day 180.
+   - **Distribution:** by household and kitchen (§40).
+5. **Step S, the ship after landfall.**
+   - Who stays aboard.
+   - The ship fishing, trading and exploring by sea.
+   - Her own upkeep (§22, §56).
+   - If approved: the guns, with powder and shot as cargo, gunners, and privateers met by decision rather than
+     battle.
+6. **Port readiness** in the spec's two-part summary (§43), and **containers with a history** (§7), as small
+   passes alongside.
