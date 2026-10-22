@@ -41,7 +41,7 @@ This file tracks status and breaks the next work into tickets.
 | R3 | Visual validation: the four port scenes of PORT_EXPERIENCE §21, then Test B ship, with the hybrid pipeline (D-021) | Part one done (2026-10-19): A and C judged, all staged, baseline profiled; part two after C-1 (D-028) |
 | R4a | Wind, heading and sailing: wind direction, visibility, warning signs; why she is slow (VOYAGE §5, §20) | Largely done (2026-10-21): she turns to her course; wind direction, points of sail, tacking, braced yards, heel. Visibility and warning signs not yet |
 | R4b | True vs estimated position; the chart: dead reckoning, a latitude sight, uncertainty region, route legs, annotations (NAVIGATION) | Largely done (2026-10-21): truth and reckoning, the noon sight and astrolabe, the chart with its doubt. Route legs and annotations not yet |
-| R4c | Standing navigation orders and configurable interrupts; alerts by severity (VOYAGE §8, §35; NAV §7–9) | Planned |
+| R4c | Standing navigation orders and configurable interrupts; alerts by severity (VOYAGE §8, §35; NAV §7–9) | Done (2026-10-22): standing orders kept by the officer of the watch, and calls with thresholds the captain sets. Following plotted legs comes with route legs (R4b) |
 | R4d | Watch rotation and the assignment board (VOYAGE §9, §17) | Done (2026-10-21): the watch bill, the round, the day's work, all hands, the turned-out watch, tired hands' mistakes |
 | R4e | Localized damage, repair quality and history, cargo zones, the storm with preparation (VOYAGE §4, §21–23) | Done (2026-10-21): warning, three preparations, leaks plugged or patched with their history, cargo shifting, stores wetted. Cargo zones not yet |
 | R4f | Medical crisis, grievances by stages, skill growth and mentorship; events become state-caused (VOYAGE §15, §18–19, §25–26, §42) | Done (2026-10-22): healing and care, sickness from the ship's state and spreading, sanitation, scurvy; grievances in four stages with complaints, promises and refusal; practice and mentors. Mutiny itself not yet |
@@ -2536,3 +2536,34 @@ ill and about ten skills raised on a typical crossing.
 
 Saved in format 34 (`Campaign.Life`, and a new random stream, "crew", for all of it). Tests:
 `CrewLifeTests` (14). Screenshots: `docs/screenshots/r4f-people.jpg`, `r4f-voyage.jpg`.
+
+### R4c — Standing orders, and when to call the captain
+
+Time compression only works if the captain can trust the ship to the officer of the watch, and be called
+when it matters (VOYAGE §8, §35; NAVIGATION §7, §9). New in the Ship screen, *Standing orders*
+(`Voyage/StandingOrders.cs`, `SimulationRunner.Orders.cs`):
+
+**What the officer of the watch does without asking.** Each is acted on once as its condition comes,
+and told in the chronicle and as a notice:
+- **Heave to in a storm** (sea 2.4 and up), and make sail again when it eases below heavy weather.
+- **Take in sail from pressing on** when it blows hard.
+- **Make ready when heavy weather is seen coming:** batten down, lash the cargo, strike the topmasts.
+- **Call all hands when the bilge passes N%,** and dismiss them once she is pumped down.
+- **Short rations when the stores run under N days.**
+
+**When to call the captain.** Each call pauses the game: a new auto-pause category, "When the standing
+orders call me", on by default.
+- **Water or food will last under N days** (on by default at 7).
+- **The bilge passes N%** (on by default at 40).
+- **The reckoning may be out by N leagues.** The measure of doubt that draws the chart's ellipse now
+  lives in the simulation (`ReckoningDoubt`).
+- **Noon, for the sun.**
+- **The wind shifts more than N°.**
+
+**Each call comes once, as the thing comes,** and again only after it has passed: the bilge pumped well
+down, the stores back above the mark. So running at 720× never skips a consequence silently, and never
+nags.
+
+Orders out of reason are refused. Saved in format 35 (`VoyageData.Orders`, with what the orders have
+done and not undone). Tests: `StandingOrdersTests` (9). Checkboxes throughout the interface are now
+drawn in brass, so they can be seen. Screenshot: `docs/screenshots/r4c-orders.jpg`.

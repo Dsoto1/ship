@@ -409,7 +409,7 @@ public sealed class Navigation
         return (WindFrom + Tack * ClosestToWind + 360) % 360;
     }
 
-    private static double Wrap(double degrees) => ((degrees % 360) + 540) % 360 - 180;
+    internal static double Wrap(double degrees) => ((degrees % 360) + 540) % 360 - 180;
 
     /// <summary>Moves her along her course (or back), truth and reckoning alike: time gained or lost.</summary>
     internal void Shift(double leagues)

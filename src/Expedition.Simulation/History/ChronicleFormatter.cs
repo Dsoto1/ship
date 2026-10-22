@@ -175,6 +175,26 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
                 $"{who} is learning {SkillWord(entry.Get(ChronicleParameters.To))} from {(entry.Characters.Count > 1 ? Name(entry.Characters[1]) : "a shipmate")}.",
             ChronicleEntryKind.CargoInjury =>
                 $"Cargo breaking loose caught {who}: {Condition(entry.Get(ChronicleParameters.Condition)).ToLowerInvariant()} (-{entry.Get(ChronicleParameters.Damage)} health){Because(entry)}.",
+            ChronicleEntryKind.StandingOrderActed => entry.Get(ChronicleParameters.Reason) switch
+            {
+                Voyage.StandingOrderReasons.HoveTo => $"By the captain's standing order, the officer of the watch hove her to: {WeatherName(entry.Get(ChronicleParameters.To))}.",
+                Voyage.StandingOrderReasons.MadeSail => "The blow easing, the officer of the watch made sail again, as ordered.",
+                Voyage.StandingOrderReasons.Eased => $"By standing order, sail was taken in from pressing on: {WeatherName(entry.Get(ChronicleParameters.To))}.",
+                Voyage.StandingOrderReasons.Preparing => "By standing order, hands were set to make ready for heavy weather.",
+                Voyage.StandingOrderReasons.AllHands => $"By standing order, all hands were called: the bilge at {entry.Get(ChronicleParameters.To)}%.",
+                Voyage.StandingOrderReasons.Dismissed => "The bilge pumped down, all hands were dismissed, as ordered.",
+                Voyage.StandingOrderReasons.Rations => $"By standing order, the crew were put on short rations: the stores at about {entry.Get(ChronicleParameters.To)} days.",
+                var other => $"A standing order was acted on ({other}).",
+            },
+            ChronicleEntryKind.CaptainCalled => entry.Get(ChronicleParameters.Reason) switch
+            {
+                Voyage.StandingOrderReasons.WakeStores => $"The captain was called: the {entry.Get(ChronicleParameters.Need) ?? "stores"} will last only about {entry.Get(ChronicleParameters.Level)} days.",
+                Voyage.StandingOrderReasons.WakeBilge => $"The captain was called: the bilge at {entry.Get(ChronicleParameters.Level)}%.",
+                Voyage.StandingOrderReasons.WakeDoubt => $"The captain was called: the reckoning may be out by {entry.Get(ChronicleParameters.Level)} leagues {(entry.Get(ChronicleParameters.Need) == "across" ? "east or west" : "north or south")}.",
+                Voyage.StandingOrderReasons.WakeNoon => "The captain was called: noon, and the sun to take.",
+                Voyage.StandingOrderReasons.WakeWind => $"The captain was called: the wind has shifted {entry.Get(ChronicleParameters.Level)}°, and is now from the {entry.Get(ChronicleParameters.To)}.",
+                var other => $"The captain was called ({other}).",
+            },
             _ => $"{entry.Kind}: {string.Join(", ", entry.Parameters.Select(p => $"{p.Key}={p.Value}"))}",
         };
     }

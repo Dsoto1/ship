@@ -156,9 +156,48 @@ public static class Ui
         theme.SetColor("font_focus_color", "Button", Ink);
         theme.SetColor("font_disabled_color", "Button", Disabled);
         theme.SetColor("font_color", "CheckBox", Ink);
+        theme.SetColor("font_hover_color", "CheckBox", Brass);
+        theme.SetColor("font_pressed_color", "CheckBox", Ink);
+        theme.SetColor("font_hover_pressed_color", "CheckBox", Brass);
+        theme.SetIcon("unchecked", "CheckBox", CheckIcon(false));
+        theme.SetIcon("checked", "CheckBox", CheckIcon(true));
+        var flat = new StyleBoxEmpty { ContentMarginLeft = SpaceS, ContentMarginRight = SpaceS, ContentMarginTop = SpaceXs, ContentMarginBottom = SpaceXs };
+        foreach (var state in new[] { "normal", "hover", "pressed", "hover_pressed", "focus", "disabled" })
+        {
+            theme.SetStylebox(state, "CheckBox", flat);
+        }
         theme.SetConstant("separation", "VBoxContainer", SpaceS);
         theme.SetConstant("separation", "HBoxContainer", SpaceM);
         return theme;
+    }
+
+    // A checkbox drawn in brass: an open square, or the square with a tick-mark fill.
+    private static ImageTexture CheckIcon(bool on)
+    {
+        const int size = 16;
+        var image = Image.CreateEmpty(size, size, false, Image.Format.Rgba8);
+        image.Fill(new Color(0, 0, 0, 0));
+        for (var y = 1; y < size - 1; y++)
+        {
+            for (var x = 1; x < size - 1; x++)
+            {
+                var edge = x == 1 || y == 1 || x == size - 2 || y == size - 2;
+                if (edge)
+                {
+                    image.SetPixel(x, y, Brass);
+                }
+                else if (on && x >= 4 && y >= 4 && x <= size - 5 && y <= size - 5)
+                {
+                    image.SetPixel(x, y, Brass);
+                }
+                else
+                {
+                    image.SetPixel(x, y, new Color(0, 0, 0, 0.35f));
+                }
+            }
+        }
+
+        return ImageTexture.CreateFromImage(image);
     }
 
     /// <summary>A panel style: fill, optional border, padding.</summary>

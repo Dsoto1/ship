@@ -227,4 +227,10 @@ public enum ChronicleEntryKind
     /// damage; character: who).
     /// </summary>
     CargoInjury,
+
+    /// <summary>The officer of the watch acted on a standing order (parameters: reason = which, a <see cref="Voyage.StandingOrderReasons"/>; to = detail).</summary>
+    StandingOrderActed,
+
+    /// <summary>The captain was called, as the standing orders say (parameters: reason, level, need or to = detail).</summary>
+    CaptainCalled,
 }

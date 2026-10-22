@@ -582,6 +582,15 @@ public sealed record VoyageData
     /// <summary>Every leak sprung, with its repair (format 31).</summary>
     public IReadOnlyList<LeakData> Leaks { get; init; } = [];
 
+    /// <summary>The captain's standing orders. Added in format 35.</summary>
+    public Voyage.StandingOrders? Orders { get; init; }
+
+    /// <summary>What the standing orders have done and not undone, and calls made and not reset. Added in format 35.</summary>
+    public IReadOnlyList<string> OrderFlags { get; init; } = [];
+
+    /// <summary>The wind when last noted for the call on a shift. Added in format 35.</summary>
+    public double? WindNoted { get; init; }
+
 
     /// <summary>Position, course and reckoning, if the voyage has a route (format 26).</summary>
     public NavigationData? Navigation { get; init; }

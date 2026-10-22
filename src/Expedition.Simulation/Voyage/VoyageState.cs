@@ -152,6 +152,32 @@ public sealed class VoyageState
     /// <summary>The weather that comes when this spell ends, once foreseen (some hours before), or null.</summary>
     public string? NextWeatherId { get; internal set; }
 
+    private readonly HashSet<string> _orderFlags = new(StringComparer.Ordinal);
+
+    /// <summary>The captain's standing orders.</summary>
+    public StandingOrders Orders { get; internal set; } = new();
+
+    /// <summary>
+    /// What the standing orders have done and not yet undone, and which calls have been made and not yet
+    /// reset: so each is acted on once as its condition comes, not every minute it lasts.
+    /// </summary>
+    public IReadOnlySet<string> OrderFlags => _orderFlags;
+
+    /// <summary>The wind's direction when last noted for the call on a shift, or null.</summary>
+    public double? WindNoted { get; internal set; }
+
+    internal bool Flag(string flag) => _orderFlags.Add(flag);
+
+    internal bool Unflag(string flag) => _orderFlags.Remove(flag);
+
+    internal void RestoreOrders(StandingOrders orders, IEnumerable<string> flags, double? windNoted)
+    {
+        Orders = orders;
+        _orderFlags.Clear();
+        _orderFlags.UnionWith(flags);
+        WindNoted = windNoted;
+    }
+
     private readonly HashSet<string> _prepared = [];
     private readonly List<Leak> _leaks = [];
 

@@ -28,6 +28,7 @@ public enum AutoPause
     Events,
     Landfall,
     Crew,
+    Called,
 }
 
 /// <summary>
@@ -54,7 +55,7 @@ public partial class Hud : CanvasLayer
     private readonly Dictionary<string, Gauge> _needBars = [];
     private readonly Dictionary<PanelId, Button> _navButtons = [];
     private readonly Dictionary<PanelId, VBoxContainer> _panelBodies = [];
-    private readonly HashSet<AutoPause> _autoPause = [AutoPause.InjuryAndDeath, AutoPause.Weather, AutoPause.ShipDamage, AutoPause.Shortage, AutoPause.Events, AutoPause.Landfall];
+    private readonly HashSet<AutoPause> _autoPause = [AutoPause.InjuryAndDeath, AutoPause.Weather, AutoPause.ShipDamage, AutoPause.Shortage, AutoPause.Events, AutoPause.Landfall, AutoPause.Called];
 
     private Control _root = null!;
     private Label _clock = null!;
@@ -858,6 +859,7 @@ public partial class Hud : CanvasLayer
                      (AutoPause.Events, "Decisions for the captain", 14),
                      (AutoPause.Landfall, "The coast: land sighted, marks to know", 15),
                      (AutoPause.Crew, "The crew: sickness spreading, grievances, skills learned", 16),
+                     (AutoPause.Called, "When the standing orders call me", 17),
                  })
         {
             _menu.AddCheckItem(label, id);
@@ -883,7 +885,7 @@ public partial class Hud : CanvasLayer
                 GetTree().Root.ContentScaleFactor = _uiScale;
                 Toast($"Interface size {_uiScale:P0}.");
                 break;
-            case (>= 10 and <= 13) or 15 or 16:
+            case (>= 10 and <= 13) or (>= 15 and <= 17):
                 var category = (AutoPause)(id - 10);
                 if (!_autoPause.Remove(category)) _autoPause.Add(category);
                 Toast(_autoPause.Contains(category) ? "Will pause for this." : "Will notify without pausing.");
@@ -1365,6 +1367,11 @@ public partial class Hud : CanvasLayer
             }
 
             // Leads are already said in conversation and kept in the journal; no notice for them.
+            if (entry.Kind is ChronicleEntryKind.StandingOrderActed)
+            {
+                Toast(_formatter.Format(entry));
+            }
+
             if (entry.Kind is ChronicleEntryKind.CrewHired or ChronicleEntryKind.Noticed or ChronicleEntryKind.LeftPort
                 or ChronicleEntryKind.ConvoyWarning or ChronicleEntryKind.LateFee or ChronicleEntryKind.Landfall or ChronicleEntryKind.RationingChanged)
             {
@@ -2083,6 +2090,8 @@ public partial class Hud : CanvasLayer
         _rations.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
         rationRow.AddChild(_rations);
 
+        BuildStandingOrders(body);
+
         // Heavy weather: the signs, the preparations as a checklist with the order beside each, the leaks.
         var storm = Ui.Card(body, "Heavy weather");
         _stormBox = storm;
@@ -2136,6 +2145,99 @@ public partial class Hud : CanvasLayer
         _watchBox.AddChild(_watchRows);
         _watchBox.AddChild(Ui.Text("Four hours on and four below through the evening and night, the dog watches shifting the round each day; by day both turn to. The watch on deck keeps the helm; the watch below sleeps once tired.",
             Ui.TextMeta, Ui.InkSoft, 340));
+    }
+
+    // The captain's standing orders: what the officer of the watch does without asking, and when to call him.
+    private sealed record OrderRow(CheckBox Box, SpinBox? Spin, Func<Expedition.Simulation.Voyage.StandingOrders, double?> Get,
+        Func<Expedition.Simulation.Voyage.StandingOrders, double?, Expedition.Simulation.Voyage.StandingOrders> With, double Default);
+
+    private readonly List<OrderRow> _orderRows = [];
+    private VBoxContainer _ordersBox = null!;
+
+    private void BuildStandingOrders(VBoxContainer body)
+    {
+        _ordersBox = Ui.Card(body, "Standing orders", "the mate keeps them");
+        _ordersBox.AddChild(Ui.Text("What the officer of the watch does without asking, so time can run on. Each order acted on is told.", Ui.TextMeta, Ui.InkSoft, 340));
+        void Row(string before, string after, double? min, double? max, double fallback,
+            Func<Expedition.Simulation.Voyage.StandingOrders, double?> get, Func<Expedition.Simulation.Voyage.StandingOrders, double?, Expedition.Simulation.Voyage.StandingOrders> with, string tip)
+        {
+            var row = new HBoxContainer { TooltipText = tip };
+            row.AddThemeConstantOverride("separation", Ui.SpaceS);
+            _ordersBox.AddChild(row);
+            var box = new CheckBox { Text = before, FocusMode = Control.FocusModeEnum.None, TooltipText = tip };
+            row.AddChild(box);
+            SpinBox? spin = null;
+            if (min is { } low && max is { } high)
+            {
+                spin = new SpinBox { MinValue = low, MaxValue = high, Step = 1, Value = fallback, CustomMinimumSize = new Vector2(70, 0), TooltipText = tip };
+                row.AddChild(spin);
+                row.AddChild(Ui.Text(after, Ui.TextBody, Ui.Ink));
+            }
+
+            var line = new OrderRow(box, spin, get, with, fallback);
+            _orderRows.Add(line);
+            box.Toggled += _ => GiveOrders();
+            if (spin is not null)
+            {
+                spin.ValueChanged += _ => { if (box.ButtonPressed) GiveOrders(); };
+            }
+        }
+
+        static double? On(bool value) => value ? 1 : null;
+        Row("Heave to in a storm; make sail when it eases", "", null, null, 1, o => On(o.HeaveToInStorm), (o, v) => o with { HeaveToInStorm = v is not null },
+            "When it blows a storm, she is hove to: almost no headway, but far less wear and leaking.");
+        Row("Take in sail from pressing on when it blows hard", "", null, null, 1, o => On(o.EaseInHeavyWeather), (o, v) => o with { EaseInHeavyWeather = v is not null },
+            "Pressing on in a gale wears her hard and frightens the crew.");
+        Row("Make ready when heavy weather is seen coming", "", null, null, 1, o => On(o.PrepareForWeather), (o, v) => o with { PrepareForWeather = v is not null },
+            "Hands set to batten down, lash the cargo and strike the topmasts as soon as the signs are seen.");
+        Row("Call all hands when the bilge passes", "%", 10, 90, 40, o => o.AllHandsAtBilge, (o, v) => o with { AllHandsAtBilge = v },
+            "Both watches to the pumps, at the cost of the watch below's sleep; dismissed once she is pumped down.");
+        Row("Short rations when the stores run under", "days", 2, 40, 15, o => o.ShortRationsUnderDays, (o, v) => o with { ShortRationsUnderDays = v },
+            "Water or food: the stores last longer, and the crew go hungry and resent it.");
+        _ordersBox.AddChild(Ui.Text("Call me when", Ui.TextBody, Ui.Brass));
+        Row("water or food will last under", "days", 1, 40, 7, o => o.WakeStoresUnderDays, (o, v) => o with { WakeStoresUnderDays = v },
+            "You are called (the game pauses) once as it comes, and again only after it has passed.");
+        Row("the bilge passes", "%", 10, 90, 40, o => o.WakeBilgeOver, (o, v) => o with { WakeBilgeOver = v }, "The pumps are losing.");
+        Row("the reckoning may be out by", "leagues", 2, 100, 20, o => o.WakeDoubtOver, (o, v) => o with { WakeDoubtOver = v },
+            "How far she may be from where you reckon: a noon sight puts the latitude right.");
+        Row("it is noon, for the sun", "", null, null, 1, o => On(o.WakeAtNoon), (o, v) => o with { WakeAtNoon = v is not null }, "The noon sight.");
+        Row("the wind shifts more than", "°", 10, 180, 45, o => o.WakeWindShift, (o, v) => o with { WakeWindShift = v }, "A shift may head her, or free her.");
+        _ordersBox.GetParent<Control>().Visible = false;
+    }
+
+    private bool _syncingOrders;
+
+    private void GiveOrders()
+    {
+        if (_syncingOrders || _watchRunner?.Campaign.Voyage is not { } ship)
+        {
+            return;
+        }
+
+        var orders = ship.Orders;
+        foreach (var row in _orderRows)
+        {
+            orders = row.With(orders, row.Box.ButtonPressed ? row.Spin?.Value ?? 1 : null);
+        }
+
+        ShowResult(_watchRunner.SetStandingOrders(orders));
+    }
+
+    private void RefreshStandingOrders(Expedition.Simulation.Voyage.VoyageState ship)
+    {
+        _ordersBox.GetParent<Control>().Visible = true;
+        _syncingOrders = true;
+        foreach (var row in _orderRows)
+        {
+            var value = row.Get(ship.Orders);
+            row.Box.SetPressedNoSignal(value is not null);
+            if (row.Spin is { } spin && value is { } number && !spin.GetLineEdit().HasFocus())
+            {
+                spin.SetValueNoSignal(number);
+            }
+        }
+
+        _syncingOrders = false;
     }
 
     private static readonly (Expedition.Simulation.Voyage.Watch Watch, string Name)[] WatchChoices =
@@ -2244,7 +2346,7 @@ public partial class Hud : CanvasLayer
         if (runner.Campaign.Voyage is not { } ship)
         {
             _shipReport.Text = "The Garza lies alongside the quay at La Bocana, sails furled, taking on stores and crew.\n\nInspection and repairs before sailing come with the port's later steps.";
-            foreach (var card in new[] { _conditionCard, _provisionsCard, _stormBox.GetParent<Control>(), _watchBox.GetParent<Control>() })
+            foreach (var card in new[] { _conditionCard, _provisionsCard, _stormBox.GetParent<Control>(), _watchBox.GetParent<Control>(), _ordersBox.GetParent<Control>() })
             {
                 card.Visible = false;
             }
@@ -2255,6 +2357,7 @@ public partial class Hud : CanvasLayer
         _conditionCard.Visible = _provisionsCard.Visible = true;
         RefreshWatchBill(runner, ship);
         RefreshStorm(runner, ship);
+        RefreshStandingOrders(ship);
 
         var repairs = runner.RepairsLeft();
         var togo = DaysToGo(ship);

@@ -252,7 +252,17 @@ public sealed partial class SimulationRunner
     // Once an hour at sea: sickness and grievances.
     private void StepShipboardLife()
     {
-        if (Campaign.Clock.Tick % SimulationClock.TicksPerHour != 0 || Campaign.Voyage is not { Outcome: VoyageOutcome.UnderWay } ship || Content.Voyage is not { } rules)
+        if (Campaign.Voyage is not { Outcome: VoyageOutcome.UnderWay } ship || Content.Voyage is not { } rules)
+        {
+            return;
+        }
+
+        if (Campaign.Clock.Tick % 10 == 0)
+        {
+            FollowStandingOrders(ship, rules);
+        }
+
+        if (Campaign.Clock.Tick % SimulationClock.TicksPerHour != 0)
         {
             return;
         }

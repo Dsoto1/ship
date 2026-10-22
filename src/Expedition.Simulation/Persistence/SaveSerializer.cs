@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 34;
+    public const int CurrentSchemaVersion = 35;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -194,6 +194,9 @@ public static class SaveSerializer
 
                 return root;
             },
+
+            // Format 35 added standing orders: an older voyage keeps the default calls and gives no orders.
+            [34] = root => root,
 
             // Format 34 added the crew's life aboard (a fresh record is made), and a random stream for it.
             [33] = root =>
@@ -675,6 +678,7 @@ public static class SaveSerializer
                     Funds = voyage.Funds, Bought = new SortedDictionary<string, int>(voyage.Bought.ToDictionary(), StringComparer.Ordinal),
                     NextWeather = voyage.NextWeatherId, Prepared = voyage.Prepared.Order(StringComparer.Ordinal).ToList(),
                     Leaks = voyage.Leaks.Select(l => new LeakData { Id = l.Id, Where = l.Where, Severity = l.Severity, Repair = l.Repair.ToString(), Tick = l.Tick, RepairedTick = l.RepairedTick }).ToList(),
+                    Orders = voyage.Orders, OrderFlags = voyage.OrderFlags.Order(StringComparer.Ordinal).ToList(), WindNoted = voyage.WindNoted,
                     Navigation = voyage.Navigation is { } n
                         ? new NavigationData
                         {
@@ -1135,6 +1139,7 @@ public static class SaveSerializer
             {
                 Id = l.Id, Where = l.Where, Severity = l.Severity, Repair = Enum.Parse<Voyage.LeakRepair>(l.Repair), Tick = l.Tick, RepairedTick = l.RepairedTick,
             }));
+            voyage.RestoreOrders(savedVoyage.Orders ?? new Voyage.StandingOrders(), savedVoyage.OrderFlags, savedVoyage.WindNoted);
             if (rules.Route is { } route)
             {
                 var bearing = route.Bearing * Math.PI / 180;

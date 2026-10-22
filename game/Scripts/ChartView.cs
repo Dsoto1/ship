@@ -398,16 +398,8 @@ public partial class ChartView : Control
         }
     }
 
-    // How far out the reckoning may be: the longitude by every day's run since the port (no fix at sea),
-    // the latitude by the days since the last sight, on top of that sight's own error.
-    internal static (double X, double Y) Uncertainty(SimulationRunner runner, Navigation navigation)
-    {
-        var day = runner.Campaign.Clock.Tick / (double)SimulationClock.TicksPerDay;
-        var x = 1.5 + 1.6 * day;
-        var last = navigation.Sights.LastOrDefault();
-        var y = last is null ? 1.5 + 1.6 * day : 3 + 1.6 * Math.Max(0, day - last.Day - 0.5);
-        return navigation.Sighted ? (0.3, navigation.Identified is null ? y : 1) : (x, y);
-    }
+    // How far out the reckoning may be (the simulation's measure).
+    internal static (double X, double Y) Uncertainty(SimulationRunner runner, Navigation navigation) => runner.ReckoningDoubt();
 
     private static string Hour(double hour) => $"{(int)hour:00}:{(int)Math.Round(hour % 1 * 60):00}";
 

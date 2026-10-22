@@ -1344,6 +1344,14 @@ public partial class Main : Node3D
                 ChronicleEntryKind.IslandSighted => (Severity.Positive, AutoPause.Landfall, "Land! The island"),
                 ChronicleEntryKind.Anchored => (Severity.Positive, AutoPause.Landfall, "At anchor"),
                 ChronicleEntryKind.IslandNotFound => (Severity.Attention, AutoPause.Landfall, "No island there"),
+                ChronicleEntryKind.CaptainCalled => (Severity.Attention, AutoPause.Called, entry.Get(ChronicleParameters.Reason) switch
+                {
+                    Expedition.Simulation.Voyage.StandingOrderReasons.WakeStores => "Called: the stores run low",
+                    Expedition.Simulation.Voyage.StandingOrderReasons.WakeBilge => "Called: the bilge",
+                    Expedition.Simulation.Voyage.StandingOrderReasons.WakeDoubt => "Called: the reckoning",
+                    Expedition.Simulation.Voyage.StandingOrderReasons.WakeNoon => "Called: noon",
+                    _ => "Called: the wind has shifted",
+                }),
                 ChronicleEntryKind.FellIll => (Severity.Attention, AutoPause.InjuryAndDeath, $"{NameOf(entry)} has fallen ill"),
                 ChronicleEntryKind.SicknessSpreads => (Severity.Urgent, AutoPause.InjuryAndDeath, "Sickness spreads"),
                 ChronicleEntryKind.CargoInjury => (Severity.Urgent, AutoPause.InjuryAndDeath, "Caught by the cargo"),
