@@ -857,6 +857,93 @@ public sealed record CampData
 
     /// <summary>Nights in the open, by character ID.</summary>
     public IReadOnlyDictionary<int, int> NightsExposed { get; init; } = new Dictionary<int, int>();
+
+    /// <summary>How many came ashore. Added in format 38.</summary>
+    public int LandedCount { get; init; }
+
+    /// <summary>Buildings being raised. Added in format 38.</summary>
+    public IReadOnlyList<CampProjectData> Projects { get; init; } = [];
+
+    /// <summary>Buildings standing. Added in format 38.</summary>
+    public IReadOnlyList<CampBuildingData> Buildings { get; init; } = [];
+
+    /// <summary>Garden beds. Added in format 38.</summary>
+    public IReadOnlyList<GardenBedData> Beds { get; init; } = [];
+
+    /// <summary>Broken tools. Added in format 38.</summary>
+    public IReadOnlyDictionary<string, int> Broken { get; init; } = new Dictionary<string, int>();
+
+    /// <summary>Poles cut. Added in format 38.</summary>
+    public int PolesCut { get; init; }
+
+    /// <summary>Thatch cut. Added in format 38.</summary>
+    public int ThatchCut { get; init; }
+
+    /// <summary>The next project's number. Added in format 38.</summary>
+    public int NextProject { get; init; } = 1;
+
+    /// <summary>The first season's judgement, or null. Added in format 38.</summary>
+    public bool? Survived { get; init; }
+}
+
+/// <summary>A building being raised. Added in format 38.</summary>
+public sealed record CampProjectData
+{
+    /// <summary>Its number.</summary>
+    public required int Id { get; init; }
+
+    /// <summary>The building.</summary>
+    public required string Building { get; init; }
+
+    /// <summary>The plot.</summary>
+    public required string Plot { get; init; }
+
+    /// <summary>Its phase.</summary>
+    public int Phase { get; init; }
+
+    /// <summary>Times the phase is done.</summary>
+    public int Done { get; init; }
+
+    /// <summary>Quality summed.</summary>
+    public double QualitySum { get; init; }
+
+    /// <summary>Tasks done.</summary>
+    public int Worked { get; init; }
+
+    /// <summary>Materials laid ready.</summary>
+    public int Laid { get; init; }
+}
+
+/// <summary>A building standing. Added in format 38.</summary>
+public sealed record CampBuildingData
+{
+    /// <summary>The building.</summary>
+    public required string Building { get; init; }
+
+    /// <summary>The plot.</summary>
+    public required string Plot { get; init; }
+
+    /// <summary>Its quality.</summary>
+    public required double Quality { get; init; }
+
+    /// <summary>Its condition.</summary>
+    public double Condition { get; init; }
+}
+
+/// <summary>A garden bed. Added in format 38.</summary>
+public sealed record GardenBedData
+{
+    /// <summary>The crop.</summary>
+    public required string Crop { get; init; }
+
+    /// <summary>Sown when.</summary>
+    public required long Sown { get; init; }
+
+    /// <summary>Its health.</summary>
+    public double Health { get; init; }
+
+    /// <summary>Tended when.</summary>
+    public long Tended { get; init; }
 }
 
 /// <summary>A saved wreck. Added in format 33.</summary>

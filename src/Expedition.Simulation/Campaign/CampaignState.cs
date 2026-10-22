@@ -505,12 +505,16 @@ public sealed class CampaignState
     /// <summary>Removes a finished task without recording anything.</summary>
     internal void EndTask(CharacterId id) => _activeTasks.Remove(id);
 
+    /// <summary>Told of every task stopped before it was done (abandoned or interrupted), with its materials, if any, already used.</summary>
+    internal Action<TaskInstance>? Dropped { get; set; }
+
     /// <summary>Drops duty work for more pressing duty work, without recording it (it is routine).</summary>
     internal void AbandonTask(CharacterId id)
     {
-        if (_activeTasks.Remove(id))
+        if (_activeTasks.Remove(id, out var task))
         {
             StopMovement(id);
+            Dropped?.Invoke(task);
         }
     }
 
@@ -528,6 +532,7 @@ public sealed class CampaignState
             return null;
         }
 
+        Dropped?.Invoke(task);
         Record(ChronicleEntryKind.TaskInterrupted, [
             new(ChronicleParameters.Task, task.DefinitionId), new(ChronicleParameters.Reason, reason), .. details ?? [],
         ], id);

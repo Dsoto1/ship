@@ -19,11 +19,11 @@
       "#..................................#",
       "#..................................#",
       "#..................................#",
-      "#............o.....................#",
-      "#......................o...........#",
+      "#.o................................#",
+      "#.................................o#",
       "#..................................#",
-      "#........##....##........#.........#",
-      "#...........#.#..#......##.#.#.....#",
+      "#........##....#.........#.........#",
+      "#.............#..#......##.#.#.....#",
       "##.......##.#..#...#.##.#...#......#",
       "#.....###...#......#.....#..#.....##",
       "##....#.##.#.##.#########.##.#.....#",
@@ -82,6 +82,15 @@
           "task.cook_ashore"
         ],
         "kind": "Cook"
+      },
+      {
+        "id": "spot.hearth_bench",
+        "x": 19,
+        "y": 6,
+        "tasks": [
+          "task.mend_tools"
+        ],
+        "kind": "HammerStation"
       },
       {
         "id": "spot.stores",
@@ -186,6 +195,310 @@
         "tasks": [
           "task.scout"
         ],
+        "face": "S"
+      },
+      {
+        "id": "plot.hut_1.a",
+        "x": 10,
+        "y": 15,
+        "tasks": [
+          "task.clear_ground",
+          "task.set_posts",
+          "task.raise_frame",
+          "task.thatch_roof",
+          "task.fit_out",
+          "task.repair_building"
+        ],
+        "kind": "HammerStation"
+      },
+      {
+        "id": "plot.hut_1.b",
+        "x": 11,
+        "y": 15,
+        "tasks": [
+          "task.clear_ground",
+          "task.set_posts",
+          "task.raise_frame",
+          "task.thatch_roof",
+          "task.fit_out",
+          "task.repair_building"
+        ],
+        "kind": "HammerStation"
+      },
+      {
+        "id": "plot.hut_2.a",
+        "x": 14,
+        "y": 15,
+        "tasks": [
+          "task.clear_ground",
+          "task.set_posts",
+          "task.raise_frame",
+          "task.thatch_roof",
+          "task.fit_out",
+          "task.repair_building"
+        ],
+        "kind": "HammerStation"
+      },
+      {
+        "id": "plot.hut_2.b",
+        "x": 15,
+        "y": 15,
+        "tasks": [
+          "task.clear_ground",
+          "task.set_posts",
+          "task.raise_frame",
+          "task.thatch_roof",
+          "task.fit_out",
+          "task.repair_building"
+        ],
+        "kind": "HammerStation"
+      },
+      {
+        "id": "plot.hut_3.a",
+        "x": 18,
+        "y": 15,
+        "tasks": [
+          "task.clear_ground",
+          "task.set_posts",
+          "task.raise_frame",
+          "task.thatch_roof",
+          "task.fit_out",
+          "task.repair_building"
+        ],
+        "kind": "HammerStation"
+      },
+      {
+        "id": "plot.hut_3.b",
+        "x": 19,
+        "y": 15,
+        "tasks": [
+          "task.clear_ground",
+          "task.set_posts",
+          "task.raise_frame",
+          "task.thatch_roof",
+          "task.fit_out",
+          "task.repair_building"
+        ],
+        "kind": "HammerStation"
+      },
+      {
+        "id": "plot.hut_4.a",
+        "x": 22,
+        "y": 15,
+        "tasks": [
+          "task.clear_ground",
+          "task.set_posts",
+          "task.raise_frame",
+          "task.thatch_roof",
+          "task.fit_out",
+          "task.repair_building"
+        ],
+        "kind": "HammerStation"
+      },
+      {
+        "id": "plot.hut_4.b",
+        "x": 23,
+        "y": 15,
+        "tasks": [
+          "task.clear_ground",
+          "task.set_posts",
+          "task.raise_frame",
+          "task.thatch_roof",
+          "task.fit_out",
+          "task.repair_building"
+        ],
+        "kind": "HammerStation"
+      },
+      {
+        "id": "plot.store_1.a",
+        "x": 27,
+        "y": 12,
+        "tasks": [
+          "task.clear_ground",
+          "task.set_posts",
+          "task.raise_frame",
+          "task.thatch_roof",
+          "task.fit_out",
+          "task.repair_building"
+        ],
+        "kind": "HammerStation"
+      },
+      {
+        "id": "plot.store_1.b",
+        "x": 28,
+        "y": 12,
+        "tasks": [
+          "task.clear_ground",
+          "task.set_posts",
+          "task.raise_frame",
+          "task.thatch_roof",
+          "task.fit_out",
+          "task.repair_building"
+        ],
+        "kind": "HammerStation"
+      },
+      {
+        "id": "plot.cook_1.a",
+        "x": 14,
+        "y": 6,
+        "tasks": [
+          "task.clear_ground",
+          "task.set_posts",
+          "task.raise_frame",
+          "task.thatch_roof",
+          "task.fit_out",
+          "task.repair_building"
+        ],
+        "kind": "HammerStation"
+      },
+      {
+        "id": "plot.cook_1.b",
+        "x": 15,
+        "y": 6,
+        "tasks": [
+          "task.clear_ground",
+          "task.set_posts",
+          "task.raise_frame",
+          "task.thatch_roof",
+          "task.fit_out",
+          "task.repair_building"
+        ],
+        "kind": "HammerStation"
+      },
+      {
+        "id": "plot.infirmary_1.a",
+        "x": 4,
+        "y": 16,
+        "tasks": [
+          "task.clear_ground",
+          "task.set_posts",
+          "task.raise_frame",
+          "task.thatch_roof",
+          "task.fit_out",
+          "task.repair_building"
+        ],
+        "kind": "HammerStation"
+      },
+      {
+        "id": "plot.infirmary_1.b",
+        "x": 5,
+        "y": 16,
+        "tasks": [
+          "task.clear_ground",
+          "task.set_posts",
+          "task.raise_frame",
+          "task.thatch_roof",
+          "task.fit_out",
+          "task.repair_building"
+        ],
+        "kind": "HammerStation"
+      },
+      {
+        "id": "plot.workshop_1.a",
+        "x": 29,
+        "y": 8,
+        "tasks": [
+          "task.clear_ground",
+          "task.set_posts",
+          "task.raise_frame",
+          "task.thatch_roof",
+          "task.fit_out",
+          "task.repair_building",
+          "task.mend_tools"
+        ],
+        "kind": "HammerStation"
+      },
+      {
+        "id": "plot.workshop_1.b",
+        "x": 30,
+        "y": 8,
+        "tasks": [
+          "task.clear_ground",
+          "task.set_posts",
+          "task.raise_frame",
+          "task.thatch_roof",
+          "task.fit_out",
+          "task.repair_building",
+          "task.mend_tools"
+        ],
+        "kind": "HammerStation"
+      },
+      {
+        "id": "plot.garden_1.a",
+        "x": 26,
+        "y": 16,
+        "tasks": [
+          "task.clear_ground",
+          "task.dig_beds",
+          "task.fence_garden",
+          "task.sow_garden",
+          "task.tend_garden",
+          "task.harvest"
+        ],
+        "kind": "HammerStation"
+      },
+      {
+        "id": "plot.garden_1.b",
+        "x": 27,
+        "y": 16,
+        "tasks": [
+          "task.clear_ground",
+          "task.dig_beds",
+          "task.fence_garden",
+          "task.sow_garden",
+          "task.tend_garden",
+          "task.harvest"
+        ],
+        "kind": "HammerStation"
+      },
+      {
+        "id": "spot.poles_1",
+        "x": 8,
+        "y": 18,
+        "tasks": [
+          "task.cut_poles"
+        ],
+        "kind": "HammerStation",
+        "face": "S"
+      },
+      {
+        "id": "spot.poles_2",
+        "x": 12,
+        "y": 19,
+        "tasks": [
+          "task.cut_poles"
+        ],
+        "kind": "HammerStation",
+        "face": "S"
+      },
+      {
+        "id": "spot.poles_3",
+        "x": 20,
+        "y": 18,
+        "tasks": [
+          "task.cut_poles"
+        ],
+        "kind": "HammerStation",
+        "face": "S"
+      },
+      {
+        "id": "spot.thatch_1",
+        "x": 16,
+        "y": 18,
+        "tasks": [
+          "task.cut_thatch"
+        ],
+        "kind": "HammerStation",
+        "face": "S"
+      },
+      {
+        "id": "spot.thatch_2",
+        "x": 24,
+        "y": 18,
+        "tasks": [
+          "task.cut_thatch"
+        ],
+        "kind": "HammerStation",
         "face": "S"
       }
     ],

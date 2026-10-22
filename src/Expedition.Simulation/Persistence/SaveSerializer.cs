@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 37;
+    public const int CurrentSchemaVersion = 38;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -190,6 +190,21 @@ public static class SaveSerializer
                         ["state"] = state.ToString(CultureInfo.InvariantCulture),
                         ["increment"] = increment.ToString(CultureInfo.InvariantCulture),
                     };
+                }
+
+                return root;
+            },
+
+            // Format 38 added the settlement's work (R7): a camp from format 37 gains the two new priorities,
+            // building and the garden, before scouting.
+            [37] = root =>
+            {
+                if (root["camp"] is JsonObject camp && camp["priorities"] is JsonArray priorities)
+                {
+                    var order = priorities.Select(p => p!.GetValue<string>()).Where(p => p is not "building" and not "garden").ToList();
+                    var at = order.IndexOf("scouting") is var i and >= 0 ? i : order.Count;
+                    order.InsertRange(at, ["garden", "building"]);
+                    camp["priorities"] = new JsonArray(order.Select(p => (JsonNode)JsonValue.Create(p)!).ToArray());
                 }
 
                 return root;
@@ -683,6 +698,15 @@ public static class SaveSerializer
                     Trips = camp.Trips, Reported = camp.Reported,
                     NightsSheltered = new SortedDictionary<int, int>(camp.NightsSheltered.ToDictionary()),
                     NightsExposed = new SortedDictionary<int, int>(camp.NightsExposed.ToDictionary()),
+                    LandedCount = camp.LandedCount,
+                    Projects = camp.Projects.Select(p => new CampProjectData
+                    {
+                        Id = p.Id, Building = p.Building, Plot = p.Plot, Phase = p.Phase, Done = p.Done, QualitySum = p.QualitySum, Worked = p.Worked, Laid = p.Laid,
+                    }).ToList(),
+                    Buildings = camp.Buildings.Select(b => new CampBuildingData { Building = b.Building, Plot = b.Plot, Quality = b.Quality, Condition = b.Condition }).ToList(),
+                    Beds = camp.Beds.Select(b => new GardenBedData { Crop = b.Crop, Sown = b.Sown, Health = b.Health, Tended = b.Tended }).ToList(),
+                    Broken = new SortedDictionary<string, int>(camp.Broken.ToDictionary(), StringComparer.Ordinal),
+                    PolesCut = camp.PolesCut, ThatchCut = camp.ThatchCut, NextProject = camp.NextProject, Survived = camp.Survived,
                 }
                 : null,
             Voyage = campaign.Voyage is { } voyage
@@ -1267,7 +1291,43 @@ public static class SaveSerializer
                 throw new SaveLoadException("The camp names stores, priorities or people that do not exist.");
             }
 
-            var camp = new Shore.CampState { Site = savedCamp.Site, Landed = savedCamp.Landed, ShipAtAnchor = savedCamp.ShipAtAnchor, Boat = savedCamp.Boat };
+            var settlement = content.Shore?.Settlement;
+            if (savedCamp.Projects.Any(p => settlement?.Building(p.Building) is null) || savedCamp.Buildings.Any(b => settlement?.Building(b.Building) is null)
+                || savedCamp.Beds.Any(b => settlement?.Crops.Any(c => c.Id == b.Crop) != true) || savedCamp.Broken.Keys.Any(t => !content.Items.ContainsKey(t)))
+            {
+                throw new SaveLoadException("The camp names buildings, crops or tools that do not exist.");
+            }
+
+            var camp = new Shore.CampState
+            {
+                Site = savedCamp.Site, Landed = savedCamp.Landed, ShipAtAnchor = savedCamp.ShipAtAnchor, Boat = savedCamp.Boat, LandedCount = savedCamp.LandedCount,
+            };
+            foreach (var project in savedCamp.Projects)
+            {
+                var restored = new Shore.CampProject { Id = project.Id, Building = project.Building, Plot = project.Plot };
+                restored.Restore(project.Phase, project.Done, project.QualitySum, project.Worked, project.Laid);
+                camp.AddProject(restored);
+            }
+
+            foreach (var building in savedCamp.Buildings)
+            {
+                camp.AddBuilding(new Shore.CampBuilding { Building = building.Building, Plot = building.Plot, Quality = building.Quality, Condition = building.Condition });
+            }
+
+            foreach (var bed in savedCamp.Beds)
+            {
+                camp.AddBed(new Shore.GardenBed { Crop = bed.Crop, Sown = bed.Sown, Health = bed.Health, Tended = bed.Tended });
+            }
+
+            foreach (var (tool, count) in savedCamp.Broken)
+            {
+                camp.Break(tool, count);
+            }
+
+            camp.PolesCut = savedCamp.PolesCut;
+            camp.ThatchCut = savedCamp.ThatchCut;
+            camp.NextProject = savedCamp.NextProject;
+            camp.Survived = savedCamp.Survived;
             camp.Restore(savedCamp.Works, savedCamp.Found, savedCamp.Afloat, savedCamp.NightsSheltered, savedCamp.NightsExposed);
             camp.Priorities = savedCamp.Priorities.ToList();
             camp.Choices = new Shore.CampChoices

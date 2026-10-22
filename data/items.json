@@ -27,6 +27,27 @@
   { "id": "item.shellfish", "name": "Shellfish", "category": "food", "weightKg": 0.3, "volumeLitres": 0.4, "hungerRelief": 8, "fresh": true, "spoilsPerDay": 0.5, "packedIn": "basket", "perPackage": 20 },
   { "id": "item.shellfish_strange", "name": "Strange shellfish", "category": "food", "weightKg": 0.3, "volumeLitres": 0.4, "hungerRelief": 8, "fresh": true, "spoilsPerDay": 0.5, "packedIn": "basket", "perPackage": 20,
     "sickens": { "condition": "condition.flux", "chance": 0.06 } },
+  // The carpenter's chest and the ship's gear for working ashore (R7): kept things, worn and broken by use.
+  { "id": "item.axe", "name": "Axe", "category": "tool", "weightKg": 2.0, "volumeLitres": 1.5, "packedIn": "chest", "perPackage": 4 },
+  { "id": "item.saw", "name": "Saw", "category": "tool", "weightKg": 1.5, "volumeLitres": 1.5, "packedIn": "chest", "perPackage": 4 },
+  { "id": "item.adze", "name": "Adze", "category": "tool", "weightKg": 1.5, "volumeLitres": 1.0, "packedIn": "chest", "perPackage": 4 },
+  { "id": "item.auger", "name": "Auger", "category": "tool", "weightKg": 1.0, "volumeLitres": 0.5, "packedIn": "chest", "perPackage": 6 },
+  { "id": "item.spade", "name": "Spade", "category": "tool", "weightKg": 2.5, "volumeLitres": 3.0, "packedIn": "bale", "perPackage": 4 },
+  { "id": "item.mattock", "name": "Mattock", "category": "tool", "weightKg": 3.0, "volumeLitres": 2.0, "packedIn": "bale", "perPackage": 4 },
+  { "id": "item.cutlass", "name": "Cutlass", "category": "tool", "weightKg": 1.0, "volumeLitres": 0.8, "packedIn": "chest", "perPackage": 6 },
+  { "id": "item.fishing_net", "name": "Net and lines", "category": "tool", "weightKg": 5.0, "volumeLitres": 8.0, "packedIn": "bale", "perPackage": 1 },
+  // What the site gives to build with (R7).
+  { "id": "item.poles", "name": "Poles", "category": "material", "weightKg": 8.0, "volumeLitres": 30.0, "packedIn": "plank", "perPackage": 4 },
+  { "id": "item.thatch", "name": "Thatch (bundle)", "category": "material", "weightKg": 3.0, "volumeLitres": 20.0, "packedIn": "bale", "perPackage": 6 },
+  // The seed chest (R7), and what a garden gives back if it takes.
+  { "id": "item.seed_wheat", "name": "Seed wheat (measure)", "category": "seed", "weightKg": 1.0, "volumeLitres": 1.2, "packedIn": "sack", "perPackage": 20 },
+  { "id": "item.seed_chickpea", "name": "Seed chickpeas (measure)", "category": "seed", "weightKg": 1.0, "volumeLitres": 1.0, "packedIn": "sack", "perPackage": 20 },
+  { "id": "item.seed_onion", "name": "Onion sets (measure)", "category": "seed", "weightKg": 0.5, "volumeLitres": 1.0, "packedIn": "sack", "perPackage": 20 },
+  { "id": "item.seed_cabbage", "name": "Cabbage seed (paper)", "category": "seed", "weightKg": 0.1, "volumeLitres": 0.1, "packedIn": "chest", "perPackage": 20 },
+  { "id": "item.greens", "name": "Garden greens", "category": "food", "weightKg": 0.4, "volumeLitres": 1.0, "hungerRelief": 5, "fresh": true, "spoilsPerDay": 0.4, "packedIn": "basket", "perPackage": 20 },
+  { "id": "item.onions", "name": "Onions", "category": "food", "weightKg": 0.3, "volumeLitres": 0.4, "hungerRelief": 6, "fresh": true, "spoilsPerDay": 0.03, "packedIn": "basket", "perPackage": 20 },
+  { "id": "item.chickpeas", "name": "Chickpeas (measure)", "category": "food", "weightKg": 0.5, "volumeLitres": 0.5, "hungerRelief": 11, "spoilsPerDay": 0.005, "packedIn": "sack", "perPackage": 20 },
+  { "id": "item.wheat", "name": "Wheat (measure)", "category": "food", "weightKg": 0.5, "volumeLitres": 0.6, "hungerRelief": 10, "spoilsPerDay": 0.005, "packedIn": "sack", "perPackage": 20 },
   // Water from a brackish seep or the mangroves: it quenches, less well, and may bring on the flux.
   { "id": "item.water_brackish", "name": "Brackish water", "category": "water", "weightKg": 1.0, "volumeLitres": 1.0, "thirstRelief": 9, "packedIn": "cask", "perPackage": 30,
     "sickens": { "condition": "condition.flux", "chance": 0.02 } }

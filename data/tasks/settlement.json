@@ -1,0 +1,168 @@
+// Making the camp last (R7, docs/R7_ESTABLISHMENT.md). The building phases are done on a building's plot,
+// for whichever project there is at that phase ("buildPhase"); the rest are the work of a settlement.
+// "dutyWhen.camp" says when the camp wants each.
+[
+  {
+    "id": "task.clear_ground",
+    "needsWorkSpot": true,
+    "name": "Clear the ground",
+    "durationMinutes": 180,
+    // Scrub grubbed out, roots cut, the ground levelled and drained.
+    "requiredTools": ["item.mattock"],
+    "buildPhase": true,
+    "dutyWhen": { "camp": "build", "startBetween": [[6, 16]] },
+    "needsPerHour": { "fatigue": 6.0, "thirst": 1.0 },
+    "hazard": { "chancePerHour": 0.006, "healthDamage": 6, "condition": "condition.sprain" }
+  },
+  {
+    "id": "task.set_posts",
+    "needsWorkSpot": true,
+    "name": "Set the posts",
+    "durationMinutes": 180,
+    // Holes dug and the corner posts set and rammed.
+    "requiredTools": ["item.spade"],
+    "consumes": { "item.poles": 4 },
+    "buildPhase": true,
+    "dutyWhen": { "camp": "build", "startBetween": [[6, 16]] },
+    "needsPerHour": { "fatigue": 6.0, "thirst": 1.0 }
+  },
+  {
+    "id": "task.raise_frame",
+    "needsWorkSpot": true,
+    "name": "Raise the frame",
+    "durationMinutes": 240,
+    // Plates, rafters and ridge, shaped, fitted and lashed or pinned.
+    "skill": "skill.carpentry",
+    "requiredTools": ["item.adze"],
+    "consumes": { "item.poles": 6 },
+    "buildPhase": true,
+    "dutyWhen": { "camp": "build", "startBetween": [[6, 15]] },
+    "needsPerHour": { "fatigue": 6.0, "thirst": 1.0 },
+    "hazard": { "chancePerHour": 0.008, "healthDamage": 10, "condition": "condition.bruised" }
+  },
+  {
+    "id": "task.thatch_roof",
+    "needsWorkSpot": true,
+    "name": "Thatch the roof",
+    "durationMinutes": 240,
+    // Palm and grass laid in courses from the eaves up and tied down: not in the rain.
+    "skill": "skill.crafting",
+    "consumes": { "item.thatch": 12 },
+    "buildPhase": true,
+    "dutyWhen": { "camp": "build_dry", "startBetween": [[6, 15]] },
+    "needsPerHour": { "fatigue": 5.0, "thirst": 1.0 }
+  },
+  {
+    "id": "task.fit_out",
+    "needsWorkSpot": true,
+    "name": "Fit it out",
+    "durationMinutes": 240,
+    // Floors raised off the ground, shelves and racks, a door.
+    "skill": "skill.carpentry",
+    "requiredTools": ["item.saw"],
+    "consumes": { "item.poles": 4 },
+    "buildPhase": true,
+    "dutyWhen": { "camp": "build", "startBetween": [[6, 15]] },
+    "needsPerHour": { "fatigue": 4.0 }
+  },
+  {
+    "id": "task.dig_beds",
+    "needsWorkSpot": true,
+    "name": "Dig the beds",
+    "durationMinutes": 240,
+    // Turned, broken and raised against the wet.
+    "requiredTools": ["item.spade"],
+    "buildPhase": true,
+    "dutyWhen": { "camp": "build", "startBetween": [[6, 15]] },
+    "needsPerHour": { "fatigue": 7.0, "thirst": 1.0 }
+  },
+  {
+    "id": "task.fence_garden",
+    "needsWorkSpot": true,
+    "name": "Fence the garden",
+    "durationMinutes": 240,
+    // Stakes and woven brush against whatever comes out of the forest at night.
+    "requiredTools": ["item.axe"],
+    "consumes": { "item.poles": 6 },
+    "buildPhase": true,
+    "dutyWhen": { "camp": "build", "startBetween": [[6, 15]] },
+    "needsPerHour": { "fatigue": 5.0 }
+  },
+  {
+    "id": "task.cut_poles",
+    "needsWorkSpot": true,
+    "name": "Cut poles",
+    "durationMinutes": 180,
+    // Straight saplings felled at the forest's edge, trimmed and carried down. The edge goes back as it is cut.
+    "attribute": "attribute.strength",
+    "requiredTools": ["item.axe"],
+    "yield": { "item": "item.poles", "perHour": 1.5, "ashore": "camp_poles" },
+    "dutyWhen": { "camp": "poles", "startBetween": [[6, 15]] },
+    "needsPerHour": { "fatigue": 7.0, "thirst": 1.0 },
+    "hazard": { "chancePerHour": 0.01, "healthDamage": 10, "condition": "condition.sprain" }
+  },
+  {
+    "id": "task.cut_thatch",
+    "needsWorkSpot": true,
+    "name": "Cut thatch",
+    "durationMinutes": 180,
+    // Palm fronds and long grass, cut and bundled.
+    "requiredTools": ["item.cutlass"],
+    "yield": { "item": "item.thatch", "perHour": 4, "ashore": "camp_thatch" },
+    "dutyWhen": { "camp": "thatch", "startBetween": [[6, 15]] },
+    "needsPerHour": { "fatigue": 5.0, "thirst": 1.0 }
+  },
+  {
+    "id": "task.mend_tools",
+    "needsWorkSpot": true,
+    "name": "Mend a broken tool",
+    "durationMinutes": 120,
+    // A new helve, a blade ground and reset: most can be saved, more of them at a workshop's bench.
+    "skill": "skill.carpentry",
+    "mendsTool": true,
+    "dutyWhen": { "camp": "mend" },
+    "needsPerHour": { "fatigue": 2.0 }
+  },
+  {
+    "id": "task.repair_building",
+    "needsWorkSpot": true,
+    "name": "Repair the thatch",
+    "durationMinutes": 120,
+    // The worst of the camp's roofs made good after the weather.
+    "skill": "skill.crafting",
+    "consumes": { "item.thatch": 4 },
+    "repairsBuilding": true,
+    "dutyWhen": { "camp": "repair_dry", "startBetween": [[6, 16]] },
+    "needsPerHour": { "fatigue": 4.0 }
+  },
+  {
+    "id": "task.sow_garden",
+    "needsWorkSpot": true,
+    "name": "Sow a bed",
+    "durationMinutes": 120,
+    // Two measures of seed from the chest, sown in a bed of the garden.
+    "skill": "skill.foraging",
+    "garden": "sow",
+    "dutyWhen": { "camp": "sow", "startBetween": [[6, 16]] },
+    "needsPerHour": { "fatigue": 3.0 }
+  },
+  {
+    "id": "task.tend_garden",
+    "needsWorkSpot": true,
+    "name": "Weed and tend the garden",
+    "durationMinutes": 120,
+    "skill": "skill.foraging",
+    "garden": "tend",
+    "dutyWhen": { "camp": "tend", "startBetween": [[6, 16]] },
+    "needsPerHour": { "fatigue": 3.0, "stress": -0.4 }
+  },
+  {
+    "id": "task.harvest",
+    "needsWorkSpot": true,
+    "name": "Bring in the harvest",
+    "durationMinutes": 120,
+    "garden": "harvest",
+    "dutyWhen": { "camp": "harvest", "startBetween": [[6, 16]] },
+    "needsPerHour": { "fatigue": 3.0, "stress": -1.0 }
+  }
+]

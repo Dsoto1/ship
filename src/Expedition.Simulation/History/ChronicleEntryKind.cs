@@ -257,4 +257,40 @@ public enum ChronicleEntryKind
 
     /// <summary>The first days ashore are over (parameters: level = days, need = people, reason = what is still wanting).</summary>
     CampFirstDays,
+
+    /// <summary>A building was ordered raised (parameters: to = the building, from = its plot).</summary>
+    ProjectBegun,
+
+    /// <summary>A building was finished (parameters: to = the building, level = its quality 0..1; character: who did the last of it).</summary>
+    BuildingFinished,
+
+    /// <summary>A building or shelter came down in the weather (parameter: to = the building, or shelter.sail or shelter.brush).</summary>
+    BuildingDown,
+
+    /// <summary>A tool broke in use (parameters: to = the tool, task; character: who).</summary>
+    ToolBroke,
+
+    /// <summary>A broken tool was mended (parameter: to = the tool; character: who).</summary>
+    ToolMended,
+
+    /// <summary>A broken tool could not be saved (parameter: to = the tool; character: who).</summary>
+    ToolLost,
+
+    /// <summary>A garden bed was sown (parameter: to = the crop; character: who).</summary>
+    Sown,
+
+    /// <summary>A bed was brought in (parameters: to = the crop, level = units; character: who).</summary>
+    Harvested,
+
+    /// <summary>A bed failed (parameters: to = the crop, reason = wet, untended or soil).</summary>
+    CropFailed,
+
+    /// <summary>The wet season came.</summary>
+    WetSeason,
+
+    /// <summary>The storm at the change of season began (parameter: level = the hours it will blow).</summary>
+    StormAshore,
+
+    /// <summary>The first season was judged (parameters: outcome = survived or failed, reason = what was wanting, need = how many alive).</summary>
+    SeasonJudged,
 }

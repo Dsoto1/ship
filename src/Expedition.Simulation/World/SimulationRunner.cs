@@ -295,7 +295,8 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             return CommandResult.Rejected(stormWork);
         }
 
-        var missingTools = task.RequiredTools.Where(tool => Available(character, tool) == 0).ToList();
+        // Ashore, a tool another hand is using is not to be had (R7): two cannot use one axe.
+        var missingTools = task.RequiredTools.Where(tool => Available(character, tool) - (Campaign.Camp is not null ? ToolsInUse(tool, character.Id) : 0) <= 0).ToList();
         if (missingTools.Count > 0)
         {
             return CommandResult.Rejected($"{task.Name} needs tools that are not on hand: {string.Join(", ", missingTools.Select(ItemName))}.");
@@ -328,6 +329,17 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
     private void Start(Character character, TaskInstance order, string? preferredSpot = null)
     {
         var task = Content.Tasks[order.DefinitionId];
+        // Ashore, a building phase begun before and stopped left its materials laid ready on the plot (R7).
+        if (task.BuildPhase && preferredSpot is null)
+        {
+            preferredSpot = FindWorkSpot(character, task).Spot?.Id;
+        }
+
+        if (!order.MaterialsConsumed && task.NeedsWorkSpot && UseLaidMaterials(character, task, preferredSpot))
+        {
+            order.MaterialsConsumed = true;
+        }
+
         if (!order.MaterialsConsumed)
         {
             foreach (var (itemId, quantity) in task.Consumes)
@@ -476,7 +488,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             return false;
         }
 
-        if (when.Camp is { } wanted && !CampWants(wanted))
+        if (when.Camp is { } wanted && !CampWants(wanted, task))
         {
             return false;
         }
@@ -1010,6 +1022,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         }
 
         var outcomes = new List<TaskOutcome>();
+        Campaign.Dropped ??= TaskDropped;
         for (var i = 0; i < ticks; i++)
         {
             Campaign.Clock.Step();
@@ -1111,6 +1124,12 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         }
 
         var rate = WorkRate(character, definition);
+        if (Campaign.Camp is not null && ToolBreaks(character, definition))
+        {
+            AddIfPresent(outcomes, Campaign.InterruptTask(character.Id, InterruptReasons.ToolBroke));
+            return;
+        }
+
         if (definition.Yield is { } yield && !Bring(character, yield, rate))
         {
             AddIfPresent(outcomes, Campaign.InterruptTask(character.Id, InterruptReasons.StoresFull));
@@ -1162,7 +1181,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
 
             FinishStormWork(character, definition);
             FinishCleaning(definition);
-            FinishCampWork(character, definition);
+            FinishCampWork(character, definition, task.SpotId);
 
             if (definition.CrewOnComplete is { } relief)
             {
@@ -1185,12 +1204,23 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
     // lines and nets, more over the bank. False if it will not fit in the stores.
     private bool Bring(Character character, TaskYield yield, double rate)
     {
-        // Ashore at the camp, what has been found there: the water, the shore's food.
-        if (yield.Ashore is "camp_water" or "camp_food")
+        // Ashore at the camp, what has been found there: the water, the shore's food; and what the forest's
+        // edge gives to build with (R7).
+        if (yield.Ashore is "camp_water" or "camp_food" or "camp_poles" or "camp_thatch")
         {
-            return CampYield(character, yield.Ashore) is not { } taken
-                   || !Campaign.Randomness.Tasks.Chance(taken.PerHour * rate * HoursPerTick)
-                   || Campaign.SharedStore.TryAdd(taken.Item, 1, Content.Items).Succeeded;
+            var taken = yield.Ashore is "camp_poles" or "camp_thatch" ? GatherYield(yield.Ashore, yield) : CampYield(character, yield.Ashore);
+            if (taken is null || !Campaign.Randomness.Tasks.Chance(taken.Value.PerHour * rate * HoursPerTick))
+            {
+                return true;
+            }
+
+            var added = Campaign.SharedStore.TryAdd(taken.Value.Item, 1, Content.Items).Succeeded;
+            if (added)
+            {
+                NoteGathered(taken.Value.Item);
+            }
+
+            return added;
         }
 
         var factor = 1.0;
@@ -1414,7 +1444,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         }
 
         var taken = Campaign.ActiveTasks.Values.Select(t => t.SpotId).Where(id => id is not null).ToHashSet();
-        var free = spots.Where(s => !taken.Contains(s.Id)).ToList();
+        var free = spots.Where(s => !taken.Contains(s.Id) && (location.Id != CampLocation || SpotServes(task, s))).ToList();
         if (free.Count == 0)
         {
             return (null, null, $"Every place to {task.Name.ToLowerInvariant()} is already in use.");

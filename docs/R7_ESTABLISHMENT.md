@@ -1,6 +1,7 @@
-# R7 — Making the camp last: a draft for the owner
+# R7 — Making the camp last
 
-**Status:** a draft for the owner's review (2026-10-22). Nothing is built yet.
+**Status:** being built (2026-10-22). The owner left the open questions to me ("You decide what is
+next"); the decisions are under **Decided** below.
 **Authority:** SETTLEMENT_EXPERIENCE §7-19 (progression, construction, quality, the first buildings,
 materials, tools, water, food, agriculture, storage, sanitation, health, work), §36-39 (seasons,
 weather, change you can see), §50-54 (the vertical slice, the validation scenes, the build order).
@@ -190,7 +191,21 @@ ground (owner's call below).
 
 Saves move to a new format. Every step is tested like R6.
 
-## Open questions for the owner
+## Decided (2026-10-22)
+
+1. **Tools.** The Garza carries a **carpenter's chest** as ship's stores: two axes, a saw, an adze, an
+   auger, two spades, a mattock, two cutlasses, and nets and lines. Buying more in port comes later.
+2. **Seed.** A small **seed chest** is carried by default: wheat, chickpeas, onions, cabbage. Buying it in
+   port, with sellers' quality, comes later.
+3. **Where.** They stay on the beach where they landed. The move to the headland waits for R8.
+4. **How long.** The first season, **90 days**, ends in a judgement: the first season survived, or the
+   settlement failed. Play goes on after it.
+5. **The look.** Simple modelled shapes, as in R6. Meshy models come later, priced first.
+6. **A palisade** waits for R8.
+7. **Left for later in R7:** the landing staging and the well. A first pass builds huts, the storehouse,
+   the cookhouse, the infirmary, the workshop and the garden.
+
+## The questions as they were put
 
 1. **What the Garza carries.** She sailed without axes or saws in her manifest. Either:
    - (a) she carries a **carpenter's chest and a few spades** as ship's stores, as any ship would; or

@@ -57,8 +57,14 @@ public static class CampPriorities
     /// <summary>Scouting.</summary>
     public const string Scouting = "scouting";
 
-    /// <summary>The order SETTLEMENT_EXPERIENCE §4 gives, with the stores brought forward: nothing is ashore yet.</summary>
-    public static readonly IReadOnlyList<string> Default = [Medical, Water, Shelter, Stores, Fire, Food, Sanitation, Scouting];
+    /// <summary>Building (R7): the ordered buildings' phases, the poles and thatch for them, repairs, mending tools.</summary>
+    public const string Building = "building";
+
+    /// <summary>The garden (R7): sowing, tending, bringing in.</summary>
+    public const string Garden = "garden";
+
+    /// <summary>The order SETTLEMENT_EXPERIENCE §4 gives, with the stores brought forward: nothing is ashore yet. Then the settlement's work.</summary>
+    public static readonly IReadOnlyList<string> Default = [Medical, Water, Shelter, Stores, Fire, Food, Sanitation, Garden, Building, Scouting];
 }
 
 /// <summary>The four hard choices of the first days (SETTLEMENT_EXPERIENCE §4).</summary>
@@ -75,6 +81,75 @@ public sealed record CampChoices
 
     /// <summary>Gather the shore's food, or keep to the ship's stores.</summary>
     public bool Forage { get; init; } = true;
+}
+
+/// <summary>A building being raised on its plot, phase by phase (R7).</summary>
+public sealed class CampProject
+{
+    /// <summary>A number for it, in the order ordered.</summary>
+    public required int Id { get; init; }
+
+    /// <summary>The building (<see cref="BuildingDefinition.Id"/>).</summary>
+    public required string Building { get; init; }
+
+    /// <summary>The plot, for example <c>hut_2</c>.</summary>
+    public required string Plot { get; init; }
+
+    /// <summary>The phase it is at.</summary>
+    public int Phase { get; internal set; }
+
+    /// <summary>Times the phase's task has been done.</summary>
+    public int Done { get; internal set; }
+
+    /// <summary>The quality of the work so far, summed over the tasks done.</summary>
+    public double QualitySum { get; internal set; }
+
+    /// <summary>The tasks done so far.</summary>
+    public int Worked { get; internal set; }
+
+    /// <summary>Loads of the phase's materials laid ready on the plot by work begun and stopped: the next start uses them.</summary>
+    public int Laid { get; internal set; }
+
+    internal void Restore(int phase, int done, double qualitySum, int worked, int laid)
+    {
+        Phase = phase;
+        Done = done;
+        QualitySum = qualitySum;
+        Worked = worked;
+        Laid = laid;
+    }
+}
+
+/// <summary>A building standing (R7): how well it was made, and how it stands now.</summary>
+public sealed class CampBuilding
+{
+    /// <summary>The building.</summary>
+    public required string Building { get; init; }
+
+    /// <summary>Its plot.</summary>
+    public required string Plot { get; init; }
+
+    /// <summary>How well it was made, 0..1.</summary>
+    public required double Quality { get; init; }
+
+    /// <summary>Its condition, 0..100: weather wears it, the storm most of all; at 0 it is down.</summary>
+    public double Condition { get; internal set; } = 100;
+}
+
+/// <summary>A garden bed sown (R7).</summary>
+public sealed class GardenBed
+{
+    /// <summary>The crop.</summary>
+    public required string Crop { get; init; }
+
+    /// <summary>When it was sown.</summary>
+    public required long Sown { get; init; }
+
+    /// <summary>Its health, 0..1: what share of a full crop it will give.</summary>
+    public double Health { get; internal set; } = 1;
+
+    /// <summary>When it was last weeded and tended.</summary>
+    public long Tended { get; internal set; }
 }
 
 /// <summary>
@@ -102,6 +177,9 @@ public sealed class CampState
     /// <summary>True if there is a boat for landing stores.</summary>
     public bool Boat { get; init; } = true;
 
+    /// <summary>How many came ashore, for the season's judgement.</summary>
+    public int LandedCount { get; init; }
+
     /// <summary>How far each work has got (<see cref="CampWorks"/>): berths for the shelter, 0..1 for the others.</summary>
     public IReadOnlyDictionary<string, double> Works => _works;
 
@@ -128,6 +206,60 @@ public sealed class CampState
 
     /// <summary>True once the first days' report is made.</summary>
     public bool Reported { get; internal set; }
+
+    private readonly List<CampProject> _projects = [];
+    private readonly List<CampBuilding> _buildings = [];
+    private readonly List<GardenBed> _beds = [];
+    private readonly SortedDictionary<string, int> _broken = new(StringComparer.Ordinal);
+
+    /// <summary>Buildings being raised (R7).</summary>
+    public IReadOnlyList<CampProject> Projects => _projects;
+
+    /// <summary>Buildings standing.</summary>
+    public IReadOnlyList<CampBuilding> Buildings => _buildings;
+
+    /// <summary>Garden beds sown.</summary>
+    public IReadOnlyList<GardenBed> Beds => _beds;
+
+    /// <summary>Broken tools waiting to be mended, by item.</summary>
+    public IReadOnlyDictionary<string, int> Broken => _broken;
+
+    /// <summary>Poles cut from the forest's edge so far.</summary>
+    public int PolesCut { get; internal set; }
+
+    /// <summary>Bundles of thatch cut so far.</summary>
+    public int ThatchCut { get; internal set; }
+
+    /// <summary>The next project's number.</summary>
+    public int NextProject { get; internal set; } = 1;
+
+    /// <summary>The first season judged, true when it was survived; null before.</summary>
+    public bool? Survived { get; internal set; }
+
+    internal void AddProject(CampProject project) => _projects.Add(project);
+
+    internal void RemoveProject(CampProject project) => _projects.Remove(project);
+
+    internal void AddBuilding(CampBuilding building) => _buildings.Add(building);
+
+    internal void RemoveBuilding(CampBuilding building) => _buildings.Remove(building);
+
+    internal void AddBed(GardenBed bed) => _beds.Add(bed);
+
+    internal void RemoveBed(GardenBed bed) => _beds.Remove(bed);
+
+    internal void Break(string tool, int count = 1)
+    {
+        var left = _broken.GetValueOrDefault(tool) + count;
+        if (left > 0)
+        {
+            _broken[tool] = left;
+        }
+        else
+        {
+            _broken.Remove(tool);
+        }
+    }
 
     /// <summary>Nights each person slept under shelter, by character ID.</summary>
     public IReadOnlyDictionary<int, int> NightsSheltered => _sheltered;

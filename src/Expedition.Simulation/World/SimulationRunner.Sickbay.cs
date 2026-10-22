@@ -47,9 +47,10 @@ public sealed partial class SimulationRunner
     public static int CareLevel(Character character) =>
         Math.Max(character.Skills.Get("skill.first_aid"), character.Skills.Get("skill.treatment"));
 
-    // How much faster the sick mend for being tended: 1 untended, up to about 2.75 by a surgeon.
+    // How much faster the sick mend for being tended: 1 untended, up to about 2.75 by a surgeon; ashore, a
+    // quarter more in an infirmary (it organises the care; it does not heal by itself).
     private double CareFactor(Character patient) =>
-        Tender() is { } tender && tender.Id != patient.Id ? 1 + 0.35 * CareLevel(tender) : 1;
+        (Tender() is { } tender && tender.Id != patient.Id ? 1 + 0.35 * CareLevel(tender) : 1) * InfirmaryCare;
 
     private bool Resting(Character character) =>
         character.SurvivalState == SurvivalState.Incapacitated
@@ -241,7 +242,8 @@ public sealed partial class SimulationRunner
                 var carriers = sick.Where(s => s.Id != person.Id && s.Health.Conditions.Contains(illness)).OrderBy(s => s.Id.Value).ToList();
                 if (carriers.Count > 0)
                 {
-                    var caught = carriers.Count * condition.Contagion * Filth;
+                    // The sick laid apart in an infirmary pass it on less.
+                    var caught = carriers.Count * condition.Contagion * Filth * InfirmaryContagion;
                     if (caught > chance)
                     {
                         from = carriers[0].Id;

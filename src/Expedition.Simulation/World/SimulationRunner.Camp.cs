@@ -33,6 +33,9 @@ public sealed partial class SimulationRunner
         [CampPriorities.Food] = ["task.cover_stores", "task.forage_shore"],
         [CampPriorities.Sanitation] = ["task.dig_latrine"],
         [CampPriorities.Scouting] = ["task.scout"],
+        [CampPriorities.Building] = ["task.repair_building", "task.clear_ground", "task.set_posts", "task.raise_frame", "task.thatch_roof", "task.fit_out",
+            "task.dig_beds", "task.fence_garden", "task.cut_poles", "task.cut_thatch", "task.mend_tools"],
+        [CampPriorities.Garden] = ["task.harvest", "task.sow_garden", "task.tend_garden"],
     };
 
     // What is landed first, by category; then everything else.
@@ -78,7 +81,7 @@ public sealed partial class SimulationRunner
         var site = shore.Site(siteId);
         var camp = new CampState
         {
-            Site = site.Id, Landed = Campaign.Clock.Tick, ShipAtAnchor = anchored, Boat = anchored || wreck!.BoatLaunched,
+            Site = site.Id, Landed = Campaign.Clock.Tick, ShipAtAnchor = anchored, Boat = anchored || wreck!.BoatLaunched, LandedCount = Ashore().Count,
         };
 
         // What is still afloat: all her hold at anchor; what is left in a wreck on this coast.
@@ -111,6 +114,9 @@ public sealed partial class SimulationRunner
                 store.TryAdd("item.sailcloth", BoatSailcloth, Content.Items);
             }
         }
+
+        // The carpenter's chest, the nets and the seed chest (R7).
+        LandShipsChest(camp, wreck);
 
         foreach (var known in site.Water.Where(w => w.Known).Select(w => w.Id)
                      .Concat(site.Food.Where(f => f.Known).Select(f => f.Id)).Concat(site.Finds.Where(f => f.Known).Select(f => f.Id)))
@@ -195,7 +201,7 @@ public sealed partial class SimulationRunner
     }
 
     // Whether the camp wants a work now (DutyCondition.Camp).
-    private bool CampWants(string need)
+    private bool CampWants(string need, TaskDefinition task)
     {
         if (Campaign.Camp is not { } camp || CampSite is not { } site)
         {
@@ -225,7 +231,7 @@ public sealed partial class SimulationRunner
                         && Content.Foods.Sum(f => store.Count(f.Id) * f.HungerRelief) < FoodDaysWanted * people * DailyHunger,
             "scout" => camp.Choices.SendScouts && NextFind(camp, site) is not null
                        && !Campaign.ActiveTasks.Values.Any(t => Content.Tasks[t.DefinitionId].Scouts),
-            _ => false,
+            _ => SettlementWants(need, task),
         };
     }
 
@@ -294,12 +300,14 @@ public sealed partial class SimulationRunner
     }
 
     // Finished camp work: a work built up, the fire made up, a load landed, a scouting trip's finds.
-    private void FinishCampWork(Character character, TaskDefinition definition)
+    private void FinishCampWork(Character character, TaskDefinition definition, string? spotId)
     {
         if (Campaign.Camp is not { } camp || Content.Shore is not { } shore)
         {
             return;
         }
+
+        FinishSettlementWork(character, definition, spotId);
 
         var now = Campaign.Clock.Tick;
         if (definition.Builds is { } work)
@@ -401,7 +409,9 @@ public sealed partial class SimulationRunner
             z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9UL;
             z = (z ^ (z >> 27)) * 0x94D049BB133111EBUL;
             z ^= z >> 31;
-            return (z >> 11) * (1.0 / (1UL << 53)) < site.Rain;
+            // The wet season rains far more often; the storm, all through.
+            var chance = Settling is { } season && WetSeason ? Math.Min(0.6, site.Rain * season.WetRain) : site.Rain;
+            return StormAshore || (z >> 11) * (1.0 / (1UL << 53)) < chance;
         }
     }
 
@@ -418,8 +428,8 @@ public sealed partial class SimulationRunner
         }
 
         var people = Ashore();
-        var sickBerths = camp.Work(CampWorks.SickShelter) >= 1 ? shore.Rules.SickBerths : 0;
-        var berths = (int)camp.Work(CampWorks.Shelter);
+        var sickBerths = (camp.Work(CampWorks.SickShelter) >= 1 ? shore.Rules.SickBerths : 0) + InfirmaryBerths;
+        var berths = (int)camp.Work(CampWorks.Shelter) + HutBerths;
         foreach (var person in people.Where(SickOrHurt).Take(sickBerths))
         {
             sheltered.Add(person.Id);
@@ -506,6 +516,7 @@ public sealed partial class SimulationRunner
             ? Math.Min(85, life.Cleanliness + rules.CleanPerDay / 24)
             : Math.Max(0, life.Cleanliness - rules.FoulPerDay / 24);
         StepSickness(wet: rain && people.Any(p => !sheltered.Contains(p.Id)));
+        StepSettlement(camp, rules);
 
         if (!camp.Reported && Campaign.Clock.Tick - camp.Landed >= rules.ReportHours * SimulationClock.TicksPerHour)
         {

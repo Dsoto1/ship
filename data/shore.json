@@ -28,6 +28,47 @@
     // The first days' report, this many hours after landing.
     "reportHours": 72
   },
+  // Making the camp last, the first season (R7, docs/R7_ESTABLISHMENT.md). Each building is raised in
+  // phases, each phase a task done so many times on the building's plot; its quality is the work's.
+  "settlement": {
+    "buildings": [
+      { "id": "building.hut", "name": "Hut", "plot": "hut", "berths": 4,
+        "phases": [ { "task": "task.clear_ground", "times": 1 }, { "task": "task.set_posts", "times": 2 }, { "task": "task.raise_frame", "times": 2 }, { "task": "task.thatch_roof", "times": 3 } ] },
+      { "id": "building.storehouse", "name": "Storehouse", "plot": "store", "stores": true,
+        "phases": [ { "task": "task.clear_ground", "times": 2 }, { "task": "task.set_posts", "times": 3 }, { "task": "task.raise_frame", "times": 3 }, { "task": "task.thatch_roof", "times": 3 }, { "task": "task.fit_out", "times": 2 } ] },
+      { "id": "building.cookhouse", "name": "Cookhouse", "plot": "cook", "cooks": true,
+        "phases": [ { "task": "task.clear_ground", "times": 1 }, { "task": "task.set_posts", "times": 2 }, { "task": "task.raise_frame", "times": 1 }, { "task": "task.thatch_roof", "times": 2 } ] },
+      { "id": "building.infirmary", "name": "Infirmary", "plot": "infirmary", "sickBerths": 6,
+        "phases": [ { "task": "task.clear_ground", "times": 1 }, { "task": "task.set_posts", "times": 2 }, { "task": "task.raise_frame", "times": 2 }, { "task": "task.thatch_roof", "times": 3 } ] },
+      { "id": "building.workshop", "name": "Workshop", "plot": "workshop", "mends": true,
+        "phases": [ { "task": "task.clear_ground", "times": 1 }, { "task": "task.set_posts", "times": 2 }, { "task": "task.raise_frame", "times": 2 }, { "task": "task.thatch_roof", "times": 2 } ] },
+      { "id": "building.garden", "name": "Garden", "plot": "garden", "beds": 6,
+        "phases": [ { "task": "task.clear_ground", "times": 3 }, { "task": "task.dig_beds", "times": 3 }, { "task": "task.fence_garden", "times": 2 } ] }
+    ],
+    // [RESEARCH] What a garden of European seed might make of a wet tropical shore: to be checked. Suitability
+    // is how well it takes (the daily wasting it suffers is 1 - that); wetRot more in the wet season.
+    "crops": [
+      { "id": "crop.wheat", "name": "wheat", "seed": "item.seed_wheat", "yields": "item.wheat", "perBed": 30, "growDays": 100, "suitability": 0.25, "wetRot": 0.03, "drySowingOnly": true },
+      { "id": "crop.chickpea", "name": "chickpeas", "seed": "item.seed_chickpea", "yields": "item.chickpeas", "perBed": 25, "growDays": 85, "suitability": 0.45, "wetRot": 0.025, "drySowingOnly": true },
+      { "id": "crop.onion", "name": "onions", "seed": "item.seed_onion", "yields": "item.onions", "perBed": 40, "growDays": 60, "suitability": 0.7, "wetRot": 0.008 },
+      { "id": "crop.cabbage", "name": "cabbages and greens", "seed": "item.seed_cabbage", "yields": "item.greens", "perBed": 50, "growDays": 45, "suitability": 0.6, "wetRot": 0.008 }
+    ],
+    // What the forest's edge gives before it must be gone further for (and the work it then takes).
+    "poles": 140,
+    "thatch": 260,
+    "scarce": 0.2,
+    // The first wet season: it comes this many days after landing, rain this many times as often.
+    "wetFromDay": 20,
+    "wetRain": 4,
+    // The storm at the change of season.
+    "stormDay": 30,
+    "stormHours": 30,
+    // The first season, judged.
+    "judgeDay": 90,
+    // Tools: the chance an hour of use that one breaks; the chance mending saves it.
+    "toolBreaksPerHour": 0.002,
+    "mendChance": 0.8
+  },
   "sites": [
     {
       "id": "coast.punta_ceniza",

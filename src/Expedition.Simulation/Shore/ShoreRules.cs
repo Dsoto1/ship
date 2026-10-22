@@ -9,6 +9,9 @@ public sealed record ShoreRules
     /// <summary>How the camp goes.</summary>
     public CampRules Rules { get; init; } = new();
 
+    /// <summary>Making the camp last: buildings, crops, the season (R7).</summary>
+    public SettlementRules Settlement { get; init; } = new();
+
     /// <summary>The landing sites, with <c>default</c> for any landing not listed.</summary>
     public IReadOnlyList<ShoreSite> Sites { get; init; } = [];
 

@@ -109,6 +109,9 @@ public static class InterruptReasons
     /// <summary>There is no room in the stores for what the work brings in.</summary>
     public const string StoresFull = "storesFull";
 
+    /// <summary>A tool broke in the work (ashore, R7).</summary>
+    public const string ToolBroke = "toolBroke";
+
     /// <summary>The character became unable to work (state in <c>to</c>, cause in <c>cause</c>).</summary>
     public const string Incapacitated = "incapacitated";
 

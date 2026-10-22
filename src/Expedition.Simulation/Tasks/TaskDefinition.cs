@@ -122,6 +122,18 @@ public sealed record TaskDefinition
     /// <summary>Ashore: a scouting trip, which may find the next thing about the site on completion.</summary>
     public bool Scouts { get; init; }
 
+    /// <summary>Ashore (R7): a phase of raising a building, done on the plot of a project at that phase.</summary>
+    public bool BuildPhase { get; init; }
+
+    /// <summary>Ashore (R7): mends a broken tool at the workshop.</summary>
+    public bool MendsTool { get; init; }
+
+    /// <summary>Ashore (R7): makes good the worst-kept building.</summary>
+    public bool RepairsBuilding { get; init; }
+
+    /// <summary>Ashore (R7): garden work: <c>sow</c>, <c>tend</c> or <c>harvest</c>.</summary>
+    public string? Garden { get; init; }
+
     /// <summary>Only a hand less tired than this sets out on it (a long trip away); null for anyone fit to work.</summary>
     public double? StartBelowFatigue { get; init; }
 }

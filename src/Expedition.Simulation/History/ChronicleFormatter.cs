@@ -199,6 +199,32 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
             ChronicleEntryKind.CampFirstDays => string.IsNullOrEmpty(entry.Get(ChronicleParameters.Reason))
                 ? $"Three days ashore. The {entry.Get(ChronicleParameters.Need)} have water, shelter and a fire."
                 : $"Three days ashore. The {entry.Get(ChronicleParameters.Need)} still want: {entry.Get(ChronicleParameters.Reason)}.",
+            ChronicleEntryKind.ProjectBegun => $"Ground marked out for {Article(BuildingName(entry.Get(ChronicleParameters.To)))}.",
+            ChronicleEntryKind.BuildingFinished => $"{Capitalise(Article(BuildingName(entry.Get(ChronicleParameters.To))))} finished: {QualityWord(entry.Get(ChronicleParameters.Level))} work.",
+            ChronicleEntryKind.BuildingDown => entry.Get(ChronicleParameters.To) switch
+            {
+                "shelter.sail" => "The wind tore down a sail shelter.",
+                "shelter.brush" => "The wind tore down a brush shelter.",
+                var building => $"The {BuildingName(building).ToLowerInvariant()} came down in the weather.",
+            },
+            ChronicleEntryKind.ToolBroke => $"{Capitalise(Article(ItemWord(entry.Get(ChronicleParameters.To)).ToLowerInvariant()))} broke in the work.",
+            ChronicleEntryKind.ToolMended => $"A broken {ItemWord(entry.Get(ChronicleParameters.To)).ToLowerInvariant()} mended in the workshop.",
+            ChronicleEntryKind.ToolLost => $"A broken {ItemWord(entry.Get(ChronicleParameters.To)).ToLowerInvariant()} could not be saved.",
+            ChronicleEntryKind.Sown => $"A bed sown with {CropName(entry.Get(ChronicleParameters.To))}.",
+            ChronicleEntryKind.Harvested => entry.Get(ChronicleParameters.Level) == "0"
+                ? $"The {CropName(entry.Get(ChronicleParameters.To))} brought in: nothing worth the name."
+                : $"The {CropName(entry.Get(ChronicleParameters.To))} brought in: {entry.Get(ChronicleParameters.Level)} measures.",
+            ChronicleEntryKind.CropFailed => $"A bed of {CropName(entry.Get(ChronicleParameters.To))} has failed" + entry.Get(ChronicleParameters.Reason) switch
+            {
+                "wet" => ", rotted in the wet.",
+                "untended" => ", choked with weeds.",
+                _ => ": it would not take in this ground.",
+            },
+            ChronicleEntryKind.WetSeason => "The wet season has come: rain most days now, the ground turning to mud.",
+            ChronicleEntryKind.StormAshore => "A storm, the change of the season: wind and rain off the sea, and no work out of doors.",
+            ChronicleEntryKind.SeasonJudged => entry.Get(ChronicleParameters.Outcome) == "survived"
+                ? $"The first season is survived: {entry.Get(ChronicleParameters.Need)} alive, dry, fed and watered."
+                : $"The first season has gone hard: {entry.Get(ChronicleParameters.Need)} alive, and still wanting {entry.Get(ChronicleParameters.Reason)}.",
             ChronicleEntryKind.LegReached => entry.Get(ChronicleParameters.Level) == "0"
                 ? "She reached the end of the last leg laid off, by the reckoning: back on the passage's own course."
                 : $"She reached a leg's end, by the reckoning; {entry.Get(ChronicleParameters.Level)} more laid off.",
@@ -406,4 +432,13 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
 
     [GeneratedRegex("(?<!^)([A-Z])")]
     private static partial Regex CapitalSplit();
+
+    private string BuildingName(string? id) => content.Shore?.Settlement.Building(id ?? "")?.Name ?? id ?? "building";
+
+    private string CropName(string? id) => content.Shore?.Settlement.Crops.FirstOrDefault(c => c.Id == id)?.Name ?? id ?? "crop";
+
+    private static string Article(string noun) => noun.Length > 0 && "aeiouAEIOU".Contains(noun[0]) ? $"an {noun.ToLowerInvariant()}" : $"a {noun.ToLowerInvariant()}";
+
+    private static string QualityWord(string? level) =>
+        double.TryParse(level, NumberStyles.Float, CultureInfo.InvariantCulture, out var q) ? q >= 0.75 ? "sound" : q >= 0.5 ? "fair" : "rough" : "fair";
 }
