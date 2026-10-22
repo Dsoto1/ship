@@ -184,7 +184,7 @@ public sealed partial class SimulationRunner
         }
 
         var taken = Campaign.ActiveTasks.Values.Where(t => t.CharacterId != character.Id).Select(t => t.SpotId).ToHashSet();
-        var all = Content.Locations[placement.LocationId].Spots.Where(s => s.Tasks.Contains(watch.Id)).ToList();
+        var all = Location(placement.LocationId).Spots.Where(s => s.Tasks.Contains(watch.Id)).ToList();
         if (all.Count == 0)
         {
             return null;

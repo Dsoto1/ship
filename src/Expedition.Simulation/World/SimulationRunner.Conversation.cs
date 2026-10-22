@@ -167,12 +167,12 @@ public sealed partial class SimulationRunner
     /// <summary>The room the captain is in, or null outdoors.</summary>
     public RoomDefinition? CaptainRoom =>
         Campaign.CaptainId is { } captain && Campaign.Placements.TryGetValue(captain, out var here)
-            ? Content.Locations[here.LocationId].RoomAt(here.CellAt(Campaign.Clock.Tick))
+            ? Location(here.LocationId).RoomAt(here.CellAt(Campaign.Clock.Tick))
             : null;
 
     /// <summary>The room someone is in, or null outdoors.</summary>
     public RoomDefinition? RoomOf(CharacterId id) =>
-        Campaign.Placements.TryGetValue(id, out var there) ? Content.Locations[there.LocationId].RoomAt(there.CellAt(Campaign.Clock.Tick)) : null;
+        Campaign.Placements.TryGetValue(id, out var there) ? Location(there.LocationId).RoomAt(there.CellAt(Campaign.Clock.Tick)) : null;
 
     /// <summary>
     /// Stands everyone in the room a round, once a day: the cheapest way in port to be thought well of.

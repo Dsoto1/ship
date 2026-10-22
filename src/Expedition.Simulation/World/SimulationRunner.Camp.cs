@@ -136,7 +136,7 @@ public sealed partial class SimulationRunner
         BeginWorld(camp);
 
         // Everyone to the beach, their ship's work and orders left behind, and the camp's work for duties.
-        var location = Content.Locations[CampLocation];
+        var location = Location(CampLocation);
         var people = Ashore();
         var cells = Enumerable.Range(2, 4).SelectMany(y => Enumerable.Range(12, 13).Select(x => new GridPosition(x, y)))
             .Where(location.IsWalkable).ToList();

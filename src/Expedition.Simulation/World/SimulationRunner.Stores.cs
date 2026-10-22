@@ -45,7 +45,7 @@ public sealed partial class SimulationRunner
 
         var a = here.CellAt(Campaign.Clock.Tick);
         var b = there.CellAt(Campaign.Clock.Tick);
-        var location = Content.Locations[here.LocationId];
+        var location = Location(here.LocationId);
         if (location.RoomAt(b) is { } shop && location.RoomAt(a) != shop)
         {
             return $"{seller.Name} is inside {shop.Name}. Go in to look at the goods.";

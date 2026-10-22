@@ -2834,3 +2834,36 @@ there. New are:
 
 **Screenshots:** `r9-scene-a-first-night.jpg` … `r9-scene-d-charter.jpg`, `r9-relief-ship.jpg`,
 `r9-gaspar-lezo.jpg`.
+
+### Natural ground and the coast's vegetation (owner: "the forest and terrain needs more variation"; "the paths need to be more natural"; "find some free assets to make it prettier")
+
+Details: `docs/NATURAL_GROUND.md`.
+
+**Each landing site has its own ground,** made from its lie of the land (headland, river, dunes, mangrove or
+forest) and the voyage's seed:
+- the forest's edge in bays and points;
+- groves and clearings;
+- rocks on the beach;
+- the ways in as lanes through the trees.
+
+Every work place stays reachable. The ground is made again on loading, not saved.
+
+**The vegetation:** two CC0 packs, fetched and credited.
+- **Kenney's Nature Kit:** palms, far trees, stumps and logs, recoloured to the coast's palette.
+- **Quaternius' Stylized Nature MegaKit (free edition):** textured trees near the camp, bushes, ferns, plants,
+  grasses, flowers, fungi and rocks.
+
+What grows where follows each site's ground.
+
+**The ground's colour** blends:
+- ridges and hollows;
+- creeper running out from the trees;
+- leaf litter, rock and mud;
+- low dunes.
+
+**Paths** are painted as soft tracks that curve and fade, not laid in squares.
+
+**Tests:** `CampGroundTests` (5); 586 in all.
+
+**Screenshots:** `ground-punta_ceniza.jpg`, `ground-rio_bermejo.jpg`, `ground-bajos_largos.jpg`,
+`ground-manglares.jpg`.

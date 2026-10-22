@@ -79,7 +79,7 @@ public sealed partial class SimulationRunner
             return false;
         }
 
-        var location = Content.Locations[watched.LocationId];
+        var location = Location(watched.LocationId);
         // Walls: inside a room one sees only who else is in it, and from outside no one in it.
         if (location.RoomAt(watcher.CellAt(Campaign.Clock.Tick)) != location.RoomAt(watched.CellAt(Campaign.Clock.Tick)))
         {
@@ -174,7 +174,7 @@ public sealed partial class SimulationRunner
             return false;
         }
 
-        return Content.Locations[placement.LocationId].FindSpot(task.SpotId)?.Indoors == true;
+        return Location(placement.LocationId).FindSpot(task.SpotId)?.Indoors == true;
     }
 
     private static int Distance(GridPosition a, GridPosition b) => Math.Max(Math.Abs(a.X - b.X), Math.Abs(a.Y - b.Y));
@@ -272,7 +272,7 @@ public sealed partial class SimulationRunner
             if (Campaign.Placements.TryGetValue(local.Id, out var placement) && placement.Movement is { } walk)
             {
                 // Arrive at once rather than everyone walking out of their front doors.
-                var location = Content.Locations[placement.LocationId];
+                var location = Location(placement.LocationId);
                 SetCell(local.Id, location.Id, walk.Path[^1]);
             }
         }
@@ -383,7 +383,7 @@ public sealed partial class SimulationRunner
             return $"{person.Name} is indoors.";
         }
 
-        var location = Content.Locations[here.LocationId];
+        var location = Location(here.LocationId);
         var theirs = location.RoomAt(there.CellAt(Campaign.Clock.Tick));
         if (theirs != location.RoomAt(here.CellAt(Campaign.Clock.Tick)))
         {
@@ -454,7 +454,7 @@ public sealed partial class SimulationRunner
     public (CommandResult Result, string Said) ReadNotices()
     {
         if (Content.Port is not { NoticeBoard: { } boardId } rules || Campaign.Port is null || Campaign.CaptainId is not { } captain
-            || !Campaign.Placements.TryGetValue(captain, out var here) || Content.Locations[here.LocationId].FindSpot(boardId) is not { } board)
+            || !Campaign.Placements.TryGetValue(captain, out var here) || Location(here.LocationId).FindSpot(boardId) is not { } board)
         {
             return (CommandResult.Rejected("There is no notice board here."), "");
         }
@@ -658,7 +658,7 @@ public sealed partial class SimulationRunner
         port.MarkHired(id);
         character.Membership = Membership.Crew;
         Campaign.AbandonTask(id);
-        var deck = Content.Locations[rules.ShipLocation];
+        var deck = Location(rules.ShipLocation);
         SetCell(id, deck.Id, FreeCell(deck));
         SetDuties(id, DutiesFor(character));
         Campaign.Record(ChronicleEntryKind.CrewHired, [new(ChronicleParameters.Level, advance.ToString(CultureInfo.InvariantCulture))], id);
@@ -750,7 +750,7 @@ public sealed partial class SimulationRunner
         if (Campaign.CaptainId is { } captain)
         {
             Campaign.AbandonTask(captain);
-            var deck = Content.Locations[rules.ShipLocation];
+            var deck = Location(rules.ShipLocation);
             SetCell(captain, deck.Id, FreeCell(deck));
         }
 

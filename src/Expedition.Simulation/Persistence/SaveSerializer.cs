@@ -928,9 +928,13 @@ public static class SaveSerializer
         campaign.FoodShortageRecorded = data.FoodShortageRecorded;
         campaign.WaterShortageRecorded = data.WaterShortageRecorded;
 
+        // The camp's ground is made again from its site and the voyage's seed (Shore.CampGround).
+        var campGround = data.Camp is { } landed && content.Locations.TryGetValue(World.SimulationRunner.CampLocation, out var plan)
+            ? Shore.CampGround.Make(plan, landed.Site, content.Shore?.Site(landed.Site)?.Ground ?? "forest", campaign.Seed)
+            : null;
         foreach (var saved in data.Placements)
         {
-            RestorePlacement(campaign, saved, content);
+            RestorePlacement(campaign, saved, content, campGround);
         }
 
         foreach (var saved in data.Relationships)
@@ -1441,7 +1445,7 @@ public static class SaveSerializer
         return campaign;
     }
 
-    private static void RestorePlacement(CampaignState campaign, PlacementData saved, GameContent content)
+    private static void RestorePlacement(CampaignState campaign, PlacementData saved, GameContent content, LocationDefinition? campGround)
     {
         var id = new CharacterId(saved.CharacterId);
         if (!campaign.Characters.TryGetValue(id, out var character))
@@ -1457,6 +1461,11 @@ public static class SaveSerializer
         if (!content.Locations.TryGetValue(saved.LocationId, out var location))
         {
             throw new SaveLoadException($"{character.Name} is in '{saved.LocationId}', which no longer exists in the game content.");
+        }
+
+        if (saved.LocationId == World.SimulationRunner.CampLocation && campGround is not null)
+        {
+            location = campGround;
         }
 
         var cell = new GridPosition(saved.X, saved.Y);

@@ -303,7 +303,7 @@ public sealed partial class SimulationRunner
     private (WorkSpotDefinition Spot, IReadOnlyList<GridPosition> Path)? ProperPlace(Character character, TaskDefinition task)
     {
         if (character.Membership != Membership.Crew || !Campaign.Placements.TryGetValue(character.Id, out var placement)
-            || !Content.Locations.TryGetValue(placement.LocationId, out var location))
+            || !TryLocation(placement.LocationId, out var location))
         {
             return null;
         }
