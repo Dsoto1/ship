@@ -56,6 +56,38 @@ public sealed record LocationDefinition
     /// </summary>
     public IReadOnlyList<RoomDefinition> Rooms { get; init; } = [];
 
+    /// <summary>
+    /// Other levels of the same place, laid out beside the main one in the grid (a ship's hold, the spaces
+    /// under her raised decks): the presentation draws each shifted back into its true place. Empty for a
+    /// place of one level.
+    /// </summary>
+    public IReadOnlyList<LocationLevel> Levels { get; init; } = [];
+
+    /// <summary>Ladders and doors joining two cells that are not side by side in the grid: walked both ways.</summary>
+    public IReadOnlyList<LocationLink> Links { get; init; } = [];
+
+    /// <summary>The level <paramref name="cell"/> is on, or null for the main one.</summary>
+    public LocationLevel? LevelAt(GridPosition cell) => Levels.FirstOrDefault(l => cell.X >= l.X0 && cell.X <= l.X1);
+
+    /// <summary>Columns of the main level: the whole width when there are no other levels.</summary>
+    public int MainWidth => Levels.Count == 0 ? Width : Levels.Min(l => l.X0) - 1;
+
+    /// <summary>The cells a ladder or door joins <paramref name="cell"/> to.</summary>
+    public IEnumerable<GridPosition> LinkedTo(GridPosition cell)
+    {
+        foreach (var link in Links)
+        {
+            if (link.X0 == cell.X && link.Y0 == cell.Y)
+            {
+                yield return new GridPosition(link.X1, link.Y1);
+            }
+            else if (link.X1 == cell.X && link.Y1 == cell.Y)
+            {
+                yield return new GridPosition(link.X0, link.Y0);
+            }
+        }
+    }
+
     /// <summary>The room <paramref name="cell"/> is in, or null outdoors.</summary>
     public RoomDefinition? RoomAt(GridPosition cell) =>
         Rooms.FirstOrDefault(r => cell.X >= r.X0 && cell.X <= r.X1 && cell.Y >= r.Y0 && cell.Y <= r.Y1);
@@ -120,6 +152,12 @@ public sealed record WorkSpotDefinition
 
     /// <summary>True if the spot is inside a building: people there cannot be seen from outside.</summary>
     public bool Indoors { get; init; }
+
+    /// <summary>For the sick: a berth the sick are taken to.</summary>
+    public bool Sick { get; init; }
+
+    /// <summary>Kept for someone: <c>captain</c> for the captain alone. Null for anyone.</summary>
+    public string? Reserved { get; init; }
 
     /// <summary>
     /// What kind of place this is, for how people are drawn there (PORT_EXPERIENCE §7), for example
@@ -199,4 +237,39 @@ public sealed record LocationFeature
 
     /// <summary>Which one, for example <c>chamber</c> or <c>tavern</c> for a building.</summary>
     public string? Style { get; init; }
+}
+
+/// <summary>Another level of a place, laid out beside the main one in its grid (see <see cref="LocationDefinition.Levels"/>).</summary>
+public sealed record LocationLevel
+{
+    /// <summary>ID, for example <c>hold</c>.</summary>
+    public required string Id { get; init; }
+
+    /// <summary>Name, for example "the hold".</summary>
+    public required string Name { get; init; }
+
+    /// <summary>First column.</summary>
+    public required int X0 { get; init; }
+
+    /// <summary>Last column.</summary>
+    public required int X1 { get; init; }
+
+    /// <summary>Columns to shift it by to draw it in its true place (negative: back under the main level).</summary>
+    public int OffsetX { get; init; }
+}
+
+/// <summary>A ladder or door joining two cells, walked both ways.</summary>
+public sealed record LocationLink
+{
+    /// <summary>One end: column.</summary>
+    public required int X0 { get; init; }
+
+    /// <summary>One end: row.</summary>
+    public required int Y0 { get; init; }
+
+    /// <summary>The other end: column.</summary>
+    public required int X1 { get; init; }
+
+    /// <summary>The other end: row.</summary>
+    public required int Y1 { get; init; }
 }

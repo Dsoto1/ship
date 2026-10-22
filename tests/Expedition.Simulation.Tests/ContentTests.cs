@@ -48,14 +48,14 @@ public class ContentTests
         var spotOnWall = TestContent.Deck with
         {
             Id = "location.bad",
-            Spots = [new() { Id = "spot.x", X = 0, Y = 2, Tasks = ["task.spot_pump", "task.rest", "task.nope"] }],
+            Spots = [new() { Id = "spot.x", X = 0, Y = 2, Tasks = ["task.spot_pump", "task.pump", "task.nope"] }],
         };
         var ragged = TestContent.Deck with { Id = "location.ragged", Rows = ["...", ".."] };
         var oddCharacters = TestContent.Deck with { Id = "location.odd", Rows = ["..~", "..."], Spots = [] };
 
         var ex = Assert.Throws<ContentValidationException>(() => new GameContent(
             TestContent.Rules, [], TestContent.Items,
-            [TestContent.Rest, TestContent.SpotPump], [spotOnWall, ragged, oddCharacters]));
+            [TestContent.Rest, TestContent.Pump, TestContent.SpotPump], [spotOnWall, ragged, oddCharacters]));
 
         Assert.Contains(ex.Errors, e => e.Contains("not on a walkable cell"));
         Assert.Contains(ex.Errors, e => e.Contains("does not use work spots"));

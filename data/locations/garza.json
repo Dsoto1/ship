@@ -5,31 +5,32 @@
   "id": "location.garza",
   "name": "The Garza",
   "rows": [
-   "###...###",
-   "##.....##",
-   "#.......#",
-   "#.......#",
-   "#o......#",
-   "#.....o.#",
-   "#...#...#",
-   "#o.....o#",
-   "#.......#",
-   "#..###..#",
-   "#..###..#",
-   "#o.....o#",
-   "#.......#",
-   "#...#...#",
-   "#.......#",
-   "#o..o..o#",
-   "#.......#",
-   "#.......#",
-   "#.......#",
-   "#.......#",
-   "#...#...#",
-   "#.......#",
-   "#.......#",
-   "##.....##",
-   "#########"
+   "###...#######################",
+   "##.....#####.....######ooo###",
+   "#.......###.......####o...o##",
+   "#.......###.......####.....##",
+   "#o......###.......####.....##",
+   "#.....o.##############.....##",
+   "#...#...##############..#..##",
+   "#o.....o##############o...o##",
+   "#.......##############o...o##",
+   "#..###..##############o...o##",
+   "#..###..##############o...o##",
+   "#o.....o##############o...o##",
+   "#.......##############o...o##",
+   "#...#...##############..#..##",
+   "#.......##############o...o##",
+   "#o..o..o##############o...o##",
+   "#.......##############o...o##",
+   "#.......##############.....##",
+   "#.......###.......####o...o##",
+   "#.......###.......####o..o###",
+   "#...#...###...#...###########",
+   "#.......###.......###########",
+   "#.......###.......###########",
+   "##.....######################",
+   "############.....############",
+   "#############...#############"
   ],
   "spots": [
    {
@@ -121,6 +122,284 @@
     ],
     "kind": "WatchWater",
     "face": "S"
+   },
+   {
+    "id": "spot.berth_fore_1",
+    "x": 12,
+    "y": 1,
+    "tasks": [
+     "task.rest"
+    ],
+    "kind": "Lying",
+    "indoors": true
+   },
+   {
+    "id": "spot.berth_fore_2",
+    "x": 13,
+    "y": 1,
+    "tasks": [
+     "task.rest"
+    ],
+    "kind": "Lying",
+    "indoors": true
+   },
+   {
+    "id": "spot.berth_fore_3",
+    "x": 15,
+    "y": 1,
+    "tasks": [
+     "task.rest"
+    ],
+    "kind": "Lying",
+    "indoors": true
+   },
+   {
+    "id": "spot.berth_fore_4",
+    "x": 16,
+    "y": 1,
+    "tasks": [
+     "task.rest"
+    ],
+    "kind": "Lying",
+    "indoors": true
+   },
+   {
+    "id": "spot.berth_fore_5",
+    "x": 11,
+    "y": 2,
+    "tasks": [
+     "task.rest"
+    ],
+    "kind": "Lying",
+    "indoors": true
+   },
+   {
+    "id": "spot.berth_fore_6",
+    "x": 17,
+    "y": 2,
+    "tasks": [
+     "task.rest"
+    ],
+    "kind": "Lying",
+    "indoors": true
+   },
+   {
+    "id": "spot.berth_fore_7",
+    "x": 11,
+    "y": 3,
+    "tasks": [
+     "task.rest"
+    ],
+    "kind": "Lying",
+    "indoors": true
+   },
+   {
+    "id": "spot.berth_fore_8",
+    "x": 12,
+    "y": 3,
+    "tasks": [
+     "task.rest"
+    ],
+    "kind": "Lying",
+    "indoors": true
+   },
+   {
+    "id": "spot.sick_1",
+    "x": 16,
+    "y": 3,
+    "tasks": [
+     "task.rest"
+    ],
+    "kind": "Lying",
+    "indoors": true,
+    "sick": true
+   },
+   {
+    "id": "spot.sick_2",
+    "x": 17,
+    "y": 3,
+    "tasks": [
+     "task.rest"
+    ],
+    "kind": "Lying",
+    "indoors": true,
+    "sick": true
+   },
+   {
+    "id": "spot.tend_sick",
+    "x": 15,
+    "y": 3,
+    "tasks": [
+     "task.tend_sick"
+    ],
+    "kind": "HelpPoint",
+    "face": "E",
+    "indoors": true
+   },
+   {
+    "id": "spot.sleep_waist_1",
+    "x": 2,
+    "y": 8,
+    "tasks": [
+     "task.rest"
+    ],
+    "kind": "Lying"
+   },
+   {
+    "id": "spot.sleep_waist_2",
+    "x": 6,
+    "y": 8,
+    "tasks": [
+     "task.rest"
+    ],
+    "kind": "Lying"
+   },
+   {
+    "id": "spot.sleep_waist_3",
+    "x": 2,
+    "y": 12,
+    "tasks": [
+     "task.rest"
+    ],
+    "kind": "Lying"
+   },
+   {
+    "id": "spot.sleep_waist_4",
+    "x": 6,
+    "y": 12,
+    "tasks": [
+     "task.rest"
+    ],
+    "kind": "Lying"
+   },
+   {
+    "id": "spot.sleep_waist_5",
+    "x": 3,
+    "y": 16,
+    "tasks": [
+     "task.rest"
+    ],
+    "kind": "Lying"
+   },
+   {
+    "id": "spot.sleep_waist_6",
+    "x": 5,
+    "y": 16,
+    "tasks": [
+     "task.rest"
+    ],
+    "kind": "Lying"
+   },
+   {
+    "id": "spot.berth_aft_1",
+    "x": 11,
+    "y": 19,
+    "tasks": [
+     "task.rest"
+    ],
+    "kind": "Lying",
+    "indoors": true
+   },
+   {
+    "id": "spot.berth_aft_2",
+    "x": 17,
+    "y": 19,
+    "tasks": [
+     "task.rest"
+    ],
+    "kind": "Lying",
+    "indoors": true
+   },
+   {
+    "id": "spot.cabin",
+    "x": 13,
+    "y": 24,
+    "tasks": [
+     "task.rest"
+    ],
+    "kind": "Lying",
+    "indoors": true,
+    "reserved": "captain"
+   },
+   {
+    "id": "spot.hold_lash_1",
+    "x": 23,
+    "y": 9,
+    "tasks": [
+     "task.lash_cargo"
+    ],
+    "kind": "RopeWork",
+    "indoors": true
+   },
+   {
+    "id": "spot.hold_lash_2",
+    "x": 25,
+    "y": 15,
+    "tasks": [
+     "task.lash_cargo"
+    ],
+    "kind": "RopeWork",
+    "indoors": true
+   },
+   {
+    "id": "spot.leak_starboard_bow",
+    "x": 26,
+    "y": 3,
+    "tasks": [
+     "task.plug_leak"
+    ],
+    "kind": "HammerStation",
+    "indoors": true
+   },
+   {
+    "id": "spot.leak_larboard_bow",
+    "x": 22,
+    "y": 3,
+    "tasks": [
+     "task.plug_leak"
+    ],
+    "kind": "HammerStation",
+    "indoors": true
+   },
+   {
+    "id": "spot.leak_starboard_waist",
+    "x": 25,
+    "y": 10,
+    "tasks": [
+     "task.plug_leak"
+    ],
+    "kind": "HammerStation",
+    "indoors": true
+   },
+   {
+    "id": "spot.leak_larboard_waist",
+    "x": 23,
+    "y": 10,
+    "tasks": [
+     "task.plug_leak"
+    ],
+    "kind": "HammerStation",
+    "indoors": true
+   },
+   {
+    "id": "spot.leak_counter",
+    "x": 24,
+    "y": 18,
+    "tasks": [
+     "task.plug_leak"
+    ],
+    "kind": "HammerStation",
+    "indoors": true
+   },
+   {
+    "id": "spot.leak_garboard",
+    "x": 24,
+    "y": 12,
+    "tasks": [
+     "task.plug_leak"
+    ],
+    "kind": "HammerStation",
+    "indoors": true
    }
   ],
   "ground": [
@@ -155,6 +434,34 @@
     "x1": 8,
     "y1": 24,
     "height": 1.9
+   },
+   {
+    "x0": 10,
+    "y0": 24,
+    "x1": 18,
+    "y1": 25,
+    "height": 1.9
+   },
+   {
+    "x0": 20,
+    "y0": 0,
+    "x1": 28,
+    "y1": 4,
+    "height": -1.4
+   },
+   {
+    "x0": 20,
+    "y0": 5,
+    "x1": 28,
+    "y1": 16,
+    "height": -1.75
+   },
+   {
+    "x0": 20,
+    "y0": 17,
+    "x1": 28,
+    "y1": 20,
+    "height": -1.5
    }
   ],
   "features": [
@@ -229,6 +536,54 @@
     "y0": 15,
     "x1": 7,
     "y1": 15
+   }
+  ],
+  "levels": [
+   {
+    "id": "covered",
+    "name": "under the raised decks",
+    "x0": 10,
+    "x1": 18,
+    "offsetX": -10
+   },
+   {
+    "id": "hold",
+    "name": "the hold",
+    "x0": 20,
+    "x1": 28,
+    "offsetX": -20
+   }
+  ],
+  "links": [
+   {
+    "x0": 2,
+    "y0": 5,
+    "x1": 12,
+    "y1": 4
+   },
+   {
+    "x0": 5,
+    "y0": 11,
+    "x1": 24,
+    "y1": 11
+   },
+   {
+    "x0": 2,
+    "y0": 17,
+    "x1": 12,
+    "y1": 18
+   },
+   {
+    "x0": 14,
+    "y0": 22,
+    "x1": 24,
+    "y1": 18
+   },
+   {
+    "x0": 4,
+    "y0": 23,
+    "x1": 14,
+    "y1": 24
    }
   ]
  }

@@ -104,6 +104,8 @@ public partial class ShipView : Node3D
                 mesh.MaterialOverride = SceneryMaterial.Shared;
             }
         }
+        _breaks = new Node3D { Name = "Breaks" };
+        AddChild(_breaks);
         BuildHull();
         BuildRaisedDecks(location);
         BuildDeckFittings(location);
@@ -111,11 +113,317 @@ public partial class ShipView : Node3D
         BuildMastsAndRigging(location);
         BuildSpotProps(location);
         BuildFittings(location);
-        _batch.Commit(this);
+        _deckMeshes = _batch.Commit(this).Where(m => m.MaterialOverride == _deckMaterial).ToList();
         BuildShipboardDressing();
         if (_modelled && _hatches.Count > 0)
         {
             BuildBoat();
+        }
+
+        if (_modelled)
+        {
+            // The poop's deck, drawn here rather than in the model, so the cutaway can show the cabin under it.
+            var poop = new SurfaceTool();
+            poop.Begin(Mesh.PrimitiveType.Triangles);
+            for (var z = _sternZ; z < Length.Stern - 0.01f; z += 0.25f)
+            {
+                var zn = Mathf.Min(z + 0.25f, Length.Stern);
+                var (w0, w1) = (HalfWidthAt(z) - WallThickness - 0.05f, HalfWidthAt(zn) - WallThickness - 0.05f);
+                DeckQuad(poop, new(CentreX - w0, PoopDeck, z), new(CentreX + w0, PoopDeck, z), new(CentreX + w1, PoopDeck, zn), new(CentreX - w1, PoopDeck, zn));
+            }
+
+            poop.GenerateNormals();
+            poop.GenerateTangents();
+            var poopDeck = new MeshInstance3D { Name = "PoopDeck", Mesh = poop.Commit(), MaterialOverride = _deckMaterial };
+            AddChild(poopDeck);
+            _deckMeshes.Add(poopDeck);
+        }
+
+        if (location.Levels.Count > 0)
+        {
+            BuildBelow(location);
+        }
+    }
+
+    // The poop deck's height above the waist (tools/ship/garza.json).
+    private const float PoopDeck = 3.7f;
+
+    private Node3D _breaks = null!;
+
+    // ================================================================ below decks (docs/GARZA_INTERIOR.md)
+
+    private Node3D? _below;
+    private MeshInstance3D? _bilgeWater;
+    private readonly List<(Node3D Node, int Order)> _casks = [];
+    private readonly List<(Node3D Node, int Order)> _barrels = [];
+    private readonly Dictionary<string, (Node3D Spurt, Node3D Plug)> _leakMarks = [];
+    // The planking the cutaway takes away.
+    private List<MeshInstance3D> _deckMeshes = [];
+    private bool _cutaway;
+    private float _holdFloor = -1.75f;
+
+    /// <summary>Where a cell (or a point between cells) of the grid is drawn: a level below shifted back under the deck.</summary>
+    public Vector3 Place(float x, float y)
+    {
+        var level = _location.LevelAt(new GridPosition(Mathf.RoundToInt(x), Mathf.RoundToInt(y)));
+        return new Vector3(x + (level?.OffsetX ?? 0), HeightAt(x, y), y);
+    }
+
+    /// <summary>Whether a cell is below decks (on another level), for showing who is down there.</summary>
+    public bool IsBelow(GridPosition cell) => _location.LevelAt(cell) is not null;
+
+    private void BuildBelow(LocationDefinition location)
+    {
+        _below = new Node3D { Name = "Below", Visible = false };
+        AddChild(_below);
+        var floor = new StandardMaterial3D { AlbedoColor = new Color(0.23f, 0.17f, 0.11f), Roughness = 0.95f };
+        var lining = new StandardMaterial3D { AlbedoColor = new Color(0.33f, 0.24f, 0.16f), Roughness = 0.95f, CullMode = BaseMaterial3D.CullModeEnum.Disabled };
+        var timber = new StandardMaterial3D { AlbedoColor = new Color(0.58f, 0.43f, 0.27f), Roughness = 0.9f };
+        var hoop = new StandardMaterial3D { AlbedoColor = Iron, Roughness = 0.6f };
+        var blanket = new[] { new Color(0.5f, 0.42f, 0.32f), new Color(0.42f, 0.3f, 0.26f), new Color(0.55f, 0.5f, 0.4f) };
+        var hold = location.Levels.FirstOrDefault(l => l.Id == "hold");
+        var caskOrder = 0;
+        var barrelOrder = 0;
+        for (var y = 0; y < location.Height; y++)
+        {
+            for (var x = 0; x < location.Width; x++)
+            {
+                var cell = new GridPosition(x, y);
+                if (location.LevelAt(cell) is not { } level || location.Rows[y][x] == LocationDefinition.Blocked && !IsMastStep(location, cell))
+                {
+                    continue;
+                }
+
+                var at = Place(x, y);
+                var inHold = level == hold;
+                // The floor: planks over the ballast in the hold, the deck itself under the raised decks.
+                _below.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(1f, 0.06f, 1f) }, MaterialOverride = inHold ? floor : timber, Position = at + new Vector3(0, -0.03f, 0) });
+                if (location.Rows[y][x] != LocationDefinition.Fitting)
+                {
+                    continue;
+                }
+
+                // Stowage: cables forward, sails beside them, casks amidships, barrels aft of the mainmast,
+                // the bread room's sacks and the powder kegs aft.
+                if (y <= 1)
+                {
+                    AddBelow(new TorusMesh { InnerRadius = 0.12f, OuterRadius = 0.42f }, Plain(Rope), at + new Vector3(0, 0.1f, 0));
+                    AddBelow(new TorusMesh { InnerRadius = 0.1f, OuterRadius = 0.36f }, Plain(Rope), at + new Vector3(0, 0.22f, 0));
+                }
+                else if (y <= 3)
+                {
+                    AddBelow(new BoxMesh { Size = new Vector3(0.8f, 0.5f, 0.9f) }, Plain(new Color(0.78f, 0.72f, 0.6f)), at + new Vector3(0, 0.25f, 0));
+                }
+                else if (y <= 12)
+                {
+                    var tier = new Node3D { Position = at };
+                    _below.AddChild(tier);
+                    foreach (var (dz, dy) in new[] { (-0.25f, 0.3f), (0.25f, 0.3f), (0f, 0.82f) })
+                    {
+                        tier.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 0.26f, BottomRadius = 0.26f, Height = 0.85f }, MaterialOverride = timber, Position = new Vector3(0, dy, dz), RotationDegrees = new Vector3(0, 0, 90) });
+                        tier.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 0.27f, BottomRadius = 0.27f, Height = 0.04f }, MaterialOverride = hoop, Position = new Vector3(0.3f, dy, dz), RotationDegrees = new Vector3(0, 0, 90) });
+                    }
+
+                    _casks.Add((tier, caskOrder++));
+                }
+                else if (y <= 16)
+                {
+                    var barrels = new Node3D { Position = at };
+                    _below.AddChild(barrels);
+                    foreach (var dz in new[] { -0.22f, 0.22f })
+                    {
+                        barrels.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 0.2f, BottomRadius = 0.22f, Height = 0.6f }, MaterialOverride = timber, Position = new Vector3(0, 0.3f, dz) });
+                    }
+
+                    _barrels.Add((barrels, barrelOrder++));
+                }
+                else if (y == 18 || x - level.X0 < 4)
+                {
+                    // Biscuit in sacks and lined bins.
+                    AddBelow(new BoxMesh { Size = new Vector3(0.8f, 0.55f, 0.8f) }, Plain(new Color(0.72f, 0.62f, 0.45f)), at + new Vector3(0, 0.28f, 0));
+                }
+                else
+                {
+                    // The powder kegs, small and black-hooped.
+                    foreach (var dz in new[] { -0.2f, 0.2f })
+                    {
+                        AddBelow(new CylinderMesh { TopRadius = 0.15f, BottomRadius = 0.15f, Height = 0.35f }, Plain(new Color(0.25f, 0.2f, 0.16f)), at + new Vector3(0, 0.18f, dz));
+                    }
+                }
+            }
+        }
+
+        // The hold's lining: the inside of her planking, from the floor up to the deck, along both sides.
+        if (hold is not null)
+        {
+            var rows = Enumerable.Range(0, location.Height).Where(y => Enumerable.Range(hold.X0, hold.X1 - hold.X0 + 1).Any(x => location.Rows[y][x] != LocationDefinition.Blocked)).ToList();
+            var (first, last) = (rows.Min() - 0.5f, rows.Max() + 0.5f);
+            _holdFloor = (float)HeightAt(hold.X0 + 4, 10);
+            for (var z = first; z < last - 0.01f; z += 0.5f)
+            {
+                var half = HalfWidthAt(z + 0.25f) - WallThickness - 0.05f;
+                var depth = -HeightAt(hold.X0 + 4, Mathf.Clamp(z + 0.25f, 0, location.Height - 1));
+                foreach (var side in new[] { -1f, 1f })
+                {
+                    _below.AddChild(new MeshInstance3D
+                    {
+                        Mesh = new BoxMesh { Size = new Vector3(0.06f, depth, 0.5f) }, MaterialOverride = lining,
+                        Position = new Vector3(CentreX + side * (half - 0.25f * (depth / 1.75f)), -depth / 2f, z + 0.25f),
+                        RotationDegrees = new Vector3(0, 0, side * 12),
+                    });
+                }
+            }
+
+            foreach (var z in new[] { first, last })
+            {
+                var half = HalfWidthAt(Mathf.Clamp(z, 0, location.Height - 1)) - WallThickness;
+                _below.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(half * 1.6f, 1.6f, 0.08f) }, MaterialOverride = lining, Position = new Vector3(CentreX, -0.8f, z) });
+            }
+
+            // The bilge water: a sheet that rises from under the floor as the bilge fills.
+            var water = new StandardMaterial3D { AlbedoColor = new Color(0.25f, 0.33f, 0.32f, 0.7f), Transparency = BaseMaterial3D.TransparencyEnum.Alpha, Roughness = 0.1f };
+            _bilgeWater = new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(HalfBeam * 1.5f, 0.02f, last - first) }, MaterialOverride = water, Position = new Vector3(CentreX, _holdFloor - 0.1f, (first + last) / 2f) };
+            _below.AddChild(_bilgeWater);
+        }
+
+        // Berths and their bedding; the sick berths with a bowl and a lantern; the cabin's table and chest.
+        foreach (var spot in location.Spots.Where(s => location.LevelAt(s.Cell) is not null || s.Tasks.Contains("task.rest")))
+        {
+            var at = Place(spot.X, spot.Y);
+            var node = location.LevelAt(spot.Cell) is null ? (Node3D)this : _below;
+            if (spot.Tasks.Contains("task.rest") && location.LevelAt(spot.Cell) is not null)
+            {
+                node.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(0.7f, 0.12f, 1.7f) }, MaterialOverride = Plain(blanket[spot.Y % blanket.Length]), Position = at + new Vector3(0, 0.06f, 0) });
+                if (spot.Sick)
+                {
+                    AddBelow(new CylinderMesh { TopRadius = 0.12f, BottomRadius = 0.08f, Height = 0.08f }, Plain(new Color(0.6f, 0.55f, 0.45f)), at + new Vector3(0.45f, 0.04f, -0.6f));
+                }
+            }
+
+            if (spot.Reserved == "captain")
+            {
+                AddBelow(new BoxMesh { Size = new Vector3(1.4f, 0.06f, 0.8f) }, Plain(new Color(0.42f, 0.28f, 0.17f)), at + new Vector3(1.6f, 0.75f, 0));
+                AddBelow(new BoxMesh { Size = new Vector3(1.1f, 0.01f, 0.65f) }, Plain(new Color(0.86f, 0.79f, 0.63f)), at + new Vector3(1.6f, 0.79f, 0));
+                AddBelow(new BoxMesh { Size = new Vector3(0.8f, 0.5f, 0.45f) }, Plain(new Color(0.35f, 0.22f, 0.13f)), at + new Vector3(0.2f, 0.25f, 1f));
+            }
+
+            if (spot.Tasks.Contains("task.plug_leak"))
+            {
+                var mark = Place(spot.X, spot.Y);
+                var outward = Mathf.Sign(mark.X - CentreX);
+                var hull = new Vector3(CentreX + outward * (HalfWidthAt(spot.Y) - 0.6f), mark.Y + 0.6f, mark.Z);
+                var spurt = new Node3D { Visible = false };
+                _below.AddChild(spurt);
+                var jet = new StandardMaterial3D { AlbedoColor = new Color(0.75f, 0.85f, 0.9f, 0.75f), Transparency = BaseMaterial3D.TransparencyEnum.Alpha };
+                spurt.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 0.03f, BottomRadius = 0.12f, Height = 0.8f }, MaterialOverride = jet, Position = hull + new Vector3(-outward * 0.35f, -0.25f, 0), RotationDegrees = new Vector3(0, 0, outward * 60) });
+                var plug = new Node3D { Visible = false };
+                _below.AddChild(plug);
+                plug.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(0.08f, 0.25f, 0.35f) }, MaterialOverride = Plain(new Color(0.78f, 0.7f, 0.5f)), Position = hull });
+                _leakMarks[spot.Id] = (spurt, plug);
+            }
+        }
+
+        // Lantern light below, warm and close: the hold lies in the hull's own shadow.
+        foreach (var (z, y, range) in new[] { (2.5f, 1.2f, 4.5f), (10f, -0.6f, 6f), (15.5f, -0.6f, 5f), (20f, 1.1f, 4f), (24.6f, 3.0f, 3f) })
+        {
+            _below.AddChild(new OmniLight3D { Position = new Vector3(CentreX, y, z), LightColor = new Color(1f, 0.78f, 0.5f), LightEnergy = 1.6f, OmniRange = range, ShadowEnabled = false });
+        }
+
+        // The decks' beams, left where the planking is taken away: they keep each deck's place and height,
+        // and their shadows fall into the hold so its depth can be read.
+        var beam = new StandardMaterial3D { AlbedoColor = new Color(0.36f, 0.26f, 0.17f), Roughness = 0.9f };
+        var centre = (location.MainWidth - 1) / 2f;
+        for (var y = 0; y < location.Height; y++)
+        {
+            if (!Enumerable.Range(0, location.MainWidth).Any(x => location.IsWalkable(new GridPosition(x, y))))
+            {
+                continue;
+            }
+
+            var half = HalfWidthAt(y) - WallThickness;
+            AddBelow(new BoxMesh { Size = new Vector3(half * 2f, 0.14f, 0.18f) }, beam, new Vector3(CentreX, HeightAt(centre, y) - 0.08f, y));
+        }
+
+        for (var z = _sternZ + 0.4f; z < Length.Stern - 0.2f; z += 0.8f)
+        {
+            AddBelow(new BoxMesh { Size = new Vector3((HalfWidthAt(z) - WallThickness) * 2f, 0.14f, 0.18f) }, beam, new Vector3(CentreX, PoopDeck - 0.08f, z));
+        }
+
+        // The carlings: two fore-and-aft timbers tying the beams, either side of the hatches.
+        foreach (var side in new[] { -1f, 1f })
+        {
+            _below.AddChild(new MeshInstance3D
+            {
+                Mesh = new BoxMesh { Size = new Vector3(0.14f, 0.12f, location.Height - 2f) }, MaterialOverride = beam,
+                Position = new Vector3(CentreX + side * 1.1f, -0.1f, (location.Height - 2f) / 2f),
+            });
+        }
+    }
+
+    private bool IsMastStep(LocationDefinition location, GridPosition cell) =>
+        location.LevelAt(cell) is not null && new[] { cell with { X = cell.X - 1 }, cell with { X = cell.X + 1 } }.All(location.IsWalkable);
+
+    private void AddBelow(Mesh mesh, Material material, Vector3 position) =>
+        _below!.AddChild(new MeshInstance3D { Mesh = mesh, MaterialOverride = material, Position = position });
+
+    /// <summary>
+    /// The cutaway: the decks' planking and their breaks are taken away, leaving the beams, so the hold, the spaces under the
+    /// raised decks and the cabin can be seen, with whoever is in them.
+    /// </summary>
+    public void SetCutaway(bool on)
+    {
+        if (_below is null || _cutaway == on)
+        {
+            return;
+        }
+
+        _cutaway = on;
+        _below.Visible = on;
+        _breaks.Visible = !on;
+        foreach (var deck in _deckMeshes)
+        {
+            deck.Visible = !on;
+        }
+    }
+
+    /// <summary>Whether the cutaway is showing what is below.</summary>
+    public bool Cutaway => _cutaway;
+
+    /// <summary>
+    /// Below, as the voyage has it: the bilge water risen in the hold (0..100), the leaks by their places
+    /// (spot ID to open, plugged or made good), and how much of the water and the food is left (0..1).
+    /// </summary>
+    public void ShowBelow(float bilge, IReadOnlyDictionary<string, int> leaks, float water, float food)
+    {
+        if (_below is null || !_cutaway)
+        {
+            return;
+        }
+
+        if (_bilgeWater is not null)
+        {
+            _bilgeWater.Position = _bilgeWater.Position with { Y = _holdFloor - 0.12f + Mathf.Clamp(bilge, 0, 100) / 100f * 1.7f };
+            _bilgeWater.Visible = bilge > 2;
+        }
+
+        foreach (var (id, (spurt, plug)) in _leakMarks)
+        {
+            var state = leaks.TryGetValue(id, out var s) ? s : -1;
+            spurt.Visible = state == 0;
+            plug.Visible = state > 0;
+        }
+
+        // The stores go as they are used: the casks nearest the hatch first.
+        var casks = Mathf.CeilToInt(Mathf.Clamp(water, 0, 1) * _casks.Count);
+        foreach (var (node, order) in _casks)
+        {
+            node.Visible = order < casks;
+        }
+
+        var barrels = Mathf.CeilToInt(Mathf.Clamp(food, 0, 1) * _barrels.Count);
+        foreach (var (node, order) in _barrels)
+        {
+            node.Visible = order < barrels;
         }
     }
 
@@ -567,11 +875,11 @@ public partial class ShipView : Node3D
     {
         _halfWidth = new float[location.Height];
         var lastWalkableRow = 0;
-        var left = location.Width;
+        var left = location.MainWidth;
         var right = 0;
         for (var y = 0; y < location.Height; y++)
         {
-            var walkable = Enumerable.Range(0, location.Width).Where(x => location.IsDeck(new GridPosition(x, y))).ToList();
+            var walkable = Enumerable.Range(0, location.MainWidth).Where(x => location.IsDeck(new GridPosition(x, y))).ToList();
             if (walkable.Count == 0)
             {
                 continue;
@@ -642,7 +950,7 @@ public partial class ShipView : Node3D
     {
         var tool = new SurfaceTool();
         tool.Begin(Mesh.PrimitiveType.Triangles);
-        foreach (var area in location.Ground.Where(a => a.ToHeight is null && a.Height > 0.01))
+        foreach (var area in location.Ground.Where(a => a.ToHeight is null && a.Height > 0.01 && a.X0 < location.MainWidth))
         {
             var h = (float)area.Height;
             var z0 = Mathf.Max(area.Y0 - 0.5f, Length.Bow);
@@ -657,7 +965,8 @@ public partial class ShipView : Node3D
             // The break: the face of the raised deck towards the waist, with its rail along the top.
             var breakZ = area.Y0 > 0 ? z0 : z1;
             var width = (HalfWidthAt(breakZ) - WallThickness) * 2f;
-            AddBox(new Vector3(CentreX, h / 2f, breakZ), new Vector3(width, h, 0.1f), HullWood.Lightened(0.08f));
+            // The break's face, on its own so the cutaway can take it away and show the space under the deck.
+            _breaks.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(width, h, 0.1f) }, MaterialOverride = Plain(HullWood.Lightened(0.08f)), Position = new Vector3(CentreX, h / 2f, breakZ) });
             // The rail along the break stops either side of the ladder: a gap where it comes up.
             var ladder = location.Ground.FirstOrDefault(r => r.ToHeight is not null && (Mathf.Abs(r.Y0 - 0.5f - breakZ) < 0.6f || Mathf.Abs(r.Y1 + 0.5f - breakZ) < 0.6f));
             var (gapL, gapR) = ladder is null ? (CentreX, CentreX) : (ladder.X0 - 0.6f, ladder.X1 + 0.6f);
@@ -682,7 +991,7 @@ public partial class ShipView : Node3D
         AddMesh(tool.Commit(), _deckMaterial);
 
         // Ladders where the deck ramps between levels: two stringers and steps.
-        foreach (var ramp in location.Ground.Where(a => a.ToHeight is not null))
+        foreach (var ramp in location.Ground.Where(a => a.ToHeight is not null && a.X0 < location.MainWidth))
         {
             var (low, high) = ((float)Math.Min(ramp.Height, ramp.ToHeight!.Value), (float)Math.Max(ramp.Height, ramp.ToHeight.Value));
             var upAtStart = ramp.Height > ramp.ToHeight;
@@ -815,7 +1124,7 @@ public partial class ShipView : Node3D
     {
         for (var y = 0; y < location.Height; y++)
         {
-            var walkable = Enumerable.Range(0, location.Width).Where(x => location.IsWalkable(new GridPosition(x, y))).ToList();
+            var walkable = Enumerable.Range(0, location.MainWidth).Where(x => location.IsWalkable(new GridPosition(x, y))).ToList();
             if (walkable.Count == 0)
             {
                 continue;
@@ -933,7 +1242,7 @@ public partial class ShipView : Node3D
         var masts = new List<Vector3>();
         for (var y = 0; y < location.Height; y++)
         {
-            for (var x = 0; x < location.Width; x++)
+            for (var x = 0; x < location.MainWidth; x++)
             {
                 if (IsMast(location, new GridPosition(x, y)))
                 {

@@ -825,6 +825,9 @@ public partial class Hud : CanvasLayer
             _navButtons[id] = button;
         }
 
+        _belowButton = Ui.Button("Below", "See below decks: the hold, the forecastle space, the steerage and the cabin, and who is down there  (B)", () => BelowRequested?.Invoke(), toggle: true);
+        Ui.WithIcon(_belowButton, "cargo");
+        row.AddChild(_belowButton);
         var menuButton = Ui.Button("Menu", "Menu: new voyage, save, load, controls, interface size, auto-pause");
         Ui.WithIcon(menuButton, "menu");
         row.AddChild(menuButton);
@@ -925,6 +928,14 @@ public partial class Hud : CanvasLayer
         }
     }
 
+    private Button _belowButton = null!;
+
+    /// <summary>The player asks to see below decks (the cutaway).</summary>
+    public event Action? BelowRequested;
+
+    /// <summary>Shows whether the cutaway is on.</summary>
+    public void ShowBelowPressed(bool on) => _belowButton.SetPressedNoSignal(on);
+
     /// <summary>The captain asks for the chart.</summary>
     public event Action? ChartRequested;
 
@@ -1022,6 +1033,7 @@ public partial class Hud : CanvasLayer
         }
 
         _statusPanel.Visible = chips.Count > 0;
+        _belowButton.Visible = campaign.Port is null && campaign.Voyage is not null;
         _sailOrders.Visible = campaign.Voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay };
         foreach (var (button, plan) in _sailButtons)
         {
@@ -1414,7 +1426,7 @@ public partial class Hud : CanvasLayer
             "Right-click: walk (in port the captain; at sea the selected crew member)\n" +
             "Left-click: look at someone · Esc: close · F: follow the captain\n" +
             "Space: pause or carry on · 1–6: speeds\n" +
-            "P People · X Expedition · C Cargo · H Ship · L Chronicle\n" +
+            "P People · X Expedition · C Cargo · H Ship · L Chronicle · B below decks\n" +
             "WASD or arrows: pan · Wheel: zoom · Q / E: turn\n" +
             "Cmd+S / Cmd+L (Ctrl elsewhere): save / load · Tab: next crew member",
             Ui.TextBody, Ui.Ink, 440));

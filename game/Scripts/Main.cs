@@ -211,6 +211,7 @@ public partial class Main : Node3D
         _astrolabe = new AstrolabeView { Name = "Astrolabe" };
         talkLayer.AddChild(_astrolabe);
         _hud.ChartRequested += ToggleChart;
+        _hud.BelowRequested += ToggleBelow;
         _chart.Closed += CloseChart;
         _chart.SightRequested += () =>
         {
@@ -599,7 +600,8 @@ public partial class Main : Node3D
         _world.UpdateWorld(hour, _seaState, making, (float)delta, _camera.Target, hull, _gloom, inPort ? _portFog : _seaFog, inPort ? 0f : Mathf.DegToRad(_ship.RotationDegrees.Y), inPort ? null : _runner.Raining);
         _shipSound.Rain(!inPort && _runner.Raining ? Mathf.Clamp(0.4f + _seaState * 0.25f, 0, 1) : 0f, (float)delta);
         var pumping = !inPort && _runner.Campaign.ActiveTasks.Values.Any(t => _content.Tasks[t.DefinitionId].ShipPerHour?.Bilge < 0);
-        _shipSound.Sea(inPort || voyage is null ? 0f : _seaState, inPort || weather is null ? 0f : (float)weather.WindLeaguesPerHour, _seaFog, pumping, (float)delta);
+        // Below decks the sea and wind come muffled through her planking.
+        _shipSound.Sea(inPort || voyage is null ? 0f : _seaState, inPort || weather is null ? 0f : (float)weather.WindLeaguesPerHour, Mathf.Max(_seaFog, _deck.Cutaway ? 0.7f : 0f), pumping, (float)delta);
         _coastView.Show(inPort ? null : voyage?.Navigation, _runner.Coast, _content.Voyage?.Route?.Bearing ?? 0, _shipCentre, _camera.Size, _world.Darkness, _gloom, (float)delta);
         var raised = inPort || voyage?.Navigation is not { Call: { Sighted: true } call } ? null
             : _content.Voyage?.Route?.Islands.FirstOrDefault(i => i.Id == call.Island);
@@ -613,6 +615,7 @@ public partial class Main : Node3D
         _deck.UpdateLook(_world.Darkness, inPort ? 1f : Mathf.Lerp(0.38f, 1f, Mathf.SmoothStep(18f, 32f, _camera.Size)), t, cooking, inPort ? 3.2f : SailSetting(voyage), (float)delta, furled: inPort);
         _deck.SetWind(inPort || voyage?.Navigation is not { } windOn ? null : (float)-windOn.OffWind, (float)delta);
         ShowShipboard(voyage, weather);
+        ShowBelow(voyage);
         // The boat is away while hands are ashore watering or foraging, and gone with the wreck.
         _deck.ShowBoat(_runner.Campaign.Wreck is null && !_runner.Campaign.ActiveTasks.Values.Any(t => _content.Tasks[t.DefinitionId].NeedsWeather?.AtAnchor == true));
         foreach (var bird in _birds)
@@ -667,7 +670,13 @@ public partial class Main : Node3D
                     onPort ? _port.HeightAt : _deck.HeightAt, carrying,
                     showLabel: !_departure.Playing && (!inPort || isCaptain || id == _hovered), shownName: inPort ? PortHud.KnownName(_runner, id) : null,
                     facing: spot is null ? null : FacingAt(location, spot),
-                    inRain: onPort && _runner.RainingInPort && definition?.Id != "task.shelter", standAt: standAt);
+                    inRain: onPort && _runner.RainingInPort && definition?.Id != "task.shelter", standAt: standAt,
+                    place: onPort ? null : _deck.Place);
+                // Below decks, people are seen only through the cutaway.
+                if (!onPort && _deck.IsBelow(placement.CellAt(_runner.Campaign.Clock.Tick)) && !_deck.Cutaway)
+                {
+                    figure.Visible = false;
+                }
                 figure.Outline(inPort && !_departure.Playing ? RecruitRim(id) : Colors.Transparent);
             }
         }
@@ -1029,6 +1038,7 @@ public partial class Main : Node3D
                     break;
                 case Key.P: _hud.TogglePanel(PanelId.People); break;
                 case Key.X: _hud.TogglePanel(PanelId.Expedition); break;
+                case Key.B: ToggleBelow(); break;
                 case Key.C: _hud.TogglePanel(PanelId.Cargo); break;
                 case Key.H: _hud.TogglePanel(PanelId.Ship); break;
                 case Key.L: _hud.TogglePanel(PanelId.Chronicle); break;
@@ -1158,7 +1168,7 @@ public partial class Main : Node3D
         }
 
         // Roll around the middle of the deck rather than its corner.
-        var centre = new Vector3((location.Width - 1) / 2f, 0, (location.Height - 1) / 2f);
+        var centre = new Vector3((location.MainWidth - 1) / 2f, 0, (location.Height - 2) / 2f);
         _shipCentre = centre;
         _ship.Position = centre;
         _shipContents.Position = -centre;
@@ -1695,6 +1705,7 @@ public partial class Main : Node3D
     private bool _founder;
     private bool _crewLife;
     private bool _legs;
+    private bool _developerBelow;
     private string? _seaStage;
     private string? _island;
     private string? _openView;
@@ -1922,6 +1933,7 @@ public partial class Main : Node3D
                 case "founder": _founder = true; break;
                 case "crewlife": _crewLife = true; break;
                 case "legs": _legs = true; break;
+                case "below": _developerBelow = true; break;
                 case "seastage": _seaStage = value; break;
                 case "island": _island = value; break;
                 case "offcoast" when value.Split(',') is [var off, var along]
@@ -1959,6 +1971,39 @@ public partial class Main : Node3D
                 case "yaw" when float.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var yaw): _developerYaw = yaw; break;
             }
         }
+    }
+
+    /// <summary>The cutaway, on or off (B, or the Below button): the decks go faint to show the hold and the spaces under them.</summary>
+    private void ToggleBelow()
+    {
+        if (_runner.Campaign.Port is not null)
+        {
+            return;
+        }
+
+        _deck.SetCutaway(!_deck.Cutaway);
+        _world.ClearInsideHull(_deck.Cutaway);
+        _hud.ShowBelowPressed(_deck.Cutaway);
+    }
+
+    // What the hold shows through the cutaway: the bilge, the leaks at their places, the stores going down.
+    private void ShowBelow(Expedition.Simulation.Voyage.VoyageState? voyage)
+    {
+        if (voyage is null || !_deck.Cutaway)
+        {
+            return;
+        }
+
+        var leaks = new Dictionary<string, int>();
+        foreach (var leak in voyage.Leaks)
+        {
+            var id = "spot.leak_" + leak.Where.Replace("the ", "").Replace("under ", "").Replace("at ", "").Replace(" strake", "").Replace(' ', '_');
+            leaks[id] = Math.Min(leaks.GetValueOrDefault(id, 9), (int)leak.Repair);
+        }
+
+        var (food, water) = _runner.SupplyForecast();
+        var (low, _) = Expedition.Simulation.Scenarios.ExpeditionScenario.PassageDays;
+        _deck.ShowBelow((float)voyage.Bilge, leaks, (float)Math.Clamp(water / low, 0.1, 1), (float)Math.Clamp(food / low, 0.1, 1));
     }
 
     // The deck as the voyage leaves it (VOYAGE §31): wet with rain and spray and drying over a few hours,
@@ -2163,6 +2208,12 @@ public partial class Main : Node3D
             _runner.PlotLeg(new Expedition.Simulation.Voyage.ChartPoint(at.X - 45, at.Y - 22));
             _runner.PlotLeg(new Expedition.Simulation.Voyage.ChartPoint(at.X - 110, at.Y - 30));
             _runner.WriteOnChart(new Expedition.Simulation.Voyage.ChartPoint(at.X - 20, at.Y + 6), "Weed and terns: land?");
+        }
+
+        // --below: the cutaway on, to see below decks.
+        if (_developerBelow)
+        {
+            Callable.From(ToggleBelow).CallDeferred();
         }
 
         // --founder: she fills and goes down now, for the wreck.

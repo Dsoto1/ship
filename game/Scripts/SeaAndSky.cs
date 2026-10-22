@@ -101,6 +101,9 @@ public partial class SeaAndSky : Node3D
     /// <summary>A lightning flash, fading over a fraction of a second.</summary>
     public void Flash() => _flash = 1f;
 
+    /// <summary>For the ship's cutaway: no sea inside her hull, so what is below the waterline can be seen.</summary>
+    public void ClearInsideHull(bool on) => _ocean.SetShaderParameter("hull_clear", on ? 1f : 0f);
+
     /// <summary>Updates light, water and haze.</summary>
     /// <param name="hourOfDay">0..24 from the simulation clock, with fractions.</param>
     /// <param name="seaState">0 calm, 1 moderate, 2 heavy.</param>

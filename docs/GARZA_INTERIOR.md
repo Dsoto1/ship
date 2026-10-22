@@ -1,6 +1,9 @@
-# The Garza below decks — draft layout
+# The Garza below decks
 
-**Status:** a draft for the owner's review (2026-10-22). Nothing is built yet.
+**Status:** built (2026-10-22), on the owner's answers: "yes raise the decks, keep helm on quarterdeck,
+boat in waist". The sleeping question went unanswered; it follows the period (on deck in fair weather,
+under the forecastle in foul). What was built, and what is left, is under **As built** at the end.
+The draft below is kept as the record of the design.
 **Authority:** VOYAGE_EXPERIENCE §3 (the ship as a physical play space), §31–33; ART_BIBLE (cutaways
 rather than enlarged rooms); SETTING §4 (a caravel of about 60 tons, 16–20 aboard, two pumps, a galley
 fire box, a hold for about 2 tonnes of stores).
@@ -76,7 +79,7 @@ table (the chart opens here), and the captain's chest (the purse, the papers).
 
 ## How it would be seen and walked
 
-- **The cutaway:** a key and a button ("Below") fades the weather deck and the raised decks, to show
+- **The cutaway:** a key and a button ("Below") takes away the planking of the weather deck and the raised decks, to show
   the hold, the forecastle space, the steerage and the cabin. The camera is otherwise unchanged. People
   below are drawn faintly through the deck when the cutaway is off, so no one vanishes.
 - **Two levels in the simulation's grid:** the deck as now, and the hold beneath, joined by the main
@@ -106,3 +109,50 @@ table (the chart opens here), and the captain's chest (the purse, the papers).
 [RESEARCH] The arrangement follows Castilian and Portuguese caravel practice around 1500: no lower
 deck at this size; officers aft under the tolda and toldilla; a bread room and a powder room aft in
 the hold; the forepeak for cables and sails. It is to be checked in the ship's plausibility pass.
+
+## As built (2026-10-22)
+
+![The cutaway in a calm morning](screenshots/garza-cutaway-calm.jpg)
+![The cutaway in a storm: the bilge water in the hold](screenshots/garza-cutaway-storm.jpg)
+
+**The owner's answers.**
+1. **The raised decks are raised:** forecastle 1.8 m, quarterdeck 1.9 m, poop 3.7 m.
+2. **The helm stays on the quarterdeck.**
+3. **The boat rides in the waist,** over the main hatch.
+4. **Sleeping** (unanswered): on deck in fair weather, under the forecastle in foul.
+
+**In the simulation.**
+- **The levels:** the hold and the covered spaces are laid out beside the deck in the same grid. Ladders
+  join them: the main hatch, the aft scuttle, and the doors of the forecastle, the steerage and the cabin.
+  Pathfinding crosses by them.
+- **Where people go:**
+  - **Sleep:** berths under the forecastle, the steerage's two berths, and six places in the waist.
+    Indoors in rain or a sea of 1.25 and over; on deck otherwise.
+  - **The captain's cabin** is kept for the captain alone.
+  - **The sick** go to the two sick berths, and whoever tends them goes with them.
+  - **A leak** is met at its own place in the hold.
+  - **The cargo** is lashed in the hold.
+- **The pumps** are still worked from the deck.
+
+**In the view.**
+- **The cutaway** (the *Below* button, or B, at sea) takes away the planking of every deck and leaves
+  the beams. Under them you see:
+  - the hold: cables and sails forward, the cask tiers, the provision barrels, the bread room and the
+    powder;
+  - the berths and the sick berths;
+  - the cabin's table and chest.
+- **What it follows:** the casks and barrels go as the water and food are used. The bilge water rises
+  in the hold. Each leak spurts at its place until it is plugged.
+- **Lantern light** below; the sea is cleared from inside the hull. The sea sounds muffled while the
+  cutaway is on.
+- **People below** are drawn only when the cutaway is on.
+
+**Balance.** The ten test crews keeping watches: 6 of 10 arrive, average fatigue about 31 (it was 4 of
+10, about 27). The other four foundered, between days 24 and 33.
+
+**Not yet done.**
+- Walking someone into the levels below by right-click.
+- People below drawn faintly through the deck when the cutaway is off.
+- A dedicated below-decks sound bed: today it is the muffled sea only.
+- The hold is lit by daylight through the open deck in the cutaway. That reads, but a darker, lantern-lit
+  hold would be truer.

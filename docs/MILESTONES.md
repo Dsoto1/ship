@@ -2610,3 +2610,28 @@ drawn in brass, so they can be seen. Screenshot: `docs/screenshots/r4c-orders.jp
 
 Saved in format 36 (legs and notes in the chart). Developer flag `--legs`. Tests:
 `ChartAndWeatherTests` (7). Screenshots: `docs/screenshots/r4b-legs.jpg`, `r4a-fog.jpg`.
+
+### The Garza raised and given an inside (owner: "yes raise the decks, keep helm on quarterdeck, boat in waist")
+
+**What was built.**
+- **The decks raised:** the forecastle, quarterdeck and poop are raised to period heights (1.8, 1.9
+  and 3.7 m), so people can stand in the spaces under them.
+- **The helm and the boat:** the helm is kept on the quarterdeck. The boat rides in the waist.
+- **The inside:** she has a hold, a forecastle space, a steerage and a cabin, joined to the deck by
+  ladders.
+- **Who goes where:**
+  - The crew sleep below in foul weather and on deck in fair.
+  - The sick lie in the sick berths, with whoever tends them.
+  - The captain has the cabin.
+  - Leaks are met at their places in the hold.
+- **The cutaway:** the *Below* button (B) takes away the planking and leaves the beams. Under them it
+  shows the stores going, the bilge rising and the leaks spurting.
+
+**Details** are in `docs/GARZA_INTERIOR.md` (As built).
+
+**Balance:** 6 of 10 test crews arrive keeping watches (was 4 of 10).
+
+**Tests:** 526, all passing.
+
+**Screenshots:** `docs/screenshots/garza-cutaway-calm.jpg`, `garza-cutaway-storm.jpg` and
+`garza-cutaway-aft.jpg`.

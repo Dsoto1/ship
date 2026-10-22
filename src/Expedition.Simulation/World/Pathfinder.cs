@@ -38,6 +38,15 @@ public static class Pathfinder
                     frontier.Enqueue(next);
                 }
             }
+
+            // Ladders and doors to another level.
+            foreach (var next in location.LinkedTo(current))
+            {
+                if (location.IsWalkable(next) && cameFrom.TryAdd(next, current))
+                {
+                    frontier.Enqueue(next);
+                }
+            }
         }
 
         return null;

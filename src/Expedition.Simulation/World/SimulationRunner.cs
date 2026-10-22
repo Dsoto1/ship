@@ -339,6 +339,12 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             order.SpotId = spot!.Id;
             StartWalk(character.Id, path!);
         }
+        else if (ProperPlace(character, task) is { } place)
+        {
+            // Work done anywhere that has its proper place here: a berth to sleep in, the sick bay, the hold.
+            order.SpotId = place.Spot.Id;
+            StartWalk(character.Id, place.Path);
+        }
 
         Campaign.StartTask(order);
     }

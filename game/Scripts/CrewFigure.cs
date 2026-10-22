@@ -278,10 +278,25 @@ public partial class CrewFigure : Node3D
     /// <param name="animationRate">How fast to animate: faster at higher game speeds, zero when paused.</param>
     public void Refresh(Character character, CharacterPlacement placement, double drawTick, bool selected, string activity,
         bool isCaptain, Pose pose, float delta, float animationRate, Func<float, float, float>? ground = null, string? carrying = null,
-        bool showLabel = true, string? shownName = null, Vector2? facing = null, bool inRain = false, Vector3? standAt = null)
+        bool showLabel = true, string? shownName = null, Vector2? facing = null, bool inRain = false, Vector3? standAt = null,
+        Func<float, float, Vector3>? place = null)
     {
         var (x, y) = placement.Movement?.PositionAt(drawTick) ?? (placement.Cell.X, placement.Cell.Y);
         Position = new Vector3((float)x, ground?.Invoke((float)x, (float)y) ?? 0, (float)y);
+        if (place is not null)
+        {
+            // A place of several levels (the ship below decks): each cell in its true place, and a walk between
+            // levels drawn from one cell's place to the next, as up or down a ladder.
+            if (placement.Movement is { } walk)
+            {
+                var (from, to, along) = walk.SegmentAt(drawTick);
+                Position = place(from.X, from.Y).Lerp(place(to.X, to.Y), (float)along);
+            }
+            else
+            {
+                Position = place(placement.Cell.X, placement.Cell.Y);
+            }
+        }
         if (standAt is { } staged)
         {
             // Staged for a moment of the departure (seeing someone off): presentation only.

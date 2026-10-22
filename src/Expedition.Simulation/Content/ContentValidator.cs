@@ -185,10 +185,20 @@ internal static class ContentValidator
                 {
                     errors.Add($"{where}: spot '{spot.Id}' lists unknown task '{taskId}'.");
                 }
-                else if (!task.NeedsWorkSpot)
+                else if (!task.NeedsWorkSpot && !spot.Indoors && !task.IsRest)
                 {
+                    // Work done anywhere may still have its proper places below decks or berths (indoors), or
+                    // places to sleep on deck; anything else listing it is a mistake.
                     errors.Add($"{where}: spot '{spot.Id}' lists '{taskId}', which does not use work spots.");
                 }
+            }
+        }
+
+        foreach (var link in location.Links)
+        {
+            if (!location.IsWalkable(new GridPosition(link.X0, link.Y0)) || !location.IsWalkable(new GridPosition(link.X1, link.Y1)))
+            {
+                errors.Add($"{where}: a ladder joins ({link.X0}, {link.Y0}) and ({link.X1}, {link.Y1}), which must both be walkable.");
             }
         }
     }

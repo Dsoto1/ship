@@ -58,6 +58,18 @@ public sealed record Movement(IReadOnlyList<GridPosition> Path, long StartTick, 
         return (a.X + (b.X - a.X) * local, a.Y + (b.Y - a.Y) * local);
     }
 
+    /// <summary>
+    /// The two path cells being walked between at a possibly fractional <paramref name="tick"/>, and how far
+    /// from the first to the second (0..1): for drawing a walk up a ladder between levels.
+    /// </summary>
+    public (GridPosition From, GridPosition To, double Along) SegmentAt(double tick)
+    {
+        var fraction = Math.Clamp((tick - StartTick) / (ArriveTick - StartTick), 0.0, 1.0);
+        var along = fraction * (Path.Count - 1);
+        var index = Math.Min((int)along, Path.Count - 2);
+        return (Path[index], Path[index + 1], along - index);
+    }
+
     /// <summary>The path cell reached by <paramref name="tick"/>.</summary>
     public GridPosition CellAt(long tick)
     {

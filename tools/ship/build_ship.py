@@ -44,7 +44,10 @@ class Deck:
     def __init__(self, path):
         text = re.sub(r"^\s*//.*$", "", path.read_text(), flags=re.M)
         loc = json.loads(text)[0]
-        self.rows = loc["rows"]
+        # Only the deck's own columns: the levels below are laid out beside it in the grid.
+        levels = loc.get("levels", [])
+        width = min(l["x0"] for l in levels) - 1 if levels else len(loc["rows"][0])
+        self.rows = [r[:width] for r in loc["rows"]]
         self.ground = loc.get("ground", [])
         wall = SPEC["wallThickness"]
         self.half = []
@@ -296,12 +299,7 @@ def transom_and_poop(deck, mesh):
         mesh.box((cx + side * width * 0.46, wy, z + 0.05), (0.16, 0.16, 0.05), C["frame"])
     # The poop deck, and its front bulkhead facing the quarterdeck with the cabin door and two lights.
     pd = SPEC["poop"]["deck"]
-    zs = np.arange(deck.stern_z, z, 0.25)
-    for z0 in zs:
-        z1 = min(z0 + 0.25, z)
-        w0 = section(deck, z0, pd) - SPEC["wallThickness"]
-        w1 = section(deck, z1, pd) - SPEC["wallThickness"]
-        mesh.quad((cx - w0, pd, z0), (cx - w1, pd, z1), (cx + w1, pd, z1), (cx + w0, pd, z0), C["deck"])
+    # (The poop's deck itself is drawn by the game, so the cutaway can show the cabin under it.)
     qd = deck.height_at(cx, deck.stern_z - 0.2)
     w = section(deck, deck.stern_z, pd) - SPEC["wallThickness"]
     mesh.box((cx, (qd + pd) / 2, deck.stern_z), (w * 2, pd - qd, 0.08), C["bulkhead"])

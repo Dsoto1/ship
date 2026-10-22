@@ -18,6 +18,8 @@ uniform vec2 flow = vec2(0.0);
 // Hull footprint for the wake: centre x, centre z, half beam, half length. Bow towards -z.
 uniform vec4 hull = vec4(4.0, 10.5, 4.0, 11.0);
 uniform float hull_yaw = 0.0;
+// The cutaway (ShipView.SetCutaway): no sea drawn inside her hull, so the hold shows below the waterline.
+uniform float hull_clear = 0.0;
 // Point the camera looks at; haze grows with distance from it.
 uniform vec3 focus = vec3(4.0, 0.0, 10.0);
 uniform float haze_start = 28.0;
@@ -98,6 +100,9 @@ void fragment() {
 	vec2 local = vec2(offset.x * cos(hull_yaw) - offset.y * sin(hull_yaw), offset.x * sin(hull_yaw) + offset.y * cos(hull_yaw));
 	float along = local.y / hull.w;
 	float sideways = abs(local.x) / max(hull.z, 0.1);
+	if (hull_clear > 0.5 && abs(along) < 0.97 && sideways < (1.0 - along * along * 0.6) * 0.97) {
+		discard;
+	}
 	float hullEdge = 1.0 - smoothstep(0.0, 0.35, abs(sideways - (1.0 - along * along * 0.6)) * 2.5);
 	hullEdge *= step(abs(along), 1.05);
 	float astern = max(local.y - hull.w, 0.0);

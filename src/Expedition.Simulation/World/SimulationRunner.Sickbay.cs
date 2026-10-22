@@ -286,4 +286,48 @@ public sealed partial class SimulationRunner
             Campaign.Life.Cleanliness = Math.Min(100, Campaign.Life.Cleanliness + task.Cleans);
         }
     }
+
+    // Where work done anywhere is best done, if the place has spots for it (the Garza below decks): the
+    // captain to his cabin, the sick to the sick berths, the watch below under the forecastle in foul
+    // weather and on deck in the waist in fair; a plug to the leak's own place in the hold. Null to do it
+    // where they stand.
+    private (WorkSpotDefinition Spot, IReadOnlyList<GridPosition> Path)? ProperPlace(Character character, TaskDefinition task)
+    {
+        if (character.Membership != Membership.Crew || !Campaign.Placements.TryGetValue(character.Id, out var placement)
+            || !Content.Locations.TryGetValue(placement.LocationId, out var location))
+        {
+            return null;
+        }
+
+        var captain = character.Id == Campaign.CaptainId;
+        var taken = Campaign.ActiveTasks.Values.Where(t => t.CharacterId != character.Id).Select(t => t.SpotId).OfType<string>().ToHashSet();
+        var spots = location.Spots.Where(s => s.Tasks.Contains(task.Id) && !taken.Contains(s.Id) && (s.Reserved is null || (s.Reserved == "captain" && captain))).ToList();
+        if (spots.Count == 0)
+        {
+            return null;
+        }
+
+        var sick = Illnesses(character).Any() || character.SurvivalState == SurvivalState.Incapacitated;
+        var foul = Raining || (Campaign.Voyage is { } ship && Content.Voyage is { } rules && rules.Weather(ship.WeatherId).SeaState >= 1.25);
+        var leak = task.RepairsLeak == "plug" && Campaign.Voyage is { } leaking && LeakFor(leaking, "plug") is { } worst ? LeakSpot(worst.Where) : null;
+        int Preference(WorkSpotDefinition spot) =>
+            spot.Id == leak ? 0
+            : task.IsRest && captain && spot.Reserved == "captain" ? 0
+            : task.IsRest && spot.Sick ? (sick ? 0 : 9)
+            : task.IsRest && sick ? 5
+            : task.IsRest ? (spot.Indoors == foul ? 1 : 2)
+            : 1;
+        var start = placement.CellAt(Campaign.Clock.Tick);
+        return spots
+            .Where(s => Preference(s) < 9)
+            .Select(s => (Spot: s, Path: Pathfinder.FindPath(location, start, s.Cell), Rank: Preference(s)))
+            .Where(c => c.Path is not null)
+            .OrderBy(c => c.Rank).ThenBy(c => c.Path!.Count).ThenBy(c => c.Spot.Id, StringComparer.Ordinal)
+            .Select(c => ((WorkSpotDefinition, IReadOnlyList<GridPosition>)?)(c.Spot, c.Path!))
+            .FirstOrDefault();
+    }
+
+    // The spot inside the hull where a leak of that name is met: "the starboard bow" is spot.leak_starboard_bow.
+    private static string LeakSpot(string where) =>
+        "spot.leak_" + where.Replace("the ", "").Replace("under ", "").Replace("at ", "").Replace(" strake", "").Replace(' ', '_');
 }
