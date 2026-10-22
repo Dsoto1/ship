@@ -36,7 +36,7 @@ public partial class FrameProfiler : CanvasLayer
     public override void _Ready()
     {
         Layer = 30;
-        _panel = Ui.PanelOf(Ui.Paper, Ui.Rule, Ui.SpaceL, Ui.SpaceM);
+        _panel = Ui.Frame(Ui.SpaceL, Ui.SpaceM);
         _panel.Theme = Ui.BuildTheme();
         _panel.Position = new Vector2(Ui.SpaceL, 90);
         _panel.Visible = false;

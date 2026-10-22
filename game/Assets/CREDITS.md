@@ -1,6 +1,8 @@
 # Asset credits
 
-Every asset here is CC0 (public domain): no attribution is required, but it is given. Fetched by
+Every asset here is CC0 (public domain) except the fonts (SIL Open Font License 1.1, in
+`Fonts/OFL.txt`) and the Game-icons.net icons (CC BY 3.0, so their credit below is required).
+Attribution is given for all of them. Fetched by
 `tools/fetch_assets.py` from the list in `assets.json`; nothing here was generated or altered
 except by the game's shaders at run time; `Textures/scenery_array/`, which only stacks the
 layered textures (plaster, stone, timber) into one image per map; and `Audio/ambience/`, Freesound
@@ -33,10 +35,10 @@ clothing made on them, textures divided into one shared sheet, clips reduced to 
 | woman humming | A woman singing a working song | PSsoundproject | https://freesound.org/s/183565/ | CC0 | `Audio/tavern/song_woman.ogg` |
 | Man singing in the kitchen / Hombre en la cocina cantando | The cook singing at his pots | GillianHonn | https://freesound.org/s/849096/ | CC0 | `Audio/tavern/song_kitchen.ogg` |
 | Men chanting.wav | A room of men singing a chorus | BeeProductive | https://freesound.org/s/430022/ | CC0 | `Audio/tavern/song_chorus.ogg` |
-| Board Game Icons | The screen buttons and the objectives checklist (recoloured white by tools/make_icons.py) | Kenney | https://kenney.nl/assets/board-game-icons | CC0 | `UI/icons/` (6 files) |
-| Game Icons | The menu button and the checklist's ticks (recoloured by tools/make_icons.py) | Kenney | https://kenney.nl/assets/game-icons | CC0 | `UI/icons/` (3 files) |
 | Nature Kit | The coast's trees (palms and broadleaf), bushes, broad-leaved plants, grasses, rocks, stumps, logs, flowers and fungi ashore | Kenney | https://kenney.nl/assets/nature-kit | CC0 | `Nature/` (58 files) |
 | Stylized Nature MegaKit (free edition) | The coast's broadleaf and twisted trees, bushes, ferns, broad-leaved plants, grasses, clover, flowers, fungi, rocks and pebbles ashore | Quaternius | https://quaternius.itch.io/stylized-nature-megakit | CC0 | `Nature/MegaKit/` (86 files; textures scaled to 512 px; foliage masks coloured green) |
+| IM FELL Great Primer (Roman, Italic, SC), Source Serif 4, Source Sans 3 | All the interface's type: titles and headings (Fell), reading text (Source Serif), labels and numbers (Source Sans) | Igino Marini (IM FELL); Adobe (Source Serif, Source Sans) | https://fonts.google.com | SIL OFL 1.1 | `Fonts/` (Fell.ttf, FellItalic.ttf, FellSC.ttf, SourceSans.ttf, SourceSansBold.ttf, SourceSansSemibold.ttf, SourceSerif.ttf, SourceSerifItalic.ttf, SourceSerifSemibold.ttf; licence in `OFL.txt`) |
+| Game-icons.net | Every icon in the interface: the screen tabs, the top bar's readings, resources, buildings, orders | Lorc, Delapouite and the other Game-icons.net contributors | https://game-icons.net (npm `@iconify-json/game-icons` 1.2.4) | CC BY 3.0 | `UI/icons/*.svg` (87 files) |
 
 ## Generated props
 
