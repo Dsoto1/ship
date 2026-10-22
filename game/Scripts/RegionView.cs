@@ -43,7 +43,7 @@ public partial class RegionView : Control
         MouseFilter = MouseFilterEnum.Ignore;
         Theme = Ui.BuildTheme();
         Visible = false;
-        _panel = Ui.PanelOf(Ui.Paper, Ui.Rule, Ui.SpaceL, Ui.SpaceL);
+        _panel = Ui.Frame(Ui.SpaceL, Ui.SpaceL);
         _panel.SetAnchorsPreset(LayoutPreset.Center);
         _panel.OffsetLeft = -590;
         _panel.OffsetRight = 590;
@@ -277,8 +277,7 @@ public partial class RegionView : Control
 /// <summary>The coast drawn as it is known.</summary>
 public partial class RegionCanvas : Control
 {
-    private static readonly Color Parchment = new(0.86f, 0.79f, 0.63f);
-    private static readonly Color Sea = new(0.62f, 0.7f, 0.68f);
+    private static readonly Color Sea = new(0.4f, 0.6f, 0.7f, 0.7f);
     private static readonly Color InkLine = new(0.28f, 0.2f, 0.12f);
     private static readonly Color Faint = new(0.28f, 0.2f, 0.12f, 0.35f);
     private static readonly Color Red = new(0.6f, 0.15f, 0.1f);
@@ -327,13 +326,13 @@ public partial class RegionCanvas : Control
 
     public override void _Draw()
     {
-        DrawRect(new Rect2(Vector2.Zero, Size), Parchment);
+        Ui.DrawParchment(this, new Rect2(Vector2.Zero, Size));
         if (_runner?.Region is not { } region || _runner.Campaign.World is not { } world)
         {
             return;
         }
 
-        var font = ThemeDB.FallbackFont;
+        var font = Ui.TitleItalic;
         // The sea to the west of the coast, as the Company's charts have it; the lagoon once anyone has seen it.
         (double X, double Y)[] coast = [(9, -10), (6, -6), (2, -2.2), (0, 0), (-1, 2), (-2, 3.5), (-3, 6), (-4, 9), (-6, 11), (-8, 17)];
         var shore = coast.Select(c => At(c.X, c.Y)).ToArray();
@@ -398,14 +397,14 @@ public partial class RegionCanvas : Control
                 DrawRect(new Rect2(at + new Vector2(-5, -18), new Vector2(10, 6)), Red);
             }
 
-            var label = new Rect2(at + new Vector2(11, -8), font.GetStringSize(place.Name, HorizontalAlignment.Left, -1, 13) + new Vector2(0, 2));
+            var label = new Rect2(at + new Vector2(11, -8), font.GetStringSize(place.Name, HorizontalAlignment.Left, -1, 16) + new Vector2(0, 2));
             while (labels.Any(l => l.Intersects(label)))
             {
-                label.Position += new Vector2(0, 15);
+                label.Position += new Vector2(0, 17);
             }
 
             labels.Add(label);
-            DrawString(font, label.Position + new Vector2(0, 13), place.Name, HorizontalAlignment.Left, -1, 13, InkLine);
+            DrawString(font, label.Position + new Vector2(0, 14), place.Name, HorizontalAlignment.Left, -1, 16, InkLine);
         }
 
         // Parties on the way, where they should be by now.

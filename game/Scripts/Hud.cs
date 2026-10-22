@@ -248,13 +248,27 @@ public partial class Hud : CanvasLayer
 
         _drawerTitle.Text = panel switch
         {
-            PanelId.People => "People — the roster",
-            PanelId.Expedition => _runner?.Campaign.Voyage is null ? "Expedition — objectives and papers" : "The voyage — at a glance",
-            PanelId.Cargo => "Cargo — the manifest",
-            PanelId.Ship => _runner?.Campaign.Camp is not null ? (_runner.CampDay < 3 ? "The camp — the first days" : $"The camp — {_runner.CampStage()}") : "Ship — condition and orders",
+            PanelId.People => _peopleLabel == "People" ? "People" : "Crew & Duties",
+            PanelId.Expedition => _runner?.Campaign.Voyage is null ? "Expedition" : "The voyage",
+            PanelId.Cargo => "Cargo",
+            PanelId.Ship => _runner?.Campaign.Camp is not null ? (_runner.CampDay < 3 ? "The camp: the first days" : $"The camp: {_runner.CampStage()}") : "Ship",
             PanelId.Chart => "Chart",
-            _ => "Chronicle — the record of the expedition",
+            _ => _chronicleLabel == "Log" ? "The log" : "Chronicle",
         };
+        _drawerTitle.TooltipText = panel switch
+        {
+            PanelId.People => "The roster: who you have, what they can do, their orders and duties",
+            PanelId.Expedition => "Objectives, the charter, and what wants the captain",
+            PanelId.Cargo => "The manifest: what is carried and how long it will last",
+            PanelId.Ship => _runner?.Campaign.Camp is not null ? "What to build, what comes first, what is known of the place" : "Her condition and the captain's orders for her",
+            _ => "The record of everything that has happened",
+        };
+        _drawerIcon.Texture = Ui.IconTexture(panel switch
+        {
+            PanelId.Ship when _runner?.Campaign.Camp is not null => "build",
+            PanelId.Chronicle when _chronicleLabel == "Log" => "log",
+            _ => panel.ToString().ToLowerInvariant(),
+        });
         if (panel == PanelId.Chronicle)
         {
             _unread = 0;
@@ -288,7 +302,7 @@ public partial class Hud : CanvasLayer
     {
         foreach (var (button, speed) in _speedButtons)
         {
-            button.Text = speed == 0 ? "❚❚" : names[speed];
+            button.Text = speed == 0 ? "" : names[speed];
             button.TooltipText = (tips is null ? names[speed] : tips[speed]) + $"  (key {speed + 1}; Space pauses)";
         }
     }
@@ -325,7 +339,11 @@ public partial class Hud : CanvasLayer
             return;
         }
 
-        var panel = Ui.PanelOf(new Color(0.08f, 0.06f, 0.045f, 0.95f), new Color(Ui.Of(severity), 0.8f), Ui.SpaceM, Ui.SpaceS);
+        var panel = severity >= Severity.Urgent ? new PanelContainer() : Ui.Frame(Ui.SpaceM, Ui.SpaceS);
+        if (severity >= Severity.Urgent)
+        {
+            panel.AddThemeStyleboxOverride("panel", Ui.NoticeStyle(Ui.SpaceM, Ui.SpaceS));
+        }
         var row = new HBoxContainer();
         row.AddThemeConstantOverride("separation", Ui.SpaceS);
         panel.AddChild(row);
@@ -343,7 +361,7 @@ public partial class Hud : CanvasLayer
         }
 
         var card = new AlertCard(panel, heading, text, title, severity) { Expires = lifetime == ulong.MaxValue ? lifetime : now + lifetime };
-        row.AddChild(Ui.Button("×", "Dismiss (it stays in the Chronicle)", () => DropAlert(card)));
+        row.AddChild(CloseButton(() => DropAlert(card)));
         _alerts.AddChild(panel);
         _alerts.MoveChild(panel, 0);
         _alertCards.Add(card);
@@ -399,13 +417,13 @@ public partial class Hud : CanvasLayer
             DropAlert(card);
         }
 
-        _alerts.OffsetTop = _statusPanel.Visible ? _statusPanel.Position.Y + _statusPanel.Size.Y + Ui.SpaceS : Ui.SpaceM;
+        _alerts.OffsetTop = _statusPanel.Visible ? _statusPanel.Position.Y + _statusPanel.Size.Y + Ui.SpaceS : Ui.BelowTopBar;
         // The paused notice and the notices keep clear of an open screen: beside it, not over it.
         if (_drawer.Visible)
         {
             _centre.AnchorLeft = _centre.AnchorRight = 0;
             _centre.OffsetLeft = _drawer.Position.X + _drawer.Size.X + Ui.SpaceL;
-            _centre.OffsetRight = _centre.OffsetLeft + 480;
+            _centre.OffsetRight = Math.Min(_centre.OffsetLeft + 480, _alerts.GetGlobalRect().Position.X - Ui.SpaceM);
         }
         else
         {
@@ -443,7 +461,8 @@ public partial class Hud : CanvasLayer
             return;
         }
 
-        var panel = Ui.PanelOf(new Color(0.07f, 0.055f, 0.045f, 0.9f), null, Ui.SpaceL, Ui.SpaceS);
+        var panel = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        panel.AddThemeStyleboxOverride("panel", Ui.Box(new Color(Ui.InsetGround, 0.92f), new Color(Ui.Gold, severity == Severity.Information ? 0.3f : 0.7f), Ui.SpaceL, Ui.SpaceS));
         panel.SetMeta("text", text);
         panel.AddChild(Ui.Text(severity == Severity.Information ? text : $"{Ui.IconOf(severity)} {text}", Ui.TextBody, Ui.Of(severity), 460));
         _toasts.AddChild(panel);
@@ -603,19 +622,38 @@ public partial class Hud : CanvasLayer
         var clock = campaign.Clock;
         var day = clock.Tick / SimulationClock.TicksPerDay + 1;
         var minute = clock.Tick % SimulationClock.TicksPerDay;
-        _clock.Text = $"DAY {day} · {minute / 60:00}:{minute % 60:00}";
-        _place.Text = campaign.Port is not null ? "In port · La Bocana"
-            : campaign.Camp is not null ? $"Ashore · {runner.CampSite?.Name}"
-            : campaign.Voyage is { } at ? $"At sea · bound for {at.Destination}"
+        _clock.Text = $"Day {day}";
+        _date.Text = $"{Ui.DateOf(day)} · {minute / 60:00}:{minute % 60:00}";
+        _place.Text = campaign.Port is not null ? "In port, La Bocana"
+            : campaign.Camp is not null ? runner.CampSite?.Name ?? "Ashore"
+            : campaign.Voyage is { } at ? "At sea"
             : campaign.Phase.ToString();
+        _place.TooltipText = campaign.Voyage is { } bound && campaign.Camp is null && campaign.Port is null ? $"Bound for {bound.Destination}" : "";
+        var phaseIcon = campaign.Camp is not null ? "campfire" : "ship";
+        if (_phaseIcon.Texture != Ui.IconTexture(phaseIcon))
+        {
+            _phaseIcon.Texture = Ui.IconTexture(phaseIcon);
+        }
+
+        // At sea the rose turns to her course.
+        _rose.Heading = campaign.Voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } under && campaign.Camp is null && under.Navigation is { } steering ? (float)steering.Heading : null;
+        _rose.Visible = _rose.GetParent<Control>().Size.X > 64;
         var shipLabel = campaign.Camp is not null ? "Camp" : "Ship";
         if (_navButtons[PanelId.Ship].Text != shipLabel)
         {
             _navButtons[PanelId.Ship].Text = shipLabel;
+            _navButtons[PanelId.Ship].Icon = Ui.IconTexture(campaign.Camp is not null ? "build" : "ship");
             _navButtons[PanelId.Ship].TooltipText = campaign.Camp is not null
-                ? "The camp ashore: what comes first, the hard choices, what is known of the place  (H)"
+                ? "The camp ashore: what to build, what comes first, the hard choices, what is known of the place  (H)"
                 : "The Garza's condition and the captain's orders for her  (H)";
         }
+
+        // At sea the roster is the crew at their duties, and the chronicle is the ship's log.
+        var atSea = campaign.Voyage is not null && campaign.Camp is null && campaign.Port is null;
+        _peopleLabel = atSea ? "Crew & Duties" : "People";
+        _chronicleLabel = atSea ? "Log" : "Chronicle";
+        _navButtons[PanelId.People].Text = _peopleLabel;
+        _navButtons[PanelId.Chart].Visible = campaign.Camp is null && campaign.Port is null;
         foreach (var (button, speed) in _speedButtons)
         {
             button.SetPressedNoSignal(speed == speedIndex);
@@ -706,35 +744,92 @@ public partial class Hud : CanvasLayer
 
     // ================================================================ persistent HUD
 
+    private Label _date = null!;
+    private TextureRect _phaseIcon = null!;
+    private HBoxContainer _bar = null!;
+
+    // The bar across the top (the style guide's §3): the day and date and where she is, the speeds, a
+    // compass in the middle, the readings that matter in this phase, and the menu.
     private void BuildClock()
     {
-        var panel = Ui.PanelOf(Ui.Panel, null, Ui.SpaceL, Ui.SpaceS);
-        panel.Position = new Vector2(Ui.SpaceM, Ui.SpaceM);
+        var panel = new PanelContainer { AnchorRight = 1, OffsetBottom = Ui.TopBarHeight, MouseFilter = Control.MouseFilterEnum.Stop };
+        panel.AddThemeStyleboxOverride("panel", Ui.FrameStyle(Ui.SpaceM, 0));
         _root.AddChild(panel);
-        var column = new VBoxContainer();
-        column.AddThemeConstantOverride("separation", 0);
-        panel.AddChild(column);
-        var top = new HBoxContainer();
-        column.AddChild(top);
-        _clock = Ui.Text("DAY 1 · 08:00", Ui.TextHeading + 1, Ui.Ink);
-        _clock.TooltipText = "Day of the expedition and the time";
-        _clock.MouseFilter = Control.MouseFilterEnum.Stop;
-        top.AddChild(_clock);
-        var speeds = new HBoxContainer();
-        speeds.AddThemeConstantOverride("separation", 2);
-        top.AddChild(speeds);
+        _bar = new HBoxContainer();
+        _bar.AddThemeConstantOverride("separation", Ui.SpaceL);
+        panel.AddChild(_bar);
+
+        // The day: the ship (or the camp), the day of the expedition and the date, where she is.
+        var day = new HBoxContainer { TooltipText = "Day of the expedition, the date and the time", MouseFilter = Control.MouseFilterEnum.Stop };
+        day.AddThemeConstantOverride("separation", Ui.SpaceM);
+        _bar.AddChild(day);
+        _phaseIcon = Ui.Icon("ship", 34);
+        day.AddChild(_phaseIcon);
+        var lines = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        lines.AddThemeConstantOverride("separation", -4);
+        day.AddChild(lines);
+        // The serif, not the Fell: its old-style 1 reads as an I.
+        _clock = Ui.Text("Day 1", Ui.TextHeading + 3, Ui.Ink);
+        _clock.AddThemeFontOverride("font", Ui.SerifSemibold);
+        lines.AddChild(_clock);
+        _date = Ui.Text("", Ui.TextMeta + 1, Ui.InkSoft);
+        lines.AddChild(_date);
+        _place = Ui.Text("", Ui.TextBody, Ui.Ink);
+        _place.AddThemeFontOverride("font", Ui.SerifFont);
+        _place.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+        _place.CustomMinimumSize = new Vector2(96, 0);
+        day.AddChild(_place);
+
+        // The speeds, as one segmented control.
+        var speeds = new PanelContainer { SizeFlagsVertical = Control.SizeFlags.ShrinkCenter };
+        speeds.AddThemeStyleboxOverride("panel", Ui.Box(Ui.InsetGround, new Color(Ui.Gold, 0.4f), 2, 2));
+        _bar.AddChild(speeds);
+        var segments = new HBoxContainer();
+        segments.AddThemeConstantOverride("separation", 2);
+        speeds.AddChild(segments);
         for (var i = 0; i < DefaultSpeedNames.Length; i++)
         {
             var speed = i;
-            var button = Ui.Button(i == 0 ? "❚❚" : DefaultSpeedNames[i], "", () => SpeedChosen?.Invoke(speed), toggle: true);
-            speeds.AddChild(button);
+            var button = Ui.Button(Ui.ButtonKind.Tab, i == 0 ? "" : DefaultSpeedNames[i], "", () => SpeedChosen?.Invoke(speed), toggle: true);
+            button.CustomMinimumSize = new Vector2(i == 0 ? 36 : 44, 32);
+            button.AddThemeFontOverride("font", Ui.SansSemibold);
+            button.AddThemeFontSizeOverride("font_size", Ui.TextBody + 1);
+            if (i == 0)
+            {
+                Ui.WithIcon(button, "pause", 16);
+                button.IconAlignment = HorizontalAlignment.Center;
+            }
+
+            segments.AddChild(button);
             _speedButtons.Add((button, speed));
         }
 
-        _place = Ui.Text("", Ui.TextMeta, Ui.InkSoft);
-        column.AddChild(_place);
+        // The compass rose, in the middle of the space between, standing proud of the bar.
+        var middle = new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore };
+        _bar.AddChild(middle);
+        _rose = new CompassRose { AnchorLeft = 0.5f, AnchorRight = 0.5f, OffsetLeft = -30, OffsetRight = 30, OffsetTop = -4, OffsetBottom = 56, MouseFilter = Control.MouseFilterEnum.Ignore };
+        middle.AddChild(_rose);
+
+        // The readings, in one inset band, then the menu.
+        var readings = new PanelContainer { SizeFlagsVertical = Control.SizeFlags.ShrinkCenter };
+        readings.AddThemeStyleboxOverride("panel", Ui.Box(new Color(Ui.InsetGround, 0.85f), new Color(Ui.Gold, 0.35f), Ui.SpaceS, 0));
+        _bar.AddChild(readings);
+        _status = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
+        _status.AddThemeConstantOverride("separation", Ui.SpaceS);
+        readings.AddChild(_status);
+        _settings = Ui.Button("", "Menu: new voyage, save, load, controls, interface size, auto-pause");
+        Ui.WithIcon(_settings, "settings", 24);
+        _settings.IconAlignment = HorizontalAlignment.Center;
+        _settings.CustomMinimumSize = new Vector2(40, 40);
+        _settings.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+        _settings.Pressed += () => OpenMenu(_settings, below: true);
+        _bar.AddChild(_settings);
+
         SetSpeedNames(DefaultSpeedNames);
     }
+
+    private Button _settings = null!;
+    private CompassRose _rose = null!;
 
     // Top left, under the clock, in port: what preparing the expedition comes to, ticked off as it is done
     // (the owner's port board: "Prepare the expedition"). Built from the simulation each refresh.
@@ -745,7 +840,7 @@ public partial class Hud : CanvasLayer
     private void BuildChecklist()
     {
         _checklist = Ui.PanelOf(Ui.Panel, null, Ui.SpaceL, Ui.SpaceS);
-        _checklist.Position = new Vector2(Ui.SpaceM, 78);
+        _checklist.Position = new Vector2(Ui.SpaceM, Ui.BelowTopBar);
         _checklist.Visible = false;
         _root.AddChild(_checklist);
         var column = new VBoxContainer();
@@ -755,6 +850,65 @@ public partial class Hud : CanvasLayer
         _checks = new VBoxContainer();
         _checks.AddThemeConstantOverride("separation", 2);
         column.AddChild(_checks);
+
+        // Readiness, in words not a score (ECONOMY_LOOP §43): for the passage, and for the landfall after it.
+        column.AddChild(new HSeparator());
+        var columns = new HBoxContainer();
+        columns.AddThemeConstantOverride("separation", Ui.SpaceL);
+        column.AddChild(columns);
+        foreach (var (title, names) in new[] { ("Voyage", new[] { "Sailing", "Navigation", "Repair", "Medical", "Water", "Food" }), ("Landfall", new[] { "Building", "Food finding", "Farming", "Trade goods" }) })
+        {
+            var part = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(190, 0) };
+            part.AddThemeConstantOverride("separation", 1);
+            columns.AddChild(part);
+            part.AddChild(Ui.Title(title, Ui.TextBody + 1));
+            foreach (var name in names)
+            {
+                _readiness[name] = new Gauge(part, name, 74, 44);
+            }
+        }
+    }
+
+    private readonly Dictionary<string, Gauge> _readiness = [];
+
+    // A readiness in a word, from 0 (nothing) to 1 and over (as much as could be wanted).
+    private static (string Word, Severity Severity) Rated(double share) => share switch
+    {
+        < 0.25 => ("Poor", Severity.Critical),
+        < 0.5 => ("Weak", Severity.Urgent),
+        < 0.75 => ("Fair", Severity.Attention),
+        < 1 => ("Good", Severity.Positive),
+        _ => ("Strong", Severity.Positive),
+    };
+
+    private void RefreshReadiness(SimulationRunner runner, Expedition.Simulation.Port.PortRules rules, int sailing, double food, double water)
+    {
+        var crew = runner.Campaign.Crew.ToList();
+        double Best(params string[] skills) => crew.Count == 0 ? 0 : crew.Max(c => skills.Max(k => c.Skills.Get(k))) / 4.0;
+        int Knowing(string skill) => crew.Count(c => c.Skills.Get(skill) >= 2);
+        var store = runner.Campaign.SharedStore;
+        var (_, high) = Expedition.Simulation.Scenarios.ExpeditionScenario.PassageDays;
+        void Set(string name, double share, string tip)
+        {
+            var (word, severity) = Rated(share);
+            _readiness[name].Set(share * 100, word, severity, tip);
+        }
+
+        var hands = runner.Campaign.Port!.Hired.Count;
+        Set("Sailing", hands / (double)rules.Berths + 0.1 * Knowing("skill.seamanship"), $"{hands} hands signed of {rules.Berths} berths; {Knowing("skill.seamanship")} know the sea.");
+        Set("Navigation", Best("skill.navigation"), "The best navigator aboard: who can take the sun, keep the reckoning and know the coast.");
+        Set("Repair", 0.7 * Best("skill.ship_repair", "skill.carpentry") + 0.3 * Math.Min(1, (store.Count("item.oakum") + store.Count("item.plank")) / 10.0),
+            $"Who can mend her, and the oakum and planks to do it ({store.Count("item.oakum")} oakum, {store.Count("item.plank")} planks).");
+        Set("Medical", Best("skill.first_aid", "skill.surgery", "skill.treatment"), "Who can treat the sick and hurt.");
+        Set("Water", water / high, $"About {water:0} days of water for {sailing}; the passage may take {high}.");
+        Set("Food", food / high, $"About {food:0} days of food for {sailing}; the passage may take {high}.");
+        var tools = store.Count("item.axe") + store.Count("item.adze") + store.Count("item.saw");
+        Set("Building", 0.5 * Knowing("skill.carpentry") / 2.0 + 0.5 * tools / 6.0, $"{Knowing("skill.carpentry")} who can build; {tools} axes, adzes and saws.");
+        Set("Food finding", Best("skill.fishing", "skill.foraging", "skill.hunting"), "Who can fish, forage and hunt, for when the stores run down ashore.");
+        var seeds = new[] { "item.seed_wheat", "item.seed_maize", "item.seed_chickpea", "item.seed_onion", "item.seed_cabbage" }.Count(i => store.Count(i) > 0);
+        Set("Farming", 0.6 * seeds / 5.0 + 0.4 * Math.Min(1, store.Count("item.spade") / 2.0), $"{seeds} kinds of seed, {store.Count("item.spade")} spades.");
+        var goods = store.Count("item.trade_cloth") + store.Count("item.trade_knives");
+        Set("Trade goods", goods / 20.0, $"{goods} lots of cloth and knives, for the peoples of the coast.");
     }
 
     private void RefreshChecklist(SimulationRunner runner)
@@ -771,6 +925,7 @@ public partial class Hud : CanvasLayer
         var sailing = Math.Max(runner.Campaign.Crew.Count(), rules.MinimumCrew + 1);
         var (food, water) = runner.SupplyForecast(sailing);
         var (low, _) = Expedition.Simulation.Scenarios.ExpeditionScenario.PassageDays;
+        RefreshReadiness(runner, rules, sailing, food, water);
         var hours = (rules.Departure.Tick - runner.Campaign.Clock.Tick) / (double)SimulationClock.TicksPerHour;
         var items = new List<(bool Done, string Text, string Tip)>
         {
@@ -802,18 +957,10 @@ public partial class Hud : CanvasLayer
             var row = new HBoxContainer { TooltipText = tip, MouseFilter = Control.MouseFilterEnum.Stop };
             row.AddThemeConstantOverride("separation", Ui.SpaceS);
             var box = new PanelContainer { CustomMinimumSize = new Vector2(18, 18), MouseFilter = Control.MouseFilterEnum.Ignore };
-            box.AddThemeStyleboxOverride("panel", Ui.Box(new Color(0, 0, 0, 0.25f), done ? Ui.Of(Severity.Positive) : Ui.Rule, 1, 1));
-            if (done && ResourceLoader.Exists("res://Assets/UI/icons/tick.png"))
+            box.AddThemeStyleboxOverride("panel", Ui.Box(Ui.InsetGround, done ? Ui.Of(Severity.Positive) : Ui.Rule, 1, 1));
+            if (done)
             {
-                box.AddChild(new TextureRect
-                {
-                    Texture = GD.Load<Texture2D>("res://Assets/UI/icons/tick.png"),
-                    ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-                    StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-                    CustomMinimumSize = new Vector2(14, 14),
-                    Modulate = Ui.Of(Severity.Positive),
-                    MouseFilter = Control.MouseFilterEnum.Ignore,
-                });
+                box.AddChild(Ui.Icon("tick", 14, Ui.Of(Severity.Positive)));
             }
 
             row.AddChild(box);
@@ -824,57 +971,74 @@ public partial class Hud : CanvasLayer
         }
     }
 
+    // The tabs along the foot (the style guide's §4): the screens of this phase, each with its icon and
+    // name, the open one in gold; the menu at the end.
     private void BuildNavigation()
     {
-        // Bottom right, where the world matters least, clear of the clock and the phase's gauges.
-        var panel = Ui.PanelOf(Ui.Panel, null, Ui.SpaceM, Ui.SpaceS);
-        panel.AnchorLeft = 1;
-        panel.AnchorRight = 1;
-        panel.AnchorTop = 1;
-        panel.AnchorBottom = 1;
-        panel.OffsetRight = -Ui.SpaceM;
-        panel.OffsetBottom = -Ui.SpaceM;
-        panel.GrowHorizontal = Control.GrowDirection.Begin;
-        panel.GrowVertical = Control.GrowDirection.Begin;
+        var panel = new PanelContainer
+        {
+            AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 1, AnchorBottom = 1,
+            OffsetBottom = -Ui.SpaceS, GrowHorizontal = Control.GrowDirection.Both, GrowVertical = Control.GrowDirection.Begin,
+        };
+        panel.AddThemeStyleboxOverride("panel", Ui.FrameStyle(Ui.SpaceS, Ui.SpaceXs));
         _root.AddChild(panel);
         var row = new HBoxContainer();
-        row.AddThemeConstantOverride("separation", 2);
+        row.AddThemeConstantOverride("separation", Ui.SpaceS);
         panel.AddChild(row);
         foreach (var (id, label, key, tip) in new[]
                  {
-                     (PanelId.People, "People", "P", "The roster: who you have, what they can do, who is tired or hurt"),
-                     (PanelId.Expedition, "Expedition", "X", "Objectives, the charter, and the papers of the voyage"),
-                     (PanelId.Cargo, "Cargo", "C", "What is in the hold and how long it will last"),
-                     (PanelId.Ship, "Ship", "H", "The Garza's condition and the captain's orders for her"),
                      (PanelId.Chart, "Chart", "M", "The working chart: your reckoning, the noon sight, the course (at sea)"),
+                     (PanelId.People, "People", "P", "The roster: who you have, what they can do, who is tired or hurt"),
+                     (PanelId.Ship, "Ship", "H", "The Garza's condition and the captain's orders for her"),
+                     (PanelId.Cargo, "Cargo", "C", "What is in the hold and how long it will last"),
+                     (PanelId.Expedition, "Expedition", "X", "Objectives, the charter, and the papers of the voyage"),
                      (PanelId.Chronicle, "Chronicle", "L", "The record of everything that has happened"),
                  })
         {
             var panelId = id;
-            var button = Ui.Button(label, $"{tip}  ({key})", () => TogglePanel(panelId), toggle: true);
+            var button = Tab(label, $"{tip}  ({key})", id.ToString().ToLowerInvariant());
+            button.Pressed += () => TogglePanel(panelId);
             button.Disabled = id == PanelId.Chart;
-            Ui.WithIcon(button, id.ToString().ToLowerInvariant());
             row.AddChild(button);
             _navButtons[id] = button;
         }
 
-        _belowButton = Ui.Button("Below", "See below decks: the hold, the forecastle space, the steerage and the cabin, and who is down there  (B)", () => BelowRequested?.Invoke(), toggle: true);
-        Ui.WithIcon(_belowButton, "cargo");
+        _belowButton = Tab("Below", "See below decks: the hold, the forecastle space, the steerage and the cabin, and who is down there  (B)", "supplies");
+        _belowButton.Pressed += () => BelowRequested?.Invoke();
         row.AddChild(_belowButton);
-        var menuButton = Ui.Button("Menu", "Menu: new voyage, save, load, controls, interface size, auto-pause");
-        Ui.WithIcon(menuButton, "menu");
+        var menuButton = Tab("Menu", "Menu: new voyage, save, load, controls, interface size, auto-pause", "menu");
+        menuButton.ToggleMode = false;
         row.AddChild(menuButton);
         _menu = new PopupMenu();
         _root.AddChild(_menu);
-        menuButton.Pressed += () =>
-        {
-            RebuildMenu();
-            _menu.ResetSize();
-            _menu.Position = (Vector2I)(menuButton.GetScreenPosition() - new Vector2(_menu.Size.X - menuButton.Size.X, _menu.Size.Y + 4));
-            _menu.Popup();
-        };
+        menuButton.Pressed += () => OpenMenu(menuButton, below: false);
         _menu.IdPressed += OnMenu;
     }
+
+    // A tab: icon beside its name, in the display face.
+    private static Button Tab(string label, string tip, string icon)
+    {
+        var button = Ui.Button(Ui.ButtonKind.Tab, label, tip, null, toggle: true);
+        Ui.WithIcon(button, icon, 24);
+        button.CustomMinimumSize = new Vector2(112, Ui.TabBarHeight - 12);
+        button.AddThemeFontSizeOverride("font_size", Ui.TextBody + 2);
+        return button;
+    }
+
+    // Shows the menu by the button that asked for it: below one in the top bar, above one at the foot.
+    private void OpenMenu(Button by, bool below)
+    {
+        RebuildMenu();
+        _menu.ResetSize();
+        var at = by.GetScreenPosition();
+        _menu.Position = (Vector2I)(below
+            ? new Vector2(at.X + by.Size.X - _menu.Size.X, at.Y + by.Size.Y + 6)
+            : at - new Vector2(_menu.Size.X - by.Size.X, _menu.Size.Y + 6));
+        _menu.Popup();
+    }
+
+    private string _peopleLabel = "People";
+    private string _chronicleLabel = "Chronicle";
 
     private void RebuildMenu()
     {
@@ -931,18 +1095,16 @@ public partial class Hud : CanvasLayer
 
     private void BuildStatus()
     {
+        // Under the bar, at the right: the sail orders at sea (the readings themselves are in the bar).
         _statusPanel = Ui.PanelOf(new Color(0, 0, 0, 0), null, 0, 0);
         _statusPanel.AnchorLeft = 1;
         _statusPanel.AnchorRight = 1;
-        _statusPanel.OffsetTop = Ui.SpaceM;
+        _statusPanel.OffsetTop = Ui.BelowTopBar;
         _statusPanel.OffsetRight = -Ui.SpaceM;
         _statusPanel.GrowHorizontal = Control.GrowDirection.Begin;
         _root.AddChild(_statusPanel);
         var column = new VBoxContainer();
         _statusPanel.AddChild(column);
-        _status = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
-        _status.AddThemeConstantOverride("separation", Ui.SpaceS);
-        column.AddChild(_status);
 
         // Sail orders stay one click away at sea: they matter most when things go wrong (VOYAGE §21).
         _sailOrders = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
@@ -955,10 +1117,39 @@ public partial class Hud : CanvasLayer
                      (Expedition.Simulation.Voyage.SailPlan.HoveTo, "Heave to", "Ride out heavy weather: almost no headway, but a third of the wear and about half the leaking."),
                  })
         {
-            var button = Ui.Button(label, tip, () => SailPlanChosen?.Invoke(plan), toggle: true);
+            var button = Ui.Button(Ui.ButtonKind.Tab, label, tip, () => SailPlanChosen?.Invoke(plan), toggle: true);
+            Ui.WithIcon(button, plan switch { Expedition.Simulation.Voyage.SailPlan.PressOn => "fast", Expedition.Simulation.Voyage.SailPlan.HoveTo => "anchor", _ => "sail" }, 18);
             _sailOrders.AddChild(button);
             _sailButtons.Add((button, plan));
         }
+    }
+
+    // The company in the bar: how many, the sick and hurt, and their spirits (from the strain they carry).
+    private static void AddCompany(SimulationRunner runner, List<(string Icon, string Text, Severity Severity, string Tip, PanelId? Go)> chips, string caption, bool count = true)
+    {
+        var living = runner.Campaign.Crew.Where(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated).ToList();
+        var sick = living.Count(SimulationRunner.SickOrHurt);
+        if (count)
+        {
+            chips.Add((Ui.IconPeople, $"{caption} {living.Count}", Severity.Information,
+                $"{living.Count} living, {living.Count(c => c.CanWork)} fit to work.\nClick for the roster (P).", PanelId.People));
+        }
+        if (sick > 0)
+        {
+            chips.Add((Ui.IconSick, $"Sick {sick}", sick * 3 >= living.Count ? Severity.Urgent : Severity.Attention,
+                string.Join(", ", living.Where(SimulationRunner.SickOrHurt).Select(c => c.Name)) + ": sick or hurt.\nClick for the roster (P).", PanelId.People));
+        }
+
+        var strain = living.Count == 0 ? 0 : living.Average(c => c.Needs.Stress);
+        var (word, severity) = strain switch
+        {
+            < 30 => ("Good", Severity.Positive),
+            < 50 => ("Fair", Severity.Information),
+            < 70 => ("Low", Severity.Attention),
+            _ => ("Breaking", Severity.Critical),
+        };
+        chips.Add((Ui.IconMorale, $"Morale {word}", severity,
+            $"How the company bears it: the strain they carry, on average {strain:0} of 100. Rest, food, shelter and fair treatment ease it.", PanelId.People));
     }
 
     private Button _belowButton = null!;
@@ -1005,15 +1196,16 @@ public partial class Hud : CanvasLayer
         {
             var weather = runner.Content.Voyage?.Weathers.FirstOrDefault(w => w.Id == ship.WeatherId);
             var sea = weather?.SeaState ?? 1;
-            var course = ship.Navigation is { } navigation ? $" · {SimulationRunner.CompassPoint(navigation.Heading)}" + (navigation.Beating ? ", beating" : "") : "";
-            chips.Add((Ui.IconWind, Capital(_formatter.WeatherName(ship.WeatherId)) + course, sea >= 2.5 ? Severity.Critical : sea >= 1.8 ? Severity.Urgent : Severity.Information,
+            chips.Add((Ui.IconWind, Capital(_formatter.WeatherName(ship.WeatherId)), sea >= 2.5 ? Severity.Critical : sea >= 1.8 ? Severity.Urgent : Severity.Information,
                 "The wind and sea, and the course steered. Heavy weather strains the hull and rigging and makes her leak; heaving to eases it." +
                 (ship.Navigation is { } n ? $"\nCourse {n.Heading:0}° by the compass; the wind from the {SimulationRunner.CompassPoint(n.WindFrom)}." +
                     (n.Beating ? " It is too near the course she wants, so she beats to windward, tack upon tack." : "") : "") +
                 "\nClick for the chart (M).", ship.Navigation is null ? null : PanelId.Chart));
 
             var togo = DaysToGo(ship);
-            chips.Add((Ui.IconLead, $"{ship.ReckonedRemaining:0} lg · {DaysText(togo)}", Severity.Information,
+            var steering = ship.Navigation is { } heading ? $"{SimulationRunner.CompassPoint(heading.Heading)} · " : "";
+            chips.Add((Ui.IconLead, $"{steering}{ship.ReckonedRemaining:0} lg", Severity.Information,
+                (ship.Navigation is { Beating: true } ? "Beating to windward: the wind is too near the course she wants.\n" : "") +
                 $"About {ship.ReckonedRemaining:0} leagues to {ship.Destination} by your reckoning: {DaysText(togo)} at the passage's usual pace. " +
                 $"Making {ship.SpeedLeaguesPerHour * 24:0} leagues a day now" + (PaceWhy(runner) is { Length: > 0 } why ? $": {why}." : ".") +
                 "\nClick for the voyage at a glance (X).", PanelId.Expedition));
@@ -1025,6 +1217,8 @@ public partial class Hud : CanvasLayer
             var (part, _, severity) = WorstPart(ship);
             chips.Add((Ui.IconShip, part, severity, $"Hull {ship.Hull:0}%, rigging {ship.Rigging:0}%, bilge {ship.Bilge:0}% water. Click for the ship (H).", PanelId.Ship));
 
+            AddCompany(runner, chips, "Crew", count: false);
+
             // Everything else that wants the captain, most pressing first, in one pill: the voyage screen lists them.
             // (Water and food have their own pills, coloured by whether they will last.)
             var matters = Matters(runner).Where(m => m.Severity >= Severity.Attention && !m.Short.StartsWith("Water") && !m.Short.StartsWith("Food")).ToList();
@@ -1034,6 +1228,21 @@ public partial class Hud : CanvasLayer
                 chips.Add((Ui.IconOf(top.Severity), matters.Count > 1 ? $"{top.Short}  +{matters.Count - 1}" : top.Short, top.Severity,
                     string.Join("\n", matters.Select(m => $"{Ui.IconOf(m.Severity)} {m.Short}: {m.Text}")) + "\nClick for what needs seeing to (X).", PanelId.Expedition));
             }
+        }
+
+        else if (campaign.Camp is { } camp && runner.Content.Shore?.Settlement is { } settling)
+        {
+            var (food, water) = runner.SupplyForecast();
+            chips.Add((Ui.IconFood, $"Food {food:0} d", food < 7 ? Severity.Critical : food < 20 ? Severity.Attention : Severity.Information,
+                $"About {food:0} days of food in the stores at the everyday rate, before what is gathered, fished and grown.\nClick for the stores (C).", PanelId.Cargo));
+            chips.Add((Ui.IconWater, $"Water {water:0} d", water < 3 ? Severity.Critical : water < 8 ? Severity.Attention : Severity.Information,
+                $"About {water:0} days of water kept, before what is fetched.\nClick for the stores (C).", PanelId.Cargo));
+            AddCompany(runner, chips, "People");
+            var day = runner.CampDay;
+            chips.Add((Ui.IconSeason, runner.StormAshore ? "Storm" : runner.WetSeason ? "Wet" : $"Dry, {Math.Max(0, settling.WetFromDay - day):0} d",
+                runner.StormAshore ? Severity.Urgent : runner.WetSeason ? Severity.Attention : Severity.Information,
+                runner.StormAshore ? "A storm is blowing: no work out of doors." : runner.WetSeason ? "The wet season: rain most days; roofing waits for dry spells."
+                    : $"The dry season, about {Math.Max(0, settling.WetFromDay - day):0} days left of it by the signs: build and roof before the rains.", PanelId.Ship));
         }
 
         while (_status.GetChildCount() > chips.Count)
@@ -1065,7 +1274,14 @@ public partial class Hud : CanvasLayer
             _pillTargets.Add(target);
         }
 
-        _statusPanel.Visible = chips.Count > 0;
+        // When the bar is too full for the readings, they drop their captions.
+        var compact = _bar.GetCombinedMinimumSize().X > _root.Size.X - Ui.SpaceL;
+        foreach (var pill in _status.GetChildren().OfType<Button>())
+        {
+            Ui.CompactPill(pill, compact);
+        }
+
+        _statusPanel.Visible = campaign.Voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay };
         _belowButton.Visible = campaign.Port is null && campaign.Voyage is not null && campaign.Camp is null;
         _sailOrders.Visible = campaign.Voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay };
         foreach (var (button, plan) in _sailButtons)
@@ -1278,7 +1494,7 @@ public partial class Hud : CanvasLayer
 
     private void BuildSelected()
     {
-        var column = new VBoxContainer { AnchorTop = 1, AnchorBottom = 1, OffsetLeft = Ui.SpaceM, OffsetBottom = -Ui.SpaceM, GrowVertical = Control.GrowDirection.Begin };
+        var column = new VBoxContainer { AnchorTop = 1, AnchorBottom = 1, OffsetLeft = Ui.SpaceM, OffsetBottom = -Ui.AboveTabBar, GrowVertical = Control.GrowDirection.Begin };
         column.AddThemeConstantOverride("separation", Ui.SpaceS);
         column.MouseFilter = Control.MouseFilterEnum.Ignore;
         _root.AddChild(column);
@@ -1290,7 +1506,7 @@ public partial class Hud : CanvasLayer
         _selectedPanel.AddChild(card);
         var top = new HBoxContainer();
         card.AddChild(top);
-        _selectedName = Ui.Text("", Ui.TextHeading, Ui.Brass);
+        _selectedName = Ui.Title("", Ui.TextHeading + 1);
         _selectedName.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         top.AddChild(_selectedName);
         top.AddChild(Ui.Button("Record", "Their full record, orders and duties  (P)", () => OpenPanel(PanelId.People)));
@@ -1372,7 +1588,7 @@ public partial class Hud : CanvasLayer
         // Alerts: a column on the right, under the status pills (SweepAlerts keeps it there).
         _alerts = new VBoxContainer
         {
-            AnchorLeft = 1, AnchorRight = 1, OffsetLeft = -360, OffsetRight = -Ui.SpaceM, OffsetTop = 84,
+            AnchorLeft = 1, AnchorRight = 1, OffsetLeft = -360, OffsetRight = -Ui.SpaceM, OffsetTop = Ui.BelowTopBar,
             GrowHorizontal = Control.GrowDirection.Begin, MouseFilter = Control.MouseFilterEnum.Ignore,
         };
         _alerts.AddThemeConstantOverride("separation", Ui.SpaceS);
@@ -1381,35 +1597,36 @@ public partial class Hud : CanvasLayer
         // The paused notice and the routine notices: top centre, under the clock's line.
         _centre = new VBoxContainer
         {
-            AnchorLeft = 0.5f, AnchorRight = 0.5f, OffsetTop = 84, OffsetLeft = -240, OffsetRight = 240,
+            AnchorLeft = 0.5f, AnchorRight = 0.5f, OffsetTop = Ui.BelowTopBar + Ui.SpaceS, OffsetLeft = -240, OffsetRight = 240,
             MouseFilter = Control.MouseFilterEnum.Ignore,
         };
         _centre.AddThemeConstantOverride("separation", Ui.SpaceS);
         _root.AddChild(_centre);
-        _paused = Ui.PanelOf(new Color(0.14f, 0.07f, 0.04f, 0.94f), Ui.Of(Severity.Attention), Ui.SpaceL, Ui.SpaceS);
+        _paused = new PanelContainer();
+        _paused.AddThemeStyleboxOverride("panel", Ui.NoticeStyle(Ui.SpaceL, Ui.SpaceS));
         _paused.Visible = false;
         _centre.AddChild(_paused);
         var row = new HBoxContainer();
         _paused.AddChild(row);
-        row.AddChild(Ui.Text("❚❚", Ui.TextHeading, Ui.Of(Severity.Attention)));
+        row.AddChild(Ui.Icon("pause", 22, Ui.Of(Severity.Attention)));
         _pausedText = Ui.Text("", Ui.TextBody, Ui.Ink, 300);
         _pausedText.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         row.AddChild(_pausedText);
-        row.AddChild(Ui.Button("Carry on  (Space)", "Resume at a safe speed", () => ContinueRequested?.Invoke()));
+        row.AddChild(Ui.Button(Ui.ButtonKind.Primary, "Carry on  (Space)", "Resume at a safe speed", () => ContinueRequested?.Invoke()));
     }
 
     private void BuildToasts()
     {
         // Setting a building down (R7): what the ground under the outline means, held while placing.
         // At the foot of the screen, clear of the beach being looked at.
-        _placing = Ui.PanelOf(new Color(0.07f, 0.055f, 0.045f, 0.92f), Ui.Brass, Ui.SpaceL, Ui.SpaceS);
+        _placing = Ui.Frame(Ui.SpaceL, Ui.SpaceS);
         _placing.MouseFilter = Control.MouseFilterEnum.Ignore;
         _placing.Visible = false;
         _placing.AnchorLeft = _placing.AnchorRight = 0.5f;
         _placing.AnchorTop = _placing.AnchorBottom = 1;
         _placing.OffsetLeft = -280;
         _placing.OffsetRight = 280;
-        _placing.OffsetBottom = -118;
+        _placing.OffsetBottom = -Ui.AboveTabBar - Ui.SpaceL;
         _placing.GrowVertical = Control.GrowDirection.Begin;
         _placingText = Ui.Text("", Ui.TextBody, Ui.Ink, 540);
         _placing.AddChild(_placingText);
@@ -1446,7 +1663,7 @@ public partial class Hud : CanvasLayer
             }
         }
 
-        _navButtons[PanelId.Chronicle].Text = _unread > 0 ? $"Chronicle ({_unread})" : "Chronicle";
+        _navButtons[PanelId.Chronicle].Text = _unread > 0 ? $"{_chronicleLabel} ({_unread})" : _chronicleLabel;
     }
 
     private void BuildHelp()
@@ -1469,7 +1686,7 @@ public partial class Hud : CanvasLayer
         var title = Ui.Heading("Controls");
         title.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         top.AddChild(title);
-        top.AddChild(Ui.Button("×", "Close", () => _help.Visible = false));
+        top.AddChild(CloseButton(() => _help.Visible = false));
         column.AddChild(Ui.Text(
             "Right-click: walk (in port the captain; at sea the selected crew member)\n" +
             "Left-click: look at someone · Esc: close · F: follow the captain\n" +
@@ -1482,24 +1699,38 @@ public partial class Hud : CanvasLayer
 
     // ================================================================ management drawer
 
+    private TextureRect _drawerIcon = null!;
+
+    /// <summary>The close button on a panel: a gold cross.</summary>
+    public static Button CloseButton(Action close)
+    {
+        var button = Ui.Button("", "Close  (Esc)", close);
+        Ui.WithIcon(button, "cross", 16);
+        button.IconAlignment = HorizontalAlignment.Center;
+        button.CustomMinimumSize = new Vector2(30, 30);
+        return button;
+    }
+
     private void BuildDrawer()
     {
         _drawer = Ui.PanelOf(Ui.Drawer, Ui.Rule, Ui.SpaceL, Ui.SpaceM);
         _drawer.AnchorBottom = 1;
         _drawer.OffsetLeft = Ui.SpaceM;
-        _drawer.OffsetRight = Ui.SpaceM + 400;
-        _drawer.OffsetTop = 70;
-        _drawer.OffsetBottom = -Ui.SpaceM;
+        _drawer.OffsetRight = Ui.SpaceM + 420;
+        _drawer.OffsetTop = Ui.BelowTopBar;
+        _drawer.OffsetBottom = -Ui.AboveTabBar;
         _drawer.Visible = false;
         _root.AddChild(_drawer);
         var column = new VBoxContainer();
         _drawer.AddChild(column);
         var top = new HBoxContainer();
         column.AddChild(top);
-        _drawerTitle = Ui.Heading("");
+        _drawerIcon = Ui.Icon("people", 26);
+        top.AddChild(_drawerIcon);
+        _drawerTitle = Ui.Title("", Ui.TextHeading + 3);
         _drawerTitle.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         top.AddChild(_drawerTitle);
-        top.AddChild(Ui.Button("×", "Close  (Esc)", () => ClosePanel()));
+        top.AddChild(CloseButton(() => ClosePanel()));
         column.AddChild(new HSeparator());
         var scroll = new ScrollContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill, HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         column.AddChild(scroll);
@@ -2473,21 +2704,28 @@ public partial class Hud : CanvasLayer
         var filters = new HBoxContainer();
         filters.AddThemeConstantOverride("separation", 2);
         body.AddChild(filters);
+        var group = new ButtonGroup();
         foreach (var (key, label) in new[] { ("all", "All"), ("people", "People"), ("ship", "Ship"), ("port", "Port"), ("decisions", "Decisions") })
         {
             var filter = key;
-            var button = Ui.Button(label, "", () => { _chronicleFilter = filter; _chronicleCount = -1; }, toggle: true);
-            button.ButtonGroup ??= null;
+            var button = Ui.Button(Ui.ButtonKind.Tab, label, "", () => { _chronicleFilter = filter; _chronicleCount = -1; }, toggle: true);
+            button.ButtonGroup = group;
+            button.ButtonPressed = key == "all";
             filters.AddChild(button);
         }
 
+        // The record is written on parchment, in ink (the style guide: parchment for logs and notes).
+        var page = Ui.ParchmentPanel(Ui.SpaceL, Ui.SpaceL);
+        body.AddChild(page);
         _chronicle = new RichTextLabel
         {
             FitContent = true, SelectionEnabled = true, ScrollActive = false,
-            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(370, 0),
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(340, 0),
         };
-        _chronicle.AddThemeFontSizeOverride("normal_font_size", Ui.TextBody - 1);
-        body.AddChild(_chronicle);
+        _chronicle.AddThemeFontSizeOverride("normal_font_size", Ui.TextBody);
+        _chronicle.AddThemeColorOverride("default_color", Ui.InkDark);
+        _chronicle.AddThemeConstantOverride("paragraph_separation", Ui.SpaceS);
+        Ui.ContentOf(page).AddChild(_chronicle);
     }
 
     private void RefreshChronicle(SimulationRunner runner)
@@ -2514,7 +2752,7 @@ public partial class Hud : CanvasLayer
 
         // Newest first, so the latest news is at the top of the record.
         _chronicle.Text = string.Join("\n", entries.Where(Keep).Reverse().Take(200)
-            .Select(e => $"[color=#c9b48a]{new SimulationClock(e.Tick)}[/color] — {_formatter.Format(e)}"));
+            .Select(e => $"[color=#7a4e12]{new SimulationClock(e.Tick)}[/color] — {_formatter.Format(e)}"));
         _chronicle.BbcodeEnabled = true;
     }
 
@@ -2522,7 +2760,7 @@ public partial class Hud : CanvasLayer
 
     private void BuildEvent()
     {
-        _event = Ui.PanelOf(new Color(0.11f, 0.08f, 0.055f, 0.96f), Ui.Brass, Ui.SpaceXl, Ui.SpaceL);
+        _event = Ui.Frame(Ui.SpaceXl, Ui.SpaceL);
         _event.AnchorLeft = 0.5f;
         _event.AnchorRight = 0.5f;
         _event.AnchorTop = 0.5f;
@@ -2539,7 +2777,7 @@ public partial class Hud : CanvasLayer
         _eventTitle = Ui.Text("", Ui.TextDisplay, Ui.Brass);
         _eventTitle.HorizontalAlignment = HorizontalAlignment.Center;
         column.AddChild(_eventTitle);
-        _eventText = Ui.Text("", Ui.TextBody + 2, Ui.Ink, 540);
+        _eventText = Ui.Prose("", Ui.TextBody + 1, Ui.Ink, 540);
         column.AddChild(_eventText);
         column.AddChild(new HSeparator());
         _eventChoices = new VBoxContainer();
@@ -2552,7 +2790,7 @@ public partial class Hud : CanvasLayer
         _ending = new ColorRect { Color = new Color(0, 0, 0, 0.55f), Visible = false };
         _ending.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         _root.AddChild(_ending);
-        var panel = Ui.PanelOf(Ui.Drawer, Ui.Brass, Ui.SpaceXl, Ui.SpaceL);
+        var panel = Ui.Frame(Ui.SpaceXl, Ui.SpaceL);
         panel.AnchorLeft = 0.5f;
         panel.AnchorRight = 0.5f;
         panel.AnchorTop = 0.5f;
@@ -2568,13 +2806,13 @@ public partial class Hud : CanvasLayer
         _endingTitle = Ui.Text("", Ui.TextDisplay + 4, Ui.Brass);
         _endingTitle.HorizontalAlignment = HorizontalAlignment.Center;
         column.AddChild(_endingTitle);
-        _endingText = Ui.Text("", Ui.TextBody + 1, Ui.Ink, 560);
+        _endingText = Ui.Prose("", Ui.TextBody, Ui.Ink, 560);
         _endingText.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
         column.AddChild(_endingText);
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         buttons.AddThemeConstantOverride("separation", Ui.SpaceL);
         column.AddChild(buttons);
-        _endingActionButton = Ui.Button("", "", () => { HideEnding(); _endingAction?.Invoke(); });
+        _endingActionButton = Ui.Button(Ui.ButtonKind.Primary, "", "", () => { HideEnding(); _endingAction?.Invoke(); });
         _endingActionButton.Visible = false;
         buttons.AddChild(_endingActionButton);
         _endingNewVoyage = Ui.Button("New voyage", "", () => NewVoyageRequested?.Invoke());
@@ -2631,26 +2869,62 @@ public partial class Hud : CanvasLayer
         _campSeason = Ui.Text("", Ui.TextBody, Ui.Ink, 340);
         season.AddChild(_campSeason);
 
-        var build = Ui.Card(_campBox, "Building", "Set down where you choose, then raised phase by phase by the same hands, with the poles, thatch and tools to hand.");
-        var orders = new HFlowContainer();
-        orders.AddThemeConstantOverride("h_separation", Ui.SpaceS);
-        orders.AddThemeConstantOverride("v_separation", Ui.SpaceS);
-        build.AddChild(orders);
-        foreach (var (id, label, tip) in new[]
-                 {
-                     ("building.hut", "Hut", "Dry berths for four, for good"),
-                     ("building.storehouse", "Storehouse", "Stores off the ground and dry: they keep far longer"),
-                     ("building.cookhouse", "Cookhouse", "A roofed hearth: the fire never goes out"),
-                     ("building.infirmary", "Infirmary", "The sick laid apart and tended: they mend better and pass it on less"),
-                     ("building.workshop", "Workshop", "Broken tools mended at a bench: most are saved"),
-                     ("building.garden", "Garden", "Cleared, dug and fenced; then sown from the seed chest. An experiment."),
-                     ("building.well", "Well", "Water dug for at the camp, where the site has it: keep it away from the latrine"),
-                     ("building.landing", "Landing", "Stones and a staging at the water's edge: the boat lands half as much again"),
-                 })
+        // How the settlement stands, in bars (the style guide's settlement overview).
+        var overview = Ui.Card(_campBox, "Settlement overview");
+        foreach (var name in new[] { "Food", "Water", "Shelter", "Tools", "Health", "Morale" })
+        {
+            var row = new HBoxContainer();
+            row.AddThemeConstantOverride("separation", Ui.SpaceS);
+            overview.AddChild(row);
+            row.AddChild(Ui.Icon(name switch { "Shelter" => "house", "Health" => "health", _ => name.ToLowerInvariant() }, 18));
+            _campGauges[name] = new Gauge(row, name, 62, 120);
+            _campGauges[name].Root.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        }
+
+        // The build menu: a card for each kind of building, and the one chosen in full, with its cost.
+        var build = Ui.Card(_campBox, "Build", "Set down where you choose, then raised phase by phase.");
+        var grid = new GridContainer { Columns = 4 };
+        grid.AddThemeConstantOverride("h_separation", Ui.SpaceS);
+        grid.AddThemeConstantOverride("v_separation", Ui.SpaceS);
+        build.AddChild(grid);
+        var group = new ButtonGroup();
+        foreach (var (id, label, icon, tip) in BuildMenu)
         {
             var building = id;
-            orders.AddChild(Ui.Button("+ " + label, tip + ". Choose where on the beach.", () => PlaceRequested?.Invoke(building)));
+            var card = Ui.Button(Ui.ButtonKind.Tab, label, tip, () => ChooseBuilding(building), toggle: true);
+            card.ButtonGroup = group;
+            Ui.WithIcon(card, icon, 34, above: true);
+            card.AddThemeFontSizeOverride("font_size", Ui.TextMeta + 1);
+            card.CustomMinimumSize = new Vector2(74, 74);
+            card.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            grid.AddChild(card);
+            _buildCards[id] = card;
         }
+
+        var chosen = new PanelContainer();
+        chosen.AddThemeStyleboxOverride("panel", Ui.Box(new Color(Ui.PanelLight, 0.6f), new Color(Ui.Gold, 0.3f), Ui.SpaceM, Ui.SpaceM));
+        build.AddChild(chosen);
+        var detail = new HBoxContainer();
+        detail.AddThemeConstantOverride("separation", Ui.SpaceL);
+        chosen.AddChild(detail);
+        _buildIcon = Ui.Icon("hut", 52);
+        _buildIcon.SizeFlagsVertical = Control.SizeFlags.ShrinkBegin;
+        detail.AddChild(_buildIcon);
+        var words = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        words.AddThemeConstantOverride("separation", Ui.SpaceXs);
+        detail.AddChild(words);
+        _buildName = Ui.Heading("");
+        words.AddChild(_buildName);
+        _buildWhat = Ui.Prose("", Ui.TextMeta, Ui.InkSoft, 230);
+        words.AddChild(_buildWhat);
+        _buildCost = new VBoxContainer();
+        _buildCost.AddThemeConstantOverride("separation", 0);
+        words.AddChild(_buildCost);
+        _buildPlace = Ui.Button(Ui.ButtonKind.Primary, "Place", "Choose where on the beach", () => { if (_buildChosen is { } b) PlaceRequested?.Invoke(b); });
+        _buildPlace.CustomMinimumSize = new Vector2(0, 34);
+        _buildPlace.AddThemeFontOverride("font", Ui.DisplayFont);
+        _buildPlace.AddThemeFontSizeOverride("font_size", Ui.TextHeading);
+        words.AddChild(_buildPlace);
 
         // The palisade is camp work round the whole camp, not set down (R8).
         _palisade = new CheckBox
@@ -2697,9 +2971,11 @@ public partial class Hud : CanvasLayer
         var charter = Ui.Card(_campBox, "The charter", "What the Company's relief ship will judge.");
         _campCharter = Ui.Text("", Ui.TextMeta + 1, Ui.Ink, 340);
         charter.AddChild(_campCharter);
-        // Up under the season, where they are seen.
-        _campBox.MoveChild(world.GetParent(), 2);
-        _campBox.MoveChild(charter.GetParent(), 3);
+        // The overview and the build menu first; the coast and the charter under the season, where they are seen.
+        _campBox.MoveChild(overview.GetParent(), 0);
+        _campBox.MoveChild(build.GetParent(), 1);
+        _campBox.MoveChild(world.GetParent(), 4);
+        _campBox.MoveChild(charter.GetParent(), 5);
 
         var known = Ui.Card(_campBox, "What we know of the place", "Pale lines are not yet seen for certain.");
         _campKnown = new VBoxContainer();
@@ -2841,12 +3117,125 @@ public partial class Hud : CanvasLayer
         _campShown = "";
     }
 
+    // The kinds of building, as the build menu shows them.
+    private static readonly (string Id, string Label, string Icon, string Tip)[] BuildMenu =
+    [
+        ("building.hut", "Hut", "hut", "Dry berths for four, for good"),
+        ("building.storehouse", "Storehouse", "storehouse", "Stores off the ground and dry: they keep far longer"),
+        ("building.cookhouse", "Cookhouse", "cooking", "A roofed hearth: the fire never goes out"),
+        ("building.infirmary", "Infirmary", "infirmary", "The sick laid apart and tended: they mend better and pass it on less"),
+        ("building.workshop", "Workshop", "workshop", "Broken tools mended at a bench: most are saved"),
+        ("building.garden", "Garden", "garden", "Cleared, dug and fenced; then sown from the seed chest. An experiment"),
+        ("building.well", "Well", "well", "Water dug for at the camp, where the site has it: keep it away from the latrine"),
+        ("building.landing", "Landing", "dock", "Stones and a staging at the water's edge: the boat lands half as much again"),
+    ];
+
+    private readonly Dictionary<string, Gauge> _campGauges = [];
+    private readonly Dictionary<string, Button> _buildCards = [];
+    private TextureRect _buildIcon = null!;
+    private Label _buildName = null!;
+    private Label _buildWhat = null!;
+    private VBoxContainer _buildCost = null!;
+    private Button _buildPlace = null!;
+    private string? _buildChosen;
+
+    // A building chosen in the build menu: what it is for, what it takes, and the button to set it down.
+    private void ChooseBuilding(string id)
+    {
+        _buildChosen = id;
+        var (_, label, icon, tip) = BuildMenu.First(b => b.Id == id);
+        _buildCards[id].SetPressedNoSignal(true);
+        _buildIcon.Texture = Ui.IconTexture(icon);
+        _buildName.Text = label;
+        _buildWhat.Text = tip + ".";
+        foreach (var child in _buildCost.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        if (_runner?.Content.Shore?.Settlement?.Building(id) is not { } building)
+        {
+            return;
+        }
+
+        // What it takes: the materials of every phase, and the hands' hours.
+        var tasks = _runner.Content.Tasks;
+        var materials = new SortedDictionary<string, int>(StringComparer.Ordinal);
+        var minutes = 0;
+        foreach (var phase in building.Phases)
+        {
+            if (!tasks.TryGetValue(phase.Task, out var task))
+            {
+                continue;
+            }
+
+            minutes += task.DurationMinutes * phase.Times;
+            foreach (var (item, count) in task.Consumes)
+            {
+                materials[item] = materials.GetValueOrDefault(item) + count * phase.Times;
+            }
+        }
+
+        var store = _runner.Campaign.SharedStore;
+        foreach (var (item, count) in materials)
+        {
+            var row = new HBoxContainer();
+            row.AddThemeConstantOverride("separation", Ui.SpaceS);
+            row.AddChild(Ui.Icon(item switch { "item.poles" => "wood", "item.thatch" => "food", "item.stone" => "stone", "item.plank" => "planks", _ => "supplies" }, 16));
+            var name = Ui.Text(_runner.Content.Items.TryGetValue(item, out var known) ? known.Name : item, Ui.TextMeta + 1, Ui.Ink);
+            name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            row.AddChild(name);
+            var have = store.Count(item);
+            row.AddChild(Ui.Text($"{count}", Ui.TextMeta + 1, have >= count ? Ui.Ink : Ui.Of(Severity.Attention)));
+            row.TooltipText = $"{have} in the stores";
+            _buildCost.AddChild(row);
+        }
+
+        var work = new HBoxContainer();
+        work.AddThemeConstantOverride("separation", Ui.SpaceS);
+        work.AddChild(Ui.Icon("time", 16));
+        var line = Ui.Text("Work", Ui.TextMeta + 1, Ui.Ink);
+        line.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        work.AddChild(line);
+        work.AddChild(Ui.Text($"~{minutes / 60.0:0} hand-hours, {building.Phases.Count} phases", Ui.TextMeta + 1, Ui.Ink));
+        _buildCost.AddChild(work);
+    }
+
+    // The settlement's overview bars: each against what would be comfortable.
+    private void RefreshOverview(SimulationRunner runner, CampState camp)
+    {
+        var living = runner.Campaign.Crew.Where(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated).ToList();
+        var (food, water) = runner.SupplyForecast();
+        _campGauges["Food"].Set(food / 60 * 100, $"{food:0} days", food < 7 ? Severity.Critical : food < 20 ? Severity.Attention : Severity.Positive, "Days of food in the stores at the everyday rate");
+        _campGauges["Water"].Set(water / 30 * 100, $"{water:0} days", water < 3 ? Severity.Critical : water < 8 ? Severity.Attention : Severity.Positive, "Days of water kept");
+        var berths = (int)camp.Work(CampWorks.Shelter) + runner.HutBerths;
+        _campGauges["Shelter"].Set(living.Count == 0 ? 100 : 100.0 * berths / living.Count, $"{berths} of {living.Count} berths", berths >= living.Count ? Severity.Positive : Severity.Attention, "Berths under cover, shelters and huts");
+        var store = runner.Campaign.SharedStore;
+        string[] kinds = ["item.axe", "item.adze", "item.saw", "item.spade", "item.mattock"];
+        var whole = kinds.Sum(store.Count);
+        var broken = kinds.Sum(t => camp.Broken.GetValueOrDefault(t));
+        _campGauges["Tools"].Set(whole + broken == 0 ? 0 : 100.0 * whole / (whole + broken), broken > 0 ? $"{whole} whole, {broken} broken" : $"{whole} whole",
+            whole == 0 ? Severity.Critical : broken > 0 ? Severity.Attention : Severity.Positive, "Axes, adzes, saws, spades and mattocks: whole and broken");
+        var fit = living.Count(c => !SimulationRunner.SickOrHurt(c));
+        _campGauges["Health"].Set(living.Count == 0 ? 0 : 100.0 * fit / living.Count, fit == living.Count ? "all well" : $"{living.Count - fit} sick or hurt",
+            fit == living.Count ? Severity.Positive : (living.Count - fit) * 3 >= living.Count ? Severity.Urgent : Severity.Attention, "The sick and hurt, of the living");
+        var strain = living.Count == 0 ? 0 : living.Average(c => c.Needs.Stress);
+        _campGauges["Morale"].Set(100 - strain, strain < 30 ? "good" : strain < 50 ? "fair" : strain < 70 ? "low" : "breaking",
+            strain < 30 ? Severity.Positive : strain < 50 ? Severity.Information : strain < 70 ? Severity.Attention : Severity.Critical, "How the company bears it: the strain they carry");
+        if (_buildChosen is null)
+        {
+            ChooseBuilding(BuildMenu[0].Id);
+        }
+    }
+
     private void RefreshCamp(SimulationRunner runner)
     {
         if (runner.Campaign.Camp is not { } camp)
         {
             return;
         }
+
+        RefreshOverview(runner, camp);
 
         var hours = (runner.Campaign.Clock.Tick - camp.Landed) / (double)SimulationClock.TicksPerHour;
         var people = runner.Campaign.Crew.Count(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated);

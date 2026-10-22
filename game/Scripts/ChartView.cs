@@ -54,7 +54,7 @@ public partial class ChartView : Control
         MouseFilter = MouseFilterEnum.Ignore;
         Theme = Ui.BuildTheme();
         Visible = false;
-        _panel = Ui.PanelOf(Ui.Paper, Ui.Rule, Ui.SpaceL, Ui.SpaceL);
+        _panel = Ui.Frame(Ui.SpaceL, Ui.SpaceL);
         _panel.SetAnchorsPreset(LayoutPreset.Center);
         _panel.OffsetLeft = -600;
         _panel.OffsetRight = 600;
@@ -85,7 +85,7 @@ public partial class ChartView : Control
         _sightBox.AddChild(Ui.Text("The noon sight", Ui.TextHeading, Ui.Brass));
         _sight = Ui.Text("", Ui.TextBody, Ui.Ink, 320);
         _sightBox.AddChild(_sight);
-        _take = Ui.Button("Take the sun with the astrolabe", "Take the noon sight yourself: the latitude, as true as your hand is steady", () => SightRequested?.Invoke());
+        _take = Ui.Button(Ui.ButtonKind.Action, "Take the sun with the astrolabe", "Take the noon sight yourself: the latitude, as true as your hand is steady", () => SightRequested?.Invoke());
         _sightBox.AddChild(_take);
         side.AddChild(Ui.Text("Navigator (takes the sight, keeps the lead going near the coast, and speaks to what is seen)", Ui.TextMeta, Ui.InkSoft, 320));
         _navigator = new OptionButton { FocusMode = FocusModeEnum.None, ClipText = true };
@@ -165,7 +165,7 @@ public partial class ChartView : Control
         _south = Ui.Button("Run south", "Run south along the coast by eye", () => _runner?.CoastAlong(-1));
         along.AddChild(_north);
         along.AddChild(_south);
-        column.AddChild(Ui.Button("Close", "Close the chart  (M or Esc)", Close));
+        column.AddChild(Ui.Button(Ui.ButtonKind.Primary, "Close the chart", "Close the chart  (M or Esc)", Close));
     }
 
     public override void _UnhandledInput(InputEvent @event)
@@ -512,10 +512,10 @@ public partial class ChartView : Control
 /// <summary>The chart itself, drawn: coasts, graticule, track, fixes, the reckoned place and its doubt, the course.</summary>
 public partial class ChartCanvas : Control
 {
-    private static readonly Color Parchment = new(0.86f, 0.79f, 0.63f);
-    private static readonly Color InkLine = new(0.28f, 0.2f, 0.12f);
-    private static readonly Color Faint = new(0.28f, 0.2f, 0.12f, 0.25f);
-    private static readonly Color Land = new(0.72f, 0.62f, 0.44f);
+    private static readonly Color InkLine = new(0.25f, 0.18f, 0.1f);
+    private static readonly Color Faint = new(0.25f, 0.18f, 0.1f, 0.22f);
+    private static readonly Color Land = new("#D9C28F");
+    private static readonly Color Sea = new(0.36f, 0.56f, 0.66f, 0.32f);
     private static readonly Color Red = new(0.6f, 0.15f, 0.1f);
     private SimulationRunner? _runner;
     private Navigation? _navigation;
@@ -566,13 +566,16 @@ public partial class ChartCanvas : Control
 
     public override void _Draw()
     {
-        DrawRect(new Rect2(Vector2.Zero, Size), Parchment);
+        // Parchment, washed blue where it is sea; the land is laid over it by the coasts.
+        Ui.DrawParchment(this, new Rect2(Vector2.Zero, Size));
+        DrawRect(new Rect2(new Vector2(14, 14), Size - new Vector2(28, 28)), Sea);
         if (_runner is null || _navigation is not { } navigation || _runner.Content.Voyage?.Route is not { } route)
         {
             return;
         }
 
-        var font = ThemeDB.FallbackFont;
+        var font = Ui.TitleFont;
+        var italic = Ui.TitleItalic;
         var d = navigation.Destination;
 
         // Graticule: every two degrees, labelled at the edges.
@@ -586,7 +589,7 @@ public partial class ChartCanvas : Control
 
             var y = (lat - route.StartLatitude) * perDegree;
             DrawLine(At(_world.Position.X, y), At(_world.End.X, y), Faint, 1);
-            DrawString(font, At(_world.End.X, y) + new Vector2(-44, -3), $"{lat:0}° N", HorizontalAlignment.Left, -1, 11, InkLine);
+            DrawString(font, At(_world.End.X, y) + new Vector2(-44, -3), $"{lat:0}° N", HorizontalAlignment.Left, -1, 13, InkLine);
         }
 
         var middle = (route.StartLatitude + d.Y / 2 / perDegree) * Math.PI / 180;
@@ -600,7 +603,7 @@ public partial class ChartCanvas : Control
 
             var x = (lon - route.StartLongitude) * perLonDegree;
             DrawLine(At(x, _world.Position.Y), At(x, _world.End.Y), Faint, 1);
-            DrawString(font, At(x, _world.Position.Y) + new Vector2(3, -4), $"{Math.Abs(lon):0}° W", HorizontalAlignment.Left, -1, 11, InkLine);
+            DrawString(font, At(x, _world.Position.Y) + new Vector2(3, -4), $"{Math.Abs(lon):0}° W", HorizontalAlignment.Left, -1, 13, InkLine);
         }
 
         // The coasts: Castrena about the port, running north-west and south; the Ember Coast north and
@@ -621,7 +624,7 @@ public partial class ChartCanvas : Control
             var colour = mark.Id == _runner.Coast!.Destination ? Red : InkLine;
             DrawLine(at, at + new Vector2(8, 0), colour, 2);
             DrawCircle(at, 3, colour);
-            DrawString(font, at + new Vector2(11, 4), mark.Name, HorizontalAlignment.Left, -1, 11, colour);
+            DrawString(italic, at + new Vector2(11, 5), mark.Name, HorizontalAlignment.Left, -1, 14, colour);
         }
 
         // The islands: a charted one drawn as land, a reported one dashed, with a query.
@@ -636,7 +639,7 @@ public partial class ChartCanvas : Control
                     DrawArc(at, radius, a * Mathf.Tau / 16, (a + 1) * Mathf.Tau / 16, 4, InkLine, 1.2f);
                 }
 
-                DrawString(font, at + new Vector2(radius + 4, 4), $"{island.Name} (reported) ?", HorizontalAlignment.Left, -1, 11, InkLine);
+                DrawString(italic, at + new Vector2(radius + 4, 4), $"{island.Name} (reported) ?", HorizontalAlignment.Left, -1, 13, InkLine);
             }
             else
             {
@@ -649,7 +652,7 @@ public partial class ChartCanvas : Control
 
                 DrawColoredPolygon(blob, new Color(Land, 0.9f));
                 DrawPolyline([.. blob, blob[0]], InkLine, 1.5f);
-                DrawString(font, at + new Vector2(radius + 4, 4), island.Name, HorizontalAlignment.Left, -1, 11, InkLine);
+                DrawString(italic, at + new Vector2(radius + 4, 5), island.Name, HorizontalAlignment.Left, -1, 14, InkLine);
             }
         }
 
@@ -733,9 +736,11 @@ public partial class ChartCanvas : Control
         DrawColoredPolygon(points[..32], new Color(Red, 0.12f));
         DrawPolyline(points, new Color(Red, 0.6f), 1.2f);
         DrawCircle(centre, 4.5f, Red);
-        DrawString(font, centre + new Vector2(8, 16), _runner.Campaign.Voyage!.ShipName, HorizontalAlignment.Left, -1, 12, Red);
+        DrawString(font, centre + new Vector2(8, 16), _runner.Campaign.Voyage!.ShipName, HorizontalAlignment.Left, -1, 15, Red);
 
-        Rose(new Vector2(Size.X - 72, Size.Y - 90), 42);
+        Rose(new Vector2(Size.X - 90, Size.Y - 110), 50);
+        ScaleBar(new Vector2(Size.X / 2 - 90, Size.Y - 40));
+        Cartouche(_coastSheet ? "The Ember Coast" : "The Ocean Sea", _coastSheet ? "the approach to Punta Ceniza" : "the passage to the Ember Coast");
     }
 
     private static readonly Color SoundingInk = new(0.2f, 0.32f, 0.5f);
@@ -751,21 +756,24 @@ public partial class ChartCanvas : Control
     private void Coast(IReadOnlyList<(double X, double Y)> line, string name, bool west = false)
     {
         var points = line.Select(p => At(p.X, p.Y)).ToArray();
-        // Land shaded on its landward side.
-        var shade = points.Concat(points.AsEnumerable().Reverse().Select(p => p + new Vector2(west ? -40 : 40, 0))).ToArray();
-        DrawColoredPolygon(shade, new Color(Land, 0.55f));
+        // The land, from the coast to the chart's edge, with a darker band along the shore.
+        var edge = west ? 14 : Size.X - 14;
+        var shade = points.Concat(points.AsEnumerable().Reverse().Select(p => new Vector2(edge, p.Y))).ToArray();
+        DrawColoredPolygon(shade, new Color(Land, 0.92f));
+        var band = points.Concat(points.AsEnumerable().Reverse().Select(p => p + new Vector2(west ? -10 : 10, 0))).ToArray();
+        DrawColoredPolygon(band, new Color(0.55f, 0.42f, 0.25f, 0.25f));
         DrawPolyline(points, InkLine, 2);
         // The name on the land, near the top of the drawn coast and clear of the graticule's labels.
         var label = points[west ? points.Length - Math.Max(4, points.Length / 4) : 1] + new Vector2(west ? -36 : 22, 0);
         if (west)
         {
             DrawSetTransform(label, -Mathf.Pi / 2);
-            DrawString(ThemeDB.FallbackFont, Vector2.Zero, name, HorizontalAlignment.Left, -1, 14, InkLine);
+            DrawString(Ui.TitleItalic, Vector2.Zero, name, HorizontalAlignment.Left, -1, 22, InkLine);
             DrawSetTransform(Vector2.Zero);
         }
         else
         {
-            DrawString(ThemeDB.FallbackFont, label, name, HorizontalAlignment.Left, -1, 14, InkLine);
+            DrawString(Ui.TitleItalic, label, name, HorizontalAlignment.Left, -1, 22, InkLine);
         }
     }
 
@@ -773,7 +781,7 @@ public partial class ChartCanvas : Control
     {
         var at = At(x, y);
         DrawCircle(at, 3.5f, InkLine);
-        DrawString(ThemeDB.FallbackFont, at + new Vector2(7, -6), name, HorizontalAlignment.Left, -1, 12, InkLine);
+        DrawString(Ui.TitleItalic, at + new Vector2(7, -6), name, HorizontalAlignment.Left, -1, 16, InkLine);
     }
 
     private void Dashed(Vector2 from, Vector2 to, Color? colour = null)
@@ -787,17 +795,58 @@ public partial class ChartCanvas : Control
 
     private static readonly Color WindInk = new(0.2f, 0.32f, 0.5f);
 
+    // The scale: a bar in leagues, black and white by turns.
+    private void ScaleBar(Vector2 at)
+    {
+        var step = _coastSheet ? 5 : 50;
+        var segment = step * Zoom;
+        for (var i = 0; i < 4; i++)
+        {
+            var box = new Rect2(at + new Vector2(i * segment, 0), new Vector2(segment, 5));
+            DrawRect(box, i % 2 == 0 ? InkLine : new Color(0.95f, 0.9f, 0.78f));
+            DrawRect(box, InkLine, false, 1);
+            DrawString(Ui.TitleFont, at + new Vector2(i * segment - 4, -5), $"{i * step}", HorizontalAlignment.Left, -1, 12, InkLine);
+        }
+
+        DrawString(Ui.TitleFont, at + new Vector2(4 * segment - 6, -5), $"{4 * step} leagues", HorizontalAlignment.Left, -1, 12, InkLine);
+    }
+
+    // The title of the sheet in a framed cartouche, top left.
+    private void Cartouche(string title, string subtitle)
+    {
+        var box = new Rect2(new Vector2(34, 30), new Vector2(250, 64));
+        DrawRect(box, new Color(0.95f, 0.9f, 0.77f, 0.95f));
+        DrawRect(box, InkLine, false, 1.5f);
+        DrawRect(box.Grow(-4), new Color(InkLine, 0.6f), false, 1);
+        var titleSize = Ui.TitleItalic.GetStringSize(title, HorizontalAlignment.Left, -1, 26);
+        DrawString(Ui.TitleItalic, new Vector2(box.GetCenter().X - titleSize.X / 2, box.Position.Y + 32), title, HorizontalAlignment.Left, -1, 26, InkLine);
+        var subSize = Ui.TitleItalic.GetStringSize(subtitle, HorizontalAlignment.Left, -1, 15);
+        DrawString(Ui.TitleItalic, new Vector2(box.GetCenter().X - subSize.X / 2, box.Position.Y + 53), subtitle, HorizontalAlignment.Left, -1, 15, new Color(InkLine, 0.85f));
+    }
+
     // A compass rose: the cardinal points, north marked, the course steered as a red needle, and the wind.
     private void Rose(Vector2 centre, float radius)
     {
+        DrawCircle(centre, radius, new Color(0.94f, 0.88f, 0.74f, 0.7f));
         DrawArc(centre, radius, 0, Mathf.Tau, 48, InkLine, 1.5f);
         DrawArc(centre, radius * 0.82f, 0, Mathf.Tau, 48, Faint, 1);
-        var font = ThemeDB.FallbackFont;
+        var font = Ui.TitleFont;
+        // The eight points, each half lit and half shaded.
+        for (var p = 0; p < 8; p++)
+        {
+            var a = Mathf.DegToRad(p * 45f);
+            var dir = new Vector2(Mathf.Sin(a), -Mathf.Cos(a));
+            var side = new Vector2(-dir.Y, dir.X);
+            var length = radius * (p % 2 == 0 ? 0.95f : 0.6f);
+            var width = radius * (p % 2 == 0 ? 0.14f : 0.1f);
+            DrawColoredPolygon([centre, centre + dir * length, centre + side * width], new Color(0.86f, 0.74f, 0.5f));
+            DrawColoredPolygon([centre, centre - side * width, centre + dir * length], new Color(0.36f, 0.26f, 0.14f));
+        }
+
         foreach (var (angle, letter) in new[] { (0f, "N"), (90f, "E"), (180f, "S"), (270f, "W") })
         {
             var dir = new Vector2(Mathf.Sin(Mathf.DegToRad(angle)), -Mathf.Cos(Mathf.DegToRad(angle)));
-            DrawLine(centre, centre + dir * radius * 0.8f, InkLine, angle == 0 ? 2.5f : 1.2f);
-            DrawString(font, centre + dir * (radius + 11) + new Vector2(-4, 5), letter, HorizontalAlignment.Left, -1, 12, InkLine);
+            DrawString(font, centre + dir * (radius + 12) + new Vector2(-6, 6), letter, HorizontalAlignment.Left, -1, 17, InkLine);
         }
 
         if (_navigation is { } navigation)

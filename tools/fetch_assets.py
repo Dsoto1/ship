@@ -3,12 +3,14 @@
 
 The list is game/Assets/assets.json: Poly Haven textures by ID (at 1K, colour, OpenGL normal and
 roughness maps), Kenney packs by URL with the files to keep, Quaternius packs from itch.io (into
-.cache/characters, for tools/characters/build.py), and Freesound recordings by ID (the
+.cache/characters, for tools/characters/build.py), icons from Iconify sets on npm, fonts from Google
+Fonts, and Freesound recordings by ID (the
 high-quality Ogg preview; the API needs FREESOUND_API_KEY unless a proxy supplies it). Everything is CC0 (public domain);
 the script still writes game/Assets/CREDITS.md naming authors and sources, as a courtesy and so the
 provenance of every file is on record (D-021). Re-running skips files already present.
 
-    python3 tools/fetch_assets.py
+    python3 tools/fetch_assets.py            # everything
+    python3 tools/fetch_assets.py iconify    # only these sources; the other credits are kept
 """
 import io
 import json
@@ -229,16 +231,61 @@ PROPS_NOTE = (
 )
 
 
+def iconify(entry, credits):
+    """Icons from an Iconify set on npm (the whole set is one JSON file in the package), each written as
+    an SVG in white, which the game tints, under the name the game knows it by."""
+    meta = json.loads(get(f"https://registry.npmjs.org/{entry['package']}/latest"))
+    import tarfile
+    with tarfile.open(fileobj=io.BytesIO(get(meta["dist"]["tarball"]))) as tar:
+        data = json.load(tar.extractfile("package/icons.json"))
+    size = data.get("width", 512)
+    folder = ASSETS / entry["folder"]
+    folder.mkdir(parents=True, exist_ok=True)
+    for name, icon in sorted(entry["icons"].items()):
+        body = data["icons"][icon]["body"].replace("currentColor", "#ffffff")
+        (folder / f"{name}.svg").write_text(
+            f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 {size} {size}">{body}</svg>\n')
+    credits.append(f"| {entry['name']} | {entry['use']} | {entry['author']} | {entry['page']} (npm `{entry['package']}` {meta['version']}) "
+                   f"| {entry['licence']} | `{entry['folder']}/*.svg` ({len(entry['icons'])} files) |")
+
+
+def fonts(entry, credits):
+    """Font files from Google Fonts, unmodified, with their licence beside them."""
+    folder = ASSETS / entry["folder"]
+    folder.mkdir(parents=True, exist_ok=True)
+    for file, url in sorted(entry["files"].items()):
+        if not (folder / file).exists():
+            (folder / file).write_bytes(get(url))
+    credits.append(f"| {entry['name']} | {entry['use']} | {entry['author']} | {entry['page']} | {entry['licence']} "
+                   f"| `{entry['folder']}/` ({', '.join(sorted(entry['files']))}; licence in `OFL.txt`) |")
+
+
 def main():
     manifest = json.loads((ASSETS / "assets.json").read_text())
+    only = sys.argv[1:]
     credits = []
     for entry in manifest:
-        {"polyhaven": polyhaven, "kenney": kenney, "freesound": freesound, "itch": itch, "itch-models": itch_models}[entry["source"]](entry, credits)
+        if only and entry["source"] not in only:
+            continue
+        {"polyhaven": polyhaven, "kenney": kenney, "freesound": freesound, "itch": itch, "itch-models": itch_models,
+         "iconify": iconify, "fonts": fonts}[entry["source"]](entry, credits)
+
+    if only:
+        # Only some sources fetched: keep every other row as it was, the fetched ones replaced.
+        names = {line.split("|")[1] for line in credits}
+        lines = (ASSETS / "CREDITS.md").read_text().split("\n")
+        rows = [i for i, line in enumerate(lines) if line.startswith("| ") and not line.startswith("| Asset")]
+        kept = [lines[i] for i in rows if lines[i].split("|")[1] not in names]
+        lines[rows[0]:rows[-1] + 1] = kept + credits
+        (ASSETS / "CREDITS.md").write_text("\n".join(lines))
+        return
 
     stack_arrays(manifest)
     (ASSETS / "CREDITS.md").write_text(
         "# Asset credits\n\n"
-        "Every asset here is CC0 (public domain): no attribution is required, but it is given. Fetched by\n"
+        "Every asset here is CC0 (public domain) except the fonts (SIL Open Font License 1.1, in\n"
+        "`Fonts/OFL.txt`) and the Game-icons.net icons (CC BY 3.0, so their credit below is required).\n"
+        "Attribution is given for all of them. Fetched by\n"
         "`tools/fetch_assets.py` from the list in `assets.json`; nothing here was generated or altered\n"
         "except by the game's shaders at run time; `Textures/scenery_array/`, which only stacks the\n"
         "layered textures (plaster, stone, timber) into one image per map; and `Audio/ambience/`, Freesound\n"

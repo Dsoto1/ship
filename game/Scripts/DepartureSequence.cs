@@ -68,7 +68,7 @@ public partial class DepartureSequence : CanvasLayer
         root.AddChild(_fade);
 
         // A caption low on the screen, like the dialogue strip, and nothing else.
-        _panel = Ui.PanelOf(Ui.Paper, Ui.Rule, Ui.SpaceL, Ui.SpaceM);
+        _panel = Ui.Frame(Ui.SpaceL, Ui.SpaceM);
         _panel.AnchorLeft = 0.5f;
         _panel.AnchorRight = 0.5f;
         _panel.AnchorTop = 1;

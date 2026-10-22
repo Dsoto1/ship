@@ -30,7 +30,7 @@ public partial class AstrolabeView : Control
         MouseFilter = MouseFilterEnum.Stop;
         Theme = Ui.BuildTheme();
         Visible = false;
-        _panel = Ui.PanelOf(Ui.Paper, Ui.Rule, Ui.SpaceL, Ui.SpaceL);
+        _panel = Ui.Frame(Ui.SpaceL, Ui.SpaceL);
         _panel.SetAnchorsPreset(LayoutPreset.Center);
         _panel.OffsetLeft = -300;
         _panel.OffsetRight = 300;

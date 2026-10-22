@@ -366,14 +366,14 @@ public partial class PortHud : CanvasLayer
 
     private void BuildCard()
     {
-        _card = Ui.PanelOf(Ui.Paper, Ui.Rule, Ui.SpaceL, Ui.SpaceL);
+        _card = Ui.Frame(Ui.SpaceL, Ui.SpaceL);
         _card.AnchorLeft = 1;
         _card.AnchorRight = 1;
         _card.AnchorBottom = 1;
         _card.OffsetLeft = -330;
         _card.OffsetRight = -Ui.SpaceM;
-        _card.OffsetTop = 52;
-        _card.OffsetBottom = -56;
+        _card.OffsetTop = Ui.BelowTopBar;
+        _card.OffsetBottom = -Ui.AboveTabBar;
         _card.Visible = false;
         _root.AddChild(_card);
         var scroll = new ScrollContainer { HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
@@ -398,7 +398,7 @@ public partial class PortHud : CanvasLayer
         _cardTitle.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         _cardTitle.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         header.AddChild(_cardTitle);
-        header.AddChild(Ui.Button("×", "Close  (Esc)", () => CardClosed?.Invoke()));
+        header.AddChild(Hud.CloseButton(() => CardClosed?.Invoke()));
         _cardSubtitle = Ui.Text("", Ui.TextMeta, Ui.InkSoft, 290);
         column.AddChild(_cardSubtitle);
         _cardLook = Ui.Text("", Ui.TextMeta + 1, Ui.Ink, 290);
@@ -471,7 +471,7 @@ public partial class PortHud : CanvasLayer
         _roomBar.AnchorRight = 0.5f;
         _roomBar.OffsetLeft = -380;
         _roomBar.OffsetRight = 380;
-        _roomBar.OffsetTop = 58;
+        _roomBar.OffsetTop = Ui.BelowTopBar;
         _roomBar.Visible = false;
         _root.AddChild(_roomBar);
         var row = new HBoxContainer();
@@ -513,7 +513,7 @@ public partial class PortHud : CanvasLayer
 
     private void BuildHover()
     {
-        _hover = Ui.PanelOf(Ui.Paper, Ui.Rule, Ui.SpaceM, Ui.SpaceS);
+        _hover = Ui.Frame(Ui.SpaceM, Ui.SpaceS);
         _hover.Visible = false;
         _hover.MouseFilter = Control.MouseFilterEnum.Ignore;
         _root.AddChild(_hover);
@@ -565,14 +565,14 @@ public partial class PortHud : CanvasLayer
 
     private void BuildDialogue()
     {
-        _dialogue = Ui.PanelOf(Ui.Paper, Ui.Rule, Ui.SpaceL, Ui.SpaceM);
+        _dialogue = Ui.Frame(Ui.SpaceL, Ui.SpaceM);
         _dialogue.AnchorLeft = 0.5f;
         _dialogue.AnchorRight = 0.5f;
         _dialogue.AnchorTop = 1;
         _dialogue.AnchorBottom = 1;
         _dialogue.OffsetLeft = -280;
         _dialogue.OffsetRight = 280;
-        _dialogue.OffsetBottom = -96;
+        _dialogue.OffsetBottom = -Ui.AboveTabBar - 40;
         _dialogue.GrowVertical = Control.GrowDirection.Begin;
         _dialogue.Visible = false;
         _root.AddChild(_dialogue);
@@ -583,7 +583,7 @@ public partial class PortHud : CanvasLayer
         _dialogueText.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         _dialogueText.CustomMinimumSize = new Vector2(500, 0);
         row.AddChild(_dialogueText);
-        row.AddChild(Ui.Button("×", "Close", () => _dialogue.Visible = false));
+        row.AddChild(Hud.CloseButton(() => _dialogue.Visible = false));
     }
 
     // ================================================================ Expedition screen: objectives, papers, journal

@@ -48,7 +48,7 @@ public partial class ConversationView : Control
         MouseFilter = MouseFilterEnum.Ignore;
         Theme = Ui.BuildTheme();
         Visible = false;
-        _panel = Ui.PanelOf(Ui.Paper, Ui.Rule, Ui.SpaceL, Ui.SpaceL);
+        _panel = Ui.Frame(Ui.SpaceL, Ui.SpaceL);
         _panel.AnchorLeft = 0.5f;
         _panel.AnchorRight = 0.5f;
         _panel.AnchorTop = 1;
@@ -56,8 +56,8 @@ public partial class ConversationView : Control
         // Left of centre, clear of the person card on the right, whose "What you know" fills as they talk.
         _panel.OffsetLeft = -620;
         _panel.OffsetRight = 220;
-        _panel.OffsetBottom = -72;
-        _panel.OffsetTop = -72 - 470;
+        _panel.OffsetBottom = -Ui.AboveTabBar;
+        _panel.OffsetTop = -Ui.AboveTabBar - 470;
         AddChild(_panel);
 
         var row = new HBoxContainer();
