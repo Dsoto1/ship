@@ -69,6 +69,12 @@ public sealed partial class SimulationRunner
                 // The helm first: the hand of the watch at routine work is sent to it.
                 Campaign.AbandonTask(character.Id);
             }
+            else if (!resting && task.Origin == TaskOrigin.Duty && !definition.KeepsWatch && HelmManned() && LookoutWanted(ship)
+                     && FreeWatchPlace(character, lookout: true) is not null && LookoutFor(ship) == character.Id)
+            {
+                // Then the lookout, in fog or with land near: the next hand of the watch goes to the bow.
+                Campaign.AbandonTask(character.Id);
+            }
         }
         else if (!resting && task.Origin == TaskOrigin.Duty && (definition.KeepsWatch || character.Needs.Fatigue >= BelowRestAt))
         {
@@ -107,24 +113,89 @@ public sealed partial class SimulationRunner
     // True if someone is at the helm and lookout now.
     private bool HelmManned() => Campaign.ActiveTasks.Values.Any(t => Content.Tasks[t.DefinitionId].KeepsWatch && Campaign.Characters[t.CharacterId].CanWork);
 
-    // Who of the watch on deck goes to an empty helm: the first, by the bill, who is at routine work and fit for it.
+    // Who of the watch on deck goes to an empty helm: a hand free of work first (the helmsman whose trick
+    // has just ended keeps it), else the first, by the bill, who is at routine work and fit for it.
     private CharacterId? HelmsmanFor(VoyageState ship) => ship.Watches
         .Where(pair => pair.Value is Watch.Starboard or Watch.Larboard && OnDeck(pair.Key) && Campaign.Characters[pair.Key].CanWork && !Refusing(pair.Key)
                        && Campaign.Characters[pair.Key].Needs.Fatigue < Content.Rules.MaxFatigueToStartWork
                        && (!Campaign.ActiveTasks.TryGetValue(pair.Key, out var task) || task.Origin != TaskOrigin.Order))
-        .Select(pair => (CharacterId?)pair.Key).OrderBy(id => id!.Value.Value).FirstOrDefault();
+        .OrderBy(pair => Campaign.ActiveTasks.ContainsKey(pair.Key)).ThenBy(pair => pair.Key.Value)
+        .Select(pair => (CharacterId?)pair.Key).FirstOrDefault();
 
     // A hand of the watch on deck keeps the helm and lookout when no one is at it, before any other duty.
     private bool TakeTheHelm(Character character)
     {
-        if (Campaign.Voyage is not { Outcome: VoyageOutcome.UnderWay } ship || ship.WatchOf(character.Id) is Watch.None or Watch.Day
-            || HelmManned() || HelmsmanFor(ship) != character.Id)
+        if (Campaign.Voyage is not { Outcome: VoyageOutcome.UnderWay } ship || ship.WatchOf(character.Id) is Watch.None or Watch.Day)
+        {
+            return false;
+        }
+
+        if (!HelmManned())
+        {
+            if (HelmsmanFor(ship) != character.Id)
+            {
+                return false;
+            }
+        }
+        else if (!LookoutWanted(ship) || FreeWatchPlace(character, lookout: true) is null || LookoutFor(ship) != character.Id)
         {
             return false;
         }
 
         StandTheWatch(character);
         return Campaign.ActiveTasks.ContainsKey(character.Id);
+    }
+
+    // A lookout is posted at the bow in fog, and when the reckoning puts land near: the coast, or an island
+    // she is making for and has not yet raised.
+    private bool LookoutWanted(VoyageState ship)
+    {
+        if (Content.Voyage?.Weather(ship.WeatherId) is { Fog: >= 0.3 })
+        {
+            return true;
+        }
+
+        if (ship.Navigation is not { } navigation)
+        {
+            return false;
+        }
+
+        return (Coast is { } coast && !navigation.Sighted && navigation.Reckoned.X - navigation.Destination.X <= coast.NearLeagues)
+               || (navigation.Call is { Sighted: false, Anchored: false } call && IslandById(call.Island) is { } island
+                   && navigation.Reckoned.DistanceTo(island.Charted) <= SearchLeagues);
+    }
+
+    // Who of the watch on deck goes to the bow: as for the helm, among those not already keeping the watch.
+    private CharacterId? LookoutFor(VoyageState ship) => ship.Watches
+        .Where(pair => pair.Value is Watch.Starboard or Watch.Larboard && OnDeck(pair.Key) && Campaign.Characters[pair.Key].CanWork && !Refusing(pair.Key)
+                       && Campaign.Characters[pair.Key].Needs.Fatigue < Content.Rules.MaxFatigueToStartWork
+                       && (!Campaign.ActiveTasks.TryGetValue(pair.Key, out var task) || task.Origin != TaskOrigin.Order && !Content.Tasks[task.DefinitionId].KeepsWatch))
+        .OrderBy(pair => Campaign.ActiveTasks.ContainsKey(pair.Key)).ThenBy(pair => pair.Key.Value)
+        .Select(pair => (CharacterId?)pair.Key).FirstOrDefault();
+
+    // The free place to keep the watch from: the helm first, then the lookout's at the bow (the forward-most
+    // watch place), then any other. With lookout, only the bow.
+    private string? FreeWatchPlace(Character character, bool lookout = false)
+    {
+        if (!Campaign.Placements.TryGetValue(character.Id, out var placement)
+            || Content.Tasks.Values.FirstOrDefault(t => t.KeepsWatch) is not { } watch)
+        {
+            return null;
+        }
+
+        var taken = Campaign.ActiveTasks.Values.Where(t => t.CharacterId != character.Id).Select(t => t.SpotId).ToHashSet();
+        var all = Content.Locations[placement.LocationId].Spots.Where(s => s.Tasks.Contains(watch.Id)).ToList();
+        if (all.Count == 0)
+        {
+            return null;
+        }
+
+        var bow = all.Min(s => s.Y);
+        var places = all.Where(s => !taken.Contains(s.Id)).ToList();
+        bool AtBow(WorkSpotDefinition spot) => spot.Y == bow;
+        return (lookout
+            ? places.Where(AtBow)
+            : places.OrderBy(s => s.Kind == "WatchWater").ThenBy(s => !AtBow(s)).ThenBy(s => s.Id, StringComparer.Ordinal)).FirstOrDefault()?.Id;
     }
 
     // A hand of the watch on deck with no duty to do keeps the helm and lookout.

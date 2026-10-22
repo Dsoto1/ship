@@ -1688,12 +1688,13 @@ public partial class ShipView : Node3D
         AddChild(_laundry);
         if (_mastFeet.Count >= 2)
         {
-            // A line from the fore shrouds to the main shrouds along the starboard side, shirts pegged on it.
+            // A line from the fore shrouds to the main shrouds along the starboard side (the near one in the
+            // usual view), shirts pegged on it below the sails.
             var fore = _mastFeet[0];
             var main = _mastFeet[1];
             var x = CentreX + HalfWidthAt((fore.Z + main.Z) / 2) * 0.72f;
-            var a = new Vector3(x, HeightAt(x, fore.Z) + 2.3f, fore.Z + 0.6f);
-            var b = new Vector3(x, HeightAt(x, main.Z) + 2.3f, main.Z - 0.6f);
+            var a = new Vector3(x, HeightAt(x, fore.Z) + 1.9f, fore.Z + 0.6f);
+            var b = new Vector3(x, HeightAt(x, main.Z) + 1.9f, main.Z - 0.6f);
             LooseRope(_laundry, rope, a, b);
             var colours = new[] { new Color(0.85f, 0.82f, 0.74f), new Color(0.55f, 0.32f, 0.24f), new Color(0.8f, 0.78f, 0.7f), new Color(0.35f, 0.38f, 0.48f), new Color(0.78f, 0.7f, 0.52f) };
             var count = (int)Math.Clamp(a.DistanceTo(b) / 0.7f, 3, 9);
@@ -1701,7 +1702,7 @@ public partial class ShipView : Node3D
             {
                 var at = a.Lerp(b, i / (count + 1f));
                 var cloth = new StandardMaterial3D { AlbedoColor = colours[i % colours.Length], Roughness = 0.95f, CullMode = BaseMaterial3D.CullModeEnum.Disabled };
-                _laundry.AddChild(new MeshInstance3D { Mesh = new QuadMesh { Size = new Vector2(0.42f, 0.5f) }, MaterialOverride = cloth, Position = at + new Vector3(0, -0.26f, 0), RotationDegrees = new Vector3(0, 90, 0) });
+                _laundry.AddChild(new MeshInstance3D { Mesh = new QuadMesh { Size = new Vector2(0.5f, 0.62f) }, MaterialOverride = cloth, Position = at + new Vector3(0, -0.32f, 0), RotationDegrees = new Vector3(0, 90, 0) });
             }
         }
     }

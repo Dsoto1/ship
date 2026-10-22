@@ -97,12 +97,19 @@ Day 6, 07:30, after nine hours of storm. Fair since 22:00.
 
 ## What to do next, from these scenes
 
-1. **The helm unmanned on a calm morning (A).** A sim fault: whoever stands watch must take the helm,
-   tired or not, before others turn to.
-2. **Overlapping crew labels (C).**
-3. **Drying clothes not seen (D).** Check where the line hangs against the sails, and bring it into the
-   iso view.
-4. **The lookout shown (B):** a hand at the bow or masthead in fog and near the coast.
+1. **The helm unmanned on a calm morning (A).** *Fixed (2026-10-22).* Two causes: the helmsman was
+   called off to scrub the decks (scrubbing ranked above the watch in his duties), and hands standing
+   watch went to the nearest free place, often the stern. Now the hand at the helm is called off only for
+   the pumps while no one else keeps the watch; the watch is kept from the helm first; and a hand on
+   the way to the helm at the change of watch counts.
+2. **Overlapping crew labels (C).** *Fixed.* A name that would lie over one already shown is hidden:
+   the selected, the hovered and the captain first, then from the front of the view back.
+3. **Drying clothes not seen (D).** *Fixed.* Staging skipped the frames in which the view notes the last
+   foul hour, so the line never showed; it is now set when the scene is staged. The line hangs lower,
+   below the sails, with larger clothes.
+4. **The lookout shown (B).** *Done.* In fog, or when the reckoning puts the coast or a sought island
+   near, a second hand of the watch is posted at the bow, as the helm is kept: from idle hands first, then
+   from routine work.
 5. **Voices and work sounds (A, C):** calls, shouted orders, the pumps' crew.
 6. **Music** for departure, crisis, aftermath and landfall (§34): to be chosen from the Artlist
    catalogue, with the owner's go-ahead.

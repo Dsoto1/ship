@@ -681,6 +681,7 @@ public partial class Main : Node3D
             }
         }
 
+        DeclutterLabels();
         _hud.Refresh(_runner, _selected, _speedIndex);
         _portHud.Refresh(_runner, _selected);
         var pointer = GetViewport().GetMousePosition();
@@ -1974,6 +1975,41 @@ public partial class Main : Node3D
     }
 
     /// <summary>The cutaway, on or off (B, or the Below button): the decks go faint to show the hold and the spaces under them.</summary>
+    // Names that would lie over one already shown are hidden: the selected, the hovered and the captain
+    // first, then from the front of the view back.
+    private void DeclutterLabels()
+    {
+        if (GetViewport().GetCamera3D() is not { } camera)
+        {
+            return;
+        }
+
+        var shown = new List<Rect2>();
+        var labels = _figures
+            .Where(pair => pair.Value.IsVisibleInTree() && pair.Value.Label.Visible)
+            .Select(pair => (Id: pair.Key, pair.Value.Label, At: camera.UnprojectPosition(pair.Value.Label.GlobalPosition)))
+            .OrderByDescending(l => l.Id == _selected).ThenByDescending(l => l.Id == _hovered).ThenByDescending(l => l.Id == _runner.Campaign.CaptainId)
+            .ThenByDescending(l => l.At.Y)
+            .ToList();
+        foreach (var (_, label, _) in labels)
+        {
+            // The label faces the camera: its box measured along the camera's own axes.
+            var box = label.GetAabb();
+            var centre = label.GlobalTransform * box.GetCenter();
+            var basis = camera.GlobalBasis;
+            var corner = camera.UnprojectPosition(centre - basis.X * box.Size.X / 2f + basis.Y * box.Size.Y / 2f);
+            var rect = new Rect2(corner, Vector2.Zero).Expand(camera.UnprojectPosition(centre + basis.X * box.Size.X / 2f - basis.Y * box.Size.Y / 2f));
+
+            if (shown.Any(r => r.Intersects(rect)))
+            {
+                label.Visible = false;
+                continue;
+            }
+
+            shown.Add(rect);
+        }
+    }
+
     private void ToggleBelow()
     {
         if (_runner.Campaign.Port is not null)
@@ -2086,6 +2122,8 @@ public partial class Main : Node3D
                 SailTo(5, 13);
                 _runner.DeveloperSetSeaWeather("weather.storm");
                 SailTo(5, 22);
+                // The view keeps the last foul hour as it draws; staging skips the frames, so it is set here.
+                _lastWetTick = _runner.Campaign.Clock.Tick;
                 _runner.DeveloperSetSeaWeather("weather.fair");
                 SailTo(6, 7.5, "weather.fair");
                 break;

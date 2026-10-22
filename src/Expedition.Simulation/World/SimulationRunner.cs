@@ -335,6 +335,8 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
 
         if (task.NeedsWorkSpot)
         {
+            // The watch is kept from the helm first, then the bow, whoever takes it up.
+            preferredSpot ??= task.KeepsWatch ? FreeWatchPlace(character) : null;
             var (spot, path, _) = FindWorkSpot(character, task, preferredSpot);
             order.SpotId = spot!.Id;
             StartWalk(character.Id, path!);
@@ -545,8 +547,11 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             return;
         }
 
+        // The helmsman is not called off while no one else keeps the watch, but for the pumps.
+        var lastAtHelm = Content.Tasks[current.DefinitionId].KeepsWatch
+            && !Campaign.ActiveTasks.Values.Any(t => t.CharacterId != character.Id && Content.Tasks[t.DefinitionId].KeepsWatch && Campaign.Characters[t.CharacterId].CanWork);
         var rank = roster.Tasks.ToList().IndexOf(current.DefinitionId);
-        foreach (var task in roster.Tasks.Take(rank < 0 ? roster.Tasks.Count : rank).Select(id => Content.Tasks[id]))
+        foreach (var task in roster.Tasks.Take(rank < 0 ? roster.Tasks.Count : rank).Select(id => Content.Tasks[id]).Where(t => !lastAtHelm || t.ShipPerHour?.Bilge < 0))
         {
             if (DutyNeeded(task) && Check(character, task, materialsAlreadyUsed: false).Succeeded)
             {

@@ -163,18 +163,47 @@ public sealed class WatchTests
     }
 
     [Fact]
-    public void TheHelmIsNeverLeftAtTheChangeOfWatch()
+    public void TheHelmIsNeverLeftForTheChangeOfWatchOrOtherWork()
     {
-        // The hand going below stays at the helm until the relief has come to it.
+        // The relief walking to the helm counts; the helmsman is not called off to scrub dirty decks.
         var (runner, ship) = WithBill();
+        // The duties a crew signed on in port is given: scrubbing ranks above standing watch.
+        foreach (var hand in runner.Campaign.Crew.Where(c => ship.WatchOf(c.Id) is Watch.Starboard or Watch.Larboard))
+        {
+            runner.SetDuties(hand.Id, ["task.pump_bilge", "task.scrub_decks", "task.stand_watch"]);
+        }
+
         int run = 0, longest = 0;
         for (var minute = 0; minute < 3 * 24 * 60 && ship.Outcome == VoyageOutcome.UnderWay; minute++)
         {
+            if (minute % 60 == 0)
+            {
+                runner.DeveloperSetCleanliness(30);
+            }
+
             runner.Advance(1);
             run = ship.WatchKept ? 0 : run + 1;
             longest = Math.Max(longest, run);
         }
 
         Assert.True(longest <= 3, $"the helm was left for {longest} minutes");
+    }
+
+    [Fact]
+    public void ALookoutIsPostedAtTheBowInFog()
+    {
+        var (runner, ship) = WithBill();
+        runner.Advance(60);
+        string? Bow() => runner.Campaign.ActiveTasks.Values.FirstOrDefault(t => t.SpotId == "spot.watch_bow")?.DefinitionId;
+        ship.WeatherId = "weather.fog";
+        var foggyBow = 0;
+        for (var i = 0; i < 12; i++)
+        {
+            runner.Advance(10);
+            foggyBow += Bow() == "task.stand_watch" ? 1 : 0;
+        }
+
+        Assert.True(foggyBow >= 10, $"a lookout at the bow {foggyBow} of 12 times in fog");
+        Assert.True(ship.WatchKept);
     }
 }

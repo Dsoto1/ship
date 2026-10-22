@@ -90,6 +90,9 @@ public partial class CrewFigure : Node3D
     private Node3D _rightArm = null!;
     private MeshInstance3D _ring = null!;
     private Label3D _label = null!;
+
+    /// <summary>The name over the figure, for keeping labels from piling on each other.</summary>
+    public Label3D Label => _label;
     private float _height;
     private float _legLength;
     private float _heading;
