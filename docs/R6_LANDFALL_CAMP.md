@@ -152,7 +152,23 @@ people were seen? The camp then carries on; establishing a settlement is R7.
 - **Developer flags:** `--ashore[=site]`, `--camphours=N`; with `--founder`, they come ashore from the
   wreck.
 
+**Checked on screen** (2026-10-22): the arrival screen's *Go ashore*, the landing card, the first days'
+card after 72 hours, and a wreck broken up close inshore with stores still in her. Developer flags
+`--arrive`, `--goashore` (presses the button) and `--struck` stage them.
+
+![The landing card](screenshots/r6-landing-card.jpg)
+![The first days' card](screenshots/r6-first-days-card.jpg)
+![A wreck close in](screenshots/r6-camp-wreck-close-in.jpg)
+
+Fixed on the way:
+- The arrival screen counted the port's people among those coming ashore (32 of 32); it now counts the
+  crew.
+- The stores aboard were marked "not seen for certain".
+- "The factory's spring, spring" now reads "The factory's spring".
+- A wreck lay further out than the anchorage; it now lies close in, heeled and settled on the sand.
+
 **Not yet:**
+- The wreck should look broken: masts sprung, rigging gone. Today she lies heeled but whole.
 - Moving the camp to a better site (§5).
 - Taking the factory's timbers.
 - Mending the Garza with the sailcloth kept back.

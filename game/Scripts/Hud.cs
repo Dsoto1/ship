@@ -2528,8 +2528,8 @@ public partial class Hud : CanvasLayer
         panel.AnchorBottom = 0.5f;
         panel.OffsetLeft = -300;
         panel.OffsetRight = 300;
-        panel.OffsetTop = -230;
-        panel.OffsetBottom = 230;
+        panel.OffsetTop = -265;
+        panel.OffsetBottom = 265;
         _ending.AddChild(panel);
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", Ui.SpaceL);

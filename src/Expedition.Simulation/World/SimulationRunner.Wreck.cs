@@ -168,6 +168,19 @@ public sealed partial class SimulationRunner
         Campaign.TryTransitionTo(CampaignPhase.ShipwreckSurvival, sudden ? $"{ship.ShipName} broke up on the coast" : $"{ship.ShipName} filled and foundered");
     }
 
+    /// <summary>Developer tool for testing and screenshots: she strikes unseen on the coast and breaks up now.</summary>
+    public CommandResult DeveloperStrike()
+    {
+        if (Campaign.Voyage is not { Outcome: VoyageOutcome.UnderWay } ship)
+        {
+            return CommandResult.Rejected("There is no voyage under way.");
+        }
+
+        ship.Outcome = VoyageOutcome.Foundered;
+        Wreck(ship, Content.Voyage!, "struck");
+        return CommandResult.Ok();
+    }
+
     /// <summary>Developer tool for testing and screenshots: she fills and founders now.</summary>
     public CommandResult DeveloperFounder()
     {

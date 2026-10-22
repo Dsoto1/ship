@@ -528,7 +528,7 @@ public partial class Main : Node3D
             _ship.Visible = wrecked is null || wrecked.Remains.Count > 0;
             var settle = wrecked is null ? 0f : 1.6f;
             _ship.RotationDegrees = new Vector3(Mathf.Sin(t * 0.45f) * 0.5f * swell, -90f, Mathf.Sin(t * 0.6f) * 1.0f * swell + (wrecked is null ? 0f : 17f));
-            _ship.Position = _shipCentre + new Vector3(0, Mathf.Sin(t * 0.7f) * 0.06f * swell - settle, wrecked is null ? 0f : 13f);
+            _ship.Position = _shipCentre + new Vector3(0, Mathf.Sin(t * 0.7f) * 0.06f * swell - settle, wrecked is null ? 0f : -13f);
             var landing = _runner.Campaign.ActiveTasks.Values.Any(task => _content.Tasks[task.DefinitionId].Lands);
             var ashoreCount = _content.Items.Keys.Sum(_runner.Campaign.SharedStore.Count);
             _camp.Show(ashoreCamp, ashoreCount, _runner.CampFireBurning, landing, _runner.CampWater() is not null, _world.Darkness, t);
@@ -1471,7 +1471,7 @@ public partial class Main : Node3D
 
     private void ShowEnding(Expedition.Simulation.Voyage.VoyageState ship)
     {
-        var crew = _runner.Campaign.Characters.Values.ToList();
+        var crew = _runner.Campaign.Crew.ToList();
         var alive = crew.Count(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated);
         var dead = crew.Where(c => c.SurvivalState is SurvivalState.Dead or SurvivalState.Missing)
             .Select(c => c.SurvivalState == SurvivalState.Missing ? $"{c.Name} (lost at sea)" : c.Name).ToList();
@@ -1576,7 +1576,7 @@ public partial class Main : Node3D
         var afloatKg = camp.Afloat.Sum(p => _content.Items.TryGetValue(p.Key, out var item) ? item.WeightKg * p.Value : 0);
         _hud.ShowEnding("The first days", $"Three days ashore at {_runner.CampSite?.Name}. {people.Count} alive" + (lost > 0 ? $", {lost} lost since landing" : "") + (sick > 0 ? $"; {sick} sick or hurt." : ".") + "\n\n" +
             $"Nights: {sheltered} under cover, {exposed} out in the open.\n" +
-            $"Water: {(_runner.CampWater() is { } water ? $"{water.Name} ({water.Kind})" : "none found")}.\n" +
+            $"Water: {(_runner.CampWater() is { } water ? water.Kind == "brackish" ? $"{water.Name}, brackish" : water.Name : "none found")}.\n" +
             $"Found: {(found.Count == 0 ? "nothing yet" : string.Join(", ", found))}.\n" +
             $"Stores: {(camp.Afloat.Count == 0 ? "all ashore" : $"{afloatKg:0} kg still afloat")}" + (camp.Spoiled > 0 ? $"; {camp.Spoiled} spoiled in the rain." : ".") + "\n" +
             (wanting.Count == 0 ? "\nThey have water, shelter and a fire. Now the place must be made to last." : $"\nStill wanting: {string.Join(", ", wanting)}."),
@@ -1831,6 +1831,9 @@ public partial class Main : Node3D
     private string? _seaWeather;
     private bool _founder;
     private string? _ashoreAt;
+    private bool _arrive;
+    private bool _struck;
+    private bool _pressGoAshore;
     private int _campHours;
     private bool _crewLife;
     private bool _legs;
@@ -2060,6 +2063,9 @@ public partial class Main : Node3D
                 case "wind" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var wind): _forceWind = wind; break;
                 case "seaweather": _seaWeather = value; break;
                 case "founder": _founder = true; break;
+                case "struck": _struck = true; break;
+                case "arrive": _arrive = true; break;
+                case "goashore": _pressGoAshore = true; break;
                 case "ashore": _ashoreAt = value.Length > 0 ? value : "coast.punta_ceniza"; break;
                 case "camphours" when int.TryParse(value, out var campHours): _campHours = campHours; break;
                 case "crewlife": _crewLife = true; break;
@@ -2390,16 +2396,33 @@ public partial class Main : Node3D
             _runner.DeveloperFounder();
         }
 
+        // --struck: she strikes on the coast and breaks up now; --arrive: she comes to anchor off it. Either
+        // shows the ending screen; --goashore presses its button, by the same way the button does.
+        if (_struck)
+        {
+            _runner.DeveloperStrike();
+        }
+
+        if (_arrive)
+        {
+            _runner.DeveloperArrive();
+        }
+
+        if (_pressGoAshore)
+        {
+            GetTree().CreateTimer(2).Timeout += GoAshore;
+        }
+
         // --ashore[=coast.bajos_largos]: the voyage over there, and the camp made; --camphours=N: N hours on.
         // With --founder, they come ashore from the wreck instead.
         if (_ashoreAt is { } site)
         {
-            var landed = _founder ? _runner.GoAshore() : _runner.DeveloperLand(site);
+            var landed = _founder || _struck ? _runner.GoAshore() : _runner.DeveloperLand(site);
             if (landed.Succeeded)
             {
+                // The report, if the hours pass the third day, is shown as it would be in play.
                 _runner.Advance(_campHours * 60);
                 _endingShown = true;
-                _reportShown = _runner.Campaign.Camp!.Reported;
                 SyncFigures();
                 ShowWorld();
                 _hud.SetSpeedNames(PortSpeedNames, PortSpeedTips);

@@ -556,7 +556,7 @@ public sealed partial class SimulationRunner
 
         var water = CampWater();
         var waterHint = site.Water.Where(w => !camp.Found.Contains(w.Id)).Select(w => w.Hint).OfType<string>().FirstOrDefault();
-        lines.Add(("Water", water is null ? waterHint ?? "None found." : $"{Capitalise(water.Name)}, {water.Kind}" + (water.Kind == "brackish" ? ": it may bring on the flux." : "."), water is not null));
+        lines.Add(("Water", water is null ? waterHint ?? "None found." : Capitalise(water.Name) + (water.Kind == "brackish" ? ", brackish: it may bring on the flux." : "."), water is not null));
 
         var food = CampFood();
         var foodHint = site.Food.Where(f => !camp.Found.Contains(f.Id)).Select(f => f.Hint).OfType<string>().FirstOrDefault();
@@ -570,7 +570,7 @@ public sealed partial class SimulationRunner
 
         var afloatKg = camp.Afloat.Sum(p => Content.Items.TryGetValue(p.Key, out var i) ? i.WeightKg * p.Value : 0);
         lines.Add(("The stores", camp.Afloat.Count == 0 ? "Everything there is, is ashore."
-            : $"{afloatKg:0} kg still {(camp.ShipAtAnchor ? "aboard her" : "in the wreck")}, to be landed" + (camp.Boat ? " by the boat." : ": there is no boat, only what can be swum ashore."), camp.Afloat.Count == 0));
+            : $"{afloatKg:0} kg still {(camp.ShipAtAnchor ? "aboard her" : "in the wreck")}, to be landed" + (camp.Boat ? " by the boat." : ": there is no boat, only what can be swum ashore."), true));
 
         lines.Add(("The weather", Raining ? "Raining." : "Dry for now." + (site.Fever > 0.006 ? " The air off the swamp is bad at night." : ""), true));
 
@@ -594,6 +594,13 @@ public sealed partial class SimulationRunner
     /// <summary>Developer tool for tests and screenshots: the voyage is over at this landing, and they go ashore.</summary>
     public CommandResult DeveloperLand(string site = "coast.punta_ceniza")
     {
+        var arrived = DeveloperArrive();
+        return arrived.Succeeded ? GoAshore(site) : arrived;
+    }
+
+    /// <summary>Developer tool for tests and screenshots: she comes to anchor off the coast now, the company still aboard.</summary>
+    public CommandResult DeveloperArrive()
+    {
         if (Campaign.Voyage is not { } ship)
         {
             return CommandResult.Rejected("There is no voyage.");
@@ -606,6 +613,6 @@ public sealed partial class SimulationRunner
             Campaign.TryTransitionTo(CampaignPhase.Landfall, $"sighted {ship.Destination}");
         }
 
-        return GoAshore(site);
+        return CommandResult.Ok();
     }
 }
