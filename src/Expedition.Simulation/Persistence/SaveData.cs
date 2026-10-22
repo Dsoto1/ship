@@ -91,6 +91,9 @@ public sealed record SaveData
     /// <summary>The camp ashore, or null. Added in format 37.</summary>
     public CampData? Camp { get; init; }
 
+    /// <summary>Camps moved on from, with what still lies in them (step 2).</summary>
+    public IReadOnlyList<CampData> LeftCamps { get; init; } = [];
+
     /// <summary>Standing duties, by character ID. Added in format 10.</summary>
     public required IReadOnlyList<DutyData> Duties { get; init; }
 
@@ -807,6 +810,9 @@ public sealed record CampData
     /// <summary>The site's ID.</summary>
     public required string Site { get; init; }
 
+    /// <summary>The inventory its stores lie in.</summary>
+    public string? StoreId { get; init; }
+
     /// <summary>When they landed.</summary>
     public required long Landed { get; init; }
 
@@ -1174,6 +1180,9 @@ public sealed record WorldData
     /// <summary>What has been learned, by topic, with who told it.</summary>
     public IReadOnlyDictionary<string, string> Learned { get; init; } = new Dictionary<string, string>();
 
+    /// <summary>Sites surveyed.</summary>
+    public IReadOnlyList<string> Surveyed { get; init; } = [];
+
     /// <summary>Parties away.</summary>
     public IReadOnlyList<JourneyData> Journeys { get; init; } = [];
 
@@ -1296,6 +1305,12 @@ public sealed record JourneyData
 
     /// <summary>Their report so far.</summary>
     public IReadOnlyList<string> Report { get; init; } = [];
+
+    /// <summary>What the party carries.</summary>
+    public IReadOnlyDictionary<string, int> Loads { get; init; } = new Dictionary<string, int>();
+
+    /// <summary>Whether it has the boat.</summary>
+    public bool Boat { get; init; }
 }
 
 /// <summary>A meeting waiting.</summary>

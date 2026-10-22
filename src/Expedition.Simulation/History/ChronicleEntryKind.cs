@@ -302,4 +302,7 @@ public enum ChronicleEntryKind
 
     /// <summary>The charter judged when the relief ship came (parameters: outcome = kept, in part or revoked; reason = what was wanting; level = logs taken home).</summary>
     CharterJudged,
+
+    /// <summary>The camp moved to another site (step 2; parameters: from = the old site's name, to = the new one's, need = how many came, level = kg carried).</summary>
+    CampMoved,
 }

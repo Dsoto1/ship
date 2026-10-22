@@ -920,6 +920,11 @@ public sealed partial class SimulationRunner
             return CommandResult.Rejected($"No embrawood grows at {place.Name}.");
         }
 
+        if (purpose == "fetch" && (LeftCampAt(placeId) is not { } oldCamp || (StoresOf(oldCamp).Count == 0 && (oldCamp.Afloat.Count == 0 || Campaign.Camp?.Boat != true))))
+        {
+            return CommandResult.Rejected($"Nothing of the camp's lies at {place.Name} to be fetched.");
+        }
+
         if (Way(placeId) is not { } way)
         {
             return CommandResult.Rejected($"No one knows the way to {place.Name}.");
@@ -934,7 +939,7 @@ public sealed partial class SimulationRunner
             days += 1.5;
         }
 
-        var working = purpose == "wood" ? 2 : purpose == "visit" ? 1 : 0.5;
+        var working = purpose switch { "wood" => 2, "visit" => 1, "fetch" => 0.25, _ => 0.5 };
         var total = 2 * days + working;
         // Food for the journey from the stores: about three rations a day each.
         var rations = (int)Math.Ceiling(total * 3) + 1;
@@ -963,10 +968,17 @@ public sealed partial class SimulationRunner
         }
 
         var ticksPerDay = (double)SimulationClock.TicksPerDay;
+        // Fetching along the shore, the boat goes too, and the camp is without it till they are back.
+        var boat = purpose == "fetch" && Campaign.Camp is { Boat: true } here && ByBoat(way.Path);
+        if (boat)
+        {
+            Campaign.Camp!.Boat = false;
+        }
+
         world.AddJourney(new Journey
         {
             Id = world.NextJourney++, Members = members, Destination = placeId, Purpose = purpose, Path = way.Path, Left = now,
-            Arrives = now + (long)(days * ticksPerDay), Returns = now + (long)(total * ticksPerDay),
+            Arrives = now + (long)(days * ticksPerDay), Returns = now + (long)(total * ticksPerDay), Boat = boat,
         });
         Campaign.Record(ChronicleEntryKind.CoastNews, [new(ChronicleParameters.Need,
             $"{string.Join(", ", people.Select(c => c.Name))} set out for {place.Name}{(way.Guessed ? ", guessing at the way" : "")}: about {total:0} days there and back.")]);
@@ -989,6 +1001,16 @@ public sealed partial class SimulationRunner
             {
                 journey.Arrived = true;
                 Arrive(world, journey);
+                if (journey.Purpose == "move")
+                {
+                    Resettle(world, journey);
+                    continue;
+                }
+
+                if (journey.Purpose == "fetch")
+                {
+                    FetchFrom(journey);
+                }
             }
 
             if (now % SimulationClock.TicksPerDay == 0)
@@ -1031,6 +1053,12 @@ public sealed partial class SimulationRunner
         }
 
         journey.Report.Add($"At {place.Name}: {place.Text}");
+        // A landing site is looked over as a place to settle (step 2).
+        if (place.Site is { } surveyed && Content.Shore?.Sites.Any(s => s.Id == surveyed) == true && !world.Surveyed.Contains(surveyed) && Campaign.Camp?.Site != surveyed)
+        {
+            world.Survey(surveyed);
+            journey.Report.Add($"They looked it over as a place to settle: {string.Join(" ", Survey(place.Id).Skip(1).Take(3).Select(l => l.Text))}");
+        }
         // From there they see the ways on, and what lies at the end of them.
         foreach (var route in region.Routes.Where(r => r.Other(place.Id) is not null))
         {
@@ -1114,6 +1142,21 @@ public sealed partial class SimulationRunner
             }
         }
 
+        foreach (var (item, count) in journey.Loads)
+        {
+            Campaign.SharedStore.TryAdd(item, count, Content.Items);
+        }
+
+        if (journey.Loads.Count > 0)
+        {
+            journey.Report.Add($"They brought back {journey.Loads.Sum(l => l.Value * Content.Items[l.Key].WeightKg):0} kg of the stores from the old camp.");
+        }
+
+        if (journey.Boat)
+        {
+            camp.Boat = true;
+        }
+
         if (journey.Logs > 0)
         {
             Campaign.SharedStore.TryAdd("item.embrawood", journey.Logs, Content.Items);
@@ -1140,7 +1183,7 @@ public sealed partial class SimulationRunner
         var terms = new List<(string, bool)>
         {
             ($"{charter.Logs} logs of embrawood ({Campaign.SharedStore.Count("item.embrawood")} now)", Campaign.SharedStore.Count("item.embrawood") >= charter.Logs),
-            ($"a factory standing at Punta Ceniza", camp.Site == "coast.punta_ceniza" && CampStage() != "a landfall camp"),
+            ($"the factory standing again on {SiteName(charter.Site)}", camp.Site == charter.Site && CampStage() != "a landfall camp"),
             ($"{need} alive ({alive} now)", alive >= need),
             ("the trade peace kept", !world.PeaceBroken && world.LogsSold == 0),
         };

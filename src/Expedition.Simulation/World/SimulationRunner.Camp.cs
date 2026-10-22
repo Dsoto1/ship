@@ -132,6 +132,7 @@ public sealed partial class SimulationRunner
         // Ashore the stores are no longer held to the hold's room: they are stacked under cover, in the
         // storehouse, or (the logs) on the beach.
         Campaign.SharedStore.Capacity = InventoryCapacity.Unlimited;
+        camp.StoreId = Campaign.SharedStoreId.Value;
         Campaign.Camp = camp;
         BeginWorld(camp);
 

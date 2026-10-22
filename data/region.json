@@ -5,9 +5,12 @@
 // [RESEARCH] The peoples are invented for a fictional coast; to be checked in the plausibility pass.
 {
   "places": [
-    { "id": "place.punta_ceniza", "name": "Punta Ceniza", "kind": "headland", "x": 0, "y": 0, "site": "coast.punta_ceniza", "known": "seen",
-      "text": "The headland, and on it the burned factory: posts like black teeth, the palisade down, the spring below.",
-      "report": "The Company's factory, on the headland, by the spring.", "ground": "people.oruwai" },
+    { "id": "place.punta_ceniza", "name": "Punta Ceniza", "kind": "shore", "x": 0, "y": 0, "site": "coast.punta_ceniza", "known": "seen",
+      "text": "The beach under the headland: shell and coarse sand, the lagoon behind, and the path up to the factory.",
+      "report": "The landing under the Company's headland.", "ground": "people.oruwai" },
+    { "id": "place.factory", "name": "the factory headland", "kind": "headland", "x": 0.4, "y": -0.3, "site": "coast.ceniza_headland", "known": "seen",
+      "text": "The headland, and on it the burned factory: posts like black teeth, the palisade down, the spring just below.",
+      "report": "The Company's factory, on the headland, by the spring: where the charter says it is to stand again.", "ground": "people.oruwai" },
     { "id": "place.lagoon_shore", "name": "the lagoon shore", "kind": "shore", "x": 1.5, "y": 1,
       "text": "The seaward shore of the great lagoon: fish weirs of stakes and woven cane across the channels, kept in good repair.",
       "report": "Fish weirs along the lagoon's shore.", "ground": "people.mahenu" },
@@ -49,6 +52,7 @@
       "text": "Mangroves in black mud, the lagoon's far end bleeding into them.", "report": "Mangrove swamps beyond the lagoon." }
   ],
   "routes": [
+    { "from": "place.punta_ceniza", "to": "place.factory", "days": 0.1, "way": "beach", "known": true },
     { "from": "place.punta_ceniza", "to": "place.lagoon_shore", "days": 0.5, "way": "beach" },
     { "from": "place.lagoon_shore", "to": "place.mahenu", "days": 0.5, "way": "lagoon" },
     { "from": "place.lagoon_shore", "to": "place.fishing_camp", "days": 0.5, "way": "beach" },
@@ -136,7 +140,7 @@
       "text": "Narehwa tells it all, slowly. The garrison's commander took Oruwai's people for wood; Oruwai and men of Kessat burned the factory; most of the garrison died at the gate. Two ran to Mahenu, and Mahenu would not give them up, though Oruwai still holds it against them. One died of the fever. The other, Gaspar Lezo, lives at Mahenu still, and will speak to you if you come." }
   ],
   // The Company's charter (SETTING §3), judged when the relief ship comes.
-  "charter": { "reliefDay": 180, "logs": 40, "aliveShare": 0.5, "aliveAtLeast": 4, "palisade": true },
+  "charter": { "site": "coast.ceniza_headland", "reliefDay": 180, "logs": 40, "aliveShare": 0.5, "aliveAtLeast": 4, "palisade": true },
   // An interloper's ship at the cove (SETTLEMENT §32).
   "brennish": { "ship": "the Merle", "master": "Master Corran Hale", "arriveDay": 50, "stayDays": 12,
     "sells": { "item.wine_hob": 18, "item.biscuit_hob": 14, "item.axe": 70 }, "buysLog": 25 }

@@ -2867,3 +2867,25 @@ What grows where follows each site's ground.
 
 **Screenshots:** `ground-punta_ceniza.jpg`, `ground-rio_bermejo.jpg`, `ground-bajos_largos.jpg`,
 `ground-manglares.jpg`.
+
+### The move: the first camp, a better site, the charter's ground (owner: "setup a camp initially, then explore more to find better suitable locations")
+
+Details: `docs/THE_MOVE.md`.
+
+**The first camp is where the boat landed.**
+- The charter now wants the factory standing again on the headland at Punta Ceniza, a new site above the beach.
+- Parties look sites over: water, food, building stuff, fever, defence, whose ground, the red wood, and whether
+  it is the charter's.
+
+**The camp is moved by its people.**
+- Each carries a pack; the boat takes more along the shore; the ship comes round.
+- What cannot be carried stays in the old camp's stores, its buildings standing.
+- Parties and the boat are sent back to fetch it.
+
+Nothing moves that no one carried.
+
+**Saved in** format 41 (optional fields).
+
+**Tests:** `MoveTests` (6); 592 in all. The test captain moves to the headland and still keeps the charter.
+
+**Screenshots:** `move-survey.jpg`, `move-headland.jpg`.

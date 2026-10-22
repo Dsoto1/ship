@@ -27,7 +27,9 @@ public partial class RegionView : Control
     private SimulationRunner? _runner;
     private string? _selected;
     private readonly List<(CheckBox Box, CharacterId Id)> _checks = [];
-    private static readonly string[] Purposes = ["explore", "visit", "wood"];
+    private static readonly string[] Purposes = ["explore", "visit", "wood", "fetch"];
+    private Label _survey = null!;
+    private Button _move = null!;
 
     /// <summary>The map is closed.</summary>
     public event Action? Closed;
@@ -71,6 +73,12 @@ public partial class RegionView : Control
         side.AddChild(Ui.Text("As far as it is known: told of (dashed, ?), seen, or been to. Click a place.", Ui.TextMeta, Ui.InkSoft, 360));
         _place = Ui.Text("", Ui.TextBody, Ui.Ink, 360);
         side.AddChild(_place);
+        // A landing site looked over (step 2, the move): what it would be to settle there, and the order to go.
+        _survey = Ui.Text("", Ui.TextMeta + 1, Ui.Ink, 360);
+        side.AddChild(_survey);
+        _move = Ui.Button("Move the camp here", "Everyone goes, the sick carried, each with a pack of the stores, the boat taking more along the shore. "
+            + "What cannot be carried stays where it lies, to be fetched; what was built stays standing.", Move);
+        side.AddChild(_move);
 
         _partyBox = new VBoxContainer();
         _partyBox.AddThemeConstantOverride("separation", Ui.SpaceS);
@@ -83,6 +91,7 @@ public partial class RegionView : Control
         _purpose.AddItem("To see what is there");
         _purpose.AddItem("To call on its people");
         _purpose.AddItem("To cut embrawood");
+        _purpose.AddItem("To fetch what was left at the old camp");
         _purpose.ItemSelected += _ => Refresh();
         _partyBox.AddChild(_purpose);
         _way = Ui.Text("", Ui.TextMeta + 1, Ui.InkSoft, 360);
@@ -168,6 +177,19 @@ public partial class RegionView : Control
         Refresh();
     }
 
+    private void Move()
+    {
+        if (_runner is null || _selected is null)
+        {
+            return;
+        }
+
+        var result = _runner.MoveCamp(_selected);
+        Said?.Invoke(result, "The camp is struck and on the move.");
+        RebuildMembers();
+        Refresh();
+    }
+
     /// <summary>Redraws the map and the column from the simulation.</summary>
     public void Refresh()
     {
@@ -183,6 +205,8 @@ public partial class RegionView : Control
         {
             _place.Text = "Nothing chosen.";
             _partyBox.Visible = false;
+            _survey.Text = "";
+            _move.Visible = false;
         }
         else
         {
@@ -204,6 +228,16 @@ public partial class RegionView : Control
             _place.Text = $"{place.Name}\n{how}\n{text}{people}{ground}{warn}";
             var isCamp = place.Id == _runner.CampPlace?.Id;
             _partyBox.Visible = !isCamp;
+            var survey = _runner.Survey(place.Id);
+            var left = _runner.LeftCampAt(place.Id) is { } old
+                ? $"\nThe old camp: {old.Buildings.Count} buildings standing; {_runner.StoresOf(old).Sum(q => q.Value * (_runner.Content.Items.TryGetValue(q.Key, out var item) ? item.WeightKg : 0)):0} kg of stores left there"
+                  + (old.Afloat.Count > 0 ? ", and more still aboard" : "") + "."
+                : "";
+            _survey.Text = survey.Count == 0
+                ? place.Site is not null ? "A landing place. Send a party to look it over as a place to settle." + left : left.TrimStart('\n')
+                : "As a place to settle:\n" + string.Join("\n", survey.Select(l => $"{l.Topic}: {l.Text}")) + left;
+            _move.Visible = place.Site is not null && !isCamp;
+            _move.Disabled = world.Journeys.Any(j => j.Purpose == "move");
             var purpose = Purposes[Math.Max(0, _purpose.Selected)];
             var chosen = _checks.Count(c => c.Box.ButtonPressed);
             if (_runner.Way(place.Id) is { } way)
@@ -324,6 +358,8 @@ public partial class RegionCanvas : Control
             DrawDashedLine(At(a.X, a.Y), At(b.X, b.Y), route.Way == "lagoon" || route.Way == "river" ? Sea.Darkened(0.45f) : InkLine, 1.5f, 6);
         }
 
+        // Labels already drawn, so one close by is set below the other rather than over it.
+        var labels = new List<Rect2>();
         foreach (var place in region.Places)
         {
             var level = _runner.PlaceKnown(place.Id);
@@ -362,7 +398,14 @@ public partial class RegionCanvas : Control
                 DrawRect(new Rect2(at + new Vector2(-5, -18), new Vector2(10, 6)), Red);
             }
 
-            DrawString(font, at + new Vector2(11, 5), place.Name, HorizontalAlignment.Left, -1, 13, InkLine);
+            var label = new Rect2(at + new Vector2(11, -8), font.GetStringSize(place.Name, HorizontalAlignment.Left, -1, 13) + new Vector2(0, 2));
+            while (labels.Any(l => l.Intersects(label)))
+            {
+                label.Position += new Vector2(0, 15);
+            }
+
+            labels.Add(label);
+            DrawString(font, label.Position + new Vector2(0, 13), place.Name, HorizontalAlignment.Left, -1, 13, InkLine);
         }
 
         // Parties on the way, where they should be by now.

@@ -94,6 +94,12 @@ public sealed class Journey
 
     /// <summary>What they found and did, for their report.</summary>
     public List<string> Report { get; } = [];
+
+    /// <summary>True if the party has the boat with it, along the shore (step 2).</summary>
+    public bool Boat { get; init; }
+
+    /// <summary>What the party carries, by item: the camp's stores on the move or fetched (step 2).</summary>
+    public SortedDictionary<string, int> Loads { get; } = new(StringComparer.Ordinal);
 }
 
 /// <summary>A meeting at the camp waiting for the captain's word (R8): a people's delegation, a theft, a ship.</summary>
@@ -177,6 +183,13 @@ public sealed class WorldState
 
     /// <summary>Thefts from the camp.</summary>
     public int Thefts { get; internal set; }
+
+    private readonly SortedSet<string> _surveyed = new(StringComparer.Ordinal);
+
+    /// <summary>The landing sites a party has been to and looked over, as places to settle (step 2).</summary>
+    public IReadOnlySet<string> Surveyed => _surveyed;
+
+    internal void Survey(string site) => _surveyed.Add(site);
 
     /// <summary>Gaspar Lezo, the garrison's survivor at Mahenu: 0 not met; 1 met by a party; 2 come to the camp to talk; 3 joined; 4 stays at Mahenu, until a party sees him there again.</summary>
     public int Survivor { get; internal set; }

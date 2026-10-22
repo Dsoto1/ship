@@ -179,6 +179,8 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
             ChronicleEntryKind.WentAshore => entry.Get(ChronicleParameters.Reason) == "anchored"
                 ? $"Ashore at {entry.Get(ChronicleParameters.To)}: {entry.Get(ChronicleParameters.Need)} landed through the surf to make a camp, the ship at anchor off."
                 : $"A camp made at {entry.Get(ChronicleParameters.To)} by the {entry.Get(ChronicleParameters.Need)} who came ashore.",
+            ChronicleEntryKind.CampMoved =>
+                $"The camp moved from {entry.Get(ChronicleParameters.From)} to {entry.Get(ChronicleParameters.To)}: {entry.Get(ChronicleParameters.Need)} went, carrying {entry.Get(ChronicleParameters.Level)} kg of the stores.",
             ChronicleEntryKind.CampWorkDone => entry.Get(ChronicleParameters.To) switch
             {
                 Shore.CampWorks.Shelter => $"A shelter finished: berths under cover for {entry.Get(ChronicleParameters.Level)}.",

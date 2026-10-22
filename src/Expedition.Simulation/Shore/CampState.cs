@@ -232,10 +232,13 @@ public sealed class CampState
     public required long Landed { get; init; }
 
     /// <summary>True if the ship lies at anchor off the camp; false after a wreck.</summary>
-    public bool ShipAtAnchor { get; init; }
+    public bool ShipAtAnchor { get; internal set; }
 
     /// <summary>True if there is a boat for landing stores.</summary>
-    public bool Boat { get; init; } = true;
+    public bool Boat { get; internal set; } = true;
+
+    /// <summary>The inventory the camp's stores lie in, where they lie: the shared store while it is the camp.</summary>
+    public string? StoreId { get; internal set; }
 
     /// <summary>How many came ashore, for the season's judgement.</summary>
     public int LandedCount { get; init; }
