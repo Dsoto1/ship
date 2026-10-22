@@ -161,4 +161,20 @@ public sealed class WatchTests
         loaded.Advance(10 * 60);
         Assert.Equal(SaveSerializer.Serialize(runner.Campaign), SaveSerializer.Serialize(loaded.Campaign));
     }
+
+    [Fact]
+    public void TheHelmIsNeverLeftAtTheChangeOfWatch()
+    {
+        // The hand going below stays at the helm until the relief has come to it.
+        var (runner, ship) = WithBill();
+        int run = 0, longest = 0;
+        for (var minute = 0; minute < 3 * 24 * 60 && ship.Outcome == VoyageOutcome.UnderWay; minute++)
+        {
+            runner.Advance(1);
+            run = ship.WatchKept ? 0 : run + 1;
+            longest = Math.Max(longest, run);
+        }
+
+        Assert.True(longest <= 3, $"the helm was left for {longest} minutes");
+    }
 }

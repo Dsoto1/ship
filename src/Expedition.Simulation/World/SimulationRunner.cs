@@ -665,9 +665,10 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             CarryAway(ship, rules, weather);
         }
 
+        // A hand on the way to the helm at the change of watch counts: the officer of the watch has the deck
+        // the minute or two it takes.
         ship.WatchKept = Campaign.ActiveTasks.Values.Any(task =>
-            Content.Tasks[task.DefinitionId].KeepsWatch && Campaign.Characters[task.CharacterId].CanWork
-            && !(Campaign.Placements.TryGetValue(task.CharacterId, out var placement) && placement.IsMoving));
+            Content.Tasks[task.DefinitionId].KeepsWatch && Campaign.Characters[task.CharacterId].CanWork);
         ship.SpeedLeaguesPerHour = weather.WindLeaguesPerHour
             * (rules.RiggingSpeedFloor + (1 - rules.RiggingSpeedFloor) * ship.Rigging / 100)
             * (ship.WatchKept ? 1 : rules.NoWatchSpeedMultiplier)

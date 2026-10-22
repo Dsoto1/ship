@@ -46,7 +46,7 @@ Day 3, 07:20, a flat calm after fair weather.
 |---|---|---|
 | Routine life | **Partly** | Hands are about the deck, the galley fire is lit, and the sails hang slack in the calm. But the cook at his fire and the morning's washing of the decks cannot be told apart from anyone else at this distance. |
 | Work animations | **Partly** | The figures stand at their work: there is still no work-specific animation (C-1 later). |
-| Watch schedule | **No** (a fault found) | The pill reads **No one on watch** at 07:20. The day's work had begun, and the helm should have been manned first; it was not. Most likely the whole watch was too tired to start work after the night. **To fix next** in `HelmsmanFor`: someone must keep the helm, tired or not. |
+| Watch schedule | **No** (a fault found; fixed 2026-10-22: a hand walking to the helm at the change of watch now counts, and a test holds it to 3 minutes) | The pill reads **No one on watch** at 07:20. The day's work had begun, and the helm should have been manned first; it was not. Most likely the whole watch was too tired to start work after the night. **To fix next** in `HelmsmanFor`: someone must keep the helm, tired or not. |
 | Ocean rendering | **Yes** | The calm reads as calm: a flat, glassy sea, long morning shadows, the ship's shadow on the water. |
 | Ship soundscape | **Partly** | The sea is quiet, creaks come now and then, and the bell strikes the half hours. There are no voices or work sounds. |
 
