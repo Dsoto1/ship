@@ -672,11 +672,8 @@ public partial class Main : Node3D
                     facing: spot is null ? null : FacingAt(location, spot),
                     inRain: onPort && _runner.RainingInPort && definition?.Id != "task.shelter", standAt: standAt,
                     place: onPort ? null : _deck.Place);
-                // Below decks, people are seen only through the cutaway.
-                if (!onPort && _deck.IsBelow(placement.CellAt(_runner.Campaign.Clock.Tick)) && !_deck.Cutaway)
-                {
-                    figure.Visible = false;
-                }
+                // Below decks with the cutaway off, people are drawn faintly through the deck, so no one vanishes.
+                figure.ShowThroughDeck(!onPort && !_deck.Cutaway && _deck.IsBelow(placement.CellAt(_runner.Campaign.Clock.Tick)));
                 figure.Outline(inPort && !_departure.Playing ? RecruitRim(id) : Colors.Transparent);
             }
         }
@@ -1619,6 +1616,12 @@ public partial class Main : Node3D
 
         if (_runner.Campaign.Port is null)
         {
+            // In the cutaway, a click goes through the opened decks to the spaces below.
+            if (_deck.Cutaway && _deck.BelowCellAt(height => _camera.GroundPointUnder(screenPosition, height) is { } at ? ShipLocal(at) : null) is { } below)
+            {
+                return below;
+            }
+
             point = ShipLocal(point);
         }
 

@@ -169,6 +169,48 @@ public partial class ShipView : Node3D
         return new Vector3(x + (level?.OffsetX ?? 0), HeightAt(x, y), y);
     }
 
+    /// <summary>
+    /// The cell below decks under the pointer, in the cutaway: each level is tried at each of its floor
+    /// heights, the highest first, and the first walkable cell of that level found there is it.
+    /// <paramref name="pointAt"/> gives the point under the pointer at a height, in the deck's own frame.
+    /// </summary>
+    public GridPosition? BelowCellAt(Func<float, Vector3?> pointAt)
+    {
+        var floors = new List<(LocationLevel Level, float Height)>();
+        foreach (var level in _location.Levels)
+        {
+            for (var y = 0; y < _location.Height; y++)
+            {
+                for (var x = level.X0; x <= level.X1; x++)
+                {
+                    var cell = new GridPosition(x, y);
+                    var height = (float)Math.Round(HeightAt(x, y), 2);
+                    if (_location.IsWalkable(cell) && !floors.Contains((level, height)))
+                    {
+                        floors.Add((level, height));
+                    }
+                }
+            }
+        }
+
+        foreach (var (level, height) in floors.OrderByDescending(f => f.Height))
+        {
+            if (pointAt(height) is not { } point)
+            {
+                continue;
+            }
+
+            var cell = new GridPosition(Mathf.RoundToInt(point.X - level.OffsetX), Mathf.RoundToInt(point.Z));
+            if (cell.X >= level.X0 && cell.X <= level.X1 && cell.Y >= 0 && cell.Y < _location.Height && _location.IsWalkable(cell)
+                && Mathf.Abs(HeightAt(cell.X, cell.Y) - height) < 0.3f)
+            {
+                return cell;
+            }
+        }
+
+        return null;
+    }
+
     /// <summary>Whether a cell is below decks (on another level), for showing who is down there.</summary>
     public bool IsBelow(GridPosition cell) => _location.LevelAt(cell) is not null;
 

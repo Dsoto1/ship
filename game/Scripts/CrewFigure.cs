@@ -380,6 +380,34 @@ public partial class CrewFigure : Node3D
         }
     }
 
+    // A pale shape drawn over everything: someone below decks, seen through the deck.
+    private static readonly StandardMaterial3D Ghost = new()
+    {
+        ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+        NoDepthTest = true, AlbedoColor = new Color(0.95f, 0.88f, 0.72f, 0.3f), RenderPriority = 1,
+    };
+
+    private bool _throughDeck;
+
+    /// <summary>Drawn faintly through the deck (someone below, with the cutaway off), or as usual.</summary>
+    public void ShowThroughDeck(bool on)
+    {
+        // While on, kept up every frame: the person's model swaps its meshes with the pose and the zoom.
+        if (on == _throughDeck && !on)
+        {
+            return;
+        }
+
+        _throughDeck = on;
+        foreach (var mesh in FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>())
+        {
+            if (mesh != _ring)
+            {
+                mesh.MaterialOverlay = on ? Ghost : null;
+            }
+        }
+    }
+
     /// <summary>True when the camera is far out: persistent people use their light model (§36).</summary>
     public static bool FarView { get; set; }
 

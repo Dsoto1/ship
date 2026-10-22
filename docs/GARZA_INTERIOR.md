@@ -145,14 +145,16 @@ the hold; the forepeak for cables and sails. It is to be checked in the ship's p
   in the hold. Each leak spurts at its place until it is plugged.
 - **Lantern light** below; the sea is cleared from inside the hull. The sea sounds muffled while the
   cutaway is on.
-- **People below** are drawn only when the cutaway is on.
+- **People below** are drawn as they are when the cutaway is on. With it off they show as a pale shape
+  through the deck, so no one vanishes.
+- **Walking below:** with the cutaway on, a right-click goes through the opened decks to the space below.
+  It finds the cabin, the covered spaces or the hold, whichever is under the pointer at its own floor
+  height, highest first. A click in the waist then means the hold; turn the cutaway off to walk the deck.
 
 **Balance.** The ten test crews keeping watches: 6 of 10 arrive, average fatigue about 31 (it was 4 of
 10, about 27). The other four foundered, between days 24 and 33.
 
 **Not yet done.**
-- Walking someone into the levels below by right-click.
-- People below drawn faintly through the deck when the cutaway is off.
 - A dedicated below-decks sound bed: today it is the muffled sea only.
 - The hold is lit by daylight through the open deck in the cutaway. That reads, but a darker, lantern-lit
   hold would be truer.
