@@ -21,6 +21,9 @@ public readonly record struct Footprint(int X0, int Y0, int X1, int Y1)
 
     /// <summary>True when the two share a cell.</summary>
     public bool Overlaps(Footprint other) => X0 <= other.X1 && other.X0 <= X1 && Y0 <= other.Y1 && other.Y0 <= Y1;
+
+    /// <summary>The same ground with <paramref name="cells"/> more on every side.</summary>
+    public Footprint Grown(int cells) => new(X0 - cells, Y0 - cells, X1 + cells, Y1 + cells);
 }
 
 /// <summary>
@@ -69,6 +72,9 @@ public sealed partial class SimulationRunner
 
         return tasks;
     }
+
+    // Open ground kept between one building and the next, and round each one's work places at its front.
+    private const int Clearance = 1;
 
     // Wet sand: nothing is built at or below this row.
     private const int WetSandRow = 2;
@@ -250,6 +256,11 @@ public sealed partial class SimulationRunner
         if (others.Any(o => o.Ground.Overlaps(ground) || o.Front.Any(f => ground.Contains(f.X, f.Y)) || front.Any(f => o.Ground.Contains(f.X, f.Y) || o.Front.Contains(f))))
         {
             problems.Add("Another building is in the way.");
+        }
+        else if (others.Any(o => o.Ground.Grown(Clearance).Overlaps(ground) || o.Front.Any(f => ground.Grown(Clearance).Contains(f.X, f.Y))
+                                 || front.Any(f => o.Ground.Grown(Clearance).Contains(f.X, f.Y))))
+        {
+            problems.Add("Too close to another building: leave room to walk round it.");
         }
 
         // The two places to work at it must be open ground the hands can reach from the hearth.
