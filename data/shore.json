@@ -94,6 +94,35 @@
   },
   "sites": [
     {
+      // The headland above the beach at Punta Ceniza, where the Company's factory stood (step 2, the move):
+      // the charter's own ground. The spring is close below, the breeze keeps the fever down, the ruin
+      // gives its timbers, and a palisade across the neck closes it; but it is Oruwai's fishing households'.
+      "id": "coast.ceniza_headland", "ground": "headland",
+      "name": "the headland at Punta Ceniza",
+      "rain": 0.08,
+      "fever": 0.002,
+      "brush": true,
+      "seen": [
+        "The headland's top: the burned factory's posts, the ditch of its palisade, and the sea on three sides.",
+        "Below, the spring the factory drew from, and the path down to the beach."
+      ],
+      "water": [
+        { "id": "water.factory_spring", "name": "the factory's spring", "kind": "spring", "perHour": 40, "walk": 4, "known": true,
+          "hint": "The spring is just below the headland's brow." }
+      ],
+      "food": [
+        { "id": "food.reef_fish", "name": "fish off the point", "item": "item.fish", "perHour": 3,
+          "hint": "Fish jump in the swell off the point." },
+        { "id": "food.lagoon_shellfish", "name": "shellfish on the lagoon's edge", "item": "item.shellfish", "perHour": 4, "unfamiliar": true,
+          "hint": "Gulls working the lagoon's edge at low water, a walk below." }
+      ],
+      "finds": [
+        { "id": "find.factory", "kind": "ruin", "name": "the burned factory",
+          "text": "The factory is burned to the ground. The palisade is down, the storehouse a ring of black posts, and there is no sign of the garrison.",
+          "planks": 30, "known": true, "hint": "The factory, burned." }
+      ]
+    },
+    {
       "id": "coast.punta_ceniza", "ground": "headland",
       "name": "Punta Ceniza",
       "rain": 0.08,

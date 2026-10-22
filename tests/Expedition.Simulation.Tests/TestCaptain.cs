@@ -77,11 +77,11 @@ public sealed class TestCaptain(SimulationRunner runner)
             ?? First("farewell") ?? choices.First(c => c.Available).Id;
     }
 
-    // On the third day ashore: huts for all, the storehouse, the infirmary, the workshop, the garden, a
-    // landing, the palisade.
+    // Once the camp is on the charter's ground: huts for all, the storehouse, the infirmary, the workshop,
+    // the garden, a landing, the palisade.
     private void Build()
     {
-        if (_ordered || runner.Campaign.Camp is null || runner.CampDay < 3)
+        if (_ordered || runner.Campaign.Camp is not { } camp || camp.Site != runner.Region?.Charter.Site || runner.CampDay < 3)
         {
             return;
         }
@@ -105,6 +105,28 @@ public sealed class TestCaptain(SimulationRunner runner)
         if (runner.Campaign.World is not { } world || runner.Campaign.Camp is null || runner.Campaign.Clock.Tick % SimulationClock.TicksPerDay >= 60)
         {
             return;
+        }
+
+        // The first camp is where the boat landed: on the second day, up to the charter's ground.
+        if (runner.Region is { } region && runner.Campaign.Camp.Site != region.Charter.Site && runner.CampDay >= 1
+            && world.Journeys.All(j => j.Purpose != "move") && region.Places.FirstOrDefault(p => p.Site == region.Charter.Site) is { } charterGround)
+        {
+            var moved = runner.MoveCamp(charterGround.Id);
+            Log.Add($"day {runner.CampDay:0}: move to {charterGround.Name}: {(moved.Succeeded ? "going" : moved.Reason)}");
+            return;
+        }
+
+        // What is left at the old camp is fetched, a pair of hands at a time.
+        if (world.Journeys.Count == 0 && runner.Campaign.LeftCamps.Values.FirstOrDefault(c => runner.StoresOf(c).Count > 0 || c.Afloat.Count > 0) is { } old
+            && runner.Region!.Places.FirstOrDefault(p => p.Site == old.Site) is { } oldPlace)
+        {
+            var hands = runner.Campaign.Crew.Where(c => c.Id != runner.Campaign.CaptainId && c.CanWork && !runner.Away(c.Id)).Take(2).Select(c => c.Id).ToList();
+            var fetched = runner.SendParty(hands, oldPlace.Id, "fetch");
+            Log.Add($"day {runner.CampDay:0}: fetch from {oldPlace.Name}: {(fetched.Succeeded ? "sent" : fetched.Reason)}");
+            if (fetched.Succeeded)
+            {
+                return;
+            }
         }
 
         if (_woodSent && world.Journeys.Count == 0 && runner.Campaign.SharedStore.Count("item.embrawood") < 40)

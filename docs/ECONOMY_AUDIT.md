@@ -55,7 +55,8 @@ against the code as it stands: **Yes**, **Partly** or **No**, with where it is o
 **The rest of this group**
 - **Short production chains (§27):** **Yes.**
 - **Failure continues (§46):** **Partly.** The wreck continues the game, and so does a charter failed at day
-  180. Relocation is not built yet (step 2 below).
+  180. Relocation is built (THE_MOVE: actual goods carried, actual people moved, the old camp kept); moving
+  after a disaster as such is not.
 - **Save and load (§51):** **Yes**, mid-storm and mid-build.
 
 ## What is partly there
@@ -104,7 +105,8 @@ against the code as it stands: **Yes**, **Partly** or **No**, with where it is o
 Each step is one pull request, built on the last. It folds in the steps already agreed with the owner (the
 first camp then a better site, people joining, couples and children, playing on past day 180).
 
-1. **Step 2, the move: stores where they lie, and hauling.**
+1. **Step 2, the move: stores where they lie, and hauling.** *The move is done (THE_MOVE.md); stores held in
+   places inside a camp are next.*
    - **The move:** the first camp is temporary. Parties find and judge sites; the charter scores where the
      settlement stands. Moving is done by the people themselves: packs, the boat, trips along the shore.
    - **Stores where they lie:** stores held in places (the beach cache, the storehouse, the workshop, the

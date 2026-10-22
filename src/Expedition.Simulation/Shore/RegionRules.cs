@@ -199,6 +199,9 @@ public sealed record KnowledgeTopic
 /// <summary>The Company's charter (SETTING §3), judged when the relief ship comes.</summary>
 public sealed record CharterRules
 {
+    /// <summary>The site where the factory is to stand again: the charter's own ground.</summary>
+    public string Site { get; init; } = "coast.ceniza_headland";
+
     /// <summary>The day after landing that the relief ship comes.</summary>
     public int ReliefDay { get; init; } = 180;
 

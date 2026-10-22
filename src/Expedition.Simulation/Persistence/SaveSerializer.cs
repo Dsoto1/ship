@@ -715,39 +715,8 @@ public static class SaveSerializer
                     Remains = new SortedDictionary<string, int>(wreck.Remains.ToDictionary(), StringComparer.Ordinal),
                 }
                 : null,
-            Camp = campaign.Camp is { } camp
-                ? new CampData
-                {
-                    Site = camp.Site, Landed = camp.Landed, ShipAtAnchor = camp.ShipAtAnchor, Boat = camp.Boat,
-                    Works = new SortedDictionary<string, double>(camp.Works.ToDictionary(), StringComparer.Ordinal),
-                    Found = camp.Found.ToList(), Afloat = new SortedDictionary<string, int>(camp.Afloat.ToDictionary(), StringComparer.Ordinal),
-                    Priorities = camp.Priorities.ToList(), UseSailcloth = camp.Choices.UseSailcloth, RestTheExhausted = camp.Choices.RestTheExhausted,
-                    SendScouts = camp.Choices.SendScouts, Forage = camp.Choices.Forage, FireUntil = camp.FireUntil, Spoiled = camp.Spoiled,
-                    Trips = camp.Trips, Reported = camp.Reported,
-                    NightsSheltered = new SortedDictionary<int, int>(camp.NightsSheltered.ToDictionary()),
-                    NightsExposed = new SortedDictionary<int, int>(camp.NightsExposed.ToDictionary()),
-                    LandedCount = camp.LandedCount,
-                    Projects = camp.Projects.Select(p => new CampProjectData
-                    {
-                        Id = p.Id, Building = p.Building, Plot = p.Plot, Phase = p.Phase, Done = p.Done, QualitySum = p.QualitySum, Worked = p.Worked, Laid = p.Laid,
-                        X = p.X, Y = p.Y, Turned = p.Turned, Trees = p.Trees,
-                    }).ToList(),
-                    Buildings = camp.Buildings.Select(b => new CampBuildingData
-                    {
-                        Building = b.Building, Plot = b.Plot, Quality = b.Quality, Condition = b.Condition, X = b.X, Y = b.Y, Turned = b.Turned,
-                    }).ToList(),
-                    Beds = camp.Beds.Select(b => new GardenBedData { Crop = b.Crop, Sown = b.Sown, Health = b.Health, Tended = b.Tended }).ToList(),
-                    Broken = new SortedDictionary<string, int>(camp.Broken.ToDictionary(), StringComparer.Ordinal),
-                    PolesCut = camp.PolesCut, ThatchCut = camp.ThatchCut, NextProject = camp.NextProject, Survived = camp.Survived,
-                    ThatchLastCut = camp.ThatchLastCut, StoneGathered = camp.StoneGathered, TimberSalvaged = camp.TimberSalvaged,
-                    Trodden = camp.Trodden.Select(t => (Cell: Shore.CampState.Cell(t.Key), t.Value))
-                        .Select(t => new TroddenCellData { X = t.Cell.X, Y = t.Cell.Y, Steps = t.Value.Steps, Last = t.Value.Last }).ToList(),
-                    Regrowing = camp.Regrowing.Select(r => (Cell: Shore.CampState.Cell(r.Key), r.Value))
-                        .Select(r => new RegrowingCellData { X = r.Cell.X, Y = r.Cell.Y, Tree = r.Value.Tree, Since = r.Value.Since }).ToList(),
-                    PalisadeOrdered = camp.PalisadeOrdered,
-                    World = campaign.World is { } world ? SaveWorld(world) : null,
-                }
-                : null,
+            Camp = campaign.Camp is { } camp ? SaveCamp(camp) with { World = campaign.World is { } world ? SaveWorld(world) : null } : null,
+            LeftCamps = campaign.LeftCamps.Values.Select(SaveCamp).ToList(),
             Voyage = campaign.Voyage is { } voyage
                 ? new VoyageData
                 {
@@ -1329,84 +1298,13 @@ public static class SaveSerializer
 
         if (data.Camp is { } savedCamp)
         {
-            if (savedCamp.Afloat.Any(pair => !content.Items.ContainsKey(pair.Key) || pair.Value < 0)
-                || savedCamp.Priorities.Any(p => !Shore.CampPriorities.Default.Contains(p)) || savedCamp.Priorities.Count != Shore.CampPriorities.Default.Count
-                || savedCamp.NightsSheltered.Keys.Concat(savedCamp.NightsExposed.Keys).Any(id => !campaign.Characters.ContainsKey(new CharacterId(id))))
-            {
-                throw new SaveLoadException("The camp names stores, priorities or people that do not exist.");
-            }
-
-            var settlement = content.Shore?.Settlement;
-            if (savedCamp.Projects.Any(p => settlement?.Building(p.Building) is null) || savedCamp.Buildings.Any(b => settlement?.Building(b.Building) is null)
-                || savedCamp.Beds.Any(b => settlement?.Crops.Any(c => c.Id == b.Crop) != true) || savedCamp.Broken.Keys.Any(t => !content.Items.ContainsKey(t)))
-            {
-                throw new SaveLoadException("The camp names buildings, crops or tools that do not exist.");
-            }
-
-            var camp = new Shore.CampState
-            {
-                Site = savedCamp.Site, Landed = savedCamp.Landed, ShipAtAnchor = savedCamp.ShipAtAnchor, Boat = savedCamp.Boat, LandedCount = savedCamp.LandedCount,
-            };
-            foreach (var project in savedCamp.Projects)
-            {
-                var restored = new Shore.CampProject
-                {
-                    Id = project.Id, Building = project.Building, Plot = project.Plot, X = project.X, Y = project.Y, Turned = project.Turned, Trees = project.Trees,
-                };
-                restored.Restore(project.Phase, project.Done, project.QualitySum, project.Worked, project.Laid);
-                camp.AddProject(restored);
-            }
-
-            foreach (var building in savedCamp.Buildings)
-            {
-                camp.AddBuilding(new Shore.CampBuilding
-                {
-                    Building = building.Building, Plot = building.Plot, Quality = building.Quality, Condition = building.Condition,
-                    X = building.X, Y = building.Y, Turned = building.Turned,
-                });
-            }
-
-            foreach (var bed in savedCamp.Beds)
-            {
-                camp.AddBed(new Shore.GardenBed { Crop = bed.Crop, Sown = bed.Sown, Health = bed.Health, Tended = bed.Tended });
-            }
-
-            foreach (var (tool, count) in savedCamp.Broken)
-            {
-                camp.Break(tool, count);
-            }
-
-            camp.PolesCut = savedCamp.PolesCut;
-            camp.ThatchCut = savedCamp.ThatchCut;
-            camp.ThatchLastCut = savedCamp.ThatchLastCut;
-            camp.StoneGathered = savedCamp.StoneGathered;
-            camp.TimberSalvaged = savedCamp.TimberSalvaged;
-            foreach (var trodden in savedCamp.Trodden)
-            {
-                var cell = camp.Tread(Shore.CampState.Key(trodden.X, trodden.Y));
-                cell.Steps = trodden.Steps;
-                cell.Last = trodden.Last;
-            }
-
-            foreach (var growing in savedCamp.Regrowing)
-            {
-                camp.Regrow(Shore.CampState.Key(growing.X, growing.Y), new Shore.RegrowingCell { Tree = growing.Tree, Since = growing.Since });
-            }
-            camp.NextProject = savedCamp.NextProject;
-            camp.Survived = savedCamp.Survived;
-            camp.Restore(savedCamp.Works, savedCamp.Found, savedCamp.Afloat, savedCamp.NightsSheltered, savedCamp.NightsExposed);
-            camp.Priorities = savedCamp.Priorities.ToList();
-            camp.Choices = new Shore.CampChoices
-            {
-                UseSailcloth = savedCamp.UseSailcloth, RestTheExhausted = savedCamp.RestTheExhausted, SendScouts = savedCamp.SendScouts, Forage = savedCamp.Forage,
-            };
-            camp.FireUntil = savedCamp.FireUntil;
-            camp.Spoiled = savedCamp.Spoiled;
-            camp.Trips = savedCamp.Trips;
-            camp.Reported = savedCamp.Reported;
-            camp.PalisadeOrdered = savedCamp.PalisadeOrdered;
-            campaign.Camp = camp;
+            campaign.Camp = RestoreCamp(savedCamp, campaign, content);
             campaign.World = savedCamp.World is { } world ? RestoreWorld(world) : null;
+        }
+
+        foreach (var left in data.LeftCamps)
+        {
+            campaign.LeaveCamp(RestoreCamp(left, campaign, content));
         }
 
         RestoreLife(campaign, content, data.Life);
@@ -1677,10 +1575,12 @@ public static class SaveSerializer
             Leave = c.Value.Leave.ToList(), Grievous = c.Value.Grievous,
         }).ToList(),
         Learned = new SortedDictionary<string, string>(world.Learned.ToDictionary(), StringComparer.Ordinal),
+        Surveyed = world.Surveyed.ToList(),
         Journeys = world.Journeys.Select(j => new JourneyData
         {
             Id = j.Id, Members = j.Members.Select(m => m.Value).ToList(), Destination = j.Destination, Purpose = j.Purpose, Path = j.Path.ToList(),
             Left = j.Left, Arrives = j.Arrives, Returns = j.Returns, Arrived = j.Arrived, Logs = j.Logs, Report = j.Report.ToList(),
+            Loads = new SortedDictionary<string, int>(j.Loads, StringComparer.Ordinal), Boat = j.Boat,
         }).ToList(),
         Meeting = world.Meeting is { } m
             ? new MeetingData { Kind = m.Kind, Community = m.Community, Tick = m.Tick, Round = m.Round, GiftItem = m.Gift?.Item, GiftCount = m.Gift?.Count ?? 0, Item = m.Item, Refused = m.Refused.Order(StringComparer.Ordinal).ToList() }
@@ -1689,6 +1589,126 @@ public static class SaveSerializer
         LetterSent = world.LetterSent, Brennish = world.Brennish, BrennishWarned = world.BrennishWarned, LogsSold = world.LogsSold, Thefts = world.Thefts,
         Survivor = world.Survivor, Charter = world.Charter,
     };
+
+    private static CampData SaveCamp(Shore.CampState camp) => new()
+    {
+        StoreId = camp.StoreId,
+
+        Site = camp.Site, Landed = camp.Landed, ShipAtAnchor = camp.ShipAtAnchor, Boat = camp.Boat,
+        Works = new SortedDictionary<string, double>(camp.Works.ToDictionary(), StringComparer.Ordinal),
+        Found = camp.Found.ToList(), Afloat = new SortedDictionary<string, int>(camp.Afloat.ToDictionary(), StringComparer.Ordinal),
+        Priorities = camp.Priorities.ToList(), UseSailcloth = camp.Choices.UseSailcloth, RestTheExhausted = camp.Choices.RestTheExhausted,
+        SendScouts = camp.Choices.SendScouts, Forage = camp.Choices.Forage, FireUntil = camp.FireUntil, Spoiled = camp.Spoiled,
+        Trips = camp.Trips, Reported = camp.Reported,
+        NightsSheltered = new SortedDictionary<int, int>(camp.NightsSheltered.ToDictionary()),
+        NightsExposed = new SortedDictionary<int, int>(camp.NightsExposed.ToDictionary()),
+        LandedCount = camp.LandedCount,
+        Projects = camp.Projects.Select(p => new CampProjectData
+        {
+            Id = p.Id, Building = p.Building, Plot = p.Plot, Phase = p.Phase, Done = p.Done, QualitySum = p.QualitySum, Worked = p.Worked, Laid = p.Laid,
+            X = p.X, Y = p.Y, Turned = p.Turned, Trees = p.Trees,
+        }).ToList(),
+        Buildings = camp.Buildings.Select(b => new CampBuildingData
+        {
+            Building = b.Building, Plot = b.Plot, Quality = b.Quality, Condition = b.Condition, X = b.X, Y = b.Y, Turned = b.Turned,
+        }).ToList(),
+        Beds = camp.Beds.Select(b => new GardenBedData { Crop = b.Crop, Sown = b.Sown, Health = b.Health, Tended = b.Tended }).ToList(),
+        Broken = new SortedDictionary<string, int>(camp.Broken.ToDictionary(), StringComparer.Ordinal),
+        PolesCut = camp.PolesCut, ThatchCut = camp.ThatchCut, NextProject = camp.NextProject, Survived = camp.Survived,
+        ThatchLastCut = camp.ThatchLastCut, StoneGathered = camp.StoneGathered, TimberSalvaged = camp.TimberSalvaged,
+        Trodden = camp.Trodden.Select(t => (Cell: Shore.CampState.Cell(t.Key), t.Value))
+            .Select(t => new TroddenCellData { X = t.Cell.X, Y = t.Cell.Y, Steps = t.Value.Steps, Last = t.Value.Last }).ToList(),
+        Regrowing = camp.Regrowing.Select(r => (Cell: Shore.CampState.Cell(r.Key), r.Value))
+            .Select(r => new RegrowingCellData { X = r.Cell.X, Y = r.Cell.Y, Tree = r.Value.Tree, Since = r.Value.Since }).ToList(),
+        PalisadeOrdered = camp.PalisadeOrdered,
+    };
+
+    private static Shore.CampState RestoreCamp(CampData savedCamp, CampaignState campaign, GameContent content)
+    {
+        if (savedCamp.Afloat.Any(pair => !content.Items.ContainsKey(pair.Key) || pair.Value < 0)
+            || savedCamp.Priorities.Any(p => !Shore.CampPriorities.Default.Contains(p)) || savedCamp.Priorities.Count != Shore.CampPriorities.Default.Count
+            || savedCamp.NightsSheltered.Keys.Concat(savedCamp.NightsExposed.Keys).Any(id => !campaign.Characters.ContainsKey(new CharacterId(id))))
+        {
+            throw new SaveLoadException("The camp names stores, priorities or people that do not exist.");
+        }
+
+        var settlement = content.Shore?.Settlement;
+        if (savedCamp.Projects.Any(p => settlement?.Building(p.Building) is null) || savedCamp.Buildings.Any(b => settlement?.Building(b.Building) is null)
+            || savedCamp.Beds.Any(b => settlement?.Crops.Any(c => c.Id == b.Crop) != true) || savedCamp.Broken.Keys.Any(t => !content.Items.ContainsKey(t)))
+        {
+            throw new SaveLoadException("The camp names buildings, crops or tools that do not exist.");
+        }
+
+        var camp = new Shore.CampState
+        {
+            Site = savedCamp.Site, Landed = savedCamp.Landed, ShipAtAnchor = savedCamp.ShipAtAnchor, Boat = savedCamp.Boat, LandedCount = savedCamp.LandedCount,
+        };
+        foreach (var project in savedCamp.Projects)
+        {
+            var restored = new Shore.CampProject
+            {
+                Id = project.Id, Building = project.Building, Plot = project.Plot, X = project.X, Y = project.Y, Turned = project.Turned, Trees = project.Trees,
+            };
+            restored.Restore(project.Phase, project.Done, project.QualitySum, project.Worked, project.Laid);
+            camp.AddProject(restored);
+        }
+
+        foreach (var building in savedCamp.Buildings)
+        {
+            camp.AddBuilding(new Shore.CampBuilding
+            {
+                Building = building.Building, Plot = building.Plot, Quality = building.Quality, Condition = building.Condition,
+                X = building.X, Y = building.Y, Turned = building.Turned,
+            });
+        }
+
+        foreach (var bed in savedCamp.Beds)
+        {
+            camp.AddBed(new Shore.GardenBed { Crop = bed.Crop, Sown = bed.Sown, Health = bed.Health, Tended = bed.Tended });
+        }
+
+        foreach (var (tool, count) in savedCamp.Broken)
+        {
+            camp.Break(tool, count);
+        }
+
+        camp.PolesCut = savedCamp.PolesCut;
+        camp.ThatchCut = savedCamp.ThatchCut;
+        camp.ThatchLastCut = savedCamp.ThatchLastCut;
+        camp.StoneGathered = savedCamp.StoneGathered;
+        camp.TimberSalvaged = savedCamp.TimberSalvaged;
+        foreach (var trodden in savedCamp.Trodden)
+        {
+            var cell = camp.Tread(Shore.CampState.Key(trodden.X, trodden.Y));
+            cell.Steps = trodden.Steps;
+            cell.Last = trodden.Last;
+        }
+
+        foreach (var growing in savedCamp.Regrowing)
+        {
+            camp.Regrow(Shore.CampState.Key(growing.X, growing.Y), new Shore.RegrowingCell { Tree = growing.Tree, Since = growing.Since });
+        }
+        camp.NextProject = savedCamp.NextProject;
+        camp.Survived = savedCamp.Survived;
+        camp.Restore(savedCamp.Works, savedCamp.Found, savedCamp.Afloat, savedCamp.NightsSheltered, savedCamp.NightsExposed);
+        camp.Priorities = savedCamp.Priorities.ToList();
+        camp.Choices = new Shore.CampChoices
+        {
+            UseSailcloth = savedCamp.UseSailcloth, RestTheExhausted = savedCamp.RestTheExhausted, SendScouts = savedCamp.SendScouts, Forage = savedCamp.Forage,
+        };
+        camp.FireUntil = savedCamp.FireUntil;
+        camp.Spoiled = savedCamp.Spoiled;
+        camp.Trips = savedCamp.Trips;
+        camp.Reported = savedCamp.Reported;
+        camp.PalisadeOrdered = savedCamp.PalisadeOrdered;
+        camp.StoreId = savedCamp.StoreId;
+        if (camp.StoreId is { } store && !campaign.Inventories.ContainsKey(new InventoryId(store)))
+        {
+            throw new SaveLoadException($"The camp at {camp.Site} keeps its stores in '{store}', which is not in the save.");
+        }
+
+        return camp;
+    }
 
     private static Shore.WorldState RestoreWorld(WorldData saved)
     {
@@ -1741,14 +1761,24 @@ public static class SaveSerializer
             world.Learn(topic, from);
         }
 
+        foreach (var site in saved.Surveyed)
+        {
+            world.Survey(site);
+        }
+
         foreach (var data in saved.Journeys)
         {
             var journey = new Shore.Journey
             {
                 Id = data.Id, Members = data.Members.Select(m => new CharacterId(m)).ToList(), Destination = data.Destination, Purpose = data.Purpose,
                 Path = data.Path.ToList(), Left = data.Left, Arrives = data.Arrives, Returns = data.Returns, Arrived = data.Arrived, Logs = data.Logs,
+                Boat = data.Boat,
             };
             journey.Report.AddRange(data.Report);
+            foreach (var (item, count) in data.Loads)
+            {
+                journey.Loads[item] = count;
+            }
             world.AddJourney(journey);
         }
 

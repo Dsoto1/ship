@@ -551,6 +551,18 @@ public sealed class CampaignState
     /// <summary>The camp ashore after the voyage, or null before it (docs/R6_LANDFALL_CAMP.md).</summary>
     public Shore.CampState? Camp { get; internal set; }
 
+    private readonly SortedDictionary<string, Shore.CampState> _leftCamps = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Camps the expedition has moved on from, by site (step 2, the move): what was built there still stands,
+    /// and what was not carried away still lies in their stores, to be fetched.
+    /// </summary>
+    public IReadOnlyDictionary<string, Shore.CampState> LeftCamps => _leftCamps;
+
+    internal void LeaveCamp(Shore.CampState camp) => _leftCamps[camp.Site] = camp;
+
+    internal Shore.CampState? TakeUpCamp(string site) => _leftCamps.Remove(site, out var camp) ? camp : null;
+
     /// <summary>The world around the camp (R8): the coast known, its peoples, parties away, the charter; null before landing.</summary>
     public Shore.WorldState? World { get; internal set; }
 
