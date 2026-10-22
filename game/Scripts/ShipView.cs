@@ -112,6 +112,7 @@ public partial class ShipView : Node3D
         BuildSpotProps(location);
         BuildFittings(location);
         _batch.Commit(this);
+        BuildShipboardDressing();
     }
 
     // The fittings on her 'o' cells (the guns, the capstan, the bell): props made with tools/props from
@@ -744,12 +745,14 @@ public partial class ShipView : Node3D
                 if (hatch)
                 {
                     // Hatch coaming with a grating on top.
+                    _hatches.Add(new Vector3(x, HeightAt(x, y), y));
                     AddBox(new Vector3(x, 0.14f, y), new Vector3(1f, 0.28f, 1f), Spar);
                     AddBox(new Vector3(x, 0.285f, y), new Vector3(0.86f, 0.02f, 0.86f), new Color(0.12f, 0.09f, 0.07f));
                 }
                 else
                 {
                     // Lashed water casks.
+                    _caskGroups.Add(new Vector3(x, HeightAt(x, y), y));
                     AddCask(new Vector3(x - 0.2f, 0, y - 0.2f));
                     AddCask(new Vector3(x + 0.22f, 0, y + 0.15f));
                     AddCask(new Vector3(x - 0.15f, 0, y + 0.3f), small: true);
@@ -851,6 +854,8 @@ public partial class ShipView : Node3D
         }
 
         masts.Sort((a, b) => a.Z.CompareTo(b.Z));
+        _mastFeet.Clear();
+        _mastFeet.AddRange(masts);
         // Three masts in the grid: the last is the mizzen, on the quarterdeck, lateen-rigged.
         Vector3? steppedMizzen = masts.Count >= 3 ? masts[^1] : null;
         if (steppedMizzen is not null)
@@ -1235,6 +1240,107 @@ public partial class ShipView : Node3D
         };
         AddChild(light);
         _lanterns.Add((light, glass));
+    }
+
+    // What the voyage shows on deck (VOYAGE_EXPERIENCE §31): tarpaulins battened over the hatches and
+    // lashings over the casks before a blow, clothes drying in the shrouds after one, and the deck wet
+    // with rain and spray, dirtier as the ship goes unscrubbed.
+    private readonly List<Vector3> _hatches = [];
+    private readonly List<Vector3> _caskGroups = [];
+    private readonly List<Vector3> _mastFeet = [];
+    private Node3D? _tarps;
+    private Node3D? _lashings;
+    private Node3D? _laundry;
+    private float _deckWet = -1;
+    private float _deckGrime = -1;
+
+    private void BuildShipboardDressing()
+    {
+        var canvas = new StandardMaterial3D { AlbedoColor = new Color(0.2f, 0.18f, 0.14f), Roughness = 0.75f };
+        var batten = new StandardMaterial3D { AlbedoColor = new Color(0.42f, 0.3f, 0.18f), Roughness = 0.9f };
+        var rope = new StandardMaterial3D { AlbedoColor = Rope, Roughness = 0.9f };
+        _tarps = new Node3D { Name = "Tarpaulins", Visible = false };
+        AddChild(_tarps);
+        foreach (var hatch in _hatches)
+        {
+            // Tarred canvas over the coaming, its edges turned down and held by battens.
+            _tarps.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(1.12f, 0.05f, 1.12f) }, MaterialOverride = canvas, Position = hatch + new Vector3(0, 0.31f, 0) });
+            foreach (var side in new[] { -1f, 1f })
+            {
+                _tarps.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(1.14f, 0.2f, 0.04f) }, MaterialOverride = canvas, Position = hatch + new Vector3(0, 0.2f, side * 0.55f) });
+                _tarps.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(1.16f, 0.06f, 0.06f) }, MaterialOverride = batten, Position = hatch + new Vector3(0, 0.16f, side * 0.58f) });
+            }
+        }
+
+        _lashings = new Node3D { Name = "Lashings", Visible = false };
+        AddChild(_lashings);
+        foreach (var group in _caskGroups)
+        {
+            // Two lines crossed over the casks, set up to the deck.
+            foreach (var (from, to) in new[] { (new Vector3(-0.55f, 0.02f, -0.5f), new Vector3(0.55f, 0.02f, 0.55f)), (new Vector3(0.55f, 0.02f, -0.5f), new Vector3(-0.55f, 0.02f, 0.55f)) })
+            {
+                var top = group + new Vector3(0, 0.66f, 0);
+                LooseRope(_lashings, rope, group + from, top + from * 0.2f);
+                LooseRope(_lashings, rope, top + from * 0.2f, top + to * 0.2f);
+                LooseRope(_lashings, rope, top + to * 0.2f, group + to);
+            }
+        }
+
+        _laundry = new Node3D { Name = "Laundry", Visible = false };
+        AddChild(_laundry);
+        if (_mastFeet.Count >= 2)
+        {
+            // A line from the fore shrouds to the main shrouds along the starboard side, shirts pegged on it.
+            var fore = _mastFeet[0];
+            var main = _mastFeet[1];
+            var x = CentreX + HalfWidthAt((fore.Z + main.Z) / 2) * 0.72f;
+            var a = new Vector3(x, HeightAt(x, fore.Z) + 2.3f, fore.Z + 0.6f);
+            var b = new Vector3(x, HeightAt(x, main.Z) + 2.3f, main.Z - 0.6f);
+            LooseRope(_laundry, rope, a, b);
+            var colours = new[] { new Color(0.85f, 0.82f, 0.74f), new Color(0.55f, 0.32f, 0.24f), new Color(0.8f, 0.78f, 0.7f), new Color(0.35f, 0.38f, 0.48f), new Color(0.78f, 0.7f, 0.52f) };
+            var count = (int)Math.Clamp(a.DistanceTo(b) / 0.7f, 3, 9);
+            for (var i = 1; i <= count; i++)
+            {
+                var at = a.Lerp(b, i / (count + 1f));
+                var cloth = new StandardMaterial3D { AlbedoColor = colours[i % colours.Length], Roughness = 0.95f, CullMode = BaseMaterial3D.CullModeEnum.Disabled };
+                _laundry.AddChild(new MeshInstance3D { Mesh = new QuadMesh { Size = new Vector2(0.42f, 0.5f) }, MaterialOverride = cloth, Position = at + new Vector3(0, -0.26f, 0), RotationDegrees = new Vector3(0, 90, 0) });
+            }
+        }
+    }
+
+    private static void LooseRope(Node3D parent, Material material, Vector3 from, Vector3 to)
+    {
+        var direction = to - from;
+        var length = direction.Length();
+        if (length < 0.001f)
+        {
+            return;
+        }
+
+        parent.AddChild(new MeshInstance3D
+        {
+            Mesh = new CylinderMesh { TopRadius = 0.016f, BottomRadius = 0.016f, Height = length, RadialSegments = 5, Rings = 1 },
+            MaterialOverride = material,
+            Transform = new Transform3D(new Basis(new Quaternion(Vector3.Up, direction / length)), (from + to) / 2f),
+        });
+    }
+
+    /// <summary>
+    /// What the voyage shows on deck: hatches battened and cargo lashed for heavy weather, clothes drying
+    /// after it, and the deck wet (0..1) and grimy (0..1).
+    /// </summary>
+    public void ShowShipboard(bool battened, bool lashed, bool laundry, float wet, float grime)
+    {
+        if (_tarps is not null) _tarps.Visible = battened;
+        if (_lashings is not null) _lashings.Visible = lashed;
+        if (_laundry is not null) _laundry.Visible = laundry;
+        if (Mathf.Abs(wet - _deckWet) > 0.01f || Mathf.Abs(grime - _deckGrime) > 0.01f)
+        {
+            _deckWet = wet;
+            _deckGrime = grime;
+            _deckMaterial.SetShaderParameter("wetness", wet);
+            _deckMaterial.SetShaderParameter("grime", grime);
+        }
     }
 
     private void AddCask(Vector3 foot, bool small = false)

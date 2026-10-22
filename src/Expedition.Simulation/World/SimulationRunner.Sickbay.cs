@@ -271,6 +271,13 @@ public sealed partial class SimulationRunner
         StepGrievances(ship, rules);
     }
 
+    /// <summary>Developer tool for testing and screenshots: how clean the ship is kept, 0..100.</summary>
+    public CommandResult DeveloperSetCleanliness(double cleanliness)
+    {
+        Campaign.Life.Restore(cleanliness, Campaign.Life.SickNoted);
+        return CommandResult.Ok();
+    }
+
     // A ship's work done: cleaner below.
     private void FinishCleaning(TaskDefinition task)
     {

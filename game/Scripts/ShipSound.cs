@@ -8,7 +8,11 @@ namespace Expedition.Game;
 /// <item>the ship's bell striking the half hours of the watch: one bell at half past, two at the hour,
 /// up to eight at the change of watch, struck in pairs;</item>
 /// <item>a line parting aloft: the crack of it going, then its end flogging;</item>
-/// <item>the topsail yard springing: the split of the timber and the rest of it working loose.</item>
+/// <item>the topsail yard springing: the split of the timber and the rest of it working loose;</item>
+/// <item>the sea and the wind under way, by their strength (the port's surf and wind recordings, looped):
+/// water along the hull, the wind rising to a roar in a storm, muffled in fog;</item>
+/// <item>her timbers working in a seaway, more as the sea gets up; the pumps' clank while they are manned;</item>
+/// <item>in fog, the bell rung at intervals, as a ship does to be heard.</item>
 /// </list>
 /// Purely presentation: Main tells it what happened; it never reads or changes the simulation.
 /// </summary>
@@ -50,6 +54,9 @@ public partial class ShipSound : Node
         _samples["split"] = Load("impact", "impactWood_heavy");
         _samples["plank"] = Load("impact", "impactPlank_medium");
         _samples["creak"] = Load("rpg", "creak");
+        _samples["pump"] = Load("impact", "impactMetal_heavy");
+        _sea = Loop("res://Assets/Audio/ambience/surf.ogg");
+        _wind = Loop("res://Assets/Audio/ambience/wind.ogg");
         for (var i = 0; i < 6; i++)
         {
             var voice = new AudioStreamPlayer();
@@ -65,6 +72,76 @@ public partial class ShipSound : Node
             _rain = new AudioStreamPlayer { Stream = recording, VolumeDb = -80 };
             AddChild(_rain);
             _rain.Play();
+        }
+    }
+
+    private AudioStreamPlayer? _sea;
+    private AudioStreamPlayer? _wind;
+    private float _seaLevel;
+    private float _windLevel;
+    private double _nextCreak;
+    private double _nextPump;
+    private double _nextFogBell;
+
+    private AudioStreamPlayer? Loop(string path)
+    {
+        if (!ResourceLoader.Exists(path) || GD.Load<AudioStream>(path) is not AudioStreamOggVorbis recording)
+        {
+            return null;
+        }
+
+        recording.Loop = true;
+        var player = new AudioStreamPlayer { Stream = recording, VolumeDb = -80 };
+        AddChild(player);
+        player.Play();
+        return player;
+    }
+
+    /// <summary>
+    /// The sea and wind under way, each frame: <paramref name="seaState"/> 0..3, <paramref name="wind"/> 0..2
+    /// (leagues an hour the wind gives), <paramref name="fog"/> 0..1, and whether anyone is at the pumps.
+    /// In port, call with zero sea and wind: it falls silent.
+    /// </summary>
+    public void Sea(float seaState, float wind, float fog, bool pumping, float delta)
+    {
+        var muffle = 1 - 0.45f * fog;
+        _seaLevel = Mathf.MoveToward(_seaLevel, Mathf.Clamp(0.18f + 0.3f * seaState, 0, 1) * muffle * (seaState > 0 ? 1 : 0), delta * 0.2f);
+        _windLevel = Mathf.MoveToward(_windLevel, Mathf.Clamp(0.08f + 0.22f * wind + 0.18f * Mathf.Max(0, seaState - 1.5f), 0, 1) * muffle * (wind > 0 ? 1 : 0), delta * 0.2f);
+        if (_sea is not null)
+        {
+            _sea.VolumeDb = _seaLevel <= 0.01f ? -80 : Mathf.LinearToDb(_seaLevel);
+            _sea.PitchScale = 0.85f + 0.05f * seaState;
+        }
+
+        if (_wind is not null)
+        {
+            _wind.VolumeDb = _windLevel <= 0.01f ? -80 : Mathf.LinearToDb(_windLevel);
+            _wind.PitchScale = 0.9f + 0.12f * Mathf.Clamp(seaState - 1, 0, 2);
+        }
+
+        if (seaState <= 0)
+        {
+            return;
+        }
+
+        // Her timbers working: now and then in a calm, often in a seaway.
+        if (_time >= _nextCreak)
+        {
+            _nextCreak = _time + _random.RandfRange(4f, 12f) / Mathf.Max(0.4f, seaState);
+            Queue(0, seaState > 2.2f && _random.Randf() < 0.3f ? "plank" : "creak", Mathf.Clamp(0.25f + 0.2f * seaState, 0, 0.9f));
+        }
+
+        if (pumping && _time >= _nextPump)
+        {
+            _nextPump = _time + _random.RandfRange(1.4f, 1.9f);
+            Queue(0, "pump", 0.18f);
+        }
+
+        if (fog >= 0.5f && _time >= _nextFogBell)
+        {
+            _nextFogBell = _time + 20;
+            Queue(0, "bell", 0.35f);
+            Queue(0.45, "bell", 0.35f);
         }
     }
 

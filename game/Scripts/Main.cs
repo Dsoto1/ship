@@ -63,6 +63,7 @@ public partial class Main : Node3D
     private IslandView _islandView = null!;
     private readonly List<SeaBird> _birds = [];
     private float _seaState = 1f;
+    private long _lastWetTick = long.MinValue / 2;
     private float _seaFog;
     private float _gloom;
     private float _portFog;
@@ -597,6 +598,8 @@ public partial class Main : Node3D
         var making = voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } ? 0.3f + (float)voyage.SpeedLeaguesPerHour * 1.3f : 0f;
         _world.UpdateWorld(hour, _seaState, making, (float)delta, _camera.Target, hull, _gloom, inPort ? _portFog : _seaFog, inPort ? 0f : Mathf.DegToRad(_ship.RotationDegrees.Y), inPort ? null : _runner.Raining);
         _shipSound.Rain(!inPort && _runner.Raining ? Mathf.Clamp(0.4f + _seaState * 0.25f, 0, 1) : 0f, (float)delta);
+        var pumping = !inPort && _runner.Campaign.ActiveTasks.Values.Any(t => _content.Tasks[t.DefinitionId].ShipPerHour?.Bilge < 0);
+        _shipSound.Sea(inPort || voyage is null ? 0f : _seaState, inPort || weather is null ? 0f : (float)weather.WindLeaguesPerHour, _seaFog, pumping, (float)delta);
         _coastView.Show(inPort ? null : voyage?.Navigation, _runner.Coast, _content.Voyage?.Route?.Bearing ?? 0, _shipCentre, _camera.Size, _world.Darkness, _gloom, (float)delta);
         var raised = inPort || voyage?.Navigation is not { Call: { Sighted: true } call } ? null
             : _content.Voyage?.Route?.Islands.FirstOrDefault(i => i.Id == call.Island);
@@ -609,6 +612,7 @@ public partial class Main : Node3D
             voyage?.Prepared.Contains(Expedition.Simulation.Voyage.Preparations.Aloft) == true);
         _deck.UpdateLook(_world.Darkness, inPort ? 1f : Mathf.Lerp(0.38f, 1f, Mathf.SmoothStep(18f, 32f, _camera.Size)), t, cooking, inPort ? 3.2f : SailSetting(voyage), (float)delta, furled: inPort);
         _deck.SetWind(inPort || voyage?.Navigation is not { } windOn ? null : (float)-windOn.OffWind, (float)delta);
+        ShowShipboard(voyage, weather);
         foreach (var bird in _birds)
         {
             bird.Centre = inPort ? _port.Berth + new Vector3(0, 4f, -4f) : _shipCentre + new Vector3(0, 0, -2f);
@@ -1689,6 +1693,7 @@ public partial class Main : Node3D
     private bool _founder;
     private bool _crewLife;
     private bool _legs;
+    private string? _seaStage;
     private string? _island;
     private string? _openView;
     private string? _forceCarryAway;
@@ -1915,6 +1920,7 @@ public partial class Main : Node3D
                 case "founder": _founder = true; break;
                 case "crewlife": _crewLife = true; break;
                 case "legs": _legs = true; break;
+                case "seastage": _seaStage = value; break;
                 case "island": _island = value; break;
                 case "offcoast" when value.Split(',') is [var off, var along]
                                      && double.TryParse(off, System.Globalization.CultureInfo.InvariantCulture, out var offshore)
@@ -1951,6 +1957,97 @@ public partial class Main : Node3D
                 case "yaw" when float.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var yaw): _developerYaw = yaw; break;
             }
         }
+    }
+
+    // The deck as the voyage leaves it (VOYAGE §31): wet with rain and spray and drying over a few hours,
+    // dirtier as she goes unscrubbed; tarpaulins and lashings while prepared; clothes in the shrouds by day
+    // for a while after rain or a blow, once it is fair.
+    private void ShowShipboard(Expedition.Simulation.Voyage.VoyageState? voyage, Expedition.Simulation.Voyage.WeatherDefinition? weather)
+    {
+        if (voyage is null || weather is null)
+        {
+            _deck.ShowShipboard(false, false, false, _runner.Campaign.Port is not null ? _portWet : 0, 0);
+            return;
+        }
+
+        var tick = _runner.Campaign.Clock.Tick;
+        if (_runner.Raining || weather.SeaState >= 1.8)
+        {
+            _lastWetTick = tick;
+        }
+
+        var hoursDry = (tick - _lastWetTick) / (double)SimulationClock.TicksPerHour;
+        var wet = _runner.Raining ? 1f : weather.SeaState >= 1.8 ? 0.75f : (float)Math.Clamp(1 - hoursDry / 4, 0, 1) * 0.8f;
+        var hour = _runner.Campaign.Clock.TimeOfDay.TotalHours;
+        var laundry = hoursDry is > 0.5 and < 12 && hour is >= 7 and < 17 && weather.SeaState < 1.3 && !_runner.Raining;
+        var grime = (float)Math.Clamp((75 - _runner.Campaign.Life.Cleanliness) / 60, 0, 1);
+        _deck.ShowShipboard(voyage.Prepared.Contains(Expedition.Simulation.Voyage.Preparations.Hatches),
+            voyage.Prepared.Contains(Expedition.Simulation.Voyage.Preparations.Cargo), laundry, wet, grime);
+    }
+
+    // Sails on to a day and hour, answering any decision with its first choice so nothing waits.
+    private void SailTo(int day, double hour, string? hold = null)
+    {
+        var target = (long)((day - 1) * SimulationClock.TicksPerDay + hour * SimulationClock.TicksPerHour);
+        while (_runner.Campaign.Clock.Tick < target && _runner.Campaign.Voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay })
+        {
+            if (hold is not null)
+            {
+                _runner.DeveloperSetSeaWeather(hold);
+            }
+
+            _runner.Advance((int)Math.Min(30, target - _runner.Campaign.Clock.Tick));
+            if (_runner.Campaign.PendingEvent is not null && _runner.OfferedChoices().FirstOrDefault(c => c.Available) is { } first)
+            {
+                _runner.ResolveEvent(first.Choice.Id);
+            }
+        }
+    }
+
+    // The four voyage validation scenes (VOYAGE_EXPERIENCE §46; docs/VOYAGE_VALIDATION.md).
+    private void StageSeaScene(string id)
+    {
+        _runner.SetNavigator(_runner.Campaign.CaptainId);
+        switch (id)
+        {
+            case "calm-morning":
+                // A: the first calm morning at sea, day 3: the morning watch, the cook's fire, the decks washed.
+                SailTo(3, 4, "weather.fair");
+                _runner.DeveloperSetSeaWeather("weather.calm");
+                _runner.DeveloperSetCleanliness(55);
+                SailTo(3, 7.2);
+                break;
+            case "fog":
+                // B: fog and doubt, day 6: the sun hidden, the reckoning days old, the lookout blind.
+                SailTo(6, 5, "weather.fair");
+                _runner.DeveloperSetSeaWeather("weather.fog");
+                SailTo(6, 11.9);
+                break;
+            case "storm":
+                // C: the storm, day 5 afternoon: a gale building to a storm, half the preparations made.
+                _runner.SetStandingOrders(_runner.Campaign.Voyage!.Orders with { PrepareForWeather = true });
+                SailTo(5, 9, "weather.fair");
+                _runner.DeveloperSetSeaWeather("weather.gale");
+                SailTo(5, 12);
+                _runner.DeveloperSetSeaWeather("weather.storm");
+                SailTo(5, 15.5);
+                break;
+            case "aftermath":
+                // D: dawn after the storm, day 6: what it carried away, the hurt, the pumps, the chronicle.
+                SailTo(5, 9, "weather.fair");
+                _runner.DeveloperSetSeaWeather("weather.gale");
+                SailTo(5, 13);
+                _runner.DeveloperSetSeaWeather("weather.storm");
+                SailTo(5, 22);
+                _runner.DeveloperSetSeaWeather("weather.fair");
+                SailTo(6, 7.5, "weather.fair");
+                break;
+        }
+
+        _runner.SetNavigator(null);
+        _seaState = (float)(_content.Voyage?.Weathers.FirstOrDefault(w => w.Id == _runner.Campaign.Voyage?.WeatherId)?.SeaState ?? 1);
+        _gloom = (float)(_content.Voyage?.Weathers.FirstOrDefault(w => w.Id == _runner.Campaign.Voyage?.WeatherId)?.Gloom ?? 0);
+        _seaFog = (float)(_content.Voyage?.Weathers.FirstOrDefault(w => w.Id == _runner.Campaign.Voyage?.WeatherId)?.Fog ?? 0);
     }
 
     // For screenshots of weather and danger without waiting for them.
@@ -1996,6 +2093,13 @@ public partial class Main : Node3D
             {
                 _runner.ResolveEvent(first.Choice.Id);
             }
+        }
+
+        // --seastage=calm-morning (fog, storm, aftermath): a voyage validation scene (VOYAGE §46), staged
+        // the same way every time from seed 1519 (pass --seed=1519 --hire=6 --sea).
+        if (_seaStage is { } seaStage)
+        {
+            StageSeaScene(seaStage);
         }
 
         // --offcoast=OFF,NORTH: put her off the far coast (and sail on a little, so the masthead can raise it).

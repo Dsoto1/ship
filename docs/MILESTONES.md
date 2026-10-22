@@ -46,7 +46,7 @@ This file tracks status and breaks the next work into tickets.
 | R4e | Localized damage, repair quality and history, cargo zones, the storm with preparation (VOYAGE §4, §21–23) | Done (2026-10-21): warning, three preparations, leaks plugged or patched with their history, cargo shifting, stores wetted. Cargo zones not yet |
 | R4f | Medical crisis, grievances by stages, skill growth and mentorship; events become state-caused (VOYAGE §15, §18–19, §25–26, §42) | Done (2026-10-22): healing and care, sickness from the ship's state and spreading, sanitation, scurvy; grievances in four stages with complaints, promises and refusal; practice and mentors. Mutiny itself not yet |
 | R4g | Landfall approach: soundings, sighting, identifying the coast, wrong landfall (NAV §30–31) | Done (2026-10-21) |
-| R4h | Voyage validation: calm morning, fog, storm, aftermath; sound; the ship's visible history (VOYAGE §46) | Planned |
+| R4h | Voyage validation: calm morning, fog, storm, aftermath; sound; the ship's visible history (VOYAGE §46) | First pass (2026-10-22): all four staged and judged Partly (docs/VOYAGE_VALIDATION.md); visible history and sea sounds added; six things to do next |
 | R5 | Shipwreck transition: casualties, location, salvage by accessibility, survivors' state kept (VOYAGE §39–40) | Done (2026-10-22): the transition and its report; survival ashore is R6 |
 | R6 | Landfall camp, the first 72 hours: assessment, water, shelter, fire, stores, sanitation (SETTLEMENT §3–6) | Planned |
 | R7 | Establishment: construction projects, storage and spoilage, the first garden, seasons (SETTLEMENT §7–19) | Planned |

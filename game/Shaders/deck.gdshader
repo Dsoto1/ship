@@ -10,6 +10,8 @@ uniform sampler2D planks_normal : hint_normal, filter_linear_mipmap_anisotropic,
 uniform sampler2D planks_rough : hint_default_white, filter_linear_mipmap, repeat_enable;
 uniform float tile_metres = 2.6;
 uniform float wetness = 0.0;
+// How dirty the deck is, 0 scrubbed to 1 foul: darker, with brown stains about the planks.
+uniform float grime = 0.0;
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 
@@ -21,6 +23,8 @@ void fragment() {
 	vec3 colour = wood * mix(1.0, luma, 0.6) * 0.92;
 	// Scrubbed paler down the middle where the crew walk, darker by the bulwarks.
 	colour *= 0.94 + 0.08 * hash(floor(uv * vec2(1.0, 7.0)));
+	float stain = smoothstep(0.55, 0.95, hash(floor(uv * vec2(3.0, 9.0))) * 0.6 + hash(floor(uv * vec2(1.5, 4.0))) * 0.4);
+	colour = mix(colour, colour * vec3(0.62, 0.55, 0.45), grime * (0.45 + 0.55 * stain));
 	ALBEDO = colour * (1.0 - wetness * 0.35);
 	vec3 n = texture(planks_normal, uv).xyz;
 	NORMAL_MAP = vec3(n.y, n.x, n.z);
