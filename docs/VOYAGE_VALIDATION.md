@@ -110,6 +110,9 @@ Day 6, 07:30, after nine hours of storm. Fair since 22:00.
 4. **The lookout shown (B).** *Done.* In fog, or when the reckoning puts the coast or a sought island
    near, a second hand of the watch is posted at the bow, as the helm is kept: from idle hands first, then
    from routine work.
-5. **Voices and work sounds (A, C):** calls, shouted orders, the pumps' crew.
-6. **Music** for departure, crisis, aftermath and landfall (§34): to be chosen from the Artlist
-   catalogue, with the owner's go-ahead.
+5. **Voices and work sounds (A, C):** calls, shouted orders, the pumps' crew. *Deferred by the owner
+   (2026-10-22): no credits on sound for now.* The calls are to be in **English**. Catalogue sound
+   effects cannot be downloaded on the plan, and freesound.org is refused here, so the calls would be
+   generated voice-overs. Quoted at about 60 credits per voice for ten calls.
+6. **Music** for departure, crisis, aftermath and landfall (§34). *Deferred with the calls.* Quoted at 300
+   credits a cue.
