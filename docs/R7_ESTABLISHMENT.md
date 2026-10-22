@@ -391,3 +391,46 @@ when left alone. Both are now in the simulation, and the view only draws them.
 - A sound bed for the settlement: saws, axes, the wet.
 - Sickness runs high in the wet at Punta Ceniza, from the swamp fever and the flux passed in the
   crowded shelters. It is plausible, but is to be watched in balance.
+
+### The rest of R7 (2026-10-22, owner: "r7 and r8 go")
+
+![The Río Bermejo, day 26: the landing's stones and staging by the boat, the well lined and framed, the workshop going up](screenshots/r7-well-landing.jpg)
+
+- **Stone** (`item.stone`): gathered on the beach's rocks (two places to work at, `spot.stone_1`, `spot.stone_2`),
+  90 loads where the site has rock. There is none at the Bajos Largos or the Manglares.
+- **Planks:**
+  - **The factory's timbers:** at Punta Ceniza, once the burned factory is found, its sound timbers are salvaged
+    from the headland (`spot.headland`, at the right of the camp): 30 planks in all.
+  - **The pit saw:** elsewhere, or once the ruin is stripped, planks are sawn from poles at the workshop: 3 poles
+    make 2 planks. Poles are cut for the saw as for anything else.
+  - The ship's own oak planks are used first.
+- **The well** (2×2): cleared, dug four times, lined twice with poles and wattle. Only where the site has water to
+  dig for: none at Punta Ceniza (rock, and the spring is near) or Punta Falsa. Sweet at the Río Bermejo, the Bajos
+  Largos and elsewhere; brackish at the Manglares. It is a water source two steps from the camp, and water is drawn
+  at it. Within six cells of the latrine it is fouled: brackish, with the flux that brings. The placing notice says
+  so.
+- **The landing** (4×3): stones laid three times (6 a time), then a planked staging twice (3 planks a time, with
+  the auger). It must run down to the wet sand, the only building that may. Its work places are at its head on the
+  dry sand. People walk over it. With a landing, the boat brings half as much again each trip. An established
+  outpost now needs one, where there is a boat.
+- **Only roofed buildings** are worn by the weather and the storm; a well, a landing and a garden are not.
+- **The chandler** at La Bocana sells the carpenter's tools (axe, saw, adze, auger, spade, mattock, cutlass), a
+  seine net, and seed (wheat, chickpeas, onion, cabbage). Bought, they sail in her hold and are landed with the
+  stores.
+- **The camp heard** (`CampSound`), from the recorded samples already in the game (Kenney, Freesound; all CC0):
+  - the surf and the wind, louder in a storm, and the rain;
+  - the work going on, each kind at its own pace, more with more hands: axes, mallets on posts and frames, the saw,
+    thatch cut and laid, stone shifted, spades, a tool mended;
+  - the work falls quiet above 10× speed and when paused.
+- **Tests:** the well only where there is water; the landing at the water's edge, and the boat landing more; a
+  landing raised with stone gathered and planks sawn; the factory's timbers salvaged; the chandler's tools and
+  seed. 564 in all.
+
+**Building models (Meshy/Rodin): not made, priced only.** The repo's rule is no AI concept images: each model needs
+a free photo with a clear background from you, uploaded at no cost. Hyper3D Rodin Fast was 300 credits a model.
+Expedition has 1,755 of its 4,125 credits left this month, so at most five. A photo brief, best first:
+1. **Hut:** a pole-and-thatch hut on posts, steep palm-thatch roof to the eaves, open or wattle sides; 3/4 view.
+2. **Storehouse:** the same, raised on posts off the ground, planked floor and a door; 3/4 view.
+3. **Well:** a wattle-lined well with a low curb, two posts and a beam with a bucket; side view.
+4. **Landing:** a short timber jetty on posts over a stone hard at the water's edge; 3/4 view from the land.
+5. **Workshop:** an open-sided thatched shed with a bench and a saw pit beside it.

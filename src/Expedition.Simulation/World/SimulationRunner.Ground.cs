@@ -30,8 +30,9 @@ public sealed partial class SimulationRunner
         if (key != _blockingKey)
         {
             _blockingKey = key;
-            _blocking = camp.Projects.Where(p => p.Phase > 0 && rules.Building(p.Building) is not null).Select(FootprintOf)
-                .Concat(camp.Buildings.Where(b => rules.Building(b.Building) is not null).Select(FootprintOf)).ToList();
+            // A landing is walked over.
+            _blocking = camp.Projects.Where(p => p.Phase > 0 && rules.Building(p.Building) is { Landing: false }).Select(FootprintOf)
+                .Concat(camp.Buildings.Where(b => rules.Building(b.Building) is { Landing: false }).Select(FootprintOf)).ToList();
         }
 
         return _blocking;
@@ -235,7 +236,10 @@ public sealed partial class SimulationRunner
             places.Add("spot.latrine");
         }
 
-        if (CampWater() is not null)
+        // To the well, if there is one; else out to the water found.
+        var wellFront = camp.Buildings.FirstOrDefault(b => Settling?.Building(b.Building) is { Water: true }) is { } well
+            ? SpotIn(CampLocation, $"plot.{well.Plot}.a") : null;
+        if (wellFront is null && CampWater() is not null)
         {
             places.Add("spot.water_1");
         }
@@ -246,6 +250,10 @@ public sealed partial class SimulationRunner
             var berth = berths.Count > 0 ? berths[i % berths.Count].Cell : hearth.Cell;
             var ways = new List<(GridPosition From, GridPosition To)> { (berth, hearth.Cell) };
             ways.AddRange(places.Select(id => location.FindSpot(id)).OfType<WorkSpotDefinition>().Select(s => (hearth.Cell, s.Cell)));
+            if (wellFront is not null)
+            {
+                ways.Add((hearth.Cell, wellFront.Cell));
+            }
             foreach (var (from, to) in ways)
             {
                 if (from != to && PathIn(location, from, to) is { } way)

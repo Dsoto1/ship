@@ -44,6 +44,9 @@ public sealed record TaskDefinition
     /// <summary>Items used up when the task starts, keyed by item ID. Not refunded if the task is interrupted.</summary>
     public IReadOnlyDictionary<string, int> Consumes { get; init; } = new Dictionary<string, int>();
 
+    /// <summary>Items made when the work is done, ashore (R7): planks sawn from poles.</summary>
+    public IReadOnlyDictionary<string, int> Makes { get; init; } = new Dictionary<string, int>();
+
     /// <summary>Need changes per hour while doing this task, added on top of the baseline.</summary>
     public NeedRates NeedsPerHour { get; init; } = NeedRates.None;
 

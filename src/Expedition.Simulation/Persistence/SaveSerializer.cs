@@ -736,7 +736,7 @@ public static class SaveSerializer
                     Beds = camp.Beds.Select(b => new GardenBedData { Crop = b.Crop, Sown = b.Sown, Health = b.Health, Tended = b.Tended }).ToList(),
                     Broken = new SortedDictionary<string, int>(camp.Broken.ToDictionary(), StringComparer.Ordinal),
                     PolesCut = camp.PolesCut, ThatchCut = camp.ThatchCut, NextProject = camp.NextProject, Survived = camp.Survived,
-                    ThatchLastCut = camp.ThatchLastCut,
+                    ThatchLastCut = camp.ThatchLastCut, StoneGathered = camp.StoneGathered, TimberSalvaged = camp.TimberSalvaged,
                     Trodden = camp.Trodden.Select(t => (Cell: Shore.CampState.Cell(t.Key), t.Value))
                         .Select(t => new TroddenCellData { X = t.Cell.X, Y = t.Cell.Y, Steps = t.Value.Steps, Last = t.Value.Last }).ToList(),
                     Regrowing = camp.Regrowing.Select(r => (Cell: Shore.CampState.Cell(r.Key), r.Value))
@@ -1370,6 +1370,8 @@ public static class SaveSerializer
             camp.PolesCut = savedCamp.PolesCut;
             camp.ThatchCut = savedCamp.ThatchCut;
             camp.ThatchLastCut = savedCamp.ThatchLastCut;
+            camp.StoneGathered = savedCamp.StoneGathered;
+            camp.TimberSalvaged = savedCamp.TimberSalvaged;
             foreach (var trodden in savedCamp.Trodden)
             {
                 var cell = camp.Tread(Shore.CampState.Key(trodden.X, trodden.Y));

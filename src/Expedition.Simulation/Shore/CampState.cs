@@ -302,6 +302,12 @@ public sealed class CampState
     /// <summary>The cells growing back, by <see cref="Key"/>.</summary>
     public IReadOnlyDictionary<int, RegrowingCell> Regrowing => _regrowing;
 
+    /// <summary>Loads of stone gathered from the rocks.</summary>
+    public int StoneGathered { get; internal set; }
+
+    /// <summary>Planks salvaged from a ruin's timbers.</summary>
+    public int TimberSalvaged { get; internal set; }
+
     /// <summary>When thatch was last cut.</summary>
     public long ThatchLastCut { get; internal set; }
 

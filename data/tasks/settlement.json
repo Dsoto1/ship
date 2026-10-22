@@ -89,6 +89,93 @@
     "needsPerHour": { "fatigue": 5.0 }
   },
   {
+    "id": "task.dig_well",
+    "needsWorkSpot": true,
+    "name": "Dig the well",
+    "durationMinutes": 240,
+    // Down through the sand to the water, the spoil hauled up in a bucket.
+    "requiredTools": ["item.spade"],
+    "buildPhase": true,
+    "dutyWhen": { "camp": "build", "startBetween": [[6, 15]] },
+    "needsPerHour": { "fatigue": 8.0, "thirst": 1.5 },
+    "hazard": { "chancePerHour": 0.008, "healthDamage": 10, "condition": "condition.bruised" }
+  },
+  {
+    "id": "task.line_well",
+    "needsWorkSpot": true,
+    "name": "Line the well",
+    "durationMinutes": 240,
+    // Poles driven and wattle woven down its sides so the sand does not fall back in; a curb and a cover.
+    "skill": "skill.crafting",
+    "requiredTools": ["item.axe"],
+    "consumes": { "item.poles": 4 },
+    "buildPhase": true,
+    "dutyWhen": { "camp": "build", "startBetween": [[6, 15]] },
+    "needsPerHour": { "fatigue": 5.0 }
+  },
+  {
+    "id": "task.lay_stones",
+    "needsWorkSpot": true,
+    "name": "Lay the landing's stones",
+    "durationMinutes": 240,
+    // Stones bedded down the wet sand at low water, a hard the boat can run up on and be unloaded dry.
+    "consumes": { "item.stone": 6 },
+    "buildPhase": true,
+    "dutyWhen": { "camp": "build", "startBetween": [[6, 15]] },
+    "needsPerHour": { "fatigue": 8.0, "thirst": 1.5 },
+    "hazard": { "chancePerHour": 0.01, "healthDamage": 8, "condition": "condition.bruised" }
+  },
+  {
+    "id": "task.build_staging",
+    "needsWorkSpot": true,
+    "name": "Build the staging",
+    "durationMinutes": 240,
+    // A timber staging at the hard's head, planked, pinned to posts driven into the sand.
+    "skill": "skill.carpentry",
+    "requiredTools": ["item.auger"],
+    "consumes": { "item.plank": 3 },
+    "buildPhase": true,
+    "dutyWhen": { "camp": "build", "startBetween": [[6, 15]] },
+    "needsPerHour": { "fatigue": 5.0 }
+  },
+  {
+    "id": "task.gather_stone",
+    "needsWorkSpot": true,
+    "name": "Gather stone",
+    "durationMinutes": 180,
+    // Stones prised loose on the point and carried up, one at a time.
+    "attribute": "attribute.strength",
+    "yield": { "item": "item.stone", "perHour": 1.5, "ashore": "camp_stone" },
+    "dutyWhen": { "camp": "stone", "startBetween": [[6, 15]] },
+    "needsPerHour": { "fatigue": 8.0, "thirst": 1.5 },
+    "hazard": { "chancePerHour": 0.008, "healthDamage": 8, "condition": "condition.sprain" }
+  },
+  {
+    "id": "task.pit_saw_planks",
+    "needsWorkSpot": true,
+    "name": "Saw planks",
+    "durationMinutes": 240,
+    // A log rolled over the workshop's pit and sawn into planks, one man above and one below.
+    "skill": "skill.carpentry",
+    "requiredTools": ["item.saw"],
+    "consumes": { "item.poles": 3 },
+    "makes": { "item.plank": 2 },
+    "dutyWhen": { "camp": "planks", "startBetween": [[6, 15]] },
+    "needsPerHour": { "fatigue": 6.0, "thirst": 1.0 }
+  },
+  {
+    "id": "task.salvage_timbers",
+    "needsWorkSpot": true,
+    "name": "Salvage the factory's timbers",
+    "durationMinutes": 240,
+    // Up to the burned factory on the headland: what is sound of its charred planks and posts levered out and
+    // carried down.
+    "requiredTools": ["item.axe"],
+    "yield": { "item": "item.plank", "perHour": 0.8, "ashore": "camp_timber" },
+    "dutyWhen": { "camp": "timber", "startBetween": [[6, 14]] },
+    "needsPerHour": { "fatigue": 7.0, "thirst": 1.5 }
+  },
+  {
     "id": "task.cut_poles",
     "needsWorkSpot": true,
     "name": "Cut poles",

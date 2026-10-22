@@ -356,6 +356,102 @@
    "looks": "seasoned oak, straight-grained."
   },
   {
+   "item": "item.axe",
+   "quantity": 1,
+   "price": 45,
+   "stock": 3,
+   "soldPerDay": 0,
+   "looks": "felling axes, the helves new ash; the edges true."
+  },
+  {
+   "item": "item.saw",
+   "quantity": 1,
+   "price": 80,
+   "stock": 1,
+   "soldPerDay": 0,
+   "looks": "a two-man pit saw, the teeth set and sharp."
+  },
+  {
+   "item": "item.adze",
+   "quantity": 1,
+   "price": 50,
+   "stock": 2,
+   "soldPerDay": 0,
+   "looks": "carpenter's adzes, well hung."
+  },
+  {
+   "item": "item.auger",
+   "quantity": 1,
+   "price": 35,
+   "stock": 2,
+   "soldPerDay": 0,
+   "looks": "augers in three sizes, bright from the smith."
+  },
+  {
+   "item": "item.spade",
+   "quantity": 1,
+   "price": 30,
+   "stock": 3,
+   "soldPerDay": 0,
+   "looks": "iron-shod spades; heavy, but they will dig."
+  },
+  {
+   "item": "item.mattock",
+   "quantity": 1,
+   "price": 40,
+   "stock": 2,
+   "soldPerDay": 0,
+   "looks": "mattocks for grubbing roots; the eyes well wedged."
+  },
+  {
+   "item": "item.cutlass",
+   "quantity": 1,
+   "price": 35,
+   "stock": 3,
+   "soldPerDay": 0,
+   "looks": "broad cutlasses, the kind cane-cutters use."
+  },
+  {
+   "item": "item.fishing_net",
+   "quantity": 1,
+   "price": 55,
+   "stock": 1,
+   "soldPerDay": 0,
+   "looks": "a seine net, tarred and dry, with its floats and leads."
+  },
+  {
+   "item": "item.seed_wheat",
+   "quantity": 4,
+   "price": 20,
+   "stock": 6,
+   "soldPerDay": 0,
+   "looks": "last year's wheat, clean and dry in a sack."
+  },
+  {
+   "item": "item.seed_chickpea",
+   "quantity": 4,
+   "price": 24,
+   "stock": 4,
+   "soldPerDay": 0,
+   "looks": "chickpeas for sowing, picked over."
+  },
+  {
+   "item": "item.seed_onion",
+   "quantity": 3,
+   "price": 30,
+   "stock": 3,
+   "soldPerDay": 0,
+   "looks": "onion seed in a twist of oiled cloth, this year's."
+  },
+  {
+   "item": "item.seed_cabbage",
+   "quantity": 2,
+   "price": 30,
+   "stock": 3,
+   "soldPerDay": 0,
+   "looks": "cabbage and kale seed from the convent garden."
+  },
+  {
    "item": "item.water_gil",
    "quantity": 20,
    "price": 45,

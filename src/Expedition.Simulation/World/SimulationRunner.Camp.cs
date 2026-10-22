@@ -34,12 +34,16 @@ public sealed partial class SimulationRunner
         [CampPriorities.Sanitation] = ["task.dig_latrine"],
         [CampPriorities.Scouting] = ["task.scout"],
         [CampPriorities.Building] = ["task.repair_building", "task.clear_ground", "task.set_posts", "task.raise_frame", "task.thatch_roof", "task.fit_out",
-            "task.dig_beds", "task.fence_garden", "task.cut_poles", "task.cut_thatch", "task.mend_tools"],
+            "task.dig_beds", "task.fence_garden", "task.dig_well", "task.line_well", "task.lay_stones", "task.build_staging",
+            "task.cut_poles", "task.cut_thatch", "task.gather_stone", "task.salvage_timbers", "task.pit_saw_planks", "task.mend_tools"],
         [CampPriorities.Garden] = ["task.harvest", "task.sow_garden", "task.tend_garden"],
     };
 
     // What is landed first, by category; then everything else.
     private static readonly string[] LandingOrder = ["water", "food", "tool", "material", "drink"];
+
+    // How much more the boat lands a trip at a landing.
+    private const double LandingFactor = 1.5;
 
     // Spare sail aboard her, in cloths, when she comes to anchor; the boat's own sail after a wreck.
     private const int SpareSailcloth = 6;
@@ -241,8 +245,19 @@ public sealed partial class SimulationRunner
 
     /// <summary>The best water found, or null: sweet water before brackish, then by what a hand brings in.</summary>
     public WaterSource? CampWater() => Campaign.Camp is { } camp && CampSite is { } site
-        ? site.Water.Where(w => camp.Found.Contains(w.Id)).OrderBy(w => w.Kind == "brackish").ThenByDescending(WaterPerHand).FirstOrDefault()
+        ? site.Water.Where(w => camp.Found.Contains(w.Id)).Concat(WellSource() is { } well ? [well] : [])
+            .OrderBy(w => w.Kind == "brackish").ThenByDescending(WaterPerHand).FirstOrDefault()
         : null;
+
+    // A well standing at the camp, as a source: the site's well water, two steps from the camp, and foul if
+    // the latrine is too near it (R7).
+    private WaterSource? WellSource() =>
+        CampSite?.Well is { } water && StandingOf(b => b.Water).FirstOrDefault() is { } well
+            ? new WaterSource
+            {
+                Id = "water.well", Name = "the well", Kind = WellFouled(well.X, well.Y) ? "brackish" : water.Kind, PerHour = water.PerHour, Walk = 2,
+            }
+            : null;
 
     // Measures an hour a hand brings in from a source: less the further it is.
     private static double WaterPerHand(WaterSource source) => source.PerHour * Math.Min(1.5, 12.0 / Math.Max(1, source.Walk));
@@ -283,7 +298,10 @@ public sealed partial class SimulationRunner
     // how many an hour at normal pace. Null if there is nothing found to take.
     private (string Item, double PerHour)? CampYield(Character character, string ashore)
     {
-        if (ashore == "camp_water" && CampWater() is { } water)
+        // Drawn at the well, the well's water; elsewhere the best found.
+        var atWell = Campaign.ActiveTasks.TryGetValue(character.Id, out var drawing) && PlotOf(drawing.SpotId) is { } plot
+                     && Campaign.Camp?.Buildings.FirstOrDefault(b => b.Plot == plot) is { } building && Settling?.Building(building.Building) is { Water: true };
+        if (ashore == "camp_water" && (atWell ? WellSource() : CampWater()) is { } water)
         {
             return (water.Kind == "brackish" ? "item.water_brackish" : "item.water", WaterPerHand(water));
         }
@@ -349,14 +367,15 @@ public sealed partial class SimulationRunner
     }
 
     // A load landed from the ship or the wreck: as much as the boat (or a swimmer) brings, water and food first.
-    private void Land(CampState camp, Character? by)
+    internal void Land(CampState camp, Character? by)
     {
         if (Content.Shore is not { } shore)
         {
             return;
         }
 
-        var room = camp.Boat ? shore.Rules.BoatTripKg : shore.Rules.SwimTripKg;
+        // A landing's hard and staging: the boat runs up and is cleared dry, half as much again a trip.
+        var room = (camp.Boat ? shore.Rules.BoatTripKg : shore.Rules.SwimTripKg) * (camp.Boat && StandingOf(b => b.Landing).Any() ? LandingFactor : 1);
         // The sail and line for the shelters come first, if the captain means them for that and they are wanted.
         var shelterFirst = camp.Choices.UseSailcloth && camp.Work(CampWorks.Shelter) < Ashore().Count
             && Campaign.SharedStore.Count("item.sailcloth") < 2;
@@ -385,7 +404,7 @@ public sealed partial class SimulationRunner
             }
         }
 
-        if (by is not null && room < (camp.Boat ? shore.Rules.BoatTripKg : shore.Rules.SwimTripKg))
+        if (by is not null && room < (camp.Boat ? shore.Rules.BoatTripKg : shore.Rules.SwimTripKg) * (camp.Boat && StandingOf(b => b.Landing).Any() ? LandingFactor : 1))
         {
             camp.Trips++;
             if (camp.Afloat.Count == 0)
