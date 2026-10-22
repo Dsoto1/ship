@@ -107,6 +107,10 @@ skills aboard and what is in the hold, and each tooltip says why. The person car
 **At sea.**
 - **The chart** is parchment, the sea washed blue, the land laid to the chart's edge with a darker shore.
   Names are in Fell italic.
+- Castrena runs off the chart's east edge. North of what the sailing directions cover, the Ember Coast is
+  drawn faint and dashed and marked "not yet charted": that is how the old charts left a coast no one had
+  followed, instead of ending it in a straight line.
+- The names along the coast have parchment under them, so the course line does not strike them out.
 - The chart has a cartouche ("The Ocean Sea", or "The Ember Coast" on the coast sheet), a scale in
   leagues, and an eight-pointed rose with the course and the wind.
 - Beside it is a framed column. "Take the sun" is an action button, and "Close the chart" is gold.

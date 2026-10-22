@@ -608,11 +608,25 @@ public partial class ChartCanvas : Control
 
         // The coasts: Castrena about the port, running north-west and south; the Ember Coast north and
         // south through Punta Ceniza, the destination, with its bar standing off to the north.
-        Coast([(25, 70), (12, 30), (6, 8), (0, 0), (4, -10), (-2, -30), (8, -60), (30, -90)], "Castrena");
+        // Castrena turns east at its foot and runs off the chart, as the Company's charts have it.
+        Coast([(25, 70), (12, 30), (6, 8), (0, 0), (4, -10), (-2, -30), (8, -60), (30, -90), (70, -102)], "Castrena");
         var ember = new List<(double, double)>();
-        for (var y = Math.Max(d.Y - 70, _world.Position.Y); y <= Math.Min(d.Y + 130, _world.End.Y); y += _coastSheet ? 1 : 5)
+        var charted = Math.Min(d.Y + 130, _world.End.Y);
+        for (var y = Math.Max(d.Y - 70, _world.Position.Y); y <= charted; y += _coastSheet ? 1 : 5)
         {
             ember.Add((d.X + CoastBulge(y, d), y));
+        }
+
+        // North of what the sailing directions cover, no one has followed the Ember Coast: its run is guessed.
+        var guessed = new List<(double, double)> { ember[^1] };
+        for (var y = charted + 5; y <= _world.End.Y + 10; y += 5)
+        {
+            guessed.Add((d.X - (y - charted) * 0.12 + CoastBulge(y, d), y));
+        }
+
+        if (guessed.Count > 1)
+        {
+            Coast(guessed, "", west: true, conjectured: true);
         }
 
         Coast(ember, "the Ember Coast", west: true);
@@ -624,7 +638,8 @@ public partial class ChartCanvas : Control
             var colour = mark.Id == _runner.Coast!.Destination ? Red : InkLine;
             DrawLine(at, at + new Vector2(8, 0), colour, 2);
             DrawCircle(at, 3, colour);
-            DrawString(italic, at + new Vector2(11, 5), mark.Name, HorizontalAlignment.Left, -1, 14, colour);
+            var name = mark.Name;
+            _late.Add(() => Backed(italic, at + new Vector2(11, 5), name, 14, colour));
         }
 
         // The islands: a charted one drawn as land, a reported one dashed, with a query.
@@ -738,7 +753,15 @@ public partial class ChartCanvas : Control
         DrawCircle(centre, 4.5f, Red);
         DrawString(font, centre + new Vector2(8, 16), _runner.Campaign.Voyage!.ShipName, HorizontalAlignment.Left, -1, 15, Red);
 
-        Rose(new Vector2(Size.X - 90, Size.Y - 110), 50);
+        // The coast's names over the lines; the rose in the open sea, clear of the latitudes down the east
+        // side and above the scale.
+        foreach (var write in _late)
+        {
+            write();
+        }
+
+        _late.Clear();
+        Rose(new Vector2(Mathf.Min(Size.X - 90, At(_world.End.X, 0).X - 44 - 80), Size.Y - 175), 50);
         ScaleBar(new Vector2(Size.X / 2 - 90, Size.Y - 40));
         Cartouche(_coastSheet ? "The Ember Coast" : "The Ocean Sea", _coastSheet ? "the approach to Punta Ceniza" : "the passage to the Ember Coast");
     }
@@ -753,12 +776,38 @@ public partial class ChartCanvas : Control
         return 1.2 * Math.Sin(y * 0.21) + 2.2 * Math.Exp(-north * north / 8) + 1.8 * Math.Exp(-(north + 13) * (north + 13) / 8);
     }
 
-    private void Coast(IReadOnlyList<(double X, double Y)> line, string name, bool west = false)
+    private readonly List<Action> _late = [];
+
+    // Words on the chart with a wash of parchment under them, so the lines drawn after do not strike them out.
+    private void Backed(Font font, Vector2 at, string text, int size, Color colour)
+    {
+        var extent = font.GetStringSize(text, HorizontalAlignment.Left, -1, size);
+        DrawRect(new Rect2(at + new Vector2(-2, -extent.Y + 4), extent + new Vector2(4, 0)), new Color(0.93f, 0.87f, 0.72f, 0.8f));
+        DrawString(font, at, text, HorizontalAlignment.Left, -1, size, colour);
+    }
+
+    private void Coast(IReadOnlyList<(double X, double Y)> line, string name, bool west = false, bool conjectured = false)
     {
         var points = line.Select(p => At(p.X, p.Y)).ToArray();
-        // The land, from the coast to the chart's edge, with a darker band along the shore.
+        // The land, from the coast to the chart's edge, with a darker band along the shore. A coast only
+        // guessed at is drawn faint and dashed, as the old charts left what no one had seen.
         var edge = west ? 14 : Size.X - 14;
         var shade = points.Concat(points.AsEnumerable().Reverse().Select(p => new Vector2(edge, p.Y))).ToArray();
+        if (conjectured)
+        {
+            DrawColoredPolygon(shade, new Color(Land, 0.35f));
+            for (var i = 1; i < points.Length; i++)
+            {
+                Dashed(points[i - 1], points[i]);
+            }
+
+            var note = points[points.Length / 2] + new Vector2(-26, 0);
+            DrawSetTransform(note, -Mathf.Pi / 2);
+            DrawString(Ui.TitleItalic, Vector2.Zero, "not yet charted", HorizontalAlignment.Left, -1, 14, new Color(InkLine, 0.7f));
+            DrawSetTransform(Vector2.Zero);
+            return;
+        }
+
         DrawColoredPolygon(shade, new Color(Land, 0.92f));
         var band = points.Concat(points.AsEnumerable().Reverse().Select(p => p + new Vector2(west ? -10 : 10, 0))).ToArray();
         DrawColoredPolygon(band, new Color(0.55f, 0.42f, 0.25f, 0.25f));
