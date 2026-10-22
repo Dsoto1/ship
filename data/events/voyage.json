@@ -78,8 +78,8 @@
   {
     "id": "event.fever",
     "title": "Fever",
-    "text": "{subject} has not touched a biscuit in two days, and is hot to the touch and shivering in the sun.",
-    "trigger": { "chancePerDay": 0.06, "minDay": 6, "cooldownDays": 8, "subject": { "pick": "crew" } },
+    "text": "{subject} has not touched a biscuit since the fever came on, and is hot to the touch and shivering in the sun.",
+    "trigger": { "chancePerDay": 0.5, "minDay": 2, "cooldownDays": 6, "subject": { "pick": "crew", "condition": "condition.fever" } },
     "choices": [
       {
         "id": "rest", "text": "Rest them below, with wine and broth", "requiresItem": "item.wine", "requiresAmount": 6,

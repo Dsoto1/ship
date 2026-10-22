@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 33;
+    public const int CurrentSchemaVersion = 34;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -186,6 +186,23 @@ public static class SaveSerializer
                 if (root["randomStreams"] is JsonObject streams)
                 {
                     streams[RandomStreams.NavigationName] = new JsonObject
+                    {
+                        ["state"] = state.ToString(CultureInfo.InvariantCulture),
+                        ["increment"] = increment.ToString(CultureInfo.InvariantCulture),
+                    };
+                }
+
+                return root;
+            },
+
+            // Format 34 added the crew's life aboard (a fresh record is made), and a random stream for it.
+            [33] = root =>
+            {
+                var seed = ulong.Parse(root["seed"]!.GetValue<string>(), CultureInfo.InvariantCulture);
+                var (state, increment) = new SimulationRandom(seed, RandomStreams.StreamNumber(RandomStreams.CrewName)).SaveState();
+                if (root["randomStreams"] is JsonObject streams)
+                {
+                    streams[RandomStreams.CrewName] = new JsonObject
                     {
                         ["state"] = state.ToString(CultureInfo.InvariantCulture),
                         ["increment"] = increment.ToString(CultureInfo.InvariantCulture),
@@ -636,6 +653,7 @@ public static class SaveSerializer
             LastEventTick = campaign.LastEventTick,
             Rationing = campaign.Rationing,
             SpoilageNoted = campaign.SpoilageNoted.Order(StringComparer.Ordinal).ToList(),
+            Life = SaveLife(campaign.Life),
             Wreck = campaign.Wreck is { } wreck
                 ? new WreckData
                 {
@@ -1208,6 +1226,8 @@ public static class SaveSerializer
             };
         }
 
+        RestoreLife(campaign, content, data.Life);
+
         foreach (var saved in data.Knowledge)
         {
             var subject = new CharacterId(saved.Subject);
@@ -1389,4 +1409,72 @@ public static class SaveSerializer
         Enum.TryParse<T>(value, ignoreCase: false, out var result) && Enum.IsDefined(result)
             ? result
             : throw new SaveLoadException($"Unknown {what} '{value}' in save file.");
+
+    private static CrewLifeData SaveLife(CrewLife life) => new()
+    {
+        Cleanliness = life.Cleanliness,
+        SickNoted = life.SickNoted,
+        Practice = life.Practice.OrderBy(p => p.Key.Value).SelectMany(p => p.Value.Where(s => s.Value > 0).Select(s => new PracticeData { Who = p.Key.Value, Skill = s.Key, Hours = s.Value })).ToList(),
+        Mentors = life.Mentors.OrderBy(m => m.Key.Value).Select(m => new MentorshipData { Learner = m.Key.Value, Mentor = m.Value.Mentor.Value, Skill = m.Value.Skill, Since = m.Value.Since }).ToList(),
+        Grievances = life.Grievances.Where(g => g.Value.Causes.Count > 0 || g.Value.Stage != GrievanceStage.None).OrderBy(g => g.Key.Value).Select(g => new GrievanceData
+        {
+            Who = g.Key.Value, Stage = g.Value.Stage.ToString(), StageTick = g.Value.StageTick, Raised = g.Value.Raised.ToString(),
+            Causes = new SortedDictionary<string, double>(g.Value.Causes.ToDictionary(), StringComparer.Ordinal),
+        }).ToList(),
+        LastFresh = new SortedDictionary<int, long>(life.LastFresh.ToDictionary(p => p.Key.Value, p => p.Value)),
+        Promises = life.Promises.Select(p => new PromiseData { Cause = p.Cause, Due = p.Due }).ToList(),
+    };
+
+    private static void RestoreLife(CampaignState campaign, GameContent content, CrewLifeData? data)
+    {
+        if (data is null)
+        {
+            return;
+        }
+
+        bool Known(int id) => campaign.Characters.ContainsKey(new CharacterId(id));
+        if (data.Practice.Any(p => !Known(p.Who) || !content.Skills.ContainsKey(p.Skill) || p.Hours < 0)
+            || data.Mentors.Any(m => !Known(m.Learner) || !Known(m.Mentor) || !content.Skills.ContainsKey(m.Skill))
+            || data.Grievances.Any(g => !Known(g.Who) || !Enum.TryParse<GrievanceStage>(g.Stage, out _) || !Enum.TryParse<GrievanceStage>(g.Raised, out _)
+                                        || g.Causes.Keys.Any(c => !GrievanceCauses.All.Contains(c)))
+            || data.LastFresh.Keys.Any(id => !Known(id))
+            || data.Promises.Any(p => !GrievanceCauses.All.Contains(p.Cause)))
+        {
+            throw new SaveLoadException("The crew's life names someone not in the save, or a skill or cause this game does not have.");
+        }
+
+        var life = campaign.Life;
+        life.Restore(data.Cleanliness, data.SickNoted);
+        foreach (var practice in data.Practice)
+        {
+            life.AddPractice(new CharacterId(practice.Who), practice.Skill, practice.Hours);
+        }
+
+        foreach (var mentorship in data.Mentors)
+        {
+            life.SetMentor(new CharacterId(mentorship.Learner), new Mentorship(new CharacterId(mentorship.Mentor), mentorship.Skill, mentorship.Since));
+        }
+
+        foreach (var saved in data.Grievances)
+        {
+            var grievance = life.Hold(new CharacterId(saved.Who));
+            grievance.Stage = Enum.Parse<GrievanceStage>(saved.Stage);
+            grievance.StageTick = saved.StageTick;
+            grievance.Raised = Enum.Parse<GrievanceStage>(saved.Raised);
+            foreach (var (cause, weight) in saved.Causes)
+            {
+                grievance.Add(cause, weight);
+            }
+        }
+
+        foreach (var (id, tick) in data.LastFresh)
+        {
+            life.NoteFresh(new CharacterId(id), tick);
+        }
+
+        foreach (var promise in data.Promises)
+        {
+            life.Promise(new Promise(promise.Cause, promise.Due));
+        }
+    }
 }

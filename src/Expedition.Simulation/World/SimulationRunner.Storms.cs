@@ -99,6 +99,7 @@ public sealed partial class SimulationRunner
             var (item, lost) = LoseStores(storms.StoresLost, random);
             ship.Apply(new ShipEffects { Hull = -storms.ShiftHullDamage }, 1);
             Campaign.Record(ChronicleEntryKind.CargoShifted, [new(ChronicleParameters.To, item ?? ""), new(ChronicleParameters.Level, Number(lost))]);
+            CaughtByCargo();
         }
 
         if (!ship.Prepared.Contains(Preparations.Hatches) && random.Chance(storms.WetChancePerHour * HoursPerTick))
@@ -109,6 +110,38 @@ public sealed partial class SimulationRunner
                 Campaign.Record(ChronicleEntryKind.StoresWetted, [new(ChronicleParameters.To, item ?? ""), new(ChronicleParameters.Level, Number(lost))]);
             }
         }
+    }
+
+    // Cargo breaking loose in a seaway catches whoever is at work about the deck and hold: the most worn out
+    // likeliest, as they are slowest out of its way (VOYAGE_EXPERIENCE §42). The chronicle says why.
+    private void CaughtByCargo()
+    {
+        var random = Campaign.Randomness.Crew;
+        var roll = random.NextDouble();
+        var working = Campaign.Crew.Where(c => c.CanWork && Campaign.ActiveTasks.TryGetValue(c.Id, out var task)
+                                               && Content.Tasks[task.DefinitionId] is { IsRest: false, KeepsWatch: false })
+            .OrderByDescending(c => c.Needs.Fatigue).ThenBy(c => c.Id.Value).ToList();
+        if (working.Count == 0)
+        {
+            return;
+        }
+
+        var who = working[0];
+        var tired = who.Needs.Fatigue >= Content.Rules.TiredFatigue;
+        if (roll >= 0.35 * (tired ? 1.6 : 1))
+        {
+            return;
+        }
+
+        var condition = random.Chance(0.4) ? "condition.sprain" : "condition.bruised";
+        const int damage = 12;
+        LoseHealth(who, damage, condition);
+        who.Health.AddCondition(condition);
+        Campaign.Record(ChronicleEntryKind.CargoInjury, [
+            new(ChronicleParameters.Condition, condition), new(ChronicleParameters.Reason, tired ? "sea,unlashed,tired" : "sea,unlashed"),
+            new(ChronicleParameters.Damage, damage.ToString(CultureInfo.InvariantCulture)),
+        ], who.Id);
+        CheckHealthThresholds(who, condition, []);
     }
 
     // Some of one store lost (casks stove, sacks wetted): the item chosen by chance among those aboard.

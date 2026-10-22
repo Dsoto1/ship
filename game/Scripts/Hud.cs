@@ -27,6 +27,7 @@ public enum AutoPause
     Shortage,
     Events,
     Landfall,
+    Crew,
 }
 
 /// <summary>
@@ -856,6 +857,7 @@ public partial class Hud : CanvasLayer
                      (AutoPause.Shortage, "Running short of water or food", 13),
                      (AutoPause.Events, "Decisions for the captain", 14),
                      (AutoPause.Landfall, "The coast: land sighted, marks to know", 15),
+                     (AutoPause.Crew, "The crew: sickness spreading, grievances, skills learned", 16),
                  })
         {
             _menu.AddCheckItem(label, id);
@@ -881,7 +883,7 @@ public partial class Hud : CanvasLayer
                 GetTree().Root.ContentScaleFactor = _uiScale;
                 Toast($"Interface size {_uiScale:P0}.");
                 break;
-            case (>= 10 and <= 13) or 15:
+            case (>= 10 and <= 13) or 15 or 16:
                 var category = (AutoPause)(id - 10);
                 if (!_autoPause.Remove(category)) _autoPause.Add(category);
                 Toast(_autoPause.Contains(category) ? "Will pause for this." : "Will notify without pausing.");
@@ -1142,6 +1144,41 @@ public partial class Hud : CanvasLayer
         if (runner.Raining && !runner.Campaign.ActiveTasks.Values.Any(t => t.DefinitionId == "task.catch_rain"))
         {
             matters.Add(new(Severity.Attention, "Rain: catch it", "It is raining and no one is catching it. Order hands to Catch the rain while it lasts.", PanelId.People));
+        }
+
+        // The sick, and whether anyone tends them; a foul ship; grievances and refusals.
+        var sick = runner.Campaign.Crew.Where(c => c.Health.Conditions.Any(id => runner.Content.Conditions.TryGetValue(id, out var k) && k.Kind == "illness")).ToList();
+        if (sick.Count > 0)
+        {
+            var tender = runner.Tender();
+            matters.Add(tender is null
+                ? new(sick.Count >= 2 ? Severity.Urgent : Severity.Attention, sick.Count == 1 ? $"{sick[0].Name} sick, untended" : $"{sick.Count} sick, untended",
+                    "No one is tending the sick: they mend slower, and the crew resent it. Order someone with first aid to Tend the sick.", PanelId.People, sick[0].Id)
+                : new(Severity.Information, sick.Count == 1 ? $"{sick[0].Name} sick" : $"{sick.Count} sick", $"{tender.Name} is tending them.", PanelId.People, sick[0].Id));
+        }
+
+        if (runner.Campaign.Life.Cleanliness < 40)
+        {
+            matters.Add(new(runner.Campaign.Life.Cleanliness < 25 ? Severity.Urgent : Severity.Attention, "The ship is foul below",
+                $"Kept {runner.Campaign.Life.Cleanliness:0}% clean: the flux breeds and sickness spreads. Order hands to Scrub and air below.", PanelId.People));
+        }
+
+        foreach (var hand in runner.Campaign.Crew.OrderBy(c => c.Name))
+        {
+            var grievance = runner.Campaign.Life.GrievanceOf(hand.Id);
+            if (grievance.Stage == Expedition.Simulation.Characters.GrievanceStage.None || grievance.Main is not { } cause)
+            {
+                continue;
+            }
+
+            var words = SimulationRunner.GrievanceWords(cause);
+            matters.Add(grievance.Stage switch
+            {
+                Expedition.Simulation.Characters.GrievanceStage.Refusal => new(Severity.Critical, $"{hand.Name} refuses work", $"Over {words}. Put it right, or hear them out.", PanelId.People, hand.Id),
+                Expedition.Simulation.Characters.GrievanceStage.Faction => new(Severity.Urgent, $"A party round {hand.Name}", $"Others share the grievance over {words}. Next they may refuse work.", PanelId.People, hand.Id),
+                Expedition.Simulation.Characters.GrievanceStage.Complaint => new(Severity.Urgent, $"{hand.Name} has a complaint", $"Over {words}. Put it right before it spreads.", PanelId.People, hand.Id),
+                _ => new(Severity.Attention, $"{hand.Name} mutters", $"About {words}. It will grow while it lasts.", PanelId.People, hand.Id),
+            });
         }
 
         var repairs = runner.RepairsLeft();
@@ -1496,7 +1533,9 @@ public partial class Hud : CanvasLayer
         var concerns = crew.Select(c => (Hand: c, Concerns: Concerns(c))).ToList();
         var fit = concerns.Count(c => c.Concerns.Count == 0 && c.Hand.SurvivalState == SurvivalState.Alive);
         string Count(params string[] words) => concerns.Count(c => c.Concerns.Any(k => words.Contains(k.Text))).ToString();
-        _crewText.Text = $"{aboard} aboard · {fit} fit\n" +
+        var ill = crew.Count(c => c.Health.Conditions.Any(id => runner.Content.Conditions.TryGetValue(id, out var k) && k.Kind == "illness"));
+        var aggrieved = crew.Count(c => runner.Campaign.Life.GrievanceOf(c.Id).Stage > Expedition.Simulation.Characters.GrievanceStage.None);
+        _crewText.Text = $"{aboard} aboard · {fit} fit · {ill} sick{(runner.Tender() is { } tender ? $", {tender.Name} tending" : "")} · {aggrieved} aggrieved\n" +
                          $"Tired {Count("tired", "exhausted")} · Hungry {Count("hungry", "starving")} · Thirsty {Count("thirsty", "parched")} · Hurt {Count("hurt", "badly hurt", "incapacitated")} · Strained {Count("strained", "at the end of their tether")}";
 
         var matters = Matters(runner);
@@ -1574,6 +1613,9 @@ public partial class Hud : CanvasLayer
             _needBars[need] = new Gauge(person, need, 64, 110);
         }
 
+        _lifeText = Ui.Text("", Ui.TextMeta + 1, Ui.Ink, 340);
+        person.AddChild(_lifeText);
+
         var tabs = new TabContainer { CustomMinimumSize = new Vector2(0, 360) };
         body.AddChild(tabs);
         var orders = AddTab(tabs, "Orders");
@@ -1594,6 +1636,36 @@ public partial class Hud : CanvasLayer
         duties.AddChild(_dutyList);
         _dutyNote = Wrapped();
         duties.AddChild(_dutyNote);
+
+        var learning = AddTab(tabs, "Learning");
+        learning.AddChild(Ui.Text("Work teaches the skills it uses, slowly: by practice alone a hand comes to routine competence and a little beyond. Learning from a shipmate more skilled, on deck with them, goes faster and further, if they will learn from them.", Ui.TextMeta, Ui.InkSoft, 350));
+        var pick = new GridContainer { Columns = 2 };
+        pick.AddThemeConstantOverride("h_separation", Ui.SpaceM);
+        learning.AddChild(pick);
+        pick.AddChild(Ui.Text("Skill", Ui.TextMeta, Ui.InkSoft));
+        _learnSkill = new OptionButton { FocusMode = Control.FocusModeEnum.None, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        pick.AddChild(_learnSkill);
+        pick.AddChild(Ui.Text("From", Ui.TextMeta, Ui.InkSoft));
+        _learnFrom = new OptionButton { FocusMode = Control.FocusModeEnum.None, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        pick.AddChild(_learnFrom);
+        var buttons = new HBoxContainer();
+        learning.AddChild(buttons);
+        buttons.AddChild(Ui.Button("Learn from them", "They work their watch beside the mentor and learn by it", () =>
+        {
+            if (_runner is { } runner && _learner is { } learner && _learnSkill.Selected >= 0 && _learnFrom.Selected >= 0)
+            {
+                ShowResult(runner.SetMentor(learner, _mentorIds[_learnFrom.Selected], _skillIds[_learnSkill.Selected]), "Lessons begin.");
+            }
+        }));
+        buttons.AddChild(Ui.Button("Stop", "End the lessons", () =>
+        {
+            if (_runner is { } runner && _learner is { } learner && _learnSkill.Selected >= 0)
+            {
+                ShowResult(runner.SetMentor(learner, null, _skillIds[_learnSkill.Selected]), "Lessons ended.");
+            }
+        }));
+        _learnText = Wrapped();
+        learning.AddChild(_learnText);
 
         var record = AddTab(tabs, "Record");
         _details = Wrapped();
@@ -1616,6 +1688,18 @@ public partial class Hud : CanvasLayer
             var worst = concerns.Count > 0 ? concerns.Max(c => c.Severity) : Severity.Positive;
             var watch = runner.Campaign.Voyage is { } ship && ship.Watches.ContainsKey(id) ? $" · {WatchShort(ship.WatchOf(id))}" : "";
             // Their state at a glance: a mark and colour for the worst of it, then what they are doing.
+            var grievance = runner.Campaign.Life.GrievanceOf(id).Stage;
+            if (grievance > Expedition.Simulation.Characters.GrievanceStage.None)
+            {
+                concerns = [.. concerns, (grievance switch
+                {
+                    Expedition.Simulation.Characters.GrievanceStage.Refusal => "refuses work",
+                    Expedition.Simulation.Characters.GrievanceStage.Concern => "muttering",
+                    _ => "aggrieved",
+                }, grievance >= Expedition.Simulation.Characters.GrievanceStage.Faction ? Severity.Urgent : Severity.Attention)];
+                worst = concerns.Max(c => c.Severity);
+            }
+
             button.Text = $"{Ui.IconOf(worst)} {character.Name}{captain}{watch} — {Activity(runner, character)}" + (concerns.Count > 0 ? $"  · {string.Join(", ", concerns.Select(c => c.Text))}" : "");
             button.SetPressedNoSignal(id == selected);
             button.AddThemeColorOverride("font_color", concerns.Count > 0 ? Ui.Of(worst) : Ui.Ink);
@@ -1630,6 +1714,88 @@ public partial class Hud : CanvasLayer
         Expedition.Simulation.Voyage.Watch.Day => "day",
         _ => "no watch",
     };
+
+    private Label _lifeText = null!;
+    private OptionButton _learnSkill = null!;
+    private OptionButton _learnFrom = null!;
+    private Label _learnText = null!;
+    private readonly List<string> _skillIds = [];
+    private readonly List<CharacterId> _mentorIds = [];
+    private CharacterId? _learner;
+
+    // What ails them and how it goes; what they hold against the voyage.
+    private void RefreshLife(SimulationRunner runner, Character character)
+    {
+        var lines = new List<string>();
+        foreach (var id in character.Health.Conditions.Order())
+        {
+            var condition = runner.Content.Conditions.TryGetValue(id, out var found) ? found : null;
+            var name = condition?.Name ?? id;
+            lines.Add(condition?.Kind == "illness"
+                ? $"{Ui.IconOf(Severity.Urgent)} {name}: {(runner.Tender() is { } tender && tender.Id != character.Id ? $"tended by {tender.Name}" : "untended")}{(condition.WorkRate < 1 ? $", works at {condition.WorkRate:P0}" : "")}"
+                : $"{Ui.IconOf(Severity.Attention)} {name}: healing{(condition is { WorkRate: < 1 } ? $", works at {condition.WorkRate:P0}" : "")}");
+        }
+
+        var grievance = runner.Campaign.Life.GrievanceOf(character.Id);
+        if (grievance.Stage != Expedition.Simulation.Characters.GrievanceStage.None && grievance.Main is { } cause)
+        {
+            var stage = grievance.Stage switch
+            {
+                Expedition.Simulation.Characters.GrievanceStage.Concern => "muttering about it",
+                Expedition.Simulation.Characters.GrievanceStage.Complaint => "has complained of it",
+                Expedition.Simulation.Characters.GrievanceStage.Faction => "others with them",
+                _ => "refuses work over it",
+            };
+            lines.Add($"{Ui.IconOf(grievance.Stage >= Expedition.Simulation.Characters.GrievanceStage.Faction ? Severity.Critical : Severity.Attention)} Holds against the voyage: {SimulationRunner.GrievanceWords(cause)} ({stage})");
+        }
+
+        if (runner.Campaign.Life.Mentors.TryGetValue(character.Id, out var lesson) && runner.Campaign.Characters.TryGetValue(lesson.Mentor, out var mentor))
+        {
+            lines.Add($"{Ui.IconOf(Severity.Positive)} Learning {runner.Content.Skills[lesson.Skill].Name.ToLowerInvariant()} from {mentor.Name}");
+        }
+
+        _lifeText.Text = string.Join("\n", lines);
+        _lifeText.Visible = lines.Count > 0;
+    }
+
+    // The Learning tab: skills to learn, shipmates to learn from, and what they have practised.
+    private void RefreshLearning(SimulationRunner runner, Character character)
+    {
+        if (_learner != character.Id || _learnSkill.ItemCount == 0)
+        {
+            _learner = character.Id;
+            _learnSkill.Clear();
+            _skillIds.Clear();
+            foreach (var skill in runner.Content.Skills.Values.OrderBy(s => s.Name))
+            {
+                _learnSkill.AddItem(skill.Name);
+                _skillIds.Add(skill.Id);
+            }
+
+            _learnFrom.Clear();
+            _mentorIds.Clear();
+            foreach (var mate in runner.Campaign.Crew.Where(c => c.Id != character.Id && c.CanWork).OrderBy(c => c.Name))
+            {
+                _learnFrom.AddItem(mate.Name);
+                _mentorIds.Add(mate.Id);
+            }
+
+            if (runner.Campaign.Life.Mentors.TryGetValue(character.Id, out var current))
+            {
+                _learnSkill.Select(_skillIds.IndexOf(current.Skill));
+                _learnFrom.Select(_mentorIds.IndexOf(current.Mentor));
+            }
+        }
+
+        var practice = runner.Campaign.Life.Practice.TryGetValue(character.Id, out var hours)
+            ? hours.Where(p => p.Value >= 1).OrderByDescending(p => p.Value).Select(p => $"  {runner.Content.Skills[p.Key].Name}: {p.Value:0} hours of practice towards the next step")
+            : [];
+        var lines = practice.ToList();
+        _learnText.Text = (runner.Campaign.Life.Mentors.TryGetValue(character.Id, out var lesson) && runner.Campaign.Characters.TryGetValue(lesson.Mentor, out var mentor)
+                              ? $"Learning {runner.Content.Skills[lesson.Skill].Name.ToLowerInvariant()} from {mentor.Name}, since day {new SimulationClock(lesson.Since).Day + 1}.\n\n"
+                              : "No one is teaching them.\n\n")
+                          + (lines.Count == 0 ? "Practice: nothing much yet." : "Practice:\n" + string.Join("\n", lines));
+    }
 
     private TaskPriority CurrentPriority => _urgent.ButtonPressed ? TaskPriority.Urgent : TaskPriority.Normal;
 
@@ -1653,6 +1819,8 @@ public partial class Hud : CanvasLayer
             ? $" ({Math.Min(1, task.Progress / runner.Content.Tasks[task.DefinitionId].DurationMinutes):P0})"
             : "";
         _doing.Text = $"Doing: {Activity(runner, character)}{progress}";
+        RefreshLife(runner, character);
+        RefreshLearning(runner, character);
         void Need(string key, double value, string mild, string severe, string tip)
         {
             var severity = value >= 85 ? Severity.Urgent : value >= 65 ? Severity.Attention : Severity.Information;
@@ -1875,6 +2043,7 @@ public partial class Hud : CanvasLayer
     private SimulationRunner? _watchRunner;
 
     private Control _conditionCard = null!;
+    private Gauge _cleanGauge = null!;
     private Gauge _hullGauge = null!;
     private Gauge _bilgeGauge = null!;
     private Gauge _riggingGauge = null!;
@@ -1896,6 +2065,7 @@ public partial class Hud : CanvasLayer
         _hullGauge = new Gauge(condition, "Hull");
         _bilgeGauge = new Gauge(condition, "Bilge");
         _riggingGauge = new Gauge(condition, "Rigging");
+        _cleanGauge = new Gauge(condition, "Below");
         _carriedText = Ui.Text("", Ui.TextMeta + 1, Ui.Of(Severity.Attention), 340);
         condition.AddChild(_carriedText);
         _repairsText = Ui.Text("", Ui.TextMeta + 1, Ui.InkSoft, 340);
@@ -2096,6 +2266,10 @@ public partial class Hud : CanvasLayer
             $"   {Ui.IconPurse} {ship.Funds} sueldos";
 
         SetShipGauges(ship, _hullGauge, _bilgeGauge, _riggingGauge);
+        var clean = runner.Campaign.Life.Cleanliness;
+        _cleanGauge.Set(clean, $"{(clean >= 70 ? "clean" : clean >= 40 ? "dirty" : "foul")} · {clean:0}%",
+            clean >= 70 ? Severity.Positive : clean >= 40 ? Severity.Attention : Severity.Urgent,
+            "How clean she is kept below: decks, bedding, bilge. A foul ship breeds the flux and spreads every sickness. Scrub and air below to keep it up.");
         _carriedText.Text = CarriedAway(ship).Replace("  ", "").TrimEnd();
         _carriedText.Visible = _carriedText.Text.Length > 0;
         _repairsText.Text = $"Patches left: {repairs.GetValueOrDefault(Expedition.Simulation.Voyage.ShipPart.Hull)} (oakum and plank) · " +

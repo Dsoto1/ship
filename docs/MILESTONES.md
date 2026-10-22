@@ -44,7 +44,7 @@ This file tracks status and breaks the next work into tickets.
 | R4c | Standing navigation orders and configurable interrupts; alerts by severity (VOYAGE §8, §35; NAV §7–9) | Planned |
 | R4d | Watch rotation and the assignment board (VOYAGE §9, §17) | Done (2026-10-21): the watch bill, the round, the day's work, all hands, the turned-out watch, tired hands' mistakes |
 | R4e | Localized damage, repair quality and history, cargo zones, the storm with preparation (VOYAGE §4, §21–23) | Done (2026-10-21): warning, three preparations, leaks plugged or patched with their history, cargo shifting, stores wetted. Cargo zones not yet |
-| R4f | Medical crisis, grievances by stages, skill growth and mentorship; events become state-caused (VOYAGE §15, §18–19, §25–26, §42) | Planned |
+| R4f | Medical crisis, grievances by stages, skill growth and mentorship; events become state-caused (VOYAGE §15, §18–19, §25–26, §42) | Done (2026-10-22): healing and care, sickness from the ship's state and spreading, sanitation, scurvy; grievances in four stages with complaints, promises and refusal; practice and mentors. Mutiny itself not yet |
 | R4g | Landfall approach: soundings, sighting, identifying the coast, wrong landfall (NAV §30–31) | Done (2026-10-21) |
 | R4h | Voyage validation: calm morning, fog, storm, aftermath; sound; the ship's visible history (VOYAGE §46) | Planned |
 | R5 | Shipwreck transition: casualties, location, salvage by accessibility, survivors' state kept (VOYAGE §39–40) | Done (2026-10-22): the transition and its report; survival ashore is R6 |
@@ -2447,3 +2447,92 @@ The pills are opaque, so nothing behind them shows through. New helpers: `Ui.Car
 `Ui.SectionHeader`, `Ui.Pill` and `Gauge`.
 
 Screenshots: `docs/screenshots/ui-voyage.jpg`, `ui-ship.jpg`, `ui-people.jpg`, `ui-cargo.jpg`.
+
+### R4f — The crew as people: sickness and care, grievances, learning
+
+Before this, injuries never healed, health never came back, and skills never changed: a hand was what
+they were when signed on. Now (`SimulationRunner.Sickbay.cs`, `.Grievances.cs`, `.Learning.cs`,
+`Characters/CrewLife.cs`):
+
+**Healing and care.**
+- **Injuries heal:** in about their days (bruising 2, rope burn 3, a sprain 5, lash wounds 6), faster
+  resting and tended.
+- **Health comes back:** about two points a day when nothing wears it down, twice that resting.
+- **The incapacitated get up again** once their health is back above 40.
+- **Tending:** a new task, *Tend the sick*, and a duty for whoever has first aid. While someone is at
+  it, everyone sick or hurt mends faster by the tender's skill: up to 2.75× under a surgeon. In tests,
+  the flux passed about a quarter sooner with a hand tending it.
+- **Work:** the sick and hurt work slower (fever and flux at three-quarters), and the sick tire sooner.
+
+**Sickness from the state of the ship.** Each onset says why (VOYAGE §42):
+- **Fever** comes to the worn out and those wet through below (heavy weather, hatches open), and more
+  in a foul ship.
+- **The flux** breeds in a foul ship.
+- **Sickness passes between shipmates:** fever and flux both, more in a dirty ship.
+- **The scurvy** comes after four weeks without anything fresh. Fish and island fruit are now
+  "fresh"; eaten, they keep it off and cure it.
+- **How it reads:** "Martín is down with the flux — caught from Diego, in a foul ship."
+- **When two or more are down,** "Sickness spreads" is told with its causes and alerts the captain.
+
+The old random *Fever* event now comes only to someone actually feverish.
+
+**Sanitation** (VOYAGE §16).
+- **Fouling:** the ship grows foul by itself, about 3 points a day, more with the sick aboard and the sea
+  coming below.
+- **Cleaning:** *Scrub and air below* (sanitation; not in a gale) puts it back. Everyone now has it as a
+  standing duty below 60%.
+- **Shown in:** a "Below" gauge in the Ship screen.
+
+**Grievances, by stages** (VOYAGE §18–19).
+- **Causes:** each hand holds a weight for each cause: short rations, hunger and thirst, being worked
+  to exhaustion, pressing on in heavy weather, the sick left untended, the captain's hard hand (their
+  trust and liking of the captain), and a promise broken.
+- **How a cause weighs:** it grows while it lasts and fades (about five points a day) once put right.
+  Strain makes it grow faster; a loyal hand slower; a proud one feels the hard hand more.
+- **The stages** come in turn, at least 12 hours apart, so the captain always hears of it before the
+  worst:
+
+  | Stage | Weight | What happens |
+  |---|---|---|
+  | Muttering | 25 | Told in the chronicle |
+  | Complaint | 45 | The hand brings it to the captain: an event for that cause, answered by putting it right, explaining (a leadership roll), promising or silencing them |
+  | A party | 65 | Others with the same complaint gather round; it grows faster |
+  | Refusal | 85 | They refuse every order and duty but rest, and the pumps once she is half full; then a confrontation event: give way, talk them round, or flog the ringleader |
+
+- **Promises are kept or broken:** put right in time, the crew trust the captain a little more; broken,
+  they trust him less, and "a promise broken" becomes a grievance of its own.
+
+Mutiny itself is not yet modelled: a refusal is the furthest it goes.
+
+**Learning** (VOYAGE §25–26).
+- **Practice:** work practises the skills it uses (the watch practises seamanship and sailing by half).
+- **Hours to the next level:** 25, 100, 225, 400, 625. Worn-out practice teaches half as much; a crisis
+  half as much again. Practice alone stops at level 3, so recruiting the skilled still matters.
+- **A mentor:** set in People, Learning tab. A shipmate more skilled, at least routine, on deck with the
+  learner, teaches two and a half times as fast and up to their own level.
+- **A learner works under the mentor:** they may do work their skill alone would not allow (a hand with
+  no rigging repairs rigging beside the rigger).
+- **Who will learn from whom:** no one learns from someone they think little of, and a mentor who
+  cannot abide the learner will not teach.
+- **What it earns:** each level is told, and the learner thinks better of the mentor.
+
+**Accidents and their causes.**
+- **Work accidents** are likelier in a heavy sea (twice as likely in a gale), and the chronicle says
+  why ("— worn out, in a heavy sea").
+- **Cargo breaking loose** in a seaway now catches the most worn-out hand at work: VOYAGE §42's own
+  example, a heavy sea with the cargo not lashed and the hand exhausted.
+
+**Balance.** The watched crossing still arrives 4 in 10 (the same as before), with one to five falling
+ill and about ten skills raised on a typical crossing.
+
+**In the game.**
+- **Alerts:** falling ill, sickness spreading, cargo injuries, grievances, parties, broken promises,
+  refused work, skills learned. A new auto-pause category, "The crew", is off by default.
+- **Needs your attention (the voyage screen):** the sick and whether anyone tends them, a foul ship,
+  and every grievance by stage.
+- **People screen:** each person's conditions (tended or not, how fast they work), their grievance, and
+  their lessons. The roster marks the aggrieved.
+- **Developer flag:** `--crewlife` stages a sick hand, a tender, a grievance and a lesson.
+
+Saved in format 34 (`Campaign.Life`, and a new random stream, "crew", for all of it). Tests:
+`CrewLifeTests` (14). Screenshots: `docs/screenshots/r4f-people.jpg`, `r4f-voyage.jpg`.

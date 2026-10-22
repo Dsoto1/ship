@@ -257,8 +257,8 @@ public class TaskExecutionTests
         runner.Advance(10 * Hour);
 
         // One injury of 20 takes health from 40 to 20, at or below the incapacitation threshold of 25,
-        // so work stops and no second injury can happen.
-        Assert.Equal(20, sailor.Health.Value);
+        // so work stops and no second injury can happen. (Laid up, they mend a little.)
+        Assert.InRange(sailor.Health.Value, 20, 23);
         Assert.Equal(SurvivalState.Incapacitated, sailor.SurvivalState);
         Assert.Contains("condition.bruised", sailor.Health.Conditions);
         Assert.Empty(runner.Campaign.ActiveTasks);
@@ -271,7 +271,8 @@ public class TaskExecutionTests
     public void InjuryThatTakesHealthToZeroKills()
     {
         var (runner, sailor) = Setup(seed: 2024);
-        sailor.Health.Value = 20;
+        // Below the injury's 20 even after mending a little while at work.
+        sailor.Health.Value = 18;
 
         runner.AssignTask(sailor.Id, "task.storm_work");
         runner.Advance(10 * Hour);

@@ -97,6 +97,7 @@ public sealed partial class SimulationRunner
             .Where(c => c.SurvivalState == SurvivalState.Alive)
             .Where(c => rule.Origin is null || c.Origin == rule.Origin)
             .Where(c => rule.Trait is null || c.Traits.Contains(rule.Trait))
+            .Where(c => rule.Condition is null || c.Health.Conditions.Contains(rule.Condition))
             .Where(c => rule.Person is null || c.PersonId == rule.Person)
             .OrderBy(c => c.Id)
             .ToList();
@@ -314,6 +315,32 @@ public sealed partial class SimulationRunner
         if (effect.Rationing is { } rationing)
         {
             SetRationing(rationing);
+        }
+
+        if (effect.Grievance is { } grievance)
+        {
+            foreach (var character in Resolve(effect.Who ?? "crew", pending).ToList())
+            {
+                ApplyGrievance(character, grievance);
+            }
+        }
+
+        if (effect.Promise is { } promise)
+        {
+            MakePromise(promise);
+        }
+
+        if (effect.SailPlan is { } plan)
+        {
+            SetSailPlan(plan);
+        }
+
+        if (effect.Order is { } order)
+        {
+            foreach (var character in Resolve(effect.Who, pending).Where(c => c.CanWork).ToList())
+            {
+                QueueTask(character.Id, order, Tasks.TaskPriority.Urgent);
+            }
         }
     }
 

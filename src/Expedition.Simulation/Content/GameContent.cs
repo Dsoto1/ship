@@ -460,6 +460,17 @@ public sealed class GameContent
                     errors.Add($"{at}: unknown condition '{condition}'.");
                 }
 
+                if (effect.Order is { } order && !Tasks.ContainsKey(order))
+                {
+                    errors.Add($"{at}: unknown task '{order}' to order.");
+                }
+
+                if ((effect.Grievance is { } grievance && grievance.Cause != "all" && !Characters.GrievanceCauses.All.Contains(grievance.Cause))
+                    || (effect.Promise is { } promise && !Characters.GrievanceCauses.All.Contains(promise.Cause)))
+                {
+                    errors.Add($"{at}: unknown grievance cause.");
+                }
+
                 if ((effect.Who is { } who && !EffectTargets.Contains(who))
                     || (effect.Relationship is { } change && (!EffectTargets.Contains(change.From) || change.To is not ("subject" or "other" or "captain"))))
                 {

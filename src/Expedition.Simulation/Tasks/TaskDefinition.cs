@@ -83,6 +83,15 @@ public sealed record TaskDefinition
     /// <summary>What is carried while walking to and doing this task, for drawing: crate, basket, plank, yarn.</summary>
     public string? Carries { get; init; }
 
+    /// <summary>
+    /// Tending the sick and hurt: while someone is at it, everyone sick or hurt aboard is cared for, as well
+    /// as the tender's skill allows.
+    /// </summary>
+    public bool TendsSick { get; init; }
+
+    /// <summary>How much cleaner the ship is when the work is done (scrubbing, airing the bedding).</summary>
+    public double Cleans { get; init; }
+
     /// <summary>When this task is worth taking up as a standing duty; null means always.</summary>
     public DutyCondition? DutyWhen { get; init; }
 
@@ -159,6 +168,12 @@ public sealed record DutyCondition
 
     /// <summary>Only while heavy weather is foreseen or blowing.</summary>
     public bool? StormComing { get; init; }
+
+    /// <summary>Only while someone aboard is sick or hurt.</summary>
+    public bool? SickAboard { get; init; }
+
+    /// <summary>Only when the ship is kept less clean than this (0..100).</summary>
+    public double? CleanlinessBelow { get; init; }
 }
 
 /// <summary>Chance of injury while doing a task.</summary>

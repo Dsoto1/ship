@@ -85,6 +85,9 @@ public sealed record SubjectRule
     /// <summary>Only people with this trait.</summary>
     public string? Trait { get; init; }
 
+    /// <summary>Only people with this condition, for example <c>condition.fever</c>: the event follows from it.</summary>
+    public string? Condition { get; init; }
+
     /// <summary>
     /// Only this person of the port (for example <c>person.velho</c>), if they sailed: events written for
     /// someone, about who they are and what they hid.
@@ -189,6 +192,18 @@ public sealed record EventEffect
     /// <summary>Put the crew on short rations (true) or back on full (false).</summary>
     public bool? Rationing { get; init; }
 
+    /// <summary>A change to what <see cref="Who"/> hold against the voyage.</summary>
+    public GrievanceEffect? Grievance { get; init; }
+
+    /// <summary>A promise the captain makes, broken if its cause is not put right in time.</summary>
+    public PromiseEffect? Promise { get; init; }
+
+    /// <summary>A sail order given.</summary>
+    public Voyage.SailPlan? SailPlan { get; init; }
+
+    /// <summary>A task ordered for <see cref="Who"/>, urgent: "task.tend_sick".</summary>
+    public string? Order { get; init; }
+
     /// <summary>
     /// What the captain learns of <see cref="EventEffect.Who"/>: the truth about a skill, a language or
     /// a fact of their past, as seen (or, with a source of Claim, only as they now tell it).
@@ -226,4 +241,24 @@ public sealed record RelationshipChange
 
     /// <summary>Change, -100..100.</summary>
     public required int Amount { get; init; }
+}
+
+/// <summary>A grievance eased or worsened by an outcome.</summary>
+public sealed record GrievanceEffect
+{
+    /// <summary>The cause (<see cref="Characters.GrievanceCauses"/>), or "all" for every cause.</summary>
+    public required string Cause { get; init; }
+
+    /// <summary>Added to it: negative eases it.</summary>
+    public required double Amount { get; init; }
+}
+
+/// <summary>A promise: the cause put right within so many days, or the crew remember it.</summary>
+public sealed record PromiseEffect
+{
+    /// <summary>What it answers (<see cref="Characters.GrievanceCauses"/>).</summary>
+    public required string Cause { get; init; }
+
+    /// <summary>Days to keep it in.</summary>
+    public double Days { get; init; } = 3;
 }

@@ -136,9 +136,14 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             return (CommandResult.Rejected($"{character.Name} is {character.SurvivalState} and cannot take orders."), false);
         }
 
-        if (task.Skill is not null && character.Skills.Get(task.Skill) < task.MinSkill)
+        if (!MeetsSkill(character, task))
         {
-            return (CommandResult.Rejected($"{character.Name} lacks the skill: {task.Name} needs {SkillName(task.Skill)} {task.MinSkill}."), false);
+            return (CommandResult.Rejected($"{character.Name} lacks the skill: {task.Name} needs {SkillName(task.Skill!)} {task.MinSkill}."), false);
+        }
+
+        if (RefusalProblem(character, task) is { } refused)
+        {
+            return (CommandResult.Rejected(refused), false);
         }
 
         Campaign.ActiveTasks.TryGetValue(characterId, out var current);
@@ -191,9 +196,9 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
                 return CommandResult.Rejected($"{task.Name} is not a duty: everyone rests when they are tired.");
             }
 
-            if (task.Skill is not null && character.Skills.Get(task.Skill) < task.MinSkill)
+            if (!MeetsSkill(character, task))
             {
-                return CommandResult.Rejected($"{character.Name} lacks the skill: {task.Name} needs {SkillName(task.Skill)} {task.MinSkill}.");
+                return CommandResult.Rejected($"{character.Name} lacks the skill: {task.Name} needs {SkillName(task.Skill!)} {task.MinSkill}.");
             }
         }
 
@@ -269,10 +274,10 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             return CommandResult.Rejected($"{character.Name} is too exhausted to work and needs rest.");
         }
 
-        if (task.Skill is not null && character.Skills.Get(task.Skill) < task.MinSkill)
+        if (!MeetsSkill(character, task))
         {
             return CommandResult.Rejected(
-                $"{character.Name} lacks the skill: {task.Name} needs {SkillName(task.Skill)} {task.MinSkill}.");
+                $"{character.Name} lacks the skill: {task.Name} needs {SkillName(task.Skill!)} {task.MinSkill}.");
         }
 
         if (WeatherProblem(task) is { } weather)
@@ -409,7 +414,9 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             return;
         }
 
-        foreach (var task in Campaign.DutiesOf(character.Id).Select(id => Content.Tasks[id]))
+        // A hand refusing work does only what keeps them alive.
+        var refusing = Refusing(character.Id);
+        foreach (var task in Campaign.DutiesOf(character.Id).Select(id => Content.Tasks[id]).Where(t => !refusing || StillDoes(t)))
         {
             if (DutyNeeded(task) && !(task.KeepsWatch && !OnDeck(character.Id)) && Check(character, task, materialsAlreadyUsed: false).Succeeded)
             {
@@ -419,7 +426,10 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         }
 
         // Nothing in their duties wants doing: a hand of the watch on deck keeps the helm and lookout.
-        StandTheWatch(character);
+        if (!refusing)
+        {
+            StandTheWatch(character);
+        }
     }
 
     /// <summary>
@@ -454,7 +464,9 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         }
 
         if ((when.OpenLeak == true && (Campaign.Voyage is not { } leaking || LeakFor(leaking, "plug") is null))
-            || (when.StormComing == true && !StormComing))
+            || (when.StormComing == true && !StormComing)
+            || (when.SickAboard == true && !Campaign.Crew.Any(SickOrHurt))
+            || (when.CleanlinessBelow is { } clean && (Campaign.Voyage is not { Outcome: VoyageOutcome.UnderWay } || Campaign.Life.Cleanliness >= clean)))
         {
             return false;
         }
@@ -572,6 +584,13 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         }
 
         Campaign.SetVoyage(voyage);
+        // They sail with fresh food eaten in port, and a ship swept and aired.
+        foreach (var hand in Campaign.Crew)
+        {
+            Campaign.Life.NoteFresh(hand.Id, Campaign.Clock.Tick);
+        }
+
+        Campaign.Life.Restore(90, 0);
         return CommandResult.Ok();
     }
 
@@ -924,6 +943,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             }
 
             StepVoyage();
+            StepShipboardLife();
             StepPort();
             CheckCommand();
             ConsiderEvents();
@@ -1021,12 +1041,13 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         }
 
         task.Progress += rate * SimulationClock.MinutesPerTick;
+        Practise(character, definition);
         if (definition.ShipPerHour is { } effects && Campaign.Voyage is { Outcome: VoyageOutcome.UnderWay } voyage)
         {
             voyage.Apply(effects, rate * HoursPerTick);
         }
 
-        if (definition.Hazard is { } hazard && Campaign.Randomness.Tasks.Chance(hazard.ChancePerHour * MistakeFactor(character) * HoursPerTick))
+        if (definition.Hazard is { } hazard && Campaign.Randomness.Tasks.Chance(hazard.ChancePerHour * MistakeFactor(character) * SeaHazard() * HoursPerTick))
         {
             Injure(character, definition, hazard, outcomes);
             if (!Campaign.ActiveTasks.ContainsKey(character.Id))
@@ -1063,6 +1084,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             }
 
             FinishStormWork(character, definition);
+            FinishCleaning(definition);
 
             if (definition.CrewOnComplete is { } relief)
             {
@@ -1135,6 +1157,11 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             {
                 var before = character.Needs.Hunger;
                 character.Needs.Hunger = Needs.Clamp(character.Needs.Hunger - food.HungerRelief);
+                if (food.Fresh)
+                {
+                    Campaign.Life.NoteFresh(character.Id, Campaign.Clock.Tick);
+                }
+
                 Sicken(character, food);
                 Ledger(character.Id, TrackedNeed.Hunger, food.Id, character.Needs.Hunger - before);
                 Campaign.FoodShortageRecorded = false;
@@ -1219,11 +1246,13 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             rate *= rules.WorkRateByAttributeLevel[character.Attributes.Get(task.Attribute)];
         }
 
-        // Disheartened people work more slowly.
+        // Disheartened people work more slowly; the sick and hurt too, as their condition allows.
         if (character.Needs.Stress >= DisheartenedStress)
         {
             rate *= 0.85;
         }
+
+        rate *= ConditionWorkRate(character);
 
         // Tired hands drag; hands keeping watches, fresh from their sleep below, work with a will.
         var watchKeeper = Campaign.Voyage is { Outcome: VoyageOutcome.UnderWay } ship && ship.WatchOf(character.Id) != Watch.None;
@@ -1232,8 +1261,24 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             : rate;
     }
 
+    // How much likelier an accident is in the sea there is: twice as likely in a gale.
+    private double SeaHazard() =>
+        Campaign.Voyage is { Outcome: VoyageOutcome.UnderWay } ship && Content.Voyage is { } rules
+            ? 1 + Math.Max(0, rules.Weather(ship.WeatherId).SeaState - 1) * 0.7
+            : 1;
+
+    // What made an accident likelier, as the chronicle tells it: "tired", "sea".
+    private string AccidentCauses(Character character)
+    {
+        var causes = new List<string>();
+        if (character.Needs.Fatigue >= Content.Rules.TiredFatigue) causes.Add("tired");
+        if (SeaHazard() >= 1.5) causes.Add("sea");
+        return string.Join(",", causes);
+    }
+
     private void Injure(Character character, TaskDefinition task, TaskHazard hazard, List<TaskOutcome> outcomes)
     {
+        var causes = AccidentCauses(character);
         LoseHealth(character, hazard.HealthDamage, hazard.Condition);
         character.Health.AddCondition(hazard.Condition);
         Campaign.Record(ChronicleEntryKind.Injury, [
@@ -1241,6 +1286,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             new(ChronicleParameters.Task, task.Id),
             new(ChronicleParameters.Damage, hazard.HealthDamage.ToString(CultureInfo.InvariantCulture)),
             new(ChronicleParameters.Health, character.Health.Value.ToString("0.#", CultureInfo.InvariantCulture)),
+            new(ChronicleParameters.Reason, causes),
         ], character.Id);
         CheckHealthThresholds(character, hazard.Condition, outcomes);
     }

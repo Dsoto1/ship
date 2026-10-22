@@ -1,10 +1,14 @@
-// Injuries and illnesses. Severity, work restrictions and recovery come with medical care (Ticket 6).
+// Injuries and illnesses. An injury heals in about healDays, resting and tended; an illness passes by
+// chance each hour (recoveryPerHour), faster resting and tended, wearing health away while it lasts.
+// Contagion is the chance each hour it passes from one sick person to each shipmate, in a clean ship;
+// a foul ship nearly triples it. workRate: how fast someone works with it.
 [
-  { "id": "condition.rope_burn", "name": "Rope burn", "kind": "injury" },
-  { "id": "condition.bruised", "name": "Bruising", "kind": "injury" },
-  { "id": "condition.sprain", "name": "Sprain", "kind": "injury" },
-  { "id": "condition.fever", "name": "Fever", "kind": "illness" },
-  { "id": "condition.flux", "name": "The flux", "kind": "illness" },
-  { "id": "condition.lashed", "name": "Lash wounds", "kind": "injury" },
-  { "id": "condition.near_drowned", "name": "Half drowned", "kind": "injury" }
+  { "id": "condition.rope_burn", "name": "Rope burn", "kind": "injury", "healDays": 3, "workRate": 0.9 },
+  { "id": "condition.bruised", "name": "Bruising", "kind": "injury", "healDays": 2, "workRate": 0.9 },
+  { "id": "condition.sprain", "name": "Sprain", "kind": "injury", "healDays": 5, "workRate": 0.7 },
+  { "id": "condition.fever", "name": "Fever", "kind": "illness", "recoveryPerHour": 0.022, "healthPerHour": 0.25, "contagion": 0.0008, "workRate": 0.75 },
+  { "id": "condition.flux", "name": "The flux", "kind": "illness", "recoveryPerHour": 0.0167, "healthPerHour": 0.3, "contagion": 0.0012, "workRate": 0.75 },
+  { "id": "condition.scurvy", "name": "Scurvy", "kind": "illness", "healthPerHour": 0.1, "curedByFresh": true, "workRate": 0.7 },
+  { "id": "condition.lashed", "name": "Lash wounds", "kind": "injury", "healDays": 6, "workRate": 0.75 },
+  { "id": "condition.near_drowned", "name": "Half drowned", "kind": "injury", "healDays": 2, "workRate": 0.8 }
 ]

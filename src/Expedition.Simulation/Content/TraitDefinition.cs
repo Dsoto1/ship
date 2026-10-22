@@ -28,4 +28,22 @@ public sealed record ConditionDefinition
 
     /// <summary>Broad kind: <c>injury</c> or <c>illness</c>.</summary>
     public required string Kind { get; init; }
+
+    /// <summary>An injury: about how many days it takes to heal, resting and tended (longer at work, untended).</summary>
+    public double HealDays { get; init; } = 4;
+
+    /// <summary>An illness: the chance each hour of getting over it, before rest and care.</summary>
+    public double RecoveryPerHour { get; init; } = 1.0 / 60;
+
+    /// <summary>An illness: health it wears away each hour.</summary>
+    public double HealthPerHour { get; init; } = 0.25;
+
+    /// <summary>An illness: the chance each hour that it passes from one sick person to each shipmate, in a clean ship.</summary>
+    public double Contagion { get; init; }
+
+    /// <summary>How fast someone with it works: 0.6 is at six-tenths of their usual pace.</summary>
+    public double WorkRate { get; init; } = 1;
+
+    /// <summary>An illness only fresh food cures (scurvy): it does not pass on its own.</summary>
+    public bool CuredByFresh { get; init; }
 }

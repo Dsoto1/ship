@@ -188,4 +188,43 @@ public enum ChronicleEntryKind
 
     /// <summary>Someone sang in a room (parameter: to = the song's title; character: the singer).</summary>
     SongSung,
+
+    /// <summary>
+    /// Someone fell ill (parameters: condition; reason = what brought it on, comma-separated: caught, tired,
+    /// wet, foul, nofresh; from = the shipmate it was caught from; character: who).
+    /// </summary>
+    FellIll,
+
+    /// <summary>An injury healed (parameter: condition; character: who).</summary>
+    Healed,
+
+    /// <summary>Sickness is spreading (parameters: level = how many are sick, condition = the commonest, reason = why: foul, untended, wet; health = cleanliness).</summary>
+    SicknessSpreads,
+
+    /// <summary>A grievance went a stage further (parameters: to = the stage, reason = the cause; character: who).</summary>
+    GrievanceRose,
+
+    /// <summary>A grievance eased (parameters: to = the stage now, reason = the cause; character: who).</summary>
+    GrievanceEased,
+
+    /// <summary>Others gathered round someone's grievance (parameter: reason = the cause; characters: the leader, then the rest).</summary>
+    FactionFormed,
+
+    /// <summary>A promise to the crew was kept (parameter: reason = its cause).</summary>
+    PromiseKept,
+
+    /// <summary>A promise to the crew was broken (parameter: reason = its cause).</summary>
+    PromiseBroken,
+
+    /// <summary>Someone's skill rose a level (parameters: to = skill, level, from = the mentor's ID; characters: who, then the mentor).</summary>
+    SkillImproved,
+
+    /// <summary>Someone began learning from a shipmate (parameter: to = skill; characters: learner, mentor).</summary>
+    MentorshipBegun,
+
+    /// <summary>
+    /// Cargo breaking loose caught someone (parameters: condition, reason = why: sea, unlashed, tired;
+    /// damage; character: who).
+    /// </summary>
+    CargoInjury,
 }

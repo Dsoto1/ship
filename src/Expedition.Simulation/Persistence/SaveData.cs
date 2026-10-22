@@ -85,6 +85,9 @@ public sealed record SaveData
     /// <summary>The ship lost and how the survivors came ashore, or null. Added in format 33.</summary>
     public WreckData? Wreck { get; init; }
 
+    /// <summary>The crew's life aboard: practice, mentors, grievances, fresh food, promises. Added in format 34.</summary>
+    public CrewLifeData? Life { get; init; }
+
     /// <summary>Standing duties, by character ID. Added in format 10.</summary>
     public required IReadOnlyList<DutyData> Duties { get; init; }
 
@@ -818,4 +821,87 @@ public sealed record WreckData
 
     /// <summary>What is still in the wreck.</summary>
     public IReadOnlyDictionary<string, int> Remains { get; init; } = new SortedDictionary<string, int>(StringComparer.Ordinal);
+}
+
+/// <summary>The crew's life aboard. Added in format 34.</summary>
+public sealed record CrewLifeData
+{
+    /// <summary>How clean the ship is kept, 0..100.</summary>
+    public double Cleanliness { get; init; } = 90;
+
+    /// <summary>How many were sick when last told.</summary>
+    public int SickNoted { get; init; }
+
+    /// <summary>Practice towards the next level, by person.</summary>
+    public IReadOnlyList<PracticeData> Practice { get; init; } = [];
+
+    /// <summary>Who learns from whom.</summary>
+    public IReadOnlyList<MentorshipData> Mentors { get; init; } = [];
+
+    /// <summary>Grievances, by person.</summary>
+    public IReadOnlyList<GrievanceData> Grievances { get; init; } = [];
+
+    /// <summary>When each person last ate anything fresh, by character ID.</summary>
+    public IReadOnlyDictionary<int, long> LastFresh { get; init; } = new SortedDictionary<int, long>();
+
+    /// <summary>Promises not yet kept or broken.</summary>
+    public IReadOnlyList<PromiseData> Promises { get; init; } = [];
+}
+
+/// <summary>Hours practised in one skill.</summary>
+public sealed record PracticeData
+{
+    /// <summary>Character ID.</summary>
+    public required int Who { get; init; }
+
+    /// <summary>Skill ID.</summary>
+    public required string Skill { get; init; }
+
+    /// <summary>Hours.</summary>
+    public required double Hours { get; init; }
+}
+
+/// <summary>A learner and their mentor.</summary>
+public sealed record MentorshipData
+{
+    /// <summary>Learner's character ID.</summary>
+    public required int Learner { get; init; }
+
+    /// <summary>Mentor's character ID.</summary>
+    public required int Mentor { get; init; }
+
+    /// <summary>Skill taught.</summary>
+    public required string Skill { get; init; }
+
+    /// <summary>When it began.</summary>
+    public long Since { get; init; }
+}
+
+/// <summary>One person's grievance.</summary>
+public sealed record GrievanceData
+{
+    /// <summary>Character ID.</summary>
+    public required int Who { get; init; }
+
+    /// <summary>Stage name.</summary>
+    public required string Stage { get; init; }
+
+    /// <summary>When it last changed stage.</summary>
+    public long StageTick { get; init; }
+
+    /// <summary>The furthest stage brought to the captain.</summary>
+    public string Raised { get; init; } = "None";
+
+    /// <summary>Each cause's weight.</summary>
+    public IReadOnlyDictionary<string, double> Causes { get; init; } = new SortedDictionary<string, double>(StringComparer.Ordinal);
+}
+
+/// <summary>A promise to the crew.</summary>
+public sealed record PromiseData
+{
+    /// <summary>Its cause.</summary>
+    public required string Cause { get; init; }
+
+    /// <summary>When it must be kept by.</summary>
+    public required long Due { get; init; }
 }

@@ -156,5 +156,28 @@
     "needsWeather": { "atAnchor": true },
     "yield": { "item": "item.fruit", "perHour": 5, "ashore": "forage" },
     "needsPerHour": { "fatigue": 3.0, "stress": -0.8 }
+  },
+  {
+    "id": "task.tend_sick",
+    "name": "Tend the sick",
+    "durationMinutes": 60,
+    // Dressings, broth, a clean berth, a watch kept on the fever: everyone sick or hurt aboard mends faster
+    // for it, by the tender's skill.
+    "skill": "skill.first_aid",
+    "tendsSick": true,
+    "dutyWhen": { "sickAboard": true },
+    "needsPerHour": { "fatigue": 1.5, "stress": 0.3 }
+  },
+  {
+    "id": "task.scrub_decks",
+    "name": "Scrub and air below",
+    "durationMinutes": 90,
+    // Decks scrubbed with sand and vinegar, the bedding aired, the bilge sweetened: a foul ship breeds the
+    // flux and spreads every sickness aboard.
+    "skill": "skill.sanitation",
+    "cleans": 15,
+    "needsWeather": { "seaStateBelow": 1.8 },
+    "dutyWhen": { "cleanlinessBelow": 60, "startBetween": [[7, 11], [13, 16]] },
+    "needsPerHour": { "fatigue": 3.0 }
   }
 ]

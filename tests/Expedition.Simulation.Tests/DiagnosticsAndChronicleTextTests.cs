@@ -120,7 +120,7 @@ public class DiagnosticsAndChronicleTextTests
 
         var text = runner.Campaign.Chronicle.Entries.Select(formatter.Format).ToList();
 
-        Assert.Contains("Diego suffered bruising while doing secure the yard (-20 health, now 10).", text);
+        Assert.Contains(text, t => t.StartsWith("Diego suffered bruising while doing secure the yard (-20 health, now 1", StringComparison.Ordinal));
         Assert.Contains("Diego stopped secure the yard: incapacitated (bruising).", text);
         Assert.Contains("Diego went thirsty: there is nothing left to drink.", text);
     }

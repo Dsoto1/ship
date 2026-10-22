@@ -39,6 +39,9 @@ public sealed record ItemDefinition
     /// </summary>
     public double SpoilsPerDay { get; init; }
 
+    /// <summary>Fresh food (fish, fruit, greens): it keeps off the scurvy and cures it.</summary>
+    public bool Fresh { get; init; }
+
     /// <summary>What it may give whoever eats or drinks it (bad water, tainted pork), or null.</summary>
     public ItemSickness? Sickens { get; init; }
 

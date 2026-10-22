@@ -111,4 +111,7 @@ public static class InterruptReasons
 
     /// <summary>The character became unable to work (state in <c>to</c>, cause in <c>cause</c>).</summary>
     public const string Incapacitated = "incapacitated";
+
+    /// <summary>The character refused to go on with the work, over a grievance.</summary>
+    public const string Refused = "refused";
 }

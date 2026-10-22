@@ -21,12 +21,6 @@ public sealed partial class SimulationRunner
     /// <summary>When at sea the stores are checked each day: at the morning's issue.</summary>
     private const int StoresHour = 6;
 
-    /// <summary>Chance each hour of getting over an illness on one's own.</summary>
-    private const double RecoveryPerHour = 1.0 / 60;
-
-    /// <summary>Health an illness costs each hour it lasts.</summary>
-    private const double IllnessHealthPerHour = 0.25;
-
     /// <summary>The seller's character, if they are in the port.</summary>
     public Character? SellerCharacter(PortSeller seller) => CharacterFor(seller.Person);
 
@@ -150,34 +144,6 @@ public sealed partial class SimulationRunner
         LoseHealth(character, 6, sickness.Condition);
         Campaign.Record(ChronicleEntryKind.SickenedByRation,
             [new(ChronicleParameters.Condition, sickness.Condition), new(ChronicleParameters.To, ration.Id)], character.Id);
-    }
-
-    // An illness wears the sick down until it passes; most get over it in two or three days.
-    private void StepIllness(Character character, List<TaskOutcome> outcomes)
-    {
-        var illnesses = character.Health.Conditions
-            .Where(id => Content.Conditions.TryGetValue(id, out var condition) && condition.Kind == "illness")
-            .Order(StringComparer.Ordinal).ToList();
-        if (illnesses.Count == 0)
-        {
-            return;
-        }
-
-        LoseHealth(character, IllnessHealthPerHour * HoursPerTick * illnesses.Count, illnesses[0]);
-        CheckHealthThresholds(character, illnesses[0], outcomes);
-        if (Campaign.Clock.Tick % SimulationClock.TicksPerHour != 0 || character.SurvivalState == SurvivalState.Dead)
-        {
-            return;
-        }
-
-        foreach (var illness in illnesses)
-        {
-            if (Campaign.Randomness.Stores.Chance(RecoveryPerHour))
-            {
-                character.Health.RemoveCondition(illness);
-                Campaign.Record(ChronicleEntryKind.Recovered, [new(ChronicleParameters.Condition, illness)], character.Id);
-            }
-        }
     }
 
     /// <summary>

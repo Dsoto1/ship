@@ -793,7 +793,9 @@ public sealed partial class SimulationRunner
         if (character.Skills.Get("skill.ship_repair") >= 1) duties.Add("task.patch_hull");
         if (character.Skills.Get("skill.rigging") >= 1) duties.Add("task.repair_rigging");
         if (character.Skills.Get("skill.cooking") >= 2) duties.Add("task.cook");
-        duties.AddRange(["task.pump_bilge", "task.stand_watch"]);
+        if (character.Skills.Get("skill.first_aid") >= 2 || character.Skills.Get("skill.treatment") >= 1) duties.Add("task.tend_sick");
+        // Everyone shares the pumps, keeping her clean below, and the watch.
+        duties.AddRange(["task.pump_bilge", "task.scrub_decks", "task.stand_watch"]);
         return duties.Where(id => Content.Tasks.TryGetValue(id, out var task)
                 && (task.Skill is null || character.Skills.Get(task.Skill) >= task.MinSkill))
             .ToList();

@@ -1,0 +1,115 @@
+// Grievances brought to the captain (VOYAGE_EXPERIENCE §19). These are not rolled for: a hand brings
+// one when their grievance over that cause reaches the stage of complaint, and the refusal when it
+// reaches refusal (SimulationRunner.Grievances). "grievance" effects ease (negative) or worsen a cause
+// for who they name; a "promise" is broken if its cause is not put right in so many days.
+[
+  {
+    "id": "event.complaint_rations",
+    "title": "Short commons",
+    "text": "{subject} comes aft with cap in hand, speaking for more than themselves: the short rations are leaving the hands weak, and they want to know how long it will go on.",
+    "trigger": { "chancePerDay": 0, "subject": { "pick": "crew" } },
+    "choices": [
+      { "id": "restore", "text": "Restore full rations", "success": { "text": "The word goes forward. There is cheering in the waist, and the casks go down faster.", "effects": [ { "rationing": false }, { "who": "crew", "grievance": { "cause": "rations", "amount": -40 } }, { "relationship": { "from": "subject", "to": "captain", "dimension": "Trust", "amount": 5 } } ] } },
+      {
+        "id": "explain", "text": "Explain: the casks must last to the coast",
+        "check": { "skill": "skill.leadership", "who": "captain", "base": 0.35, "perLevel": 0.12 },
+        "success": { "text": "You show {subject} the cask tally. They go forward thoughtful, and the muttering quietens.", "effects": [ { "who": "crew", "grievance": { "cause": "rations", "amount": -20 } }, { "who": "subject", "needs": { "stress": -5 } } ] },
+        "failure": { "text": "{subject} hears you out and goes forward unconvinced. 'He has his own cask,' someone says, loud enough.", "effects": [ { "who": "subject", "grievance": { "cause": "harsh", "amount": 10 } } ] }
+      },
+      { "id": "promise", "text": "Promise full rations within three days", "success": { "text": "{subject} takes your word forward. Now it has to be kept.", "effects": [ { "who": "crew", "grievance": { "cause": "rations", "amount": -30 } }, { "promise": { "cause": "rations", "days": 3 } } ] } },
+      { "id": "silence", "text": "Tell them to hold their tongues", "success": { "text": "{subject} goes without a word. The crew hear of it within the hour.", "effects": [ { "who": "subject", "grievance": { "cause": "harsh", "amount": 15 } }, { "relationship": { "from": "subject", "to": "captain", "dimension": "Affection", "amount": -10 } } ] } }
+    ]
+  },
+  {
+    "id": "event.complaint_hunger",
+    "title": "Hungry and parched",
+    "text": "{subject} says what the whole forecastle is thinking: they are hungry and parched, and cannot work the ship like this.",
+    "trigger": { "chancePerDay": 0, "subject": { "pick": "crew" } },
+    "choices": [
+      { "id": "broach", "text": "Broach a cask and an extra ration tonight", "requiresItem": "item.water", "requiresAmount": 12, "success": { "text": "Water and biscuit go round, and for an evening the ship is easier.", "effects": [ { "item": "item.water", "amount": -12 }, { "item": "item.biscuit", "amount": -8 }, { "who": "all", "needs": { "thirst": -25, "hunger": -15 } }, { "who": "crew", "grievance": { "cause": "hunger", "amount": -30 } } ] } },
+      { "id": "promise", "text": "Promise to fish and catch rain at the first chance", "success": { "text": "They take your word for it. The sky and the sea will have to keep it for you.", "effects": [ { "who": "crew", "grievance": { "cause": "hunger", "amount": -25 } }, { "promise": { "cause": "hunger", "days": 2 } } ] } },
+      { "id": "share", "text": "Share their ration yourself, and say so", "success": { "text": "You eat at the mainmast with them, the same thin ration. They notice.", "effects": [ { "who": "captain", "needs": { "hunger": 15, "thirst": 10 } }, { "who": "crew", "grievance": { "cause": "hunger", "amount": -15 } }, { "relationship": { "from": "crew", "to": "captain", "dimension": "Respect", "amount": 6 } } ] } }
+    ]
+  },
+  {
+    "id": "event.complaint_overwork",
+    "title": "Worked to the bone",
+    "text": "{subject} can barely stand. 'Captain, the watches are killing us. A man asleep on his feet will put her on the rocks.'",
+    "trigger": { "chancePerDay": 0, "subject": { "pick": "crew" } },
+    "choices": [
+      { "id": "sleep", "text": "Let the watch below sleep through, whatever comes", "success": { "text": "An extra hour below, and the next watch comes up steadier.", "effects": [ { "who": "crew", "needs": { "fatigue": -15 } }, { "who": "crew", "grievance": { "cause": "overwork", "amount": -35 } } ] } },
+      { "id": "promise", "text": "Listen, and promise easier watches", "success": { "text": "{subject} goes forward easier in mind. Whether you can keep the promise is another matter.", "effects": [ { "who": "subject", "needs": { "stress": -10 } }, { "who": "crew", "grievance": { "cause": "overwork", "amount": -25 } }, { "promise": { "cause": "overwork", "days": 2 } } ] } },
+      { "id": "dismiss", "text": "Tell them the sea does not care how tired they are", "success": { "text": "{subject} goes. The whole crew has heard about it within the hour.", "effects": [ { "who": "crew", "grievance": { "cause": "harsh", "amount": 12 } }, { "relationship": { "from": "subject", "to": "captain", "dimension": "Affection", "amount": -12 } } ] } }
+    ]
+  },
+  {
+    "id": "event.complaint_danger",
+    "title": "Pressing her too hard",
+    "text": "{subject} has to shout over the wind: 'She will not stand it, Captain! Carrying sail like this in this sea will drown us all!'",
+    "trigger": { "chancePerDay": 0, "subject": { "pick": "crew" } },
+    "choices": [
+      { "id": "shorten", "text": "Shorten sail", "success": { "text": "The topsails come in. She rides easier, and so do they.", "effects": [ { "sailPlan": "Normal" }, { "who": "crew", "grievance": { "cause": "danger", "amount": -40 } } ] } },
+      {
+        "id": "explain", "text": "Explain: we must make our landfall before the water goes",
+        "check": { "skill": "skill.leadership", "who": "captain", "base": 0.3, "perLevel": 0.12 },
+        "success": { "text": "They do not like it, but they understand it. They go back to the braces.", "effects": [ { "who": "crew", "grievance": { "cause": "danger", "amount": -20 } } ] },
+        "failure": { "text": "{subject} looks at the sea and then at you, and goes forward shaking their head.", "effects": [ { "who": "crew", "grievance": { "cause": "harsh", "amount": 8 } } ] }
+      },
+      { "id": "hold", "text": "Hold your course and your canvas", "success": { "text": "You hold on. So, for now, does she.", "effects": [ { "who": "crew", "grievance": { "cause": "harsh", "amount": 10 } }, { "who": "crew", "needs": { "stress": 8 } } ] } }
+    ]
+  },
+  {
+    "id": "event.complaint_sick",
+    "title": "The sick untended",
+    "text": "{subject} stops you at the hatch. 'They are lying in their own filth below, Captain, and no one goes near them. Is that how this ship treats its own?'",
+    "trigger": { "chancePerDay": 0, "subject": { "pick": "crew" } },
+    "choices": [
+      { "id": "tend", "text": "Set {subject} to tend them now", "success": { "text": "{subject} goes below with water and clean rags.", "effects": [ { "who": "subject", "order": "task.tend_sick" }, { "who": "crew", "grievance": { "cause": "sick", "amount": -30 } } ] } },
+      { "id": "self", "text": "Go below and tend them yourself", "success": { "text": "The crew see the captain carry the slop bucket up the ladder.", "effects": [ { "who": "captain", "order": "task.tend_sick" }, { "who": "crew", "grievance": { "cause": "sick", "amount": -35 } }, { "relationship": { "from": "crew", "to": "captain", "dimension": "Respect", "amount": 5 } } ] } },
+      { "id": "shift", "text": "The sick must shift for themselves", "success": { "text": "{subject} says nothing. Nobody forward says anything, either.", "effects": [ { "who": "crew", "grievance": { "cause": "harsh", "amount": 15 } } ] } }
+    ]
+  },
+  {
+    "id": "event.complaint_harsh",
+    "title": "Hard words aft",
+    "text": "{subject} has come aft to say it to your face: you drive the crew like a slave-master, and they did not sign on for it.",
+    "trigger": { "chancePerDay": 0, "subject": { "pick": "crew" } },
+    "choices": [
+      {
+        "id": "hear", "text": "Hear them out, all of it",
+        "check": { "skill": "skill.persuasion", "who": "captain", "base": 0.4, "perLevel": 0.1 },
+        "success": { "text": "It takes an hour. At the end of it {subject} shakes your hand, warily.", "effects": [ { "who": "subject", "grievance": { "cause": "harsh", "amount": -30 } }, { "relationship": { "from": "subject", "to": "captain", "dimension": "Trust", "amount": 8 } } ] },
+        "failure": { "text": "You hear them out, and it changes nothing. {subject} goes forward as angry as they came.", "effects": [ { "who": "subject", "grievance": { "cause": "harsh", "amount": -8 } } ] }
+      },
+      { "id": "share", "text": "Promise every hand a share of the factory's first profits", "success": { "text": "That goes round the ship faster than a squall. It is a promise you will have to keep at the coast.", "effects": [ { "who": "crew", "grievance": { "cause": "harsh", "amount": -30 } }, { "relationship": { "from": "crew", "to": "captain", "dimension": "Trust", "amount": 4 } } ] } },
+      { "id": "flog", "text": "Have {subject} flogged for insolence", "success": { "text": "The lashes are laid on at the mainmast with all hands watching. {subject} does not cry out.", "effects": [ { "who": "subject", "condition": "condition.lashed", "health": -15 }, { "who": "subject", "grievance": { "cause": "all", "amount": -25 } }, { "who": "crew", "grievance": { "cause": "harsh", "amount": 18 } }, { "relationship": { "from": "crew", "to": "captain", "dimension": "Affection", "amount": -10 } } ] } }
+    ]
+  },
+  {
+    "id": "event.complaint_promise",
+    "title": "Your word",
+    "text": "{subject} reminds you, in front of the watch, of what you promised, and that it was not done.",
+    "trigger": { "chancePerDay": 0, "subject": { "pick": "crew" } },
+    "choices": [
+      { "id": "own", "text": "Own it, and say why", "success": { "text": "It costs you something to say it. It costs them less to hear it.", "effects": [ { "who": "crew", "grievance": { "cause": "promise", "amount": -30 } }, { "relationship": { "from": "crew", "to": "captain", "dimension": "Respect", "amount": -4 } } ] } },
+      { "id": "wine", "text": "Make it up with a wine ration", "requiresItem": "item.wine", "requiresAmount": 10, "success": { "text": "The wine goes round. It is not the same as a kept promise, but it helps.", "effects": [ { "item": "item.wine", "amount": -10 }, { "who": "all", "needs": { "stress": -10 } }, { "who": "crew", "grievance": { "cause": "promise", "amount": -25 } } ] } },
+      { "id": "command", "text": "Remind them who commands this ship", "success": { "text": "{subject} goes forward. Nobody looks at you on the way.", "effects": [ { "who": "crew", "grievance": { "cause": "harsh", "amount": 15 } } ] } }
+    ]
+  },
+  {
+    "id": "event.refusal",
+    "title": "They will not turn to",
+    "text": "{subject} stands at the foot of the mainmast with their arms folded, and others with them. They will pump to save their own lives, and that is all, until something is done.",
+    "trigger": { "chancePerDay": 0, "subject": { "pick": "crew" } },
+    "choices": [
+      { "id": "give", "text": "Give way: say it will be put right", "success": { "text": "They go back to work. They know now that this works.", "effects": [ { "who": "crew", "grievance": { "cause": "all", "amount": -35 } }, { "relationship": { "from": "crew", "to": "captain", "dimension": "Respect", "amount": -8 } } ] } },
+      {
+        "id": "talk", "text": "Talk them round, man to man",
+        "check": { "skill": "skill.leadership", "who": "captain", "base": 0.25, "perLevel": 0.12 },
+        "success": { "text": "It is a long talk, and a hard one. At the end of it {subject} picks up a marlinspike.", "effects": [ { "who": "subject", "grievance": { "cause": "all", "amount": -30 } }, { "who": "crew", "grievance": { "cause": "all", "amount": -15 } } ] },
+        "failure": { "text": "Nobody moves. {subject} says, quite politely, that they have heard it before.", "effects": [ { "who": "subject", "grievance": { "cause": "harsh", "amount": 8 } } ] }
+      },
+      { "id": "irons", "text": "Have {subject} flogged as the ringleader", "success": { "text": "It is done at the mainmast. The rest go back to work, and do not look at you.", "effects": [ { "who": "subject", "condition": "condition.lashed", "health": -18 }, { "who": "subject", "grievance": { "cause": "all", "amount": -40 } }, { "who": "crew", "grievance": { "cause": "harsh", "amount": 20 } }, { "relationship": { "from": "crew", "to": "captain", "dimension": "Affection", "amount": -12 } } ] } }
+    ]
+  }
+]

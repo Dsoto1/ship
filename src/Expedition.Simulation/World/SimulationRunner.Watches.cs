@@ -109,7 +109,7 @@ public sealed partial class SimulationRunner
 
     // Who of the watch on deck goes to an empty helm: the first, by the bill, who is at routine work and fit for it.
     private CharacterId? HelmsmanFor(VoyageState ship) => ship.Watches
-        .Where(pair => pair.Value is Watch.Starboard or Watch.Larboard && OnDeck(pair.Key) && Campaign.Characters[pair.Key].CanWork
+        .Where(pair => pair.Value is Watch.Starboard or Watch.Larboard && OnDeck(pair.Key) && Campaign.Characters[pair.Key].CanWork && !Refusing(pair.Key)
                        && Campaign.Characters[pair.Key].Needs.Fatigue < Content.Rules.MaxFatigueToStartWork
                        && (!Campaign.ActiveTasks.TryGetValue(pair.Key, out var task) || task.Origin != TaskOrigin.Order))
         .Select(pair => (CharacterId?)pair.Key).OrderBy(id => id!.Value.Value).FirstOrDefault();
@@ -131,7 +131,7 @@ public sealed partial class SimulationRunner
     private void StandTheWatch(Character character)
     {
         if (Campaign.Voyage is not { Outcome: VoyageOutcome.UnderWay } ship || ship.WatchOf(character.Id) is Watch.None or Watch.Day
-            || !OnDeck(character.Id) || Campaign.ActiveTasks.ContainsKey(character.Id) || Campaign.QueueOf(character.Id).Count > 0
+            || !OnDeck(character.Id) || Campaign.ActiveTasks.ContainsKey(character.Id) || Campaign.QueueOf(character.Id).Count > 0 || Refusing(character.Id)
             || Content.Tasks.Values.FirstOrDefault(t => t.KeepsWatch) is not { } watch
             || !Check(character, watch, materialsAlreadyUsed: false).Succeeded)
         {

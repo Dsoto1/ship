@@ -1344,6 +1344,14 @@ public partial class Main : Node3D
                 ChronicleEntryKind.IslandSighted => (Severity.Positive, AutoPause.Landfall, "Land! The island"),
                 ChronicleEntryKind.Anchored => (Severity.Positive, AutoPause.Landfall, "At anchor"),
                 ChronicleEntryKind.IslandNotFound => (Severity.Attention, AutoPause.Landfall, "No island there"),
+                ChronicleEntryKind.FellIll => (Severity.Attention, AutoPause.InjuryAndDeath, $"{NameOf(entry)} has fallen ill"),
+                ChronicleEntryKind.SicknessSpreads => (Severity.Urgent, AutoPause.InjuryAndDeath, "Sickness spreads"),
+                ChronicleEntryKind.CargoInjury => (Severity.Urgent, AutoPause.InjuryAndDeath, "Caught by the cargo"),
+                ChronicleEntryKind.GrievanceRose when entry.Get(ChronicleParameters.To) == "Refusal" => (Severity.Critical, AutoPause.Events, "Work refused"),
+                ChronicleEntryKind.GrievanceRose => (Severity.Attention, AutoPause.Crew, $"{NameOf(entry)} is aggrieved"),
+                ChronicleEntryKind.FactionFormed => (Severity.Urgent, AutoPause.Crew, "A party forms"),
+                ChronicleEntryKind.PromiseBroken => (Severity.Urgent, AutoPause.Crew, "A promise broken"),
+                ChronicleEntryKind.SkillImproved => (Severity.Positive, AutoPause.Crew, $"{NameOf(entry)} has learned"),
                 ChronicleEntryKind.Sounding when entry.Get(ChronicleParameters.Level) != "none"
                     && !_runner.Campaign.Chronicle.Entries.Take(_chronicleSeen).Any(e => e.Kind == ChronicleEntryKind.Sounding && e.Get(ChronicleParameters.Level) != "none")
                     => (Severity.Attention, AutoPause.Landfall, "Bottom found"),
@@ -1665,6 +1673,7 @@ public partial class Main : Node3D
     private (double Offshore, double North)? _offCoast;
     private string? _seaWeather;
     private bool _founder;
+    private bool _crewLife;
     private string? _island;
     private string? _openView;
     private string? _forceCarryAway;
@@ -1889,6 +1898,7 @@ public partial class Main : Node3D
                 case "wind" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var wind): _forceWind = wind; break;
                 case "seaweather": _seaWeather = value; break;
                 case "founder": _founder = true; break;
+                case "crewlife": _crewLife = true; break;
                 case "island": _island = value; break;
                 case "offcoast" when value.Split(',') is [var off, var along]
                                      && double.TryParse(off, System.Globalization.CultureInfo.InvariantCulture, out var offshore)
@@ -2003,6 +2013,25 @@ public partial class Main : Node3D
         if (_forceWind is { } windFrom)
         {
             _runner.DeveloperSetWind(windFrom);
+        }
+
+        // --crewlife: someone down with fever and someone tending them, a grievance muttered, a lesson begun.
+        if (_crewLife)
+        {
+            var hands = _runner.Campaign.Crew.Where(c => c.Id != _runner.Campaign.CaptainId && c.CanWork).ToList();
+            if (hands.Count >= 3)
+            {
+                hands[0].Health.AddCondition("condition.fever");
+                hands[0].Health.AddCondition("condition.rope_burn");
+                var tender = hands.Skip(1).OrderByDescending(Expedition.Simulation.World.SimulationRunner.CareLevel).First();
+                _runner.QueueTask(tender.Id, "task.tend_sick", Expedition.Simulation.Tasks.TaskPriority.Urgent);
+                _runner.DeveloperAggrieve(hands[2].Id, Expedition.Simulation.Characters.GrievanceCauses.Overwork, 30);
+                var teacher = hands.Where(h => h.Id != hands[0].Id).OrderByDescending(h => h.Skills.Get("skill.rigging")).First();
+                var learner = hands.First(h => h.Id != teacher.Id && h.Id != hands[0].Id);
+                _runner.SetMentor(learner.Id, teacher.Id, "skill.rigging");
+                _runner.Advance(90);
+                _selected = hands[0].Id;
+            }
         }
 
         // --founder: she fills and goes down now, for the wreck.

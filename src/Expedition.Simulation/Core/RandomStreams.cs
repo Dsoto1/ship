@@ -23,7 +23,10 @@ public sealed class RandomStreams
     public const string StoresName = "stores";
 
     /// <summary>Every stream name, in save order.</summary>
-    public static readonly IReadOnlyList<string> Names = [TasksName, CharactersName, WeatherName, EventsName, StoresName, NavigationName];
+    public static readonly IReadOnlyList<string> Names = [TasksName, CharactersName, WeatherName, EventsName, StoresName, NavigationName, CrewName];
+
+    /// <summary>The crew's life: sickness, healing, grievances, learning. Added in format 34.</summary>
+    public const string CrewName = "crew";
 
     /// <summary>Navigation: the set of the sea, the log's error, how true a noon sight is. Added in format 26.</summary>
     public const string NavigationName = "navigation";
@@ -52,6 +55,9 @@ public sealed class RandomStreams
 
     /// <summary>Stream for the stores.</summary>
     public SimulationRandom Stores => _streams[StoresName];
+
+    /// <summary>Stream for the crew's life.</summary>
+    public SimulationRandom Crew => _streams[CrewName];
 
     /// <summary>Stream for navigation.</summary>
     public SimulationRandom Navigation => _streams[NavigationName];

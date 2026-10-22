@@ -37,7 +37,7 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
             },
             ChronicleEntryKind.Injury =>
                 $"{who} suffered {Condition(entry.Get(ChronicleParameters.Condition))} while doing {Task(entry.Get(ChronicleParameters.Task))} " +
-                $"(-{entry.Get(ChronicleParameters.Damage)} health, now {entry.Get(ChronicleParameters.Health)}).",
+                $"(-{entry.Get(ChronicleParameters.Damage)} health, now {entry.Get(ChronicleParameters.Health)}){Because(entry)}.",
             ChronicleEntryKind.TaskInterrupted =>
                 $"{who} stopped {Task(entry.Get(ChronicleParameters.Task))}: {InterruptReason(entry, cause)}.",
             ChronicleEntryKind.TaskPaused =>
@@ -148,6 +148,33 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
                 ? $"Anchor weighed off {IslandName(entry)}: back to the passage."
                 : $"The captain gave up {IslandName(entry)} and went back to the passage.",
             ChronicleEntryKind.Landfall => $"Landfall: {entry.Get(ChronicleParameters.To) ?? "the coast"} reached, and known for what it is.",
+            ChronicleEntryKind.FellIll => $"{who} is down with {Condition(entry.Get(ChronicleParameters.Condition)).ToLowerInvariant()}{Because(entry)}.",
+            ChronicleEntryKind.Healed => $"{who}'s {Condition(entry.Get(ChronicleParameters.Condition)).ToLowerInvariant()} has healed.",
+            ChronicleEntryKind.SicknessSpreads =>
+                $"Sickness spreads: {entry.Get(ChronicleParameters.Level)} down, most with {Condition(entry.Get(ChronicleParameters.Condition)).ToLowerInvariant()}" +
+                (Reasons(entry.Get(ChronicleParameters.Reason)) is { Length: > 0 } why ? $": {why}" : "") +
+                $". The ship is kept {entry.Get(ChronicleParameters.Health)}% clean.",
+            ChronicleEntryKind.GrievanceRose => entry.Get(ChronicleParameters.To) switch
+            {
+                nameof(GrievanceStage.Concern) => $"{who} is muttering about {Grievance(entry)}.",
+                nameof(GrievanceStage.Complaint) => $"{who} means to bring {Grievance(entry)} to the captain.",
+                nameof(GrievanceStage.Refusal) => $"{who} refuses to turn to over {Grievance(entry)}: they will pump to save their lives, and nothing more.",
+                _ => $"{who}'s grievance over {Grievance(entry)} grows.",
+            },
+            ChronicleEntryKind.GrievanceEased => entry.Get(ChronicleParameters.To) == nameof(GrievanceStage.None)
+                ? $"{who} has let it go: {Grievance(entry)} no longer rankles."
+                : $"{who} has turned to again; {Grievance(entry)} still rankles.",
+            ChronicleEntryKind.FactionFormed =>
+                $"A party forms round {who} over {Grievance(entry)}: {string.Join(", ", entry.Characters.Skip(1).Select(Name))} with them.",
+            ChronicleEntryKind.PromiseKept => $"The captain kept his word over {World.SimulationRunner.GrievanceWords(entry.Get(ChronicleParameters.Reason) ?? "")}.",
+            ChronicleEntryKind.PromiseBroken => $"The captain's word over {World.SimulationRunner.GrievanceWords(entry.Get(ChronicleParameters.Reason) ?? "")} was not kept, and the crew remember it.",
+            ChronicleEntryKind.SkillImproved =>
+                $"{who} has grown handier at {SkillWord(entry.Get(ChronicleParameters.To))}: now {LevelWord(entry.Get(ChronicleParameters.Level))}" +
+                (entry.Characters.Count > 1 ? $", taught by {Name(entry.Characters[1])}." : ", by practice."),
+            ChronicleEntryKind.MentorshipBegun =>
+                $"{who} is learning {SkillWord(entry.Get(ChronicleParameters.To))} from {(entry.Characters.Count > 1 ? Name(entry.Characters[1]) : "a shipmate")}.",
+            ChronicleEntryKind.CargoInjury =>
+                $"Cargo breaking loose caught {who}: {Condition(entry.Get(ChronicleParameters.Condition)).ToLowerInvariant()} (-{entry.Get(ChronicleParameters.Damage)} health){Because(entry)}.",
             _ => $"{entry.Kind}: {string.Join(", ", entry.Parameters.Select(p => $"{p.Key}={p.Value}"))}",
         };
     }
@@ -267,6 +294,39 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
         InterruptReasons.Incapacitated => $"{Words(entry.Get(ChronicleParameters.To))} ({cause})",
         var other => Words(other),
     };
+
+    // Why something happened, as the simulation says it (VOYAGE_EXPERIENCE §42): " — worn out, in a heavy sea".
+    private string Because(ChronicleEntry entry) =>
+        Reasons(entry.Get(ChronicleParameters.Reason), entry.Get(ChronicleParameters.From)) is { Length: > 0 } why ? $" — {why}" : "";
+
+    private string Reasons(string? reasons, string? from = null)
+    {
+        if (string.IsNullOrEmpty(reasons))
+        {
+            return "";
+        }
+
+        return string.Join(", ", reasons.Split(',').Select(reason => reason switch
+        {
+            "caught" => from is not null && int.TryParse(from, out var id) ? $"caught from {Name(new CharacterId(id))}" : "caught from a shipmate",
+            "tired" => "worn out",
+            "wet" => "wet through below with the hatches open",
+            "foul" => "in a foul ship",
+            "nofresh" => "weeks without anything fresh",
+            "untended" => "no one tending the sick",
+            "sea" => "in a heavy sea",
+            "unlashed" => "the cargo not lashed",
+            var other => other,
+        }));
+    }
+
+    private static string Grievance(ChronicleEntry entry) => World.SimulationRunner.GrievanceWords(entry.Get(ChronicleParameters.Reason) ?? "");
+
+    private string SkillWord(string? skill) =>
+        skill is not null && content.Skills.TryGetValue(skill, out var definition) ? definition.Name.ToLowerInvariant() : Prettify(skill ?? "");
+
+    private static string LevelWord(string? level) =>
+        int.TryParse(level, CultureInfo.InvariantCulture, out var value) ? KnowledgeText.LevelWord(value).ToLowerInvariant() : level ?? "";
 
     private string Name(CharacterId id) => campaign.Characters.TryGetValue(id, out var character) ? character.Name : id.ToString();
 
