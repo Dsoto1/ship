@@ -60,6 +60,9 @@
       { "id": "crop.wheat", "name": "wheat", "seed": "item.seed_wheat", "yields": "item.wheat", "perBed": 30, "growDays": 100, "suitability": 0.25, "wetRot": 0.03, "drySowingOnly": true },
       { "id": "crop.chickpea", "name": "chickpeas", "seed": "item.seed_chickpea", "yields": "item.chickpeas", "perBed": 25, "growDays": 85, "suitability": 0.45, "wetRot": 0.025, "drySowingOnly": true },
       { "id": "crop.onion", "name": "onions", "seed": "item.seed_onion", "yields": "item.onions", "perBed": 40, "growDays": 60, "suitability": 0.7, "wetRot": 0.008 },
+      // The coast's own (R8): grown only once its people have shown how, from cuttings and seed they give.
+      { "id": "crop.cassava", "name": "cassava", "seed": "item.cassava_cuttings", "yields": "item.cassava_root", "perBed": 60, "growDays": 100, "suitability": 0.95, "wetRot": 0.002, "knowledge": "know.roots" },
+      { "id": "crop.maize", "name": "maize", "seed": "item.seed_maize", "yields": "item.maize", "perBed": 40, "growDays": 75, "suitability": 0.88, "wetRot": 0.004, "knowledge": "know.roots" },
       { "id": "crop.cabbage", "name": "cabbages and greens", "seed": "item.seed_cabbage", "yields": "item.greens", "perBed": 50, "growDays": 45, "suitability": 0.6, "wetRot": 0.008 }
     ],
     // What the forest's edge gives before it must be gone further for (and the work it then takes).

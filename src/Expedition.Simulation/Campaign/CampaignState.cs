@@ -551,6 +551,9 @@ public sealed class CampaignState
     /// <summary>The camp ashore after the voyage, or null before it (docs/R6_LANDFALL_CAMP.md).</summary>
     public Shore.CampState? Camp { get; internal set; }
 
+    /// <summary>The world around the camp (R8): the coast known, its peoples, parties away, the charter; null before landing.</summary>
+    public Shore.WorldState? World { get; internal set; }
+
     /// <summary>The crew's life aboard: practice, mentors, grievances, fresh food, promises, the ship kept clean.</summary>
     public CrewLife Life { get; } = new();
 

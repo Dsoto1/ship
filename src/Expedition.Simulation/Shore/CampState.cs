@@ -20,6 +20,9 @@ public static class CampWorks
     /// <summary>The sick shelter: 1 once made.</summary>
     public const string SickShelter = "sick_shelter";
 
+    /// <summary>The palisade round the camp (R8): 0..1, as far as it has got.</summary>
+    public const string Palisade = "palisade";
+
     /// <summary>How many sail shelters stand (of the berths in <see cref="Shelter"/>).</summary>
     public const string SailShelters = "shelters_sail";
 
@@ -290,6 +293,9 @@ public sealed class CampState
     /// <summary>The next project's number.</summary>
     public int NextProject { get; internal set; } = 1;
 
+    /// <summary>True while the captain wants the palisade raised (R8).</summary>
+    public bool PalisadeOrdered { get; internal set; }
+
     /// <summary>The first season judged, true when it was survived; null before.</summary>
     public bool? Survived { get; internal set; }
 
@@ -368,7 +374,8 @@ public sealed class CampState
     /// <summary>How far a work has got.</summary>
     public double Work(string work) => _works.GetValueOrDefault(work);
 
-    internal void AddWork(string work, double amount) => _works[work] = Work(work) + amount;
+    // Rounded, so that ten tenths make a whole.
+    internal void AddWork(string work, double amount) => _works[work] = Math.Round(Work(work) + amount, 6);
 
     internal bool Find(string id) => _found.Add(id);
 

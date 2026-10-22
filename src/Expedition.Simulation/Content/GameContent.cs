@@ -199,6 +199,55 @@ public sealed class GameContent
         {
             errors.Add("shore.json: there must be a 'default' site.");
         }
+
+        if (rules.Region is { } region)
+        {
+            ValidateRegion(region, errors);
+        }
+    }
+
+    private void ValidateRegion(Shore.RegionRules region, List<string> errors)
+    {
+        var places = region.Places.Select(p => p.Id).ToHashSet(StringComparer.Ordinal);
+        var peoples = region.Communities.Select(c => c.Id).ToHashSet(StringComparer.Ordinal);
+        foreach (var route in region.Routes.Where(r => !places.Contains(r.From) || !places.Contains(r.To)))
+        {
+            errors.Add($"region.json: the route {route.From} to {route.To} names a place that is not listed.");
+        }
+
+        foreach (var place in region.Places)
+        {
+            if ((place.People is { } people && !peoples.Contains(people)) || (place.Ground is { } ground && !peoples.Contains(ground)))
+            {
+                errors.Add($"region.json: '{place.Id}' names a people that is not listed.");
+            }
+
+            if (place.Known is not (null or "seen" or "reported"))
+            {
+                errors.Add($"region.json: '{place.Id}' is known as '{place.Known}'; use seen or reported.");
+            }
+        }
+
+        foreach (var community in region.Communities)
+        {
+            if (!places.Contains(community.Place) || !Languages.ContainsKey(community.Language))
+            {
+                errors.Add($"region.json: '{community.Id}' names an unknown place or language.");
+            }
+
+            foreach (var item in community.Wants.Keys.Concat(community.Offers.Keys).Where(i => !Items.ContainsKey(i)))
+            {
+                errors.Add($"region.json: '{community.Id}' trades '{item}', which is not a known item.");
+            }
+        }
+
+        foreach (var topic in region.Knowledge)
+        {
+            if (topic.From.Any(f => !peoples.Contains(f)) || topic.Reveals.Any(r => !places.Contains(r)) || topic.Gives.Keys.Any(i => !Items.ContainsKey(i)))
+            {
+                errors.Add($"region.json: what '{topic.Id}' names is not all known.");
+            }
+        }
     }
 
     private void ValidatePort(Port.PortRules rules, List<string> errors)

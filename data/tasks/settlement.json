@@ -176,6 +176,21 @@
     "needsPerHour": { "fatigue": 7.0, "thirst": 1.5 }
   },
   {
+    "id": "task.raise_palisade",
+    "needsWorkSpot": true,
+    "name": "Raise the palisade",
+    "durationMinutes": 240,
+    // Stakes sharpened, set in a trench round the camp and bound with withies; a gate on the landward side (R8).
+    "attribute": "attribute.strength",
+    "requiredTools": ["item.axe"],
+    "consumes": { "item.poles": 6 },
+    "builds": "palisade",
+    "buildsAmount": 0.1,
+    "dutyWhen": { "camp": "palisade", "startBetween": [[6, 15]] },
+    "needsPerHour": { "fatigue": 7.0, "thirst": 1.5 },
+    "hazard": { "chancePerHour": 0.006, "healthDamage": 8, "condition": "condition.bruised" }
+  },
+  {
     "id": "task.cut_poles",
     "needsWorkSpot": true,
     "name": "Cut poles",

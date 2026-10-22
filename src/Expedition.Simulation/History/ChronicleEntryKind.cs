@@ -293,4 +293,13 @@ public enum ChronicleEntryKind
 
     /// <summary>The first season was judged (parameters: outcome = survived or failed, reason = what was wanting, need = how many alive).</summary>
     SeasonJudged,
+
+    /// <summary>Something on the coast (R8): a meeting, a party's report, a ship (parameters: need = the text, told as it happened).</summary>
+    CoastNews,
+
+    /// <summary>Something learned from the coast's peoples (parameters: to = topic, from = the people, need = what it is).</summary>
+    Learned,
+
+    /// <summary>The charter judged when the relief ship came (parameters: outcome = kept, in part or revoked; reason = what was wanting; level = logs taken home).</summary>
+    CharterJudged,
 }

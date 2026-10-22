@@ -12,6 +12,9 @@ public sealed record ShoreRules
     /// <summary>Making the camp last: buildings, crops, the season (R7).</summary>
     public SettlementRules Settlement { get; init; } = new();
 
+    /// <summary>The coast around the camp, its peoples and the charter (R8, <c>data/region.json</c>), or null.</summary>
+    public RegionRules? Region { get; init; }
+
     /// <summary>The landing sites, with <c>default</c> for any landing not listed.</summary>
     public IReadOnlyList<ShoreSite> Sites { get; init; } = [];
 

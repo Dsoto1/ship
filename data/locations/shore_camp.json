@@ -226,6 +226,24 @@
         "face": "E"
       },
       {
+        "id": "spot.palisade_1",
+        "x": 4,
+        "y": 8,
+        "tasks": [
+          "task.raise_palisade"
+        ],
+        "kind": "HammerStation"
+      },
+      {
+        "id": "spot.palisade_2",
+        "x": 30,
+        "y": 6,
+        "tasks": [
+          "task.raise_palisade"
+        ],
+        "kind": "HammerStation"
+      },
+      {
         "id": "spot.poles_1",
         "x": 8,
         "y": 18,

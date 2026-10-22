@@ -220,6 +220,14 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
                 "untended" => ", choked with weeds.",
                 _ => ": it would not take in this ground.",
             },
+            ChronicleEntryKind.CoastNews => entry.Get(ChronicleParameters.Need) ?? "",
+            ChronicleEntryKind.Learned => $"Learned from {CommunityName(entry.Get(ChronicleParameters.From))}: {entry.Get(ChronicleParameters.Need)}.",
+            ChronicleEntryKind.CharterJudged => entry.Get(ChronicleParameters.Outcome) switch
+            {
+                "kept" => $"The relief ship has come, and the charter is kept: {entry.Get(ChronicleParameters.Level)} logs of embrawood go aboard her.",
+                "in part" => $"The relief ship has come. The charter is kept in part: {entry.Get(ChronicleParameters.Level)} logs go aboard, and the Company will want {entry.Get(ChronicleParameters.Reason)}.",
+                _ => $"The relief ship has come, and the Company's charter is revoked{(string.IsNullOrEmpty(entry.Get(ChronicleParameters.Reason)) ? "" : $": wanting {entry.Get(ChronicleParameters.Reason)}")}.",
+            },
             ChronicleEntryKind.WetSeason => "The wet season has come: rain most days now, the ground turning to mud.",
             ChronicleEntryKind.StormAshore => "A storm, the change of the season: wind and rain off the sea, and no work out of doors.",
             ChronicleEntryKind.SeasonJudged => entry.Get(ChronicleParameters.Outcome) == "survived"
@@ -441,4 +449,7 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
 
     private static string QualityWord(string? level) =>
         double.TryParse(level, NumberStyles.Float, CultureInfo.InvariantCulture, out var q) ? q >= 0.75 ? "sound" : q >= 0.5 ? "fair" : "rough" : "fair";
+
+    // A people's name, from the coast's rules.
+    private string CommunityName(string? id) => id is not null && content.Shore?.Region?.Community(id) is { } community ? community.Name : "the coast's people";
 }

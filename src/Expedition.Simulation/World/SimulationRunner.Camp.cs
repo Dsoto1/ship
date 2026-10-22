@@ -35,7 +35,7 @@ public sealed partial class SimulationRunner
         [CampPriorities.Scouting] = ["task.scout"],
         [CampPriorities.Building] = ["task.repair_building", "task.clear_ground", "task.set_posts", "task.raise_frame", "task.thatch_roof", "task.fit_out",
             "task.dig_beds", "task.fence_garden", "task.dig_well", "task.line_well", "task.lay_stones", "task.build_staging",
-            "task.cut_poles", "task.cut_thatch", "task.gather_stone", "task.salvage_timbers", "task.pit_saw_planks", "task.mend_tools"],
+            "task.raise_palisade", "task.cut_poles", "task.cut_thatch", "task.gather_stone", "task.salvage_timbers", "task.pit_saw_planks", "task.mend_tools"],
         [CampPriorities.Garden] = ["task.harvest", "task.sow_garden", "task.tend_garden"],
     };
 
@@ -129,6 +129,7 @@ public sealed partial class SimulationRunner
         }
 
         Campaign.Camp = camp;
+        BeginWorld(camp);
 
         // Everyone to the beach, their ship's work and orders left behind, and the camp's work for duties.
         var location = Content.Locations[CampLocation];
@@ -231,6 +232,7 @@ public sealed partial class SimulationRunner
             "land" => camp.Afloat.Count > 0 && !Raining,
             "cover" => Planned(CampWorks.Cover) < 1 && Content.Foods.Any(f => store.Count(f.Id) > 0),
             "latrine" => Planned(CampWorks.Latrine) < 1,
+            "palisade" => camp.PalisadeOrdered && Planned(CampWorks.Palisade) < 1,
             "forage" => camp.Choices.Forage && CampFood() is not null
                         && Content.Foods.Sum(f => store.Count(f.Id) * f.HungerRelief) < FoodDaysWanted * people * DailyHunger,
             "scout" => camp.Choices.SendScouts && NextFind(camp, site) is not null
@@ -480,7 +482,7 @@ public sealed partial class SimulationRunner
         var sheltered = Sheltered();
         var random = Campaign.Randomness.Crew;
 
-        foreach (var person in people.Where(p => p.SurvivalState == SurvivalState.Alive))
+        foreach (var person in people.Where(p => p.SurvivalState == SurvivalState.Alive && !Away(p.Id)))
         {
             var open = !sheltered.Contains(person.Id);
 
@@ -492,7 +494,8 @@ public sealed partial class SimulationRunner
             }
 
             var chill = rain && open ? rules.ChillPerWetHour * (fire ? 0.5 : 1) : 0;
-            var swamp = night ? site.Fever * (fire ? 0.6 : 1) : 0;
+            // Up off the ground, in smoke, as the coast's people sleep, the fever comes less (R8).
+            var swamp = night ? site.Fever * (fire ? 0.6 : 1) * (Learned("know.fever_lore") ? 0.6 : 1) : 0;
             var roll = random.NextDouble();
             if (!person.Health.Conditions.Contains("condition.fever") && roll < chill + swamp && Content.Conditions.ContainsKey("condition.fever"))
             {
@@ -536,6 +539,7 @@ public sealed partial class SimulationRunner
             : Math.Max(0, life.Cleanliness - rules.FoulPerDay / 24);
         StepSickness(wet: rain && people.Any(p => !sheltered.Contains(p.Id)));
         StepSettlement(camp, rules);
+        StepWorld(camp);
 
         if (!camp.Reported && Campaign.Clock.Tick - camp.Landed >= rules.ReportHours * SimulationClock.TicksPerHour)
         {

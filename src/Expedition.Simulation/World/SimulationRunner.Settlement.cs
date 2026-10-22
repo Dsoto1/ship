@@ -25,6 +25,8 @@ public sealed partial class SimulationRunner
         ["item.axe"] = 3, ["item.saw"] = 1, ["item.adze"] = 2, ["item.auger"] = 1, ["item.spade"] = 2, ["item.mattock"] = 1,
         ["item.cutlass"] = 3, ["item.fishing_net"] = 1,
         ["item.seed_wheat"] = 10, ["item.seed_chickpea"] = 8, ["item.seed_onion"] = 6, ["item.seed_cabbage"] = 4,
+        // The Company's trade chest (R8): what the factory traded for wood and food.
+        ["item.trade_knives"] = 40, ["item.trade_cloth"] = 12, ["item.fishhooks"] = 300,
     };
 
     // Seed a bed takes; beds a tending sees to; days before a bed wants tending again.
@@ -432,7 +434,7 @@ public sealed partial class SimulationRunner
     // What to sow next: of the crops there is seed for and that may be sown now, the one least sown.
     private CropDefinition? SowableCrop() =>
         Campaign.Camp is { } camp && Settling is { } rules
-            ? rules.Crops.Where(c => Campaign.SharedStore.Count(c.Seed) >= SeedPerBed && !(c.DrySowingOnly && WetSeason))
+            ? rules.Crops.Where(c => Campaign.SharedStore.Count(c.Seed) >= SeedPerBed && !(c.DrySowingOnly && WetSeason) && (c.Knowledge is null || Learned(c.Knowledge)))
                 .OrderBy(c => camp.Beds.Count(b => b.Crop == c.Id)).ThenByDescending(c => c.Suitability).FirstOrDefault()
             : null;
 
@@ -568,7 +570,8 @@ public sealed partial class SimulationRunner
         var random = Campaign.Randomness.Events;
         foreach (var building in camp.Buildings.Where(Roofed).ToList())
         {
-            building.Condition -= (1.2 - building.Quality) * 3 * (0.5 + random.NextDouble());
+            // Roofs tied down and made fast, warned by the coast's people, stand it better (R8).
+            building.Condition -= (1.2 - building.Quality) * 3 * (0.5 + random.NextDouble()) * (Learned("know.storm") ? 0.6 : 1);
             if (building.Condition <= 0)
             {
                 camp.RemoveBuilding(building);

@@ -1057,7 +1057,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             // Locals live by their schedule; their needs are not simulated (R1).
             FollowSchedule(character);
         }
-        else
+        else if (!Away(character.Id))
         {
             KeepWatch(character);
             ReconsiderDuty(character);
@@ -1502,7 +1502,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
 
     /// <summary>Quantity of an item the character can reach: their own plus the shared store.</summary>
     private int Available(Character character, string itemId) =>
-        Campaign.Inventories[character.InventoryId].Count(itemId) + Campaign.SharedStore.Count(itemId);
+        Campaign.Inventories[character.InventoryId].Count(itemId) + (Away(character.Id) ? 0 : Campaign.SharedStore.Count(itemId));
 
     /// <summary>Removes items, taking from the character's own inventory first. Caller has checked availability.</summary>
     private void Take(Character character, string itemId, int quantity)
