@@ -76,6 +76,9 @@ public sealed class SettlementTests
         Assert.True(runner.PlaceBuilding("building.hut", 11, 13).Succeeded);
         Assert.True(Refused(12, 14, "Another building"));
         Assert.False(runner.PlaceBuilding("building.hut", 12, 14).Succeeded);
+        // Not wall to wall: a cell of open ground is kept between them, to walk round each.
+        Assert.True(Refused(15, 13, "Too close"));
+        Assert.DoesNotContain(runner.Placement("building.hut", 16, 13).Problems, p => p.Contains("Too close", StringComparison.Ordinal));
         Assert.False(runner.Placement("building.palace", 20, 12).Allowed);
 
         // Turned, its width runs inland.
@@ -339,8 +342,8 @@ public sealed class SettlementTests
         Assert.True(runner.StoresPlaceFactor() < damp);
 
         // The sick kept close by the huts pass it on more.
-        Assert.True(runner.DeveloperRaise("building.hut", 0.6, (14, 13)).Succeeded);
-        Assert.Contains(runner.Placement("building.infirmary", 9, 15).Notes, n => n.Contains("huts", StringComparison.Ordinal));
+        Assert.True(runner.DeveloperRaise("building.hut", 0.6, (15, 13)).Succeeded);
+        Assert.Contains(runner.Placement("building.infirmary", 13, 18).Notes, n => n.Contains("huts", StringComparison.Ordinal));
         Assert.DoesNotContain(runner.Placement("building.infirmary", 5, 18).Notes, n => n.Contains("huts", StringComparison.Ordinal));
     }
 
