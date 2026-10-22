@@ -2366,3 +2366,84 @@ Screenshot: `docs/screenshots/shipwreck.jpg`.
 
 **Not yet (R6):** the shore itself. Making camp, water, shelter, salvaging the wreck, and deciding what
 to do next.
+
+### The interface reworked: what the captain needs to know, where they look (owner: "more intuitive, thematic, and user friendly")
+
+An audit of every screen at sea found five problems:
+- **Alerts piled up in the middle of the screen.** As many as six cards, repeating the paused banner,
+  with port notices still showing at sea.
+- **The status bar was eight text labels in a row.** They were see-through, so the crew's name tags
+  showed through them.
+- **The screens were walls of prose.** The ship's condition was a paragraph, the roster a plain list,
+  and the need bars grey with no numbers.
+- **Expedition was empty at sea.**
+- **Nothing said whether the stores would last the passage.** In one test voyage the water had 8 to
+  11 days left with 17 to 22 days still to sail, and no screen said so.
+
+The changes (`Hud.cs`, `UiTokens.cs`):
+
+**Status pills, top right.**
+- **What they show:** each pill is an icon and a few words, coloured by how things stand.
+- **Clicking one goes where the matter is dealt with:** the weather and course go to the chart; the
+  leagues and days to go, to the voyage; water and food, to the hold; the ship's worst part, to the Ship
+  screen.
+- **The last pill gathers everything else that wants the captain,** most pressing first ("A leak is
+  open +2"); its tooltip lists them all.
+- **Pills that used to sit alone are now in that list:** the watch, rain, the noon sight and the coast.
+
+**Will it last?**
+- **The estimate:** days to go come from the passage's usual pace, 22 to 30 days for the whole
+  crossing scaled by what is left. The last hour's speed would make a calm look endless.
+- **The verdict:** water and food are each judged against that: *enough*, *tight* (enough only on a
+  good passage) or *short* ("it runs out 9 days or more before landfall"). The verdict colours the
+  pills, the hold's cards and the voyage screen, and comes with what to do about it (short rations,
+  catch rain, fish, make for an island).
+
+**The voyage at a glance (Expedition, X, at sea).**
+- **Needs your attention:** a ranked list. Each line says what is wrong, why and what to do, with a
+  button to the screen that fixes it; for a person, the button also selects them.
+  - **Ship:** the bilge, open leaks, heavy weather coming, no watch.
+  - **Supplies:** water or food that will run short.
+  - **Crew:** anyone exhausted, starving, parched or badly hurt.
+  - **Navigation:** the coast to identify, the lead to heave, the noon sight, being at anchor.
+  - **Work going undone:** rain no one is catching, repairs wanting.
+- **The passage:** the leagues to go, the days to go, the next objective, and a bar for how much of
+  the passage is behind her.
+- **Stores against the passage:** water and food bars, where a full bar means enough for the slowest
+  passage still to go.
+- **The ship:** gauges for hull, bilge and rigging.
+- **The crew:** how many are aboard and fit, and how many are tired, hungry, thirsty, hurt or
+  strained.
+- **The charter.**
+
+**Ship (H).** Cards for:
+- **Under way:** the weather, the sail, the pace, the watch and the purse.
+- **Condition:** gauges, each with a word and its number ("failing · 28%"), what has carried away, and
+  the repairs left.
+- **Rations:** the toggle beside what it buys.
+- **Heavy weather:** a checklist (○ hatches open / ✓ hatches battened) with the order button beside
+  each line, and the leaks with how each was met.
+- **The watch bill.**
+
+**Cargo (C).**
+- **The hold:** gauges for space and weight.
+- **Water and provisions:** each card's corner gives "~3–4 d · short" in the verdict's colour; the items
+  are listed with their counts aligned.
+
+**People (P).**
+- **The roster:** each row starts with a mark for the worst of that person's state, coloured to match,
+  then their watch, their work and what is wrong ("✓ Duarte Velho · stbd — Stand watch (duty)").
+- **The chosen person:** coloured gauges for health, hunger, thirst, fatigue and stress, each with a
+  word and a number ("tired · 75").
+
+**Alerts.**
+- **Where:** a column on the right under the pills, three at most, newest on top.
+- **Repeats:** the same alert again counts on its card (×3) instead of stacking.
+- **The paused banner:** slim, at the top centre, and moved beside an open screen rather than over it.
+- **Notices:** a repeated notice is said once, and a change of scene (port to sea) clears the old ones.
+
+**Look.** Screens are made of cards in the paper colour, each with a brass heading over a thin rule.
+The pills are opaque, so nothing behind them shows through. New helpers: `Ui.Card`,
+`Ui.SectionHeader`, `Ui.Pill` and `Gauge`.
+
+Screenshots: `docs/screenshots/ui-voyage.jpg`, `ui-ship.jpg`, `ui-people.jpg`, `ui-cargo.jpg`.

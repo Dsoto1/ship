@@ -261,11 +261,132 @@ public static class Ui
         chip.TooltipText = tooltip;
     }
 
+    /// <summary>
+    /// A status pill: a small opaque button with an icon and a few words, its border and text in the
+    /// severity's colour. Clicking it goes where the matter is dealt with; the tooltip says why it matters.
+    /// </summary>
+    public static Button Pill()
+    {
+        var pill = new Button { FocusMode = Control.FocusModeEnum.None, CustomMinimumSize = new Vector2(0, MinHit) };
+        pill.AddThemeFontSizeOverride("font_size", TextBody);
+        return pill;
+    }
+
+    /// <summary>Updates a pill made by <see cref="Pill"/>.</summary>
+    public static void SetPill(Button pill, string icon, string text, Severity severity, string tooltip)
+    {
+        pill.Text = icon.Length > 0 ? $"{icon} {text}" : text;
+        pill.TooltipText = tooltip;
+        var colour = Of(severity);
+        var strong = severity is Severity.Urgent or Severity.Critical;
+        foreach (var (state, lift) in new[] { ("normal", 0f), ("hover", 0.08f), ("pressed", 0.12f) })
+        {
+            var fill = strong ? new Color(colour.R * 0.28f + lift, colour.G * 0.12f + lift, colour.B * 0.08f + lift, 0.95f) : new Color(0.1f + lift, 0.08f + lift, 0.06f + lift, 0.94f);
+            var box = Box(fill, severity == Severity.Information ? new Color(Rule, 0.45f) : colour, SpaceM, SpaceXs);
+            box.CornerRadiusTopLeft = box.CornerRadiusTopRight = box.CornerRadiusBottomLeft = box.CornerRadiusBottomRight = 11;
+            pill.AddThemeStyleboxOverride(state, box);
+        }
+
+        foreach (var key in new[] { "font_color", "font_hover_color", "font_pressed_color" })
+        {
+            pill.AddThemeColorOverride(key, colour);
+        }
+    }
+
+    /// <summary>A section heading over a thin brass rule, for the parts of a screen.</summary>
+    public static VBoxContainer SectionHeader(string text, string note = "")
+    {
+        var header = new VBoxContainer();
+        header.AddThemeConstantOverride("separation", 1);
+        var top = new HBoxContainer();
+        header.AddChild(top);
+        var title = Heading(text);
+        title.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        top.AddChild(title);
+        if (note.Length > 0)
+        {
+            top.AddChild(Text(note, TextMeta, InkSoft));
+        }
+
+        header.AddChild(new ColorRect { Color = new Color(Rule, 0.6f), CustomMinimumSize = new Vector2(0, 1), MouseFilter = Control.MouseFilterEnum.Ignore });
+        return header;
+    }
+
+    /// <summary>
+    /// A card: a document-coloured panel with a heading, added to <paramref name="parent"/>. Returns the
+    /// column inside it to fill.
+    /// </summary>
+    public static VBoxContainer Card(Control parent, string title = "", string note = "")
+    {
+        var panel = PanelOf(Paper, new Color(Rule, 0.35f), SpaceL, SpaceM);
+        parent.AddChild(panel);
+        var column = new VBoxContainer();
+        column.AddThemeConstantOverride("separation", SpaceS);
+        panel.AddChild(column);
+        if (title.Length > 0)
+        {
+            column.AddChild(SectionHeader(title, note));
+        }
+
+        return column;
+    }
+
     /// <summary>Fades a control in, for panels and alerts arriving (§52).</summary>
     public static void FadeIn(Control control)
     {
         control.Modulate = new Color(1, 1, 1, 0);
         control.Visible = true;
         control.CreateTween().TweenProperty(control, "modulate:a", 1f, Transition);
+    }
+}
+
+/// <summary>
+/// A gauge (UI_UX_DESIGN_SYSTEM §31): what it measures, a bar coloured by how it stands, and the state in
+/// a word with its number. Made once, set every refresh.
+/// </summary>
+public sealed class Gauge
+{
+    private readonly ProgressBar _bar;
+    private readonly Label _value;
+    private readonly StyleBoxFlat _fill;
+
+    /// <summary>Makes a gauge and adds it to <paramref name="parent"/>.</summary>
+    public Gauge(Control parent, string name, float nameWidth = 70, float valueWidth = 120)
+    {
+        Root = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Stop };
+        Root.AddThemeConstantOverride("separation", Ui.SpaceM);
+        parent.AddChild(Root);
+        var label = Ui.Text(name, Ui.TextMeta + 1, Ui.InkSoft);
+        label.CustomMinimumSize = new Vector2(nameWidth, 0);
+        label.MouseFilter = Control.MouseFilterEnum.Ignore;
+        Root.AddChild(label);
+        _bar = new ProgressBar
+        {
+            MinValue = 0, MaxValue = 100, ShowPercentage = false, MouseFilter = Control.MouseFilterEnum.Ignore,
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, SizeFlagsVertical = Control.SizeFlags.ShrinkCenter, CustomMinimumSize = new Vector2(0, 9),
+        };
+        var back = Ui.Box(new Color(0, 0, 0, 0.45f), new Color(Ui.Rule, 0.3f), 0, 0);
+        _fill = Ui.Box(Ui.Ink, null, 0, 0);
+        _bar.AddThemeStyleboxOverride("background", back);
+        _bar.AddThemeStyleboxOverride("fill", _fill);
+        Root.AddChild(_bar);
+        _value = Ui.Text("", Ui.TextMeta + 1, Ui.Ink);
+        _value.CustomMinimumSize = new Vector2(valueWidth, 0);
+        _value.MouseFilter = Control.MouseFilterEnum.Ignore;
+        Root.AddChild(_value);
+    }
+
+    /// <summary>The row the gauge is in.</summary>
+    public HBoxContainer Root { get; }
+
+    /// <summary>Sets the bar (0..100), the words beside it, its severity and its explanation.</summary>
+    public void Set(double value, string text, Severity severity, string tooltip = "")
+    {
+        _bar.Value = Math.Clamp(value, 0, 100);
+        var colour = severity == Severity.Information ? new Color(0.78f, 0.7f, 0.55f) : Ui.Of(severity);
+        _fill.BgColor = colour;
+        _value.Text = text;
+        _value.AddThemeColorOverride("font_color", severity is Severity.Information or Severity.Positive ? Ui.Ink : colour);
+        Root.TooltipText = tooltip;
     }
 }

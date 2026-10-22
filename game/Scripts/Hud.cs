@@ -50,7 +50,7 @@ public partial class Hud : CanvasLayer
     private readonly List<(Button Button, CharacterId Id)> _crewButtons = [];
     private readonly List<(Button Button, string TaskId)> _taskButtons = [];
     private readonly List<(CheckBox Box, string TaskId)> _dutyBoxes = [];
-    private readonly Dictionary<string, ProgressBar> _needBars = [];
+    private readonly Dictionary<string, Gauge> _needBars = [];
     private readonly Dictionary<PanelId, Button> _navButtons = [];
     private readonly Dictionary<PanelId, VBoxContainer> _panelBodies = [];
     private readonly HashSet<AutoPause> _autoPause = [AutoPause.InjuryAndDeath, AutoPause.Weather, AutoPause.ShipDamage, AutoPause.Shortage, AutoPause.Events, AutoPause.Landfall];
@@ -92,7 +92,6 @@ public partial class Hud : CanvasLayer
     private CheckBox _urgent = null!;
 
     // Cargo, Ship, Chronicle screens
-    private Label _manifest = null!;
     private Label _shipReport = null!;
     private Button _rations = null!;
     private bool _rationsOn;
@@ -113,6 +112,7 @@ public partial class Hud : CanvasLayer
     private Label _endingText = null!;
 
     private ChronicleFormatter _formatter = null!;
+    private int _scene = -1;
     private SimulationRunner? _runner;
 
     /// <summary>The player chose a time speed (index into the speeds Main defines).</summary>
@@ -238,7 +238,7 @@ public partial class Hud : CanvasLayer
         _drawerTitle.Text = panel switch
         {
             PanelId.People => "People — the roster",
-            PanelId.Expedition => "Expedition — objectives and papers",
+            PanelId.Expedition => _runner?.Campaign.Voyage is null ? "Expedition — objectives and papers" : "The voyage — at a glance",
             PanelId.Cargo => "Cargo — the manifest",
             PanelId.Ship => "Ship — condition and orders",
             PanelId.Chart => "Chart",
@@ -296,47 +296,129 @@ public partial class Hud : CanvasLayer
 
     /// <summary>
     /// Adds an alert: severity, cause, and who it concerns, with a Focus button where there is someone to
-    /// look at (§17). Critical alerts stay until dismissed; others fade.
+    /// look at (§17). Alerts stack in a column on the right, under the status pills, newest on top, three
+    /// at most; the same alert again is counted on its card (×2) rather than stacked. Critical alerts
+    /// stay until dismissed; others go after a while. All are in the Chronicle.
     /// </summary>
     public void PushAlert(Severity severity, string title, string detail = "", CharacterId? focus = null, string when = "")
     {
-        var panel = Ui.PanelOf(new Color(0.07f, 0.05f, 0.04f, 0.88f), Ui.Of(severity), Ui.SpaceL, Ui.SpaceS);
+        var lifetime = severity == Severity.Critical ? ulong.MaxValue : severity == Severity.Urgent ? 25_000UL : 12_000UL;
+        var now = Time.GetTicksMsec();
+        if (_alertCards.FirstOrDefault(a => a.Title == title && IsInstanceValid(a.Panel)) is { } same)
+        {
+            same.Count++;
+            same.Heading.Text = $"{Ui.IconOf(severity)} {title}  ×{same.Count}";
+            same.Detail.Text = string.Join(" · ", new[] { detail, when }.Where(t => t.Length > 0));
+            same.Expires = lifetime == ulong.MaxValue ? lifetime : now + lifetime;
+            _alerts.MoveChild(same.Panel, 0);
+            return;
+        }
+
+        var panel = Ui.PanelOf(new Color(0.08f, 0.06f, 0.045f, 0.95f), new Color(Ui.Of(severity), 0.8f), Ui.SpaceM, Ui.SpaceS);
         var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", Ui.SpaceS);
         panel.AddChild(row);
+        row.AddChild(new ColorRect { Color = Ui.Of(severity), CustomMinimumSize = new Vector2(3, 0), MouseFilter = Control.MouseFilterEnum.Ignore });
         var column = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         column.AddThemeConstantOverride("separation", 0);
         row.AddChild(column);
-        column.AddChild(Ui.Text($"{Ui.IconOf(severity)} {severity.ToString().ToUpperInvariant()} — {title}", Ui.TextBody, Ui.Of(severity), 380));
-        if (!string.IsNullOrEmpty(detail) || !string.IsNullOrEmpty(when))
-        {
-            column.AddChild(Ui.Text(string.Join(" · ", new[] { detail, when }.Where(s => s.Length > 0)), Ui.TextMeta, Ui.InkSoft, 380));
-        }
-
+        var heading = Ui.Text($"{Ui.IconOf(severity)} {title}", Ui.TextBody, Ui.Of(severity), 230);
+        column.AddChild(heading);
+        var text = Ui.Text(string.Join(" · ", new[] { detail, when }.Where(t => t.Length > 0)), Ui.TextMeta, Ui.InkSoft, 230);
+        column.AddChild(text);
         if (focus is { } who)
         {
-            row.AddChild(Ui.Button("Focus", "Look at them", () => FocusRequested?.Invoke(who)));
+            row.AddChild(Ui.Button("Look", "Show them on deck", () => FocusRequested?.Invoke(who)));
         }
 
-        row.AddChild(Ui.Button("×", "Dismiss", () => panel.QueueFree()));
-        // Newest first, under the paused notice and above the routine notices; at most four kept.
+        var card = new AlertCard(panel, heading, text, title, severity) { Expires = lifetime == ulong.MaxValue ? lifetime : now + lifetime };
+        row.AddChild(Ui.Button("×", "Dismiss (it stays in the Chronicle)", () => DropAlert(card)));
         _alerts.AddChild(panel);
-        _alerts.MoveChild(panel, 1);
-        while (_alerts.GetChildCount() > 6)
+        _alerts.MoveChild(panel, 0);
+        _alertCards.Add(card);
+        // Three at most: the oldest of the least severe goes first.
+        while (_alertCards.Count > 3)
         {
-            var oldest = _alerts.GetChild(_alerts.GetChildCount() - 2);
-            _alerts.RemoveChild(oldest);
-            oldest.QueueFree();
+            DropAlert(_alertCards.OrderBy(a => a.Severity).ThenByDescending(a => a.Panel.GetIndex()).First());
         }
 
         Ui.FadeIn(panel);
-        if (severity != Severity.Critical)
+    }
+
+    private sealed class AlertCard(PanelContainer panel, Label heading, Label detail, string title, Severity severity)
+    {
+        public PanelContainer Panel { get; } = panel;
+        public Label Heading { get; } = heading;
+        public Label Detail { get; } = detail;
+        public string Title { get; } = title;
+        public Severity Severity { get; } = severity;
+        public int Count { get; set; } = 1;
+        public ulong Expires { get; set; }
+    }
+
+    private readonly List<AlertCard> _alertCards = [];
+    private ulong _lastSweep;
+
+    private void DropAlert(AlertCard card)
+    {
+        _alertCards.Remove(card);
+        if (IsInstanceValid(card.Panel))
         {
-            var timer = GetTree().CreateTimer(severity == Severity.Urgent ? 25 : 12);
-            timer.Timeout += () => { if (IsInstanceValid(panel)) panel.QueueFree(); };
+            card.Panel.QueueFree();
         }
     }
 
-    /// <summary>A short notice at the bottom that fades on its own (§18): routine news, confirmations.</summary>
+    // Once a frame: alerts that have had their time go, and the column sits under the status pills.
+    private void SweepAlerts()
+    {
+        // While the game waits on the captain, the alerts wait too: their time runs only while it runs.
+        var now = Time.GetTicksMsec();
+        var elapsed = now - _lastSweep;
+        _lastSweep = now;
+        if (_paused.Visible)
+        {
+            foreach (var card in _alertCards.Where(a => a.Expires != ulong.MaxValue))
+            {
+                card.Expires += elapsed;
+            }
+        }
+
+        foreach (var card in _alertCards.Where(a => a.Expires <= now || !IsInstanceValid(a.Panel)).ToList())
+        {
+            DropAlert(card);
+        }
+
+        _alerts.OffsetTop = _statusPanel.Visible ? _statusPanel.Position.Y + _statusPanel.Size.Y + Ui.SpaceS : Ui.SpaceM;
+        // The paused notice and the notices keep clear of an open screen: beside it, not over it.
+        if (_drawer.Visible)
+        {
+            _centre.AnchorLeft = _centre.AnchorRight = 0;
+            _centre.OffsetLeft = _drawer.Position.X + _drawer.Size.X + Ui.SpaceL;
+            _centre.OffsetRight = _centre.OffsetLeft + 480;
+        }
+        else
+        {
+            _centre.AnchorLeft = _centre.AnchorRight = 0.5f;
+            _centre.OffsetLeft = -240;
+            _centre.OffsetRight = 240;
+        }
+    }
+
+    /// <summary>Clears every alert and notice: when the scene changes (port to sea), the old ones are stale.</summary>
+    public void ClearNotices()
+    {
+        foreach (var card in _alertCards.ToList())
+        {
+            DropAlert(card);
+        }
+
+        foreach (var toast in _toasts.GetChildren())
+        {
+            toast.QueueFree();
+        }
+    }
+
+    /// <summary>A short notice at the top that fades on its own (§18): routine news, confirmations.</summary>
     public void Toast(string text, Severity severity = Severity.Information)
     {
         if (string.IsNullOrWhiteSpace(text))
@@ -344,8 +426,15 @@ public partial class Hud : CanvasLayer
             return;
         }
 
-        var panel = Ui.PanelOf(Ui.Panel, null, Ui.SpaceL, Ui.SpaceS);
-        panel.AddChild(Ui.Text(severity == Severity.Information ? text : $"{Ui.IconOf(severity)} {text}", Ui.TextBody, Ui.Of(severity), 560));
+        // The same notice twice in a row is said once.
+        if (_toasts.GetChildCount() > 0 && _toasts.GetChild(_toasts.GetChildCount() - 1).GetMeta("text", "").AsString() == text)
+        {
+            return;
+        }
+
+        var panel = Ui.PanelOf(new Color(0.07f, 0.055f, 0.045f, 0.9f), null, Ui.SpaceL, Ui.SpaceS);
+        panel.SetMeta("text", text);
+        panel.AddChild(Ui.Text(severity == Severity.Information ? text : $"{Ui.IconOf(severity)} {text}", Ui.TextBody, Ui.Of(severity), 460));
         _toasts.AddChild(panel);
         while (_toasts.GetChildCount() > 3)
         {
@@ -497,7 +586,20 @@ public partial class Hud : CanvasLayer
             button.SetPressedNoSignal(speed == speedIndex);
         }
 
+        // Port to sea, or sea to shore: the old scene's notices are stale.
+        var scene = campaign.Port is not null ? 0 : campaign.Voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } ? 1 : 2;
+        if (scene != _scene)
+        {
+            if (_scene >= 0)
+            {
+                ClearNotices();
+            }
+
+            _scene = scene;
+        }
+
         RefreshStatus(runner);
+        SweepAlerts();
         RefreshSelectedCard(runner, selected);
         RefreshChecklist(runner);
         RefreshChronicleNews(runner);
@@ -516,6 +618,9 @@ public partial class Hud : CanvasLayer
                 break;
             case PanelId.Chronicle:
                 RefreshChronicle(runner);
+                break;
+            case PanelId.Expedition:
+                RefreshVoyage(runner);
                 break;
         }
     }
@@ -786,7 +891,7 @@ public partial class Hud : CanvasLayer
 
     private void BuildStatus()
     {
-        _statusPanel = Ui.PanelOf(Ui.Panel, null, Ui.SpaceL, Ui.SpaceS);
+        _statusPanel = Ui.PanelOf(new Color(0, 0, 0, 0), null, 0, 0);
         _statusPanel.AnchorLeft = 1;
         _statusPanel.AnchorRight = 1;
         _statusPanel.OffsetTop = Ui.SpaceM;
@@ -796,7 +901,7 @@ public partial class Hud : CanvasLayer
         var column = new VBoxContainer();
         _statusPanel.AddChild(column);
         _status = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
-        _status.AddThemeConstantOverride("separation", Ui.SpaceL);
+        _status.AddThemeConstantOverride("separation", Ui.SpaceS);
         column.AddChild(_status);
 
         // Sail orders stay one click away at sea: they matter most when things go wrong (VOYAGE §21).
@@ -827,107 +932,57 @@ public partial class Hud : CanvasLayer
             chartButton.Disabled = campaign.Voyage?.Navigation is null;
         }
 
-        var chips = new List<(string Icon, string Text, Severity Severity, string Tip)>();
+        var chips = new List<(string Icon, string Text, Severity Severity, string Tip, PanelId? Go)>();
         if (campaign.Port is { } port && runner.Content.Port is { } rules)
         {
             var hours = (rules.Departure.Tick - campaign.Clock.Tick) / (double)SimulationClock.TicksPerHour;
             chips.Add(hours > 0
-                ? (Ui.IconTime, $"Departure in {Math.Floor(hours):0} h", hours < 6 ? Severity.Urgent : hours < 12 ? Severity.Attention : Severity.Information,
-                    $"The convoy sails at dawn on day {rules.Departure.Day}. After that, every half day in port costs {rules.LateFeePerHalfDay} sueldos.")
-                : (Ui.IconTime, "The convoy has sailed", Severity.Critical, $"Every half day in port now costs {rules.LateFeePerHalfDay} sueldos."));
+                ? (Ui.IconTime, $"Sails in {Math.Floor(hours):0} h", hours < 6 ? Severity.Urgent : hours < 12 ? Severity.Attention : Severity.Information,
+                    $"The convoy sails at dawn on day {rules.Departure.Day}. After that, every half day in port costs {rules.LateFeePerHalfDay} sueldos.", PanelId.Expedition)
+                : (Ui.IconTime, "The convoy has sailed", Severity.Critical, $"Every half day in port now costs {rules.LateFeePerHalfDay} sueldos.", PanelId.Expedition));
             var signed = port.Hired.Count;
             chips.Add(signed < rules.MinimumCrew
-                ? (Ui.IconPeople, $"Crew {signed}/{rules.MinimumCrew} minimum", Severity.Attention, $"The Garza needs at least {rules.MinimumCrew} hands to sail. Find people through the journal (X).")
-                : (Ui.IconPeople, $"Crew {signed}/{rules.Berths}", Severity.Positive, $"Enough hands to sail; {rules.Berths - signed} berths still free."));
-            chips.Add((Ui.IconPurse, $"{port.Funds}", port.Funds < 500 ? Severity.Attention : Severity.Information, "Sueldos left in the purse, for advances and stores"));
+                ? (Ui.IconPeople, $"Crew {signed}/{rules.MinimumCrew}", Severity.Attention, $"The Garza needs at least {rules.MinimumCrew} hands to sail. Find people through the journal (X).", PanelId.Expedition)
+                : (Ui.IconPeople, $"Crew {signed}/{rules.Berths}", Severity.Positive, $"Enough hands to sail; {rules.Berths - signed} berths still free.", PanelId.People));
+            chips.Add((Ui.IconPurse, $"{port.Funds}", port.Funds < 500 ? Severity.Attention : Severity.Information, "Sueldos left in the purse, for advances and stores", PanelId.Cargo));
             if (runner.PortWeather is { } weather)
             {
                 chips.Add((Ui.IconWind, weather.Name, Severity.Information, weather.Raining
                     ? "Rain: people caught outside take shelter in doorways and the vault arches, and the market thins."
                     : weather.Fog > 0.5 ? "Fog: you can see only a few paces, so people further off are out of sight."
-                    : "The weather in port. It changes through the day."));
+                    : "The weather in port. It changes through the day.", null));
             }
         }
-        else if (campaign.Voyage is { } ship)
+        else if (campaign.Voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } ship)
         {
             var weather = runner.Content.Voyage?.Weathers.FirstOrDefault(w => w.Id == ship.WeatherId);
             var sea = weather?.SeaState ?? 1;
-            chips.Add((Ui.IconWind, Capital(_formatter.WeatherName(ship.WeatherId)), sea >= 2.5 ? Severity.Critical : sea >= 1.8 ? Severity.Urgent : Severity.Information,
-                "The wind and sea. Heavy weather strains the hull and rigging and makes her leak; heaving to eases it."));
-            if (ship.Navigation is { } navigation)
-            {
-                // The compass: the course steered, and at noon a reminder to take the sun.
-                chips.Add(("✦", $"{SimulationRunner.CompassPoint(navigation.Heading)} · wind {SimulationRunner.CompassPoint(navigation.WindFrom)}" + (navigation.Beating ? " · beating" : ""),
-                    Severity.Information,
-                    $"Course {navigation.Heading:0}° by the compass, steered from your reckoning; the wind from the {SimulationRunner.CompassPoint(navigation.WindFrom)}. " +
-                    (navigation.Beating ? "It is too near the course she wants, so she beats to windward, tack upon tack. " : "") +
-                    "The chart (M) shows where you reckon she is."));
-                if (runner.StormComing && ship.Prepared.Count < Expedition.Simulation.Voyage.Preparations.All.Count)
-                {
-                    chips.Add(("⚑", "Heavy weather: prepare", Severity.Urgent,
-                        "A blow is coming or on her. Batten down, lash the cargo, strike the topmasts: the Ship panel (H) has them."));
-                }
+            var course = ship.Navigation is { } navigation ? $" · {SimulationRunner.CompassPoint(navigation.Heading)}" + (navigation.Beating ? ", beating" : "") : "";
+            chips.Add((Ui.IconWind, Capital(_formatter.WeatherName(ship.WeatherId)) + course, sea >= 2.5 ? Severity.Critical : sea >= 1.8 ? Severity.Urgent : Severity.Information,
+                "The wind and sea, and the course steered. Heavy weather strains the hull and rigging and makes her leak; heaving to eases it." +
+                (ship.Navigation is { } n ? $"\nCourse {n.Heading:0}° by the compass; the wind from the {SimulationRunner.CompassPoint(n.WindFrom)}." +
+                    (n.Beating ? " It is too near the course she wants, so she beats to windward, tack upon tack." : "") : "") +
+                "\nClick for the chart (M).", ship.Navigation is null ? null : PanelId.Chart));
 
-                if (ship.Leaks.Any(l => l.Repair == Expedition.Simulation.Voyage.LeakRepair.Open))
-                {
-                    chips.Add(("✚", $"Leaks open: {ship.Leaks.Count(l => l.Repair == Expedition.Simulation.Voyage.LeakRepair.Open)}", Severity.Urgent,
-                        "A leak is open. Plug it (Ship panel, H), and patch it with plank when you can."));
-                }
-
-                if (ship.Watches.Count > 0)
-                {
-                    var hour = runner.Campaign.Clock.Tick % SimulationClock.TicksPerDay / SimulationClock.TicksPerHour;
-                    var daysWork = hour >= Expedition.Simulation.Voyage.WatchBill.DaysWorkBegins && hour < Expedition.Simulation.Voyage.WatchBill.DaysWorkEnds;
-                    var deck = Expedition.Simulation.Voyage.WatchBill.OnDeck(runner.Campaign.Clock.Tick) == Expedition.Simulation.Voyage.Watch.Starboard ? "Starboard" : "Larboard";
-                    chips.Add(("◷", ship.AllHands ? "All hands" : ship.TurnedOut ? "Watch below turned out" : daysWork ? "Day's work" : $"{deck} watch on deck",
-                        ship.AllHands || ship.TurnedOut ? Severity.Attention : Severity.Information,
-                        $"{Capital(Expedition.Simulation.Voyage.WatchBill.NameAt(runner.Campaign.Clock.Tick))}. The watch bill, and All hands, are in the Ship panel (H)."));
-                }
-
-                if (navigation.Call is { } call && runner.Content.Voyage?.Route?.Islands.FirstOrDefault(i => i.Id == call.Island) is { } island)
-                {
-                    chips.Add(("⚓", call.Anchored ? $"At anchor: {island.Name}" : call.Sighted ? $"{island.Name} in sight" : $"Bound for {island.Name}",
-                        call.Anchored ? Severity.Positive : Severity.Information,
-                        call.Anchored
-                            ? "At anchor. Order hands to Water the ship ashore and Forage ashore, then weigh from the chart (M)."
-                            : "She has left the passage for the island. The chart (M) can send her back to it."));
-                }
-
-                if (runner.Raining)
-                {
-                    var catching = runner.Campaign.ActiveTasks.Values.Count(t => t.DefinitionId == "task.catch_rain");
-                    chips.Add(("☂", catching > 0 ? $"Rain: {catching} catching it" : "Rain: catch it", catching > 0 ? Severity.Information : Severity.Attention,
-                        "It is raining. Set hands to Catch the rain (People, or a standing duty): the courses slacked off into the casks fill them while it lasts."));
-                }
-
-                if (navigation.Sighted)
-                {
-                    chips.Add(("⚓", navigation.Pending ? "Land: what coast is this?" : navigation.CoastDirection == 0 ? "Land: standing off" : $"Coasting {(navigation.CoastDirection > 0 ? "north" : "south")}",
-                        navigation.Pending || navigation.CoastDirection == 0 ? Severity.Attention : Severity.Information,
-                        "The coast is in sight. Open the chart (M) to say what it is, by the sailing directions, or to run along it by eye."));
-                }
-                else if (navigation.NearWarned)
-                {
-                    chips.Add(("⚓", "Coast near: sound", Severity.Attention,
-                        "By your reckoning the coast is near. Heave the lead from the chart (M): the bank shoals as she closes. Keep a lookout, above all at night."));
-                }
-
-                if (runner.CanTakeNoonSight)
-                {
-                    chips.Add(("☀", "Noon: take the sun", Severity.Attention, "The sun is near its height. Open the chart (M) and take the noon sight, or leave it to your navigator."));
-                }
-            }
-
-            var (part, value, severity) = WorstPart(ship);
-            chips.Add((Ui.IconShip, part, severity, $"Hull {ship.Hull:0}%, rigging {ship.Rigging:0}%, bilge {ship.Bilge:0}% water. Details in Ship (H)."));
+            var togo = DaysToGo(ship);
+            chips.Add((Ui.IconLead, $"{ship.ReckonedRemaining:0} lg · {DaysText(togo)}", Severity.Information,
+                $"About {ship.ReckonedRemaining:0} leagues to {ship.Destination} by your reckoning: {DaysText(togo)} at the passage's usual pace. Click for the voyage at a glance (X).", PanelId.Expedition));
             var (food, water) = runner.SupplyForecast();
-            chips.Add((Ui.IconWater, $"Water {Range(water)}", water < 5 ? Severity.Critical : water < 10 ? Severity.Urgent : Severity.Information,
-                "Days of water at the current use, as an estimate. Short rations stretch it."));
-            chips.Add((Ui.IconFood, $"Food {Range(food)}", food < 5 ? Severity.Critical : food < 10 ? Severity.Urgent : Severity.Information,
-                "Days of food at the current use, as an estimate."));
-            if (!ship.WatchKept)
+            var waterVerdict = Verdict("Water", water, togo);
+            var foodVerdict = Verdict("Food", food, togo);
+            chips.Add((Ui.IconWater, $"Water {Range(water)}", waterVerdict.Severity, $"Water: {waterVerdict.Text}\nClick for the hold (C).", PanelId.Cargo));
+            chips.Add((Ui.IconFood, $"Food {Range(food)}", foodVerdict.Severity, $"Food: {foodVerdict.Text}\nClick for the hold (C).", PanelId.Cargo));
+            var (part, _, severity) = WorstPart(ship);
+            chips.Add((Ui.IconShip, part, severity, $"Hull {ship.Hull:0}%, rigging {ship.Rigging:0}%, bilge {ship.Bilge:0}% water. Click for the ship (H).", PanelId.Ship));
+
+            // Everything else that wants the captain, most pressing first, in one pill: the voyage screen lists them.
+            // (Water and food have their own pills, coloured by whether they will last.)
+            var matters = Matters(runner).Where(m => m.Severity >= Severity.Attention && !m.Short.StartsWith("Water") && !m.Short.StartsWith("Food")).ToList();
+            if (matters.Count > 0)
             {
-                chips.Add(("▲", "No one on watch", Severity.Urgent, "Without a watch she sails slowly and blind. Give someone the Stand watch duty."));
+                var top = matters[0];
+                chips.Add((Ui.IconOf(top.Severity), matters.Count > 1 ? $"{top.Short}  +{matters.Count - 1}" : top.Short, top.Severity,
+                    string.Join("\n", matters.Select(m => $"{Ui.IconOf(m.Severity)} {m.Short}: {m.Text}")) + "\nClick for what needs seeing to (X).", PanelId.Expedition));
             }
         }
 
@@ -938,15 +993,26 @@ public partial class Hud : CanvasLayer
             last.QueueFree();
         }
 
+        _pillTargets.Clear();
         for (var i = 0; i < chips.Count; i++)
         {
             if (i >= _status.GetChildCount())
             {
-                _status.AddChild(Ui.Chip("", "", Severity.Information));
+                var pill = Ui.Pill();
+                var index = i;
+                pill.Pressed += () =>
+                {
+                    if (index < _pillTargets.Count && _pillTargets[index] is { } go)
+                    {
+                        if (go == PanelId.Chart || _open != go) TogglePanel(go);
+                    }
+                };
+                _status.AddChild(pill);
             }
 
-            var (icon, text, severity, tip) = chips[i];
-            Ui.SetChip((Label)_status.GetChild(i), icon, text, severity, tip);
+            var (icon, text, severity, tip, target) = chips[i];
+            Ui.SetPill((Button)_status.GetChild(i), icon, text, severity, tip);
+            _pillTargets.Add(target);
         }
 
         _statusPanel.Visible = chips.Count > 0;
@@ -955,6 +1021,137 @@ public partial class Hud : CanvasLayer
         {
             button.SetPressedNoSignal(campaign.Voyage?.SailPlan == plan);
         }
+    }
+
+    private readonly List<PanelId?> _pillTargets = [];
+
+    // Days still to go, as a range at the passage's usual pace: steadier than the last hour's speed,
+    // which a calm makes infinite and a gale doubles.
+    private static (double Low, double High) DaysToGo(Expedition.Simulation.Voyage.VoyageState ship)
+    {
+        var (fast, slow) = Expedition.Simulation.Scenarios.ExpeditionScenario.PassageDays;
+        var share = ship.TotalLeagues > 0 ? Math.Clamp(ship.ReckonedRemaining / ship.TotalLeagues, 0, 1.5) : 0;
+        return (share * fast, share * slow);
+    }
+
+    private static string DaysText((double Low, double High) days) =>
+        days.High < 1 ? "under a day" : $"~{Math.Floor(days.Low):0}–{Math.Ceiling(days.High):0} d";
+
+    // Will it last? Stores against the passage still to go, in a word and a sentence.
+    private static (Severity Severity, string Word, string Text) Verdict(string what, double days, (double Low, double High) togo)
+    {
+        if (double.IsInfinity(days) || days >= togo.High * 1.15)
+        {
+            return (Severity.Positive, "enough", $"lasts {Range(days)}; the passage still to go is {DaysText(togo)}. Enough, with some over.");
+        }
+
+        if (days >= togo.Low)
+        {
+            return (Severity.Attention, "tight", $"lasts {Range(days)}; the passage still to go is {DaysText(togo)}. Enough only on a good passage.");
+        }
+
+        var shortBy = Math.Max(1, Math.Round(togo.Low - days));
+        return (days < 5 ? Severity.Critical : Severity.Urgent, "short",
+            $"lasts {Range(days)}; the passage still to go is {DaysText(togo)}. It runs out {shortBy:0} days or more before landfall.");
+    }
+
+    /// <summary>Something that wants the captain: how much, in a few words, why and what to do, and where.</summary>
+    private readonly record struct Matter(Severity Severity, string Short, string Text, PanelId Go, CharacterId? Who = null);
+
+    // Everything at sea that wants the captain now, most pressing first (§3, §36).
+    private List<Matter> Matters(SimulationRunner runner)
+    {
+        var matters = new List<Matter>();
+        if (runner.Campaign.Voyage is not { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } ship)
+        {
+            return matters;
+        }
+
+        if (ship.Bilge > 60)
+        {
+            matters.Add(new(Severity.Critical, $"Bilge {ship.Bilge:0}%: pump!", "She is filling; above 80% she founders. Every hand to the pumps: call all hands.", PanelId.Ship));
+        }
+        else if (ship.Bilge > 30)
+        {
+            matters.Add(new(Severity.Urgent, $"Bilge {ship.Bilge:0}%", "The leaks are gaining on the pumps. Put more hands to pumping, plug the leaks.", PanelId.Ship));
+        }
+
+        var open = ship.Leaks.Count(l => l.Repair == Expedition.Simulation.Voyage.LeakRepair.Open);
+        if (open > 0)
+        {
+            matters.Add(new(Severity.Urgent, open == 1 ? "A leak is open" : $"{open} leaks open", "Plug it now, from the Ship screen; patch it with plank when you can.", PanelId.Ship));
+        }
+
+        if (runner.StormComing && ship.Prepared.Count < Expedition.Simulation.Voyage.Preparations.All.Count)
+        {
+            matters.Add(new(Severity.Urgent, "Prepare for heavy weather", "A blow is coming or on her: batten down, lash the cargo, strike the topmasts.", PanelId.Ship));
+        }
+
+        if (!ship.WatchKept)
+        {
+            matters.Add(new(Severity.Urgent, "No one on watch", "Without a watch she sails slowly and blind. Draw up the watch bill or give someone the Stand watch duty.", PanelId.Ship));
+        }
+
+        var togo = DaysToGo(ship);
+        var (food, water) = runner.SupplyForecast();
+        foreach (var (what, days, remedy) in new[]
+                 {
+                     ("Water", water, "Cut to short rations, catch the rain when it comes, or make for an island to water."),
+                     ("Food", food, "Cut to short rations, put hands to fishing, or make for an island to forage and buy."),
+                 })
+        {
+            var verdict = Verdict(what, days, togo);
+            if (verdict.Severity >= Severity.Attention)
+            {
+                matters.Add(new(verdict.Severity, verdict.Word == "short" ? $"{what} will run out" : $"{what} is tight", $"{Capital(verdict.Text)} {remedy}", PanelId.Ship));
+            }
+        }
+
+        foreach (var hand in runner.Campaign.Crew.OrderBy(c => c.Name))
+        {
+            var concerns = Concerns(hand);
+            if (concerns.Count > 0 && concerns.Max(c => c.Severity) >= Severity.Urgent)
+            {
+                var worst = concerns.OrderByDescending(c => c.Severity).First();
+                matters.Add(new(worst.Severity, $"{hand.Name}: {worst.Text}", string.Join(", ", concerns.Select(c => c.Text)) + ". Rest them, feed them, or see the surgeon.", PanelId.People, hand.Id));
+            }
+        }
+
+        if (ship.Navigation is { } navigation)
+        {
+            if (navigation.Sighted && navigation.Pending)
+            {
+                matters.Add(new(Severity.Attention, "Land: which coast?", "The coast is in sight. Say what it is by the sailing directions on the chart.", PanelId.Chart));
+            }
+            else if (!navigation.Sighted && navigation.NearWarned)
+            {
+                matters.Add(new(Severity.Attention, "Coast near: sound", "By your reckoning the coast is near. Heave the lead from the chart, and keep a lookout.", PanelId.Chart));
+            }
+
+            if (runner.CanTakeNoonSight)
+            {
+                matters.Add(new(Severity.Attention, "Noon: take the sun", "The sun is near its height: take the noon sight on the chart, or leave it to your navigator.", PanelId.Chart));
+            }
+
+            if (navigation.Call is { Anchored: true })
+            {
+                matters.Add(new(Severity.Information, "At anchor", "Send hands to water and forage ashore, buy from the islanders, then weigh from the chart.", PanelId.Chart));
+            }
+        }
+
+        if (runner.Raining && !runner.Campaign.ActiveTasks.Values.Any(t => t.DefinitionId == "task.catch_rain"))
+        {
+            matters.Add(new(Severity.Attention, "Rain: catch it", "It is raining and no one is catching it. Order hands to Catch the rain while it lasts.", PanelId.People));
+        }
+
+        var repairs = runner.RepairsLeft();
+        if ((ship.Hull < 70 && repairs.GetValueOrDefault(Expedition.Simulation.Voyage.ShipPart.Hull) > 0)
+            || ((ship.Rigging < 70 || ship.YardSprung) && repairs.GetValueOrDefault(Expedition.Simulation.Voyage.ShipPart.Rigging) > 0))
+        {
+            matters.Add(new(Severity.Attention, "Repairs wanted", $"Hull {ship.Hull:0}%, rigging {ship.Rigging:0}%. Order a hand to patch the hull or repair the rigging while the weather allows.", PanelId.People));
+        }
+
+        return matters.OrderByDescending(m => m.Severity).ToList();
     }
 
     // What squalls have carried away, for the ship panel: work on the rigging mends the yard first, then the lines.
@@ -1028,7 +1225,7 @@ public partial class Hud : CanvasLayer
         if (show)
         {
             character = campaign.Characters[selected!.Value];
-            _selectedName.Text = selected == campaign.CaptainId ? $"{character.Name} · captain" : character.Name;
+            _selectedName.Text = selected == campaign.CaptainId && !character.Name.StartsWith("Captain") ? $"{character.Name} · captain" : character.Name;
             var progress = campaign.ActiveTasks.TryGetValue(character.Id, out var task)
                 ? $" · {Math.Min(1, task.Progress / runner.Content.Tasks[task.DefinitionId].DurationMinutes):P0}"
                 : "";
@@ -1078,34 +1275,44 @@ public partial class Hud : CanvasLayer
         };
     }
 
+    private VBoxContainer _centre = null!;
+
     private void BuildAlerts()
     {
+        // Alerts: a column on the right, under the status pills (SweepAlerts keeps it there).
         _alerts = new VBoxContainer
+        {
+            AnchorLeft = 1, AnchorRight = 1, OffsetLeft = -360, OffsetRight = -Ui.SpaceM, OffsetTop = 84,
+            GrowHorizontal = Control.GrowDirection.Begin, MouseFilter = Control.MouseFilterEnum.Ignore,
+        };
+        _alerts.AddThemeConstantOverride("separation", Ui.SpaceS);
+        _root.AddChild(_alerts);
+
+        // The paused notice and the routine notices: top centre, under the clock's line.
+        _centre = new VBoxContainer
         {
             AnchorLeft = 0.5f, AnchorRight = 0.5f, OffsetTop = 84, OffsetLeft = -240, OffsetRight = 240,
             MouseFilter = Control.MouseFilterEnum.Ignore,
         };
-        _root.AddChild(_alerts);
-
-        _paused = Ui.PanelOf(new Color(0.18f, 0.06f, 0.04f, 0.92f), Ui.Of(Severity.Urgent), Ui.SpaceL, Ui.SpaceM);
+        _centre.AddThemeConstantOverride("separation", Ui.SpaceS);
+        _root.AddChild(_centre);
+        _paused = Ui.PanelOf(new Color(0.14f, 0.07f, 0.04f, 0.94f), Ui.Of(Severity.Attention), Ui.SpaceL, Ui.SpaceS);
         _paused.Visible = false;
-        _alerts.AddChild(_paused);
-        var column = new VBoxContainer();
-        _paused.AddChild(column);
-        _pausedText = Ui.Text("", Ui.TextBody + 1, Ui.Ink, 440);
-        column.AddChild(_pausedText);
-        var row = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
-        column.AddChild(row);
-        row.AddChild(Ui.Text("Paused. Give your orders, then", Ui.TextMeta, Ui.InkSoft));
-        row.AddChild(Ui.Button("Carry on (Space)", "Resume at a safe speed", () => ContinueRequested?.Invoke()));
+        _centre.AddChild(_paused);
+        var row = new HBoxContainer();
+        _paused.AddChild(row);
+        row.AddChild(Ui.Text("❚❚", Ui.TextHeading, Ui.Of(Severity.Attention)));
+        _pausedText = Ui.Text("", Ui.TextBody, Ui.Ink, 300);
+        _pausedText.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        row.AddChild(_pausedText);
+        row.AddChild(Ui.Button("Carry on  (Space)", "Resume at a safe speed", () => ContinueRequested?.Invoke()));
     }
 
     private void BuildToasts()
     {
-        // Notices sit under the alerts at the top, clear of the conversation strip and the selected card.
         _toasts = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         _toasts.AddThemeConstantOverride("separation", Ui.SpaceXs);
-        _alerts.AddChild(_toasts);
+        _centre.AddChild(_toasts);
     }
 
     // New chronicle entries: notable ones surface as short notices; all count as unread (§35).
@@ -1196,37 +1403,175 @@ public partial class Hud : CanvasLayer
             _panelBodies[id] = body;
         }
 
+        BuildVoyage(_panelBodies[PanelId.Expedition]);
         BuildPeople(_panelBodies[PanelId.People]);
         BuildCargo(_panelBodies[PanelId.Cargo]);
         BuildShip(_panelBodies[PanelId.Ship]);
         BuildChronicle(_panelBodies[PanelId.Chronicle]);
     }
 
+    // The voyage at a glance (Expedition at sea): how far, whether the stores will last, the ship and the
+    // crew in a line each, and what wants the captain, each with the way to it.
+    private VBoxContainer _voyageView = null!;
+    private Label _passageText = null!;
+    private Gauge _passageGauge = null!;
+    private Gauge _waterGauge = null!;
+    private Gauge _foodGauge = null!;
+    private Label _storesText = null!;
+    private Gauge _overHull = null!;
+    private Gauge _overBilge = null!;
+    private Gauge _overRigging = null!;
+    private Label _crewText = null!;
+    private VBoxContainer _matterList = null!;
+    private string _matterSignature = "";
+
+    private void BuildVoyage(VBoxContainer body)
+    {
+        _voyageView = new VBoxContainer { Visible = false };
+        _voyageView.AddThemeConstantOverride("separation", Ui.SpaceM);
+        body.AddChild(_voyageView);
+
+        var attention = Ui.Card(_voyageView, "Needs your attention");
+        _matterList = new VBoxContainer();
+        _matterList.AddThemeConstantOverride("separation", Ui.SpaceS);
+        attention.AddChild(_matterList);
+
+        var passage = Ui.Card(_voyageView, "The passage");
+        _passageText = Ui.Text("", Ui.TextBody, Ui.Ink, 340);
+        passage.AddChild(_passageText);
+        _passageGauge = new Gauge(passage, "Made good");
+
+        var stores = Ui.Card(_voyageView, "Stores against the passage");
+        _waterGauge = new Gauge(stores, $"{Ui.IconWater} Water");
+        _foodGauge = new Gauge(stores, $"{Ui.IconFood} Food");
+        _storesText = Ui.Text("", Ui.TextMeta + 1, Ui.InkSoft, 340);
+        stores.AddChild(_storesText);
+
+        var ship = Ui.Card(_voyageView, "The ship");
+        _overHull = new Gauge(ship, "Hull");
+        _overBilge = new Gauge(ship, "Bilge");
+        _overRigging = new Gauge(ship, "Rigging");
+
+        var crew = Ui.Card(_voyageView, "The crew");
+        _crewText = Ui.Text("", Ui.TextBody, Ui.Ink, 340);
+        crew.AddChild(_crewText);
+
+        var charter = Ui.Card(_voyageView, "The charter");
+        charter.AddChild(Ui.Text("Reach Punta Ceniza on the Ember Coast, learn what became of the factory, re-establish it and hold it.", Ui.TextBody, Ui.InkSoft, 340));
+    }
+
+    private void RefreshVoyage(SimulationRunner runner)
+    {
+        if (runner.Campaign.Voyage is not { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } ship)
+        {
+            _voyageView.Visible = false;
+            return;
+        }
+
+        _voyageView.Visible = true;
+        var togo = DaysToGo(ship);
+        var made = ship.TotalLeagues > 0 ? 100 * (1 - ship.ReckonedRemaining / ship.TotalLeagues) : 0;
+        _passageText.Text = $"{Capital(ship.ShipName)}, bound for {ship.Destination}.\nAbout {ship.ReckonedRemaining:0} leagues to go by your reckoning: {DaysText(togo)} at the usual pace."
+                            + (Objective(runner) is { } next ? $"\n{next}" : "");
+        _passageGauge.Set(made, $"{Math.Max(0, made):0}% of {ship.TotalLeagues:0} lg", Severity.Information,
+            "How much of the passage is behind her, by your reckoning. The reckoning drifts; the noon sight and the land put it right.");
+
+        var (food, water) = runner.SupplyForecast();
+        void Stores(Gauge gauge, string what, double days)
+        {
+            var verdict = Verdict(what, days, togo);
+            // Full bar: enough for the slowest passage still to go.
+            gauge.Set(togo.High > 0 ? 100 * days / togo.High : 100, $"{Range(days)} · {verdict.Word}", verdict.Severity, $"{what}: {verdict.Text}");
+        }
+
+        Stores(_waterGauge, "Water", water);
+        Stores(_foodGauge, "Food", food);
+        _storesText.Text = $"A full bar is enough for the slowest passage still to go ({DaysText(togo)}). " +
+                           (runner.Campaign.Rationing ? "On short rations." : "On full rations.") + $"  Purse: {ship.Funds} sueldos.";
+
+        SetShipGauges(ship, _overHull, _overBilge, _overRigging);
+
+        var crew = runner.Campaign.Crew.ToList();
+        var aboard = crew.Count(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated);
+        var concerns = crew.Select(c => (Hand: c, Concerns: Concerns(c))).ToList();
+        var fit = concerns.Count(c => c.Concerns.Count == 0 && c.Hand.SurvivalState == SurvivalState.Alive);
+        string Count(params string[] words) => concerns.Count(c => c.Concerns.Any(k => words.Contains(k.Text))).ToString();
+        _crewText.Text = $"{aboard} aboard · {fit} fit\n" +
+                         $"Tired {Count("tired", "exhausted")} · Hungry {Count("hungry", "starving")} · Thirsty {Count("thirsty", "parched")} · Hurt {Count("hurt", "badly hurt", "incapacitated")} · Strained {Count("strained", "at the end of their tether")}";
+
+        var matters = Matters(runner);
+        var signature = string.Join("|", matters.Select(m => $"{m.Severity}{m.Short}{m.Text}"));
+        if (signature == _matterSignature)
+        {
+            return;
+        }
+
+        _matterSignature = signature;
+        foreach (var child in _matterList.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        if (matters.Count == 0)
+        {
+            _matterList.AddChild(Ui.Text($"{Ui.IconOf(Severity.Positive)} Nothing pressing. She is on her course and the hands at their work.", Ui.TextBody, Ui.Of(Severity.Positive), 340));
+            return;
+        }
+
+        foreach (var matter in matters)
+        {
+            var row = new HBoxContainer();
+            row.AddThemeConstantOverride("separation", Ui.SpaceS);
+            _matterList.AddChild(row);
+            row.AddChild(new ColorRect { Color = Ui.Of(matter.Severity), CustomMinimumSize = new Vector2(3, 0) });
+            var column = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+            column.AddThemeConstantOverride("separation", 0);
+            row.AddChild(column);
+            column.AddChild(Ui.Text($"{Ui.IconOf(matter.Severity)} {matter.Short}", Ui.TextBody, Ui.Of(matter.Severity), 250));
+            column.AddChild(Ui.Text(matter.Text, Ui.TextMeta, Ui.InkSoft, 250));
+            var go = matter.Go;
+            var who = matter.Who;
+            var name = go switch { PanelId.Ship => "Ship", PanelId.People => "People", PanelId.Chart => "Chart", PanelId.Cargo => "Cargo", _ => "Open" };
+            var button = Ui.Button($"{name} ›", $"Go to the {name} screen to deal with it", () =>
+            {
+                if (who is { } id) CharacterChosen?.Invoke(id);
+                if (go == PanelId.Chart) TogglePanel(go);
+                else OpenPanel(go);
+            });
+            button.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+            row.AddChild(button);
+        }
+    }
+
+    // The hull, bilge and rigging gauges, wherever they are shown.
+    private static void SetShipGauges(Expedition.Simulation.Voyage.VoyageState ship, Gauge hull, Gauge bilge, Gauge rigging)
+    {
+        static string Word(double value) => value >= 85 ? "sound" : value >= 70 ? "worn" : value >= 40 ? "damaged" : "failing";
+        static Severity Of(double value) => value >= 85 ? Severity.Positive : value >= 70 ? Severity.Information : value >= 40 ? Severity.Attention : Severity.Critical;
+        hull.Set(ship.Hull, $"{Word(ship.Hull)} · {ship.Hull:0}%", Of(ship.Hull), "The hull: leaks worsen as it wears, and heavy seas strike it. Patch it with oakum and plank.");
+        bilge.Set(ship.Bilge, ship.Bilge > 60 ? $"filling · {ship.Bilge:0}%" : ship.Bilge > 30 ? $"rising · {ship.Bilge:0}%" : $"pumped · {ship.Bilge:0}%",
+            ship.Bilge > 60 ? Severity.Critical : ship.Bilge > 30 ? Severity.Urgent : ship.Bilge > 15 ? Severity.Attention : Severity.Positive,
+            "Water in the bilge. The pumps must keep ahead of the leaks; above 80% she founders.");
+        rigging.Set(ship.Rigging, $"{Word(ship.Rigging)} · {ship.Rigging:0}%", ship.YardSprung ? Severity.Urgent : Of(ship.Rigging),
+            "Masts, yards, sails and ropes. Worn rigging slows her; squalls carry it away. Repair it with rope.");
+    }
+
     private void BuildPeople(VBoxContainer body)
     {
-        body.AddChild(Ui.Text("Your people. Skills are what you have seen or been told, never more.", Ui.TextMeta, Ui.InkSoft, 370));
+        var roster = Ui.Card(body, "The roster", "click to choose");
+        roster.AddChild(Ui.Text("Skills are what you have seen or been told, never more.", Ui.TextMeta, Ui.InkSoft, 340));
         _crewList = new VBoxContainer();
         _crewList.AddThemeConstantOverride("separation", 2);
-        body.AddChild(_crewList);
-        body.AddChild(new HSeparator());
+        roster.AddChild(_crewList);
 
+        var person = Ui.Card(body);
         _name = Ui.Heading("");
-        body.AddChild(_name);
-        _doing = Ui.Text("", Ui.TextBody, Ui.Ink, 370);
-        body.AddChild(_doing);
-        foreach (var need in new[] { "Hunger", "Thirst", "Fatigue", "Stress" })
+        person.AddChild(_name);
+        _doing = Ui.Text("", Ui.TextBody, Ui.Ink, 340);
+        person.AddChild(_doing);
+        foreach (var need in new[] { "Health", "Hunger", "Thirst", "Fatigue", "Stress" })
         {
-            var line = new HBoxContainer();
-            line.AddChild(Ui.Text(need, Ui.TextMeta, Ui.InkSoft));
-            line.GetChild<Label>(0).CustomMinimumSize = new Vector2(64, 0);
-            var bar = new ProgressBar
-            {
-                MinValue = 0, MaxValue = 100, ShowPercentage = false,
-                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 10),
-            };
-            line.AddChild(bar);
-            body.AddChild(line);
-            _needBars[need] = bar;
+            _needBars[need] = new Gauge(person, need, 64, 110);
         }
 
         var tabs = new TabContainer { CustomMinimumSize = new Vector2(0, 360) };
@@ -1266,13 +1611,25 @@ public partial class Hud : CanvasLayer
         foreach (var (button, id) in _crewButtons)
         {
             var character = runner.Campaign.Characters[id];
-            var captain = id == runner.Campaign.CaptainId ? " · captain" : "";
+            var captain = id == runner.Campaign.CaptainId && !character.Name.StartsWith("Captain") ? " (captain)" : "";
             var concerns = Concerns(character);
-            button.Text = $"{character.Name}{captain} — {Activity(runner, character)}" + (concerns.Count > 0 ? $"   {Ui.IconOf(concerns.Max(c => c.Severity))} {concerns[0].Text}" : "");
+            var worst = concerns.Count > 0 ? concerns.Max(c => c.Severity) : Severity.Positive;
+            var watch = runner.Campaign.Voyage is { } ship && ship.Watches.ContainsKey(id) ? $" · {WatchShort(ship.WatchOf(id))}" : "";
+            // Their state at a glance: a mark and colour for the worst of it, then what they are doing.
+            button.Text = $"{Ui.IconOf(worst)} {character.Name}{captain}{watch} — {Activity(runner, character)}" + (concerns.Count > 0 ? $"  · {string.Join(", ", concerns.Select(c => c.Text))}" : "");
             button.SetPressedNoSignal(id == selected);
-            button.Modulate = id == selected ? Ui.Brass : Colors.White;
+            button.AddThemeColorOverride("font_color", concerns.Count > 0 ? Ui.Of(worst) : Ui.Ink);
+            button.AddThemeColorOverride("font_hover_color", concerns.Count > 0 ? Ui.Of(worst) : Ui.Ink);
         }
     }
+
+    private static string WatchShort(Expedition.Simulation.Voyage.Watch watch) => watch switch
+    {
+        Expedition.Simulation.Voyage.Watch.Starboard => "stbd",
+        Expedition.Simulation.Voyage.Watch.Larboard => "larb",
+        Expedition.Simulation.Voyage.Watch.Day => "day",
+        _ => "no watch",
+    };
 
     private TaskPriority CurrentPriority => _urgent.ButtonPressed ? TaskPriority.Urgent : TaskPriority.Normal;
 
@@ -1291,15 +1648,24 @@ public partial class Hud : CanvasLayer
         }
 
         var isCaptain = id == runner.Campaign.CaptainId;
-        _name.Text = isCaptain ? $"{character.Name} · captain" : character.Name;
+        _name.Text = isCaptain && !character.Name.StartsWith("Captain") ? $"{character.Name} · captain" : character.Name;
         var progress = runner.Campaign.ActiveTasks.TryGetValue(id, out var task)
             ? $" ({Math.Min(1, task.Progress / runner.Content.Tasks[task.DefinitionId].DurationMinutes):P0})"
             : "";
         _doing.Text = $"Doing: {Activity(runner, character)}{progress}";
-        _needBars["Hunger"].Value = character.Needs.Hunger;
-        _needBars["Thirst"].Value = character.Needs.Thirst;
-        _needBars["Fatigue"].Value = character.Needs.Fatigue;
-        _needBars["Stress"].Value = character.Needs.Stress;
+        void Need(string key, double value, string mild, string severe, string tip)
+        {
+            var severity = value >= 85 ? Severity.Urgent : value >= 65 ? Severity.Attention : Severity.Information;
+            _needBars[key].Set(value, $"{(value >= 85 ? severe : value >= 65 ? mild : "fine")} · {value:0}", severity, tip);
+        }
+
+        var vigour = character.Health.Value;
+        _needBars["Health"].Set(vigour, $"{(vigour >= 90 ? "well" : vigour >= 60 ? "hurt" : vigour >= 30 ? "badly hurt" : "near death")} · {vigour:0}",
+            vigour >= 90 ? Severity.Positive : vigour >= 75 ? Severity.Information : vigour >= 40 ? Severity.Attention : Severity.Critical, "Health: injuries and sickness bring it down; rest and a surgeon bring it back.");
+        Need("Hunger", character.Needs.Hunger, "hungry", "starving", "Hunger: eating brings it down. Short rations feed once a day.");
+        Need("Thirst", character.Needs.Thirst, "thirsty", "parched", "Thirst: drinking brings it down. Short rations water once a day.");
+        Need("Fatigue", character.Needs.Fatigue, "tired", "exhausted", "Fatigue: work and the night watches raise it; sleep below brings it down. The tired make mistakes.");
+        Need("Stress", character.Needs.Stress, "strained", "at the end of their tether", "Stress: danger, hunger and hard words raise it; rest, food and good company ease it.");
 
         // The captain knows their own self; everyone else is what the captain has learned (§20–23).
         string Self(IEnumerable<KeyValuePair<string, int>> levels, Func<string, string> name) =>
@@ -1406,34 +1772,96 @@ public partial class Hud : CanvasLayer
         return views.Count == 0 ? "" : "\nAmong the crew:\n" + string.Join("\n", views) + "\n";
     }
 
+    private VBoxContainer _cargoView = null!;
+    private string _cargoSignature = "";
+
     private void BuildCargo(VBoxContainer body)
     {
-        _manifest = Ui.Text("", Ui.TextBody, Ui.Ink, 370);
-        body.AddChild(_manifest);
+        _cargoView = new VBoxContainer();
+        _cargoView.AddThemeConstantOverride("separation", Ui.SpaceM);
+        body.AddChild(_cargoView);
     }
 
+    // The manifest as cards: the hold's room, then water and provisions against the passage, then the
+    // rest. Rebuilt only when something in it changes.
     private void RefreshManifest(SimulationRunner runner)
     {
         var content = runner.Content;
         var store = runner.Campaign.SharedStore.Quantities;
         var (food, water) = runner.SupplyForecast();
+        var togo = runner.Campaign.Voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } ship ? DaysToGo(ship) : ((double, double)?)null;
+        var signature = string.Join(",", store.Select(p => $"{p.Key}{p.Value}")) + $"|{Range(food)}|{Range(water)}|{(togo is { } t ? DaysText(t) : "")}";
+        if (signature == _cargoSignature)
+        {
+            return;
+        }
+
+        _cargoSignature = signature;
+        foreach (var child in _cargoView.GetChildren())
+        {
+            child.QueueFree();
+        }
+
         var tools = content.Tasks.Values.SelectMany(t => t.RequiredTools).ToHashSet();
         var materials = content.Tasks.Values.SelectMany(t => t.Consumes.Keys).ToHashSet();
-        string Line(KeyValuePair<string, int> pair) => $"  {content.Items[pair.Key].Name} × {pair.Value}";
+        var hold = runner.Campaign.SharedStore;
+        if (hold.Capacity.MaxVolumeLitres is { } litres)
+        {
+            var room = Ui.Card(_cargoView, "The Garza's hold");
+            var volume = hold.TotalVolumeLitres(content.Items);
+            var weight = hold.TotalWeightKg(content.Items);
+            var maxWeight = hold.Capacity.MaxWeightKg ?? 0;
+            new Gauge(room, "Space", 64, 150).Set(100 * volume / litres, $"{volume:0} of {litres:0} l", volume > litres * 0.95 ? Severity.Attention : Severity.Information, "How full the hold is by volume.");
+            if (maxWeight > 0)
+            {
+                new Gauge(room, "Weight", 64, 150).Set(100 * weight / maxWeight, $"{weight:0} of {maxWeight:0} kg", weight > maxWeight * 0.95 ? Severity.Attention : Severity.Information, "How much she carries against what she can.");
+            }
+        }
+
+        string Lasts(string what, double days) => togo is { } passage ? $"{Range(days)} · {Verdict(what, days, passage).Word}" : $"lasts {Range(days)}";
         var groups = new[]
         {
-            ("Water", store.Where(p => content.Items[p.Key].ThirstRelief > 0), $"lasts {Range(water)} for {runner.Campaign.Crew.Count()} aboard"),
-            ("Provisions", store.Where(p => content.Items[p.Key].HungerRelief > 0 && content.Items[p.Key].ThirstRelief <= 0), $"lasts {Range(food)}"),
-            ("Repair materials", store.Where(p => materials.Contains(p.Key) && content.Items[p.Key].HungerRelief <= 0 && content.Items[p.Key].ThirstRelief <= 0), "used up by repairs"),
-            ("Tools", store.Where(p => tools.Contains(p.Key) && !materials.Contains(p.Key)), "needed for some work, not used up"),
-            ("Other", store.Where(p => !tools.Contains(p.Key) && !materials.Contains(p.Key) && content.Items[p.Key].HungerRelief <= 0 && content.Items[p.Key].ThirstRelief <= 0), ""),
+            ("Water", store.Where(p => content.Items[p.Key].ThirstRelief > 0), Lasts("Water", water), togo is { } a ? Verdict("Water", water, a).Severity : Severity.Information),
+            ("Provisions", store.Where(p => content.Items[p.Key].HungerRelief > 0 && content.Items[p.Key].ThirstRelief <= 0), Lasts("Food", food), togo is { } b ? Verdict("Food", food, b).Severity : Severity.Information),
+            ("Repair materials", store.Where(p => materials.Contains(p.Key) && content.Items[p.Key].HungerRelief <= 0 && content.Items[p.Key].ThirstRelief <= 0), "used up by repairs", Severity.Information),
+            ("Tools", store.Where(p => tools.Contains(p.Key) && !materials.Contains(p.Key)), "not used up", Severity.Information),
+            ("Other", store.Where(p => !tools.Contains(p.Key) && !materials.Contains(p.Key) && content.Items[p.Key].HungerRelief <= 0 && content.Items[p.Key].ThirstRelief <= 0), "", Severity.Information),
         };
-        var hold = runner.Campaign.SharedStore;
-        var room = hold.Capacity.MaxVolumeLitres is { } litres
-            ? $" — {hold.TotalVolumeLitres(content.Items):0} of {litres:0} litres, {hold.TotalWeightKg(content.Items):0} of {hold.Capacity.MaxWeightKg ?? 0:0} kg"
-            : "";
-        _manifest.Text = $"The Garza's hold{room}\n" + string.Join("\n", groups.Where(g => g.Item2.Any())
-            .Select(g => $"\n{g.Item1}{(g.Item3.Length > 0 ? $" — {g.Item3}" : "")}\n" + string.Join("\n", g.Item2.OrderBy(p => content.Items[p.Key].Name).Select(Line))));
+        foreach (var (title, items, note, severity) in groups)
+        {
+            var list = items.OrderBy(p => content.Items[p.Key].Name).ToList();
+            if (list.Count == 0 && title is not ("Water" or "Provisions"))
+            {
+                continue;
+            }
+
+            var card = Ui.Card(_cargoView, title, note);
+            if (severity != Severity.Information)
+            {
+                var header = card.GetChild(0).GetChild(0);
+                ((Label)header.GetChild(1)).AddThemeColorOverride("font_color", Ui.Of(severity));
+            }
+
+            if (list.Count == 0)
+            {
+                card.AddChild(Ui.Text($"{Ui.IconOf(Severity.Critical)} None left aboard.", Ui.TextBody, Ui.Of(Severity.Critical)));
+                continue;
+            }
+
+            var grid = new GridContainer { Columns = 2 };
+            grid.AddThemeConstantOverride("h_separation", Ui.SpaceL);
+            grid.AddThemeConstantOverride("v_separation", 1);
+            card.AddChild(grid);
+            foreach (var (item, count) in list)
+            {
+                var name = Ui.Text(content.Items[item].Name, Ui.TextBody, Ui.Ink);
+                name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+                grid.AddChild(name);
+                var amount = Ui.Text($"× {count}", Ui.TextBody, Ui.Brass);
+                amount.HorizontalAlignment = HorizontalAlignment.Right;
+                grid.AddChild(amount);
+            }
+        }
     }
 
     private VBoxContainer _stormBox = null!;
@@ -1446,30 +1874,64 @@ public partial class Hud : CanvasLayer
     private readonly Dictionary<CharacterId, OptionButton> _watchPickers = [];
     private SimulationRunner? _watchRunner;
 
+    private Control _conditionCard = null!;
+    private Gauge _hullGauge = null!;
+    private Gauge _bilgeGauge = null!;
+    private Gauge _riggingGauge = null!;
+    private Label _repairsText = null!;
+    private Label _carriedText = null!;
+    private Control _provisionsCard = null!;
+    private Label _rationsText = null!;
+    private readonly Dictionary<string, Label> _prepLabels = [];
+    private Label _leaksText = null!;
+
     private void BuildShip(VBoxContainer body)
     {
-        _shipReport = Ui.Text("", Ui.TextBody, Ui.Ink, 370);
-        body.AddChild(_shipReport);
+        var under = Ui.Card(body, "Under way");
+        _shipReport = Ui.Text("", Ui.TextBody, Ui.Ink, 340);
+        under.AddChild(_shipReport);
+
+        var condition = Ui.Card(body, "Condition");
+        _conditionCard = condition.GetParent<Control>();
+        _hullGauge = new Gauge(condition, "Hull");
+        _bilgeGauge = new Gauge(condition, "Bilge");
+        _riggingGauge = new Gauge(condition, "Rigging");
+        _carriedText = Ui.Text("", Ui.TextMeta + 1, Ui.Of(Severity.Attention), 340);
+        condition.AddChild(_carriedText);
+        _repairsText = Ui.Text("", Ui.TextMeta + 1, Ui.InkSoft, 340);
+        condition.AddChild(_repairsText);
+
+        var provisions = Ui.Card(body, "Rations");
+        _provisionsCard = provisions.GetParent<Control>();
+        var rationRow = new HBoxContainer();
+        provisions.AddChild(rationRow);
+        _rationsText = Ui.Text("", Ui.TextBody, Ui.Ink, 200);
+        _rationsText.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        rationRow.AddChild(_rationsText);
         _rations = Ui.Button("", "Short rations: water once a day at dawn, food once at noon. The stores last longer, but the crew grow hungry, thirsty and strained.",
             () => RationingToggled?.Invoke(!_rationsOn));
-        body.AddChild(_rations);
+        _rations.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+        rationRow.AddChild(_rations);
 
-        // Heavy weather: the signs, the preparations, the leaks.
-        _stormBox = new VBoxContainer { Visible = false };
-        _stormBox.AddThemeConstantOverride("separation", Ui.SpaceS);
-        body.AddChild(_stormBox);
-        _stormBox.AddChild(new HSeparator());
-        _stormBox.AddChild(Ui.Text("Heavy weather", Ui.TextHeading, Ui.Brass));
-        _stormReport = Ui.Text("", Ui.TextBody, Ui.Ink, 370);
-        _stormBox.AddChild(_stormReport);
+        // Heavy weather: the signs, the preparations as a checklist with the order beside each, the leaks.
+        var storm = Ui.Card(body, "Heavy weather");
+        _stormBox = storm;
+        _stormReport = Ui.Text("", Ui.TextBody, Ui.Ink, 340);
+        storm.AddChild(_stormReport);
         foreach (var (work, label, tip) in new[]
                  {
-                     ("hatches", "Batten down the hatches", "Less water below in a seaway, and the stores kept dry"),
-                     ("cargo", "Lash the cargo", "Nothing breaks loose in the hold to stove casks and strain the hull"),
-                     ("aloft", "Strike the topmasts", "Far less wear and carrying away aloft; she sails slower until they are swayed up"),
-                     ("plug", "Plug the worst leak", "Fast, with oakum and a wedge; the next blow may burst it. A proper patch needs plank."),
+                     ("hatches", "Batten down", "Less water below in a seaway, and the stores kept dry"),
+                     ("cargo", "Lash cargo", "Nothing breaks loose in the hold to stove casks and strain the hull"),
+                     ("aloft", "Strike topmasts", "Far less wear and carrying away aloft; she sails slower until they are swayed up"),
+                     ("plug", "Plug a leak", "Fast, with oakum and a wedge; the next blow may burst it. A proper patch needs plank."),
                  })
         {
+            var row = new HBoxContainer();
+            storm.AddChild(row);
+            var state = Ui.Text("", Ui.TextBody, Ui.Ink);
+            state.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            row.AddChild(state);
+            _prepLabels[work] = state;
             var order = work;
             var button = Ui.Button(label, tip, () =>
             {
@@ -1478,17 +1940,18 @@ public partial class Hud : CanvasLayer
                     ShowResult(runner.OrderStormWork(order), $"{label}: a hand is on it.");
                 }
             });
-            _stormBox.AddChild(button);
+            button.CustomMinimumSize = new Vector2(120, Ui.MinHit);
+            row.AddChild(button);
             _stormButtons[work] = button;
         }
 
+        _leaksText = Ui.Text("", Ui.TextMeta + 1, Ui.InkSoft, 340);
+        storm.AddChild(_leaksText);
+
         // The watch bill: who stands which watch, which has the deck, and all hands.
-        _watchBox = new VBoxContainer { Visible = false };
-        _watchBox.AddThemeConstantOverride("separation", Ui.SpaceS);
-        body.AddChild(_watchBox);
-        _watchBox.AddChild(new HSeparator());
-        _watchBox.AddChild(Ui.Text("The watch bill", Ui.TextHeading, Ui.Brass));
-        _watchReport = Ui.Text("", Ui.TextBody, Ui.Ink, 370);
+        var watch = Ui.Card(body, "The watch bill");
+        _watchBox = watch;
+        _watchReport = Ui.Text("", Ui.TextBody, Ui.Ink, 340);
         _watchBox.AddChild(_watchReport);
         _allHands = Ui.Button("", "All hands: both watches on deck for the work in hand, at the cost of their sleep", () =>
         {
@@ -1501,47 +1964,57 @@ public partial class Hud : CanvasLayer
         _watchRows = new GridContainer { Columns = 2 };
         _watchRows.AddThemeConstantOverride("h_separation", Ui.SpaceM);
         _watchBox.AddChild(_watchRows);
+        _watchBox.AddChild(Ui.Text("Four hours on and four below through the evening and night, the dog watches shifting the round each day; by day both turn to. The watch on deck keeps the helm; the watch below sleeps once tired.",
+            Ui.TextMeta, Ui.InkSoft, 340));
     }
 
     private static readonly (Expedition.Simulation.Voyage.Watch Watch, string Name)[] WatchChoices =
     [
         (Expedition.Simulation.Voyage.Watch.Starboard, "Starboard watch"), (Expedition.Simulation.Voyage.Watch.Larboard, "Larboard watch"),
-        (Expedition.Simulation.Voyage.Watch.Day, "Day-worker"), (Expedition.Simulation.Voyage.Watch.None, "No watch (works when needed)"),
+        (Expedition.Simulation.Voyage.Watch.Day, "Day-worker"), (Expedition.Simulation.Voyage.Watch.None, "No watch"),
     ];
 
     // The heavy weather section: what is coming, what is done, and every leak with how it was met.
     private void RefreshStorm(SimulationRunner runner, Expedition.Simulation.Voyage.VoyageState ship)
     {
-        _stormBox.Visible = true;
-        var lines = new List<string>();
+        _stormBox.GetParent<Control>().Visible = true;
         var coming = ship.NextWeatherId is { } next ? runner.Content.Voyage?.Weathers.FirstOrDefault(w => w.Id == next) : null;
-        lines.Add(runner.StormComing
-            ? coming is { SeaState: >= 1.8 } ? $"Heavy weather is coming: {_formatter.WeatherName(coming.Id)}. Prepare while there is time." : "It is blowing hard."
-            : "Fair enough for now. Watch the sky and the swell.");
-        string Done(string key, string yes, string no) => ship.Prepared.Contains(key) ? $"  ✓ {yes}" : $"  · {no}";
-        lines.Add(Done("hatches", "Hatches battened", "Hatches open"));
-        lines.Add(Done("cargo", "Cargo lashed", "Cargo not lashed"));
-        lines.Add(Done("aloft", "Topmasts struck (she sails slower)", "Topmasts up"));
-        if (ship.Leaks.Count > 0)
+        var storm = runner.StormComing;
+        _stormReport.Text = storm
+            ? coming is { SeaState: >= 1.8 } ? $"{Ui.IconOf(Severity.Urgent)} Heavy weather is coming: {_formatter.WeatherName(coming.Id)}. Prepare while there is time." : $"{Ui.IconOf(Severity.Urgent)} It is blowing hard."
+            : "Fair enough for now. The signs of a blow are seen some hours ahead; prepare then.";
+        _stormReport.AddThemeColorOverride("font_color", storm ? Ui.Of(Severity.Urgent) : Ui.InkSoft);
+        void Line(string key, string yes, string no)
         {
-            lines.Add("Leaks:");
-            foreach (var leak in ship.Leaks)
-            {
-                var day = new SimulationClock(leak.Tick).Day + 1;
-                var how = leak.Repair switch
-                {
-                    Expedition.Simulation.Voyage.LeakRepair.Open => "OPEN",
-                    Expedition.Simulation.Voyage.LeakRepair.Plugged => $"plugged day {new SimulationClock(leak.RepairedTick).Day + 1}",
-                    _ => $"made good day {new SimulationClock(leak.RepairedTick).Day + 1}",
-                };
-                lines.Add($"  {Capital(leak.Where)}, sprung day {day}: {how}");
-            }
+            var done = ship.Prepared.Contains(key);
+            _prepLabels[key].Text = done ? $"✓ {yes}" : $"○ {no}";
+            _prepLabels[key].AddThemeColorOverride("font_color", done ? Ui.Of(Severity.Positive) : storm ? Ui.Of(Severity.Attention) : Ui.Ink);
         }
 
-        _stormReport.Text = string.Join("\n", lines);
+        Line("hatches", "Hatches battened", "Hatches open");
+        Line("cargo", "Cargo lashed", "Cargo not lashed");
+        Line("aloft", "Topmasts struck (slower)", "Topmasts up");
+        var open = ship.Leaks.Count(l => l.Repair == Expedition.Simulation.Voyage.LeakRepair.Open);
+        _prepLabels["plug"].Text = open > 0 ? $"▲ {(open == 1 ? "A leak is open" : $"{open} leaks open")}" : "✓ No leak open";
+        _prepLabels["plug"].AddThemeColorOverride("font_color", open > 0 ? Ui.Of(Severity.Urgent) : Ui.Of(Severity.Positive));
+        var lines = new List<string>();
+        foreach (var leak in ship.Leaks)
+        {
+            var day = new SimulationClock(leak.Tick).Day + 1;
+            var how = leak.Repair switch
+            {
+                Expedition.Simulation.Voyage.LeakRepair.Open => "open",
+                Expedition.Simulation.Voyage.LeakRepair.Plugged => $"plugged day {new SimulationClock(leak.RepairedTick).Day + 1}; may burst",
+                _ => $"made good day {new SimulationClock(leak.RepairedTick).Day + 1}",
+            };
+            lines.Add($"{Capital(leak.Where)}, sprung day {day}: {how}");
+        }
+
+        _leaksText.Text = lines.Count == 0 ? "" : "Leaks: \n" + string.Join("\n", lines);
+        _leaksText.Visible = lines.Count > 0;
         foreach (var (work, button) in _stormButtons)
         {
-            button.Disabled = work == "plug" ? ship.Leaks.All(l => l.Repair != Expedition.Simulation.Voyage.LeakRepair.Open) : ship.Prepared.Contains(work);
+            button.Disabled = work == "plug" ? open == 0 : ship.Prepared.Contains(work);
         }
     }
 
@@ -1549,15 +2022,14 @@ public partial class Hud : CanvasLayer
     private void RefreshWatchBill(SimulationRunner runner, Expedition.Simulation.Voyage.VoyageState ship)
     {
         _watchRunner = runner;
-        _watchBox.Visible = true;
+        _watchBox.GetParent<Control>().Visible = true;
         var tick = runner.Campaign.Clock.Tick;
         var onDeck = Expedition.Simulation.Voyage.WatchBill.OnDeck(tick);
         var hour = tick % SimulationClock.TicksPerDay / SimulationClock.TicksPerHour;
         var daysWork = hour >= Expedition.Simulation.Voyage.WatchBill.DaysWorkBegins && hour < Expedition.Simulation.Voyage.WatchBill.DaysWorkEnds;
         _watchReport.Text =
             $"{Capital(Expedition.Simulation.Voyage.WatchBill.NameAt(tick))}: " +
-            (ship.AllHands ? "all hands on deck." : ship.TurnedOut ? "the watch below turned out to the pumps." : daysWork ? "both watches at the day's work." : $"the {(onDeck == Expedition.Simulation.Voyage.Watch.Starboard ? "starboard" : "larboard")} watch has the deck; the other sleeps below.") +
-            "\nFour hours on and four below through the evening and night, the dog watches shifting the round each day; by day both turn to. The watch on deck keeps the helm; the watch below sleeps once tired.";
+            (ship.AllHands ? "all hands on deck." : ship.TurnedOut ? "the watch below turned out to the pumps." : daysWork ? "both watches at the day's work." : $"the {(onDeck == Expedition.Simulation.Voyage.Watch.Starboard ? "starboard" : "larboard")} watch has the deck; the other sleeps below.");
         _allHands.Text = ship.AllHands ? "Dismiss all hands: the watch below goes below" : "All hands on deck!";
         _allHands.Modulate = ship.AllHands ? Ui.Of(Severity.Attention) : Colors.White;
         var crew = runner.Campaign.Crew.Where(c => c.Id != runner.Campaign.CaptainId).OrderBy(c => c.Name).ToList();
@@ -1571,8 +2043,10 @@ public partial class Hud : CanvasLayer
             _watchPickers.Clear();
             foreach (var hand in crew)
             {
-                _watchRows.AddChild(Ui.Text(hand.Name, Ui.TextBody, Ui.Ink, 150));
-                var picker = new OptionButton { FocusMode = Control.FocusModeEnum.None };
+                var who = Ui.Text(hand.Name, Ui.TextBody, Ui.Ink);
+                who.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+                _watchRows.AddChild(who);
+                var picker = new OptionButton { FocusMode = Control.FocusModeEnum.None, TooltipText = "Starboard and larboard stand the night watches by turns; a day-worker works by day and sleeps all night; no watch: works when needed." };
                 foreach (var (_, name) in WatchChoices)
                 {
                     picker.AddItem(name);
@@ -1600,33 +2074,38 @@ public partial class Hud : CanvasLayer
         if (runner.Campaign.Voyage is not { } ship)
         {
             _shipReport.Text = "The Garza lies alongside the quay at La Bocana, sails furled, taking on stores and crew.\n\nInspection and repairs before sailing come with the port's later steps.";
-            _rations.Visible = false;
-            _watchBox.Visible = false;
-            _stormBox.Visible = false;
+            foreach (var card in new[] { _conditionCard, _provisionsCard, _stormBox.GetParent<Control>(), _watchBox.GetParent<Control>() })
+            {
+                card.Visible = false;
+            }
+
             return;
         }
 
+        _conditionCard.Visible = _provisionsCard.Visible = true;
         RefreshWatchBill(runner, ship);
         RefreshStorm(runner, ship);
 
         var repairs = runner.RepairsLeft();
-        var hullRepairs = repairs.GetValueOrDefault(Expedition.Simulation.Voyage.ShipPart.Hull);
-        var riggingRepairs = repairs.GetValueOrDefault(Expedition.Simulation.Voyage.ShipPart.Rigging);
-        var daysLeft = ship.SpeedLeaguesPerHour > 0.05 ? ship.ReckonedRemaining / (ship.SpeedLeaguesPerHour * 24) : double.PositiveInfinity;
-        string Condition(double value) => value >= 85 ? "sound" : value >= 70 ? "worn" : value >= 40 ? "damaged" : "failing";
+        var togo = DaysToGo(ship);
+        var sail = ship.SailPlan switch { Expedition.Simulation.Voyage.SailPlan.PressOn => "pressing on", Expedition.Simulation.Voyage.SailPlan.HoveTo => "hove to", _ => "normal sail" };
         _shipReport.Text =
-            $"{Capital(ship.ShipName)}, bound for {ship.Destination}\n" +
-            $"  About {ship.ReckonedRemaining:0} leagues to go{(double.IsInfinity(daysLeft) || daysLeft > 99 ? ", becalmed" : $", {Range(daysLeft)} at this pace")}\n" +
-            $"  Wind: {_formatter.WeatherName(ship.WeatherId)} · sail: {ship.SailPlan switch { Expedition.Simulation.Voyage.SailPlan.PressOn => "pressing on", Expedition.Simulation.Voyage.SailPlan.HoveTo => "hove to", _ => "normal" }}\n" +
-            $"  Watch: {(ship.WatchKept ? "kept" : "nobody on watch — she sails slowly and blind")}\n" +
-            $"  Purse: {ship.Funds} sueldos\n\n" +
-            $"Hull — {Condition(ship.Hull)} ({ship.Hull:0}%)\n  Leaks worsen as the hull wears; heavy seas strike it.\n  Patches left: {hullRepairs} (oakum and plank)\n" +
-            $"Bilge — {ship.Bilge:0}% water\n  The pumps must keep ahead of the leaks; above 80% she founders.\n" +
-            $"Rigging — {Condition(ship.Rigging)} ({ship.Rigging:0}%)\n  Worn rigging slows her.\n{CarriedAway(ship)}  Repairs left: {riggingRepairs} (rope)\n";
-        _rations.Visible = true;
-        _rations.Text = runner.Campaign.Rationing ? "Short rations — restore full" : "Full rations — cut to short";
-        _rations.Modulate = runner.Campaign.Rationing ? Ui.Of(Severity.Attention) : Colors.White;
+            $"{Capital(ship.ShipName)}, bound for {ship.Destination}: about {ship.ReckonedRemaining:0} leagues, {DaysText(togo)}.\n" +
+            $"{Ui.IconWind} {Capital(_formatter.WeatherName(ship.WeatherId))} · {sail} · {ship.SpeedLeaguesPerHour * 24:0} leagues a day at this pace\n" +
+            (ship.WatchKept ? $"{Ui.IconPeople} The watch is kept." : $"{Ui.IconOf(Severity.Urgent)} Nobody on watch: she sails slowly and blind.") +
+            $"   {Ui.IconPurse} {ship.Funds} sueldos";
+
+        SetShipGauges(ship, _hullGauge, _bilgeGauge, _riggingGauge);
+        _carriedText.Text = CarriedAway(ship).Replace("  ", "").TrimEnd();
+        _carriedText.Visible = _carriedText.Text.Length > 0;
+        _repairsText.Text = $"Patches left: {repairs.GetValueOrDefault(Expedition.Simulation.Voyage.ShipPart.Hull)} (oakum and plank) · " +
+                            $"rigging repairs left: {repairs.GetValueOrDefault(Expedition.Simulation.Voyage.ShipPart.Rigging)} (rope). Order them in People.";
+
+        var (food, water) = runner.SupplyForecast();
         _rationsOn = runner.Campaign.Rationing;
+        _rationsText.Text = (_rationsOn ? "Short rations." : "Full rations.") + $"  Water {Range(water)} · food {Range(food)}; {DaysText(togo)} to go.";
+        _rations.Text = _rationsOn ? "Restore full" : "Cut to short";
+        _rations.Modulate = _rationsOn ? Ui.Of(Severity.Attention) : Colors.White;
     }
 
     private void BuildChronicle(VBoxContainer body)
