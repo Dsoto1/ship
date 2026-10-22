@@ -2560,6 +2560,10 @@ public partial class Hud : CanvasLayer
     private VBoxContainer _campPriorities = null!;
     private Label _campWorks = null!;
     private readonly List<CheckBox> _campChoiceBoxes = [];
+    private Label _campSeason = null!;
+    private VBoxContainer _campProjects = null!;
+    private Label _campStanding = null!;
+    private Label _campKit = null!;
     private string _campShown = "";
 
     private static readonly IReadOnlyDictionary<string, (string Label, string Tip)> PriorityNames = new Dictionary<string, (string, string)>
@@ -2572,6 +2576,8 @@ public partial class Hud : CanvasLayer
         [CampPriorities.Food] = ("The food kept dry", "The stores covered, and the shore's food gathered"),
         [CampPriorities.Sanitation] = ("A latrine", "Without one the camp grows foul and the flux comes"),
         [CampPriorities.Scouting] = ("Scouting", "Rested hands sent out to find water, food, and who else is here"),
+        [CampPriorities.Building] = ("Building", "The ordered buildings' phases, the poles and thatch for them, repairs, mending tools"),
+        [CampPriorities.Garden] = ("The garden", "Sowing, weeding and tending, bringing in"),
     };
 
     private void BuildCamp(VBoxContainer body)
@@ -2585,6 +2591,39 @@ public partial class Hud : CanvasLayer
         where.AddChild(_campReport);
         _campWorks = Ui.Text("", Ui.TextMeta + 1, Ui.InkSoft, 340);
         where.AddChild(_campWorks);
+
+        // R7: the season, what is being built and what stands, the tools and the garden.
+        var season = Ui.Card(_campBox, "The season");
+        _campSeason = Ui.Text("", Ui.TextBody, Ui.Ink, 340);
+        season.AddChild(_campSeason);
+
+        var build = Ui.Card(_campBox, "Building", "Raised phase by phase by the same hands, with the poles, thatch and tools to hand.");
+        var orders = new HFlowContainer();
+        orders.AddThemeConstantOverride("h_separation", Ui.SpaceS);
+        orders.AddThemeConstantOverride("v_separation", Ui.SpaceS);
+        build.AddChild(orders);
+        foreach (var (id, label, tip) in new[]
+                 {
+                     ("building.hut", "Hut", "Dry berths for four, for good"),
+                     ("building.storehouse", "Storehouse", "Stores off the ground and dry: they keep far longer"),
+                     ("building.cookhouse", "Cookhouse", "A roofed hearth: the fire never goes out"),
+                     ("building.infirmary", "Infirmary", "The sick laid apart and tended: they mend better and pass it on less"),
+                     ("building.workshop", "Workshop", "Broken tools mended at a bench: most are saved"),
+                     ("building.garden", "Garden", "Cleared, dug and fenced; then sown from the seed chest. An experiment."),
+                 })
+        {
+            var building = id;
+            orders.AddChild(Ui.Button("+ " + label, tip, () => { if (_runner is { } r) { ShowResult(r.OrderBuilding(building)); } }));
+        }
+
+        _campProjects = new VBoxContainer();
+        build.AddChild(_campProjects);
+        _campStanding = Ui.Text("", Ui.TextMeta + 1, Ui.InkSoft, 340);
+        build.AddChild(_campStanding);
+
+        var kit = Ui.Card(_campBox, "Tools and garden");
+        _campKit = Ui.Text("", Ui.TextMeta + 1, Ui.Ink, 340);
+        kit.AddChild(_campKit);
 
         var priorities = Ui.Card(_campBox, "What comes first", "The hands take the first work wanted that they can do.");
         _campPriorities = new VBoxContainer();
@@ -2610,6 +2649,72 @@ public partial class Hud : CanvasLayer
         _campKnown = new VBoxContainer();
         known.AddChild(_campKnown);
     }
+
+    // The season, what is being built and what stands, the tools and the garden (R7).
+    private void RefreshSettlement(SimulationRunner runner, CampState camp)
+    {
+        if (runner.Content.Shore?.Settlement is not { } rules)
+        {
+            return;
+        }
+
+        var day = runner.CampDay;
+        var season = runner.StormAshore ? "A storm is blowing: no work out of doors."
+            : runner.WetSeason ? "The wet season: rain most days; roofing waits for dry spells."
+            : $"The dry season, about {Math.Max(0, rules.WetFromDay - day):0} days left of it by the signs.";
+        var judged = camp.Survived switch
+        {
+            true => " The first season is survived.",
+            false => " The first season has gone hard.",
+            _ => $" The first season is judged on day {rules.JudgeDay}.",
+        };
+        _campSeason.Text = $"Day {Math.Floor(day) + 1:0} ashore. {season} The camp is {runner.CampStage()}.{judged}";
+
+        var key = string.Join("|", camp.Projects.Select(p => $"{p.Id}:{p.Phase}:{p.Done}:{p.Laid}"))
+                  + "#" + runner.Campaign.SharedStore.Count("item.poles") / 5 + ":" + runner.Campaign.SharedStore.Count("item.thatch") / 6;
+        if (key != _campProjectsShown)
+        {
+            _campProjectsShown = key;
+            foreach (var child in _campProjects.GetChildren())
+            {
+                child.QueueFree();
+            }
+
+            foreach (var project in camp.Projects)
+            {
+                if (rules.Building(project.Building) is not { } building)
+                {
+                    continue;
+                }
+
+                var phase = runner.PhaseOf(project);
+                var task = phase is not null && runner.Content.Tasks.TryGetValue(phase.Task, out var t) ? t : null;
+                var wanting = task is null || project.Laid > 0 ? "" : string.Join(", ", task.Consumes.Where(c => runner.Campaign.SharedStore.Count(c.Key) < c.Value)
+                    .Select(c => runner.Content.Items[c.Key].Name.ToLowerInvariant()));
+                var row = new HBoxContainer();
+                var text = Ui.Text($"{building.Name} ({project.Plot.Replace('_', ' ')}): {task?.Name.ToLowerInvariant() ?? "finishing"}" +
+                    (phase is null ? "" : $" {project.Done}/{phase.Times}") + $" · phase {project.Phase + 1} of {building.Phases.Count}" +
+                    (wanting.Length > 0 ? $" · wants {wanting}" : ""), Ui.TextMeta + 1, wanting.Length > 0 ? Ui.Of(Severity.Attention) : Ui.Ink, 280);
+                text.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+                row.AddChild(text);
+                var id = project.Id;
+                row.AddChild(Ui.Button("×", "Give it up: what went into it stays in it", () => ShowResult(runner.CancelProject(id))));
+                _campProjects.AddChild(row);
+            }
+        }
+
+        var standing = camp.Buildings.Select(b => $"{rules.Building(b.Building)?.Name} ({(b.Quality >= 0.75 ? "sound" : b.Quality >= 0.5 ? "fair" : "rough")}, {b.Condition:0}%)").ToList();
+        _campStanding.Text = standing.Count == 0 ? "Nothing built yet." : "Standing: " + string.Join(" · ", standing);
+
+        var store = runner.Campaign.SharedStore;
+        var tools = new[] { "item.axe", "item.adze", "item.saw", "item.spade", "item.mattock", "item.cutlass", "item.auger" }
+            .Select(t => $"{runner.Content.Items[t].Name.ToLowerInvariant()} {store.Count(t)}" + (camp.Broken.GetValueOrDefault(t) > 0 ? $" (+{camp.Broken[t]} broken)" : ""));
+        var beds = camp.Beds.Select(b => $"{rules.Crops.FirstOrDefault(c => c.Id == b.Crop)?.Name} {runner.Growth(b) * 100:0}% grown, {(b.Health > 0.66 ? "thriving" : b.Health > 0.33 ? "poorly" : "failing")}").ToList();
+        _campKit.Text = "Tools: " + string.Join(", ", tools) + $"\nMaterials: poles {store.Count("item.poles")}, thatch {store.Count("item.thatch")}." +
+            "\nGarden: " + (beds.Count == 0 ? (camp.Buildings.Any(b => rules.Building(b.Building)?.Beds > 0) ? "nothing sown." : "no garden yet.") : string.Join("; ", beds) + ".");
+    }
+
+    private string _campProjectsShown = "";
 
     private void CampChoicesChanged()
     {
@@ -2663,6 +2768,8 @@ public partial class Hud : CanvasLayer
         {
             box.SetPressedNoSignal(on);
         }
+
+        RefreshSettlement(runner, camp);
 
         // The priorities and the assessment are rebuilt only when they change.
         var assessment = runner.CampAssessment();

@@ -1,7 +1,7 @@
 # R7 — Making the camp last
 
-**Status:** being built (2026-10-22). The owner left the open questions to me ("You decide what is
-next"); the decisions are under **Decided** below.
+**Status:** first pass built (2026-10-22). The owner left the open questions to me ("You decide what
+is next"); the decisions are under **Decided** below, and what was built under **As built** at the end.
 **Authority:** SETTLEMENT_EXPERIENCE §7-19 (progression, construction, quality, the first buildings,
 materials, tools, water, food, agriculture, storage, sanitation, health, work), §36-39 (seasons,
 weather, change you can see), §50-54 (the vertical slice, the validation scenes, the build order).
@@ -229,3 +229,83 @@ Saves move to a new format. Every step is tested like R6.
 - what seed went out with early expeditions, and how it fared on a tropical coast;
 - pole-and-thatch building as sailors would have made it;
 - the wet season's timing on this coast.
+
+## As built (2026-10-22)
+
+![Day 13: ground cleared and posts going in; stumps where poles were cut](screenshots/r7-day13-posts.jpg)
+![Day 35, the wet season: frames up, the garden green behind its fence, puddles](screenshots/r7-day35-frames.jpg)
+![Day 64: roofs thatched course by course](screenshots/r7-day64-roofs.jpg)
+![The camp screen: the season, the works in hand by phase, building orders](screenshots/r7-camp-panel.jpg)
+
+**Answering the owner's question** ("do buildings immediately get built or slowly, and do the visuals
+follow each phase, or decay?"):
+- **They are raised slowly.** Each building is a run of phases, each phase ordinary work done so many
+  times by the same hands, with the poles, thatch and tools to hand. A hut is clear once, posts twice,
+  frame twice, thatch three times. In the test runs a camp of six to seven raises the full set between
+  about day 14 and day 50, through the start of the wet.
+- **The view follows every phase:**
+  - the ground cleared and pegged out;
+  - posts going in one by one;
+  - plates, rafters and then the ridge;
+  - the thatch laid course by course from the eaves up;
+  - fitted out: the storehouse's raised floor and door, the hut's brush walls, the infirmary's
+    pallets, the workshop's bench, the cookhouse's hearth.
+- **They decay.** Each building has a condition. The weather wears it daily, three times as fast in the
+  wet and faster for rough work. The storm racks it, and a roof can come down. As it wears, the thatch
+  darkens, thins to gaps and sags, rougher work sooner. The hands repair the worst roof in dry spells.
+
+**Simulation** (`SimulationRunner.Settlement.cs`, `Shore/SettlementRules.cs`, `data/shore.json`
+"settlement", `data/tasks/settlement.json`):
+- **Projects** on plots. Each phase task works only on a plot at that phase. Quality comes from the
+  hand's skill and freshness. Materials laid by work that was stopped wait on the plot for the next
+  start.
+- **The forest's edge:** poles and thatch, finite near the camp, then far less.
+- **Tools** (the carpenter's chest of 3 axes, 2 adzes, a saw, an auger, 2 spades, a mattock and 3
+  cutlasses; nets; the seed chest):
+  - Two hands cannot use one tool.
+  - They break (0.2% an hour of use).
+  - They are mended at the hearth (60% of the usual chance) or the workshop.
+- **The buildings:**
+  - **Huts:** dry berths for four.
+  - **Storehouse:** spoilage by place, as well as it was made.
+  - **Cookhouse:** a fire kept.
+  - **Infirmary:** a quarter better care, 30% less contagion.
+  - **Workshop:** mending at the bench.
+  - **Garden:** six beds.
+- **The season:**
+  - The wet from day 20, rain four times as often.
+  - The storm on day 30, 30 hours. It finds out bad work, blows down the R6 shelters, and works the
+    ship at her cables.
+- **The garden** [RESEARCH]:
+  - wheat and chickpeas rot in the wet;
+  - greens and onions may give something if tended.
+- **The stage** is named from what the camp can do.
+- **The first season** is judged on day 90: survived if more than half are alive, there is water, dry
+  roofs for all, and food for a fortnight or a source of it.
+- **Saves:** format 38.
+- **Tests:** `SettlementTests` (11).
+
+**The camp screen:**
+- the season and the stage;
+- building orders;
+- each work in hand, with its phase, its progress and what it wants;
+- what stands, with its quality and condition;
+- the tools, broken ones included;
+- the materials;
+- the garden's beds.
+
+The day-90 card gives the judgement.
+
+**Developer flag:** `--build=all` (or `hut,storehouse,...`) orders buildings after the first three
+days; use it with `--ashore --camphours=N`.
+
+**Not yet:**
+- The landing staging and the well.
+- The factory's timbers.
+- Buying tools and seed in port.
+- Moving to the headland (R8).
+- A palisade (R8).
+- Proper models for the buildings: Meshy, priced first.
+- A sound bed for the settlement: saws, axes, the wet.
+- Sickness runs high in the wet at Punta Ceniza, from the swamp fever and the flux passed in the
+  crowded shelters. It is plausible, but is to be watched in balance.

@@ -49,7 +49,7 @@ This file tracks status and breaks the next work into tickets.
 | R4h | Voyage validation: calm morning, fog, storm, aftermath; sound; the ship's visible history (VOYAGE §46) | First pass (2026-10-22): all four staged and judged Partly (docs/VOYAGE_VALIDATION.md); visible history and sea sounds added; six things to do next |
 | R5 | Shipwreck transition: casualties, location, salvage by accessibility, survivors' state kept (VOYAGE §39–40) | Done (2026-10-22): the transition and its report; survival ashore is R6 |
 | R6 | Landfall camp, the first 72 hours: assessment, water, shelter, fire, stores, sanitation (SETTLEMENT §3–6) | Done (2026-10-22): going ashore from the anchorage or the wreck, the site to be scouted, the camp's works by the captain's priorities and four hard choices, wet nights, swamp fever, spoiled stores, the first days' report; the beach drawn with its works (docs/R6_LANDFALL_CAMP.md) |
-| R7 | Establishment: construction projects, storage and spoilage, the first garden, seasons (SETTLEMENT §7–19) | Planned |
+| R7 | Establishment: construction projects, storage and spoilage, the first garden, seasons (SETTLEMENT §7–19) | First pass done (2026-10-22): buildings raised phase by phase with materials, tools and quality, and worn by the weather; tools kept, broken and mended; spoilage by place; the wet season and its storm; the garden as an experiment; the first season judged at day 90 (docs/R7_ESTABLISHMENT.md) |
 | R8 | The world around: exploration, the Ahuneri and Tesiwa, trade, the charter (SETTLEMENT §26–33) | Planned |
 | 5c | Recruitment rules in full: investigation, references, counteroffers | Later (core moves into V4) |
 | 5d | Godot waterfront recruitment scene | Later, once the voyage is fun |
@@ -2686,3 +2686,50 @@ what is still wanting. Then the settlement phase (R7).
 - **The washing** seen.
 - **Below decks:** walking there through the cutaway, and people below seen through the deck.
 - **Voices and music:** deferred by the owner, the calls to be in English.
+
+### R7 — Making the camp last: the first wet season (owner: "You decide what is next")
+
+**Decisions.** The owner left R7's open questions to me. The decisions are in
+`docs/R7_ESTABLISHMENT.md`:
+- the carpenter's chest and seed carried aboard;
+- they stay on the beach;
+- 90 days, then a judgement;
+- simple shapes for now;
+- the palisade waits for R8.
+
+**What was built:**
+- **Buildings raised phase by phase** on plots by the same hands: huts, storehouse, cookhouse,
+  infirmary, workshop, garden. Each phase needs its materials and tools, and how well it is done
+  makes the building's quality.
+- **Materials from the site:** poles and thatch from the forest's edge, which goes back as it is cut.
+- **Tools:**
+  - kept things: two hands cannot use one axe;
+  - they break, and are mended at the hearth or the workshop.
+- **Spoilage by place:** in the open, under a sail, in the storehouse.
+- **The wet season and its storm**, which finds out bad work. Weather wears buildings daily, and the
+  hands repair them.
+- **The garden** is an experiment: wheat and chickpeas rot in the wet; greens and onions may give
+  something.
+- **The stage** is named from capability.
+- **The first season** is judged on day 90.
+
+**In the view:**
+- each building at its phase: ground cleared, posts, frame, thatch by courses, fitted out;
+- each building worn by its condition: dark, gappy, sagging thatch;
+- felled trees left as stumps;
+- worn paths;
+- mud and puddles in the wet;
+- the garden's beds by growth and health.
+
+**The camp screen** gains the season, building orders and the works in hand by phase, what stands, the
+tools and the garden.
+
+**Balance:** with the default priorities, a camp of six to seven raises the full set by about day 50,
+and survives the first season in the test runs.
+
+**Saved in** format 38.
+
+**Tests:** `SettlementTests` (11); 549 in all.
+
+**Screenshots:** `docs/screenshots/r7-day13-posts.jpg`, `r7-day35-frames.jpg`, `r7-day64-roofs.jpg`
+and `r7-camp-panel.jpg`.

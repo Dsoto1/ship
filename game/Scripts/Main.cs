@@ -532,6 +532,7 @@ public partial class Main : Node3D
             var landing = _runner.Campaign.ActiveTasks.Values.Any(task => _content.Tasks[task.DefinitionId].Lands);
             var ashoreCount = _content.Items.Keys.Sum(_runner.Campaign.SharedStore.Count);
             _camp.Show(ashoreCamp, ashoreCount, _runner.CampFireBurning, landing, _runner.CampWater() is not null, _world.Darkness, t);
+            _camp.ShowSettlement(_runner);
             FollowCaptain((float)delta);
         }
         else
@@ -1372,6 +1373,12 @@ public partial class Main : Node3D
         for (; _chronicleSeen < entries.Count; _chronicleSeen++)
         {
             var entry = entries[_chronicleSeen];
+            if (entry.Kind == ChronicleEntryKind.SeasonJudged)
+            {
+                SetSpeed(0);
+                ShowSeasonJudged(entry);
+            }
+
             if (entry.Kind == ChronicleEntryKind.CampFirstDays && !_reportShown)
             {
                 _reportShown = true;
@@ -1555,6 +1562,28 @@ public partial class Main : Node3D
     // The assessment's lines for a card: what is only guessed is marked so.
     private static string CampLines(IEnumerable<(string Topic, string Text, bool Known)> lines) =>
         string.Join("\n", lines.Select(l => $"{l.Topic}: {l.Text}" + (l.Known ? "" : "  (not yet seen for certain)")));
+
+    // After 90 days ashore, the first season judged (R7).
+    private void ShowSeasonJudged(ChronicleEntry entry)
+    {
+        if (_runner.Campaign.Camp is not { } camp || _content.Shore?.Settlement is not { } rules)
+        {
+            return;
+        }
+
+        var survived = entry.Get(ChronicleParameters.Outcome) == "survived";
+        var alive = _runner.Campaign.Crew.Count(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated);
+        var built = camp.Buildings.Select(b => rules.Building(b.Building)?.Name.ToLowerInvariant()).OfType<string>().ToList();
+        var harvests = _runner.Campaign.Chronicle.Entries.Where(e => e.Kind == ChronicleEntryKind.Harvested).Sum(e => int.TryParse(e.Get(ChronicleParameters.Level), out var n) ? n : 0);
+        var failed = _runner.Campaign.Chronicle.Entries.Count(e => e.Kind == ChronicleEntryKind.CropFailed);
+        _hud.ShowEnding(survived ? "The first season survived" : "The first season gone hard",
+            $"Ninety days ashore at {_runner.CampSite?.Name}. {alive} of the {camp.LandedCount} who landed are alive.\n\n" +
+            $"Built: {(built.Count == 0 ? "nothing that lasts" : string.Join(", ", built))}. The camp is {_runner.CampStage()}.\n" +
+            $"The garden: {harvests} measures brought in; {failed} beds lost.\n\n" +
+            (survived ? "They are dry, fed and watered, and the place has begun to look lived in. The coast's people have surely been watching."
+                : $"Still wanting: {entry.Get(ChronicleParameters.Reason)}. The camp goes on, but the charter's patience is not endless."),
+            "Carry on", () => { });
+    }
 
     // After 72 hours ashore, what the first days came to.
     private void ShowFirstDays()
@@ -1835,6 +1864,7 @@ public partial class Main : Node3D
     private bool _struck;
     private bool _pressGoAshore;
     private int _campHours;
+    private string? _buildOrders;
     private bool _crewLife;
     private bool _legs;
     private bool _developerBelow;
@@ -2068,6 +2098,7 @@ public partial class Main : Node3D
                 case "goashore": _pressGoAshore = true; break;
                 case "ashore": _ashoreAt = value.Length > 0 ? value : "coast.punta_ceniza"; break;
                 case "camphours" when int.TryParse(value, out var campHours): _campHours = campHours; break;
+                case "build": _buildOrders = value; break;
                 case "crewlife": _crewLife = true; break;
                 case "legs": _legs = true; break;
                 case "below": _developerBelow = true; break;
@@ -2420,8 +2451,22 @@ public partial class Main : Node3D
             var landed = _founder || _struck ? _runner.GoAshore() : _runner.DeveloperLand(site);
             if (landed.Succeeded)
             {
-                // The report, if the hours pass the third day, is shown as it would be in play.
+                // --build=all (or hut,storehouse,...): ordered on landing, after the first three days' work.
+                if (_buildOrders is { } orders)
+                {
+                    _runner.Advance(Math.Min(_campHours, 72) * 60);
+                    _campHours -= Math.Min(_campHours, 72);
+                    var wanted = orders == "all" ? ["hut", "hut", "storehouse", "cookhouse", "garden", "infirmary", "workshop"] : orders.Split(',');
+                    foreach (var building in wanted)
+                    {
+                        _runner.OrderBuilding("building." + building);
+                    }
+                }
+
+                // The report, if the hours pass the third day, is shown as it would be in play; staged further on,
+                // it is taken as read.
                 _runner.Advance(_campHours * 60);
+                _reportShown = _buildOrders is not null && _runner.Campaign.Camp!.Reported;
                 _endingShown = true;
                 SyncFigures();
                 ShowWorld();
