@@ -319,7 +319,8 @@ The fixed plots are gone. The captain chooses where each building goes:
   - over another building, or its work places;
   - over a place the camp already uses (the hearth, the stores, the shelters, the latrine, the cutting
     places);
-  - across the paths from the hearth to the water and to the landing (a cell either side of each);
+  - where it would shut the way from the hearth to the water, the landing, a place the camp uses or
+    another building's front (people walk round buildings; see below);
   - where its front is not open ground the hands can reach.
 - **Trees** on the ground are allowed. They are felled in the clearing: a third more clearing work for
   each three trees (rounded up), and two poles for each tree when the clearing is done. The forest's
@@ -340,9 +341,45 @@ The fixed plots are gone. The captain chooses where each building goes:
   553 in all.
 - **Balance:** the 90-day probe at Punta Ceniza and Río Bermejo still survives the first season, the
   full set up by about day 40 to 44.
-- **Watch:** the mid-beach fills fast once two huts are down, because of the paths and the shelters'
-  places. It is enough for a camp of six to ten. If it feels cramped in play, the path corridor can
-  narrow or the R6 shelters' places be freed once huts stand.
+- **Watch:** the mid-beach fills fast once two huts are down, because of the shelters' places. It is
+  enough for a camp of six to ten. If it feels cramped, the R6 shelters' places can be freed once huts
+  stand.
+
+### Paths worn by feet, and the vegetation growing back (2026-10-22, owner's ask)
+
+![Day 10: the first paths showing faintly between the fire, the shelters, the stores and the latrine](screenshots/r7-paths-day10.jpg)
+![Day 47: the ways worn in round the buildings; felled trees' places at the forest's edge in scrub and brush](screenshots/r7-paths-day47.jpg)
+
+The owner asked that paths appear only as people walk them, and that what is cut or cleared grow back
+when left alone. Both are now in the simulation, and the view only draws them.
+- **People walk round buildings**, not through them, once the posts are in. Whoever is inside a
+  building's ground when it goes up walks out of it.
+- **Routes in the open cut corners**: of the shortest ways round what is in the way, people take the one
+  nearest the straight line (`Pathfinder.FindNaturalPath`), so the tracks run on the slant.
+- **Wear:** every walk across the camp treads each cell it passes once. So do the day's comings and
+  goings that the work does not walk out step by step: each person on their feet goes each day from
+  where they sleep (huts, else the shelters, else the fire) to the fire and back, to the stores, to the
+  latrine once dug, and to the water once found. The ground takes back 4% of a cell's wear a day while it
+  is walked, and 12% once no one has walked it for 5 days.
+- **Seen:** a cell shows once walked about 40 times (net of fading). It is worn bare at 400. The worn
+  cells are joined into tracks, darker and wider the more they are used. In the 90-day runs the main
+  ways show within 3 to 6 days and are worn in by day 10. Nothing is drawn where no one goes.
+- **Growing back** (`ground` in `data/shore.json`; days of being left alone):
+  - **A felled tree** (one for every 4 poles cut, the standing tree nearest the cutter): a stump, scrub
+    from day 8, brush from day 20, a sapling from day 40, and a tree again at day 75. Then it counts
+    again in what the forest's edge can give (4 poles back). Cutting within 2 cells keeps the felled
+    places round it open.
+  - **Ground given up** (a building abandoned after clearing, or blown down): bare earth, scrub from day
+    8, back to what it was at day 20. Its trees grow back as above.
+  - **Trodden ground** does not grow back while walked. Ground built on again is kept clear.
+  - **Thatch** grows back 3 bundles a day once none has been cut for 10 days.
+  - [RESEARCH] Pioneer growth on a wet tropical shore is fast; the days are a reading for play.
+- **Saves:** format 40, with each worn cell, each cell growing back, and when thatch was last cut.
+- **Tests:** a building may not shut the way from the hearth; people walk round buildings; paths are worn
+  only where feet go; paths fade when left alone; a felled tree grows back stage by stage; ground given
+  up grows back. 559 in all.
+- **Balance:** unchanged. The 90-day runs at Punta Ceniza and Río Bermejo survive the season, with the
+  buildings up by about day 44.
 
 **Not yet:**
 - The landing staging and the well.

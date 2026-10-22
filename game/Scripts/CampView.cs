@@ -34,13 +34,17 @@ public partial class CampView : Node3D
     private Node3D _flames = null!;
     private Node3D _boat = null!;
     private string _shown = "";
-    private readonly List<(Node3D Tree, MeshInstance3D Stump, int X, int Y)> _edgeTrees = [];
+    private readonly List<EdgeTree> _edgeTrees = [];
+
+    // A tree of the forest's edge, and what stands in its place as it is felled and grows back.
+    private sealed record EdgeTree(Node3D Tree, MeshInstance3D Stump, MeshInstance3D Bush, Node3D Sapling, int X, int Y);
     private Node3D _ghost = null!;
     private string _ghostShown = "";
     private Node3D _settlement = null!;
     private Node3D _wet = null!;
     private StandardMaterial3D _groundMaterial = null!;
     private string _settled = "";
+    private long _settledAt = -1;
 
     /// <summary>The ground's height at a cell position, metres (the beach rises inland).</summary>
     public float HeightAt(float x, float z)
@@ -198,7 +202,7 @@ public partial class CampView : Node3D
         }
 
         // The forest's edge, tree by tree, so the ones felled for poles can be taken away (R7): a stump
-        // left in each one's place. Nearest the camp go first.
+        // left in each one's place, then scrub, brush and a sapling as it grows back.
         _edgeTrees.Clear();
         var edge = new List<(Vector3 At, float Height, float Crown, Color Leaves, int X, int Y)>();
         for (var y = 0; y < _location.Height; y++)
@@ -223,7 +227,13 @@ public partial class CampView : Node3D
             Add(tree, new SphereMesh { Radius = crown, Height = crown * 1.5f, RadialSegments = 8, Rings = 4 }, leaves, new Vector3(0, height + crown * 0.3f, 0));
             var stump = Add(this, new CylinderMesh { TopRadius = 0.2f, BottomRadius = 0.25f, Height = 0.35f, RadialSegments = 6 }, Bark.Lightened(0.15f), at + new Vector3(0, 0.17f, 0));
             stump.Visible = false;
-            _edgeTrees.Add((tree, stump, cx, cy));
+            var bush = Add(this, new SphereMesh { Radius = 0.55f, Height = 0.6f, RadialSegments = 8, Rings = 4 }, leaves.Lightened(0.12f), at + new Vector3(0.25f, 0.2f, 0.1f));
+            bush.Visible = false;
+            var sapling = new Node3D { Position = at, Visible = false };
+            AddChild(sapling);
+            Add(sapling, new CylinderMesh { TopRadius = 0.04f, BottomRadius = 0.07f, Height = height * 0.4f, RadialSegments = 5 }, Bark, new Vector3(0, height * 0.2f, 0));
+            Add(sapling, new SphereMesh { Radius = crown * 0.45f, Height = crown * 0.7f, RadialSegments = 8, Rings = 4 }, leaves.Lightened(0.08f), new Vector3(0, height * 0.4f + crown * 0.15f, 0));
+            _edgeTrees.Add(new EdgeTree(tree, stump, bush, sapling, cx, cy));
         }
 
         // Behind and on the flanks, the forest goes on.
@@ -522,7 +532,8 @@ public partial class CampView : Node3D
     /// <summary>
     /// The settlement as it stands (R7): each building at its phase (ground cleared, posts, frame, roof going
     /// on course by course, fitted out), worn by its condition; the garden's beds by growth and health; the
-    /// forest's edge felled for poles; worn paths; the wet season's mud and puddles. Rebuilt only on change.
+    /// forest's edge felled for poles and growing back; paths worn only where feet go; the wet season's mud
+    /// and puddles. Rebuilt only on change.
     /// </summary>
     public void ShowSettlement(Expedition.Simulation.World.SimulationRunner runner)
     {
@@ -531,12 +542,20 @@ public partial class CampView : Node3D
             return;
         }
 
+        // Looked at once a game minute, not every frame: the ground changes slowly.
+        if (runner.Campaign.Clock.Tick == _settledAt && _settled.Length > 0)
+        {
+            return;
+        }
+
+        _settledAt = runner.Campaign.Clock.Tick;
         var wet = runner.WetSeason;
-        var day = (int)runner.CampDay;
         var key = string.Join(";", camp.Projects.Select(p => $"{p.Plot}:{p.Building}:{p.X}:{p.Y}:{p.Turned}:{p.Phase}:{p.Done}"))
                   + "#" + string.Join(";", camp.Buildings.Select(b => $"{b.Plot}:{b.X}:{b.Y}:{b.Turned}:{(int)(b.Condition / 15)}"))
                   + "#" + string.Join(";", camp.Beds.Select(b => $"{b.Crop}:{(int)(runner.Growth(b) * 6)}:{(int)(b.Health * 5)}"))
-                  + $"#{camp.PolesCut / 4}#{wet}#{Math.Min(day, 20) / 4}";
+                  + "#" + string.Join(";", camp.Trodden.Select(t => $"{t.Key}:{(int)(runner.PathWear(t.Value) * 6)}").Where(t => !t.EndsWith(":0", StringComparison.Ordinal)))
+                  + "#" + string.Join(";", camp.Regrowing.Select(r => $"{r.Key}:{runner.Growth(r.Value)}"))
+                  + $"#{wet}";
         if (key == _settled)
         {
             return;
@@ -559,39 +578,82 @@ public partial class CampView : Node3D
                 .Select(b => (Ground: SimulationRunner.FootprintOf(rules.Building(b.Building)!, b.X, b.Y, b.Turned), Cleared: true, Clearing: false)))
             .ToList();
 
-        // And a felled tree for every four poles cut at the edge, nearest the camp first.
-        var felled = camp.PolesCut / 4;
-        foreach (var (tree, stump, cx, cy) in _edgeTrees)
+        // Elsewhere the forest's edge as the cutting has left it: felled trees' stumps, greening over with
+        // scrub, then brush, then a sapling, and a tree again when left alone long enough.
+        foreach (var edge in _edgeTrees)
         {
-            var under = grounds.FirstOrDefault(g => g.Ground.Contains(cx, cy));
-            if (under.Cleared || under.Clearing)
+            var under = grounds.FirstOrDefault(g => g.Ground.Contains(edge.X, edge.Y));
+            var stage = under.Cleared || under.Clearing ? (GrowthStage?)null
+                : camp.Regrowing.TryGetValue(CampState.Key(edge.X, edge.Y), out var growing) ? runner.Growth(growing) : null;
+            var standing = !under.Cleared && !under.Clearing && stage is null;
+            edge.Tree.Visible = standing;
+            edge.Stump.Visible = under.Clearing || stage is GrowthStage.Bare or GrowthStage.Scrub;
+            edge.Bush.Visible = stage is GrowthStage.Scrub or GrowthStage.Brush;
+            edge.Bush.Scale = Vector3.One * (stage == GrowthStage.Brush ? 1.5f : 0.7f);
+            edge.Sapling.Visible = stage == GrowthStage.Sapling;
+        }
+
+        var ground = new MeshBatcher();
+        // Ground given up (a building abandoned or blown down) greening over: bare earth, then scrub and grass
+        // coming through it, then brush.
+        foreach (var (cellKey, growing) in camp.Regrowing.Where(r => !r.Value.Tree))
+        {
+            var (gx, gy) = CampState.Cell(cellKey);
+            if (grounds.Any(g => g.Ground.Contains(gx, gy)))
             {
-                tree.Visible = false;
-                stump.Visible = under.Clearing;
                 continue;
             }
 
-            tree.Visible = felled-- <= 0;
-            stump.Visible = !tree.Visible;
-        }
-
-        // Paths worn between the camp's places, darker as the days go by.
-        var trodden = Math.Clamp(day / 20f, 0, 1) * 0.6f;
-        if (trodden > 0.05f)
-        {
-            // Trodden sand: darker, and darker again in the wet, like the ground it is worn into.
-            var path = Sand.Darkened(0.1f + 0.25f * trodden) * (wet ? new Color(0.78f, 0.76f, 0.72f) : Colors.White);
-            var hearth = _location.FindSpot("spot.hearth");
-            // To the camp's places, and to the front of the first of each kind of building.
-            var fronts = camp.Buildings.GroupBy(b => b.Building).Select(g => $"plot.{g.First().Plot}.a");
-            foreach (var to in new[] { "spot.landing_1", "spot.water_1", "spot.stores", "spot.latrine" }.Concat(fronts))
+            var at = new Vector3(gx, HeightAt(gx, gy), gy);
+            var stage = runner.Growth(growing);
+            var earth = stage == GrowthStage.Bare ? Cleared : Cleared.Lerp(Green, stage == GrowthStage.Scrub ? 0.35f : 0.6f);
+            ground.AddColoured(new BoxMesh { Size = new Vector3(1, 0.02f, 1) }, new Transform3D(Basis.Identity, at + new Vector3(0, 0.01f, 0)), earth);
+            if (stage != GrowthStage.Bare)
             {
-                if (hearth is not null && runner.SpotIn(_location.Id, to) is { } end)
+                var size = stage == GrowthStage.Scrub ? 0.22f : 0.42f;
+                foreach (var (ox, oz) in new[] { (-0.25f, -0.2f), (0.2f, 0.25f), ((gx * 7 + gy * 3) % 5 * 0.1f - 0.2f, -0.05f) })
                 {
-                    Path(new Vector2(hearth.X, hearth.Y), new Vector2(end.X, end.Y), path);
+                    ground.AddColoured(new SphereMesh { Radius = size, Height = size * 1.3f, RadialSegments = 6, Rings = 3 },
+                        new Transform3D(Basis.Identity, at + new Vector3(ox, size * 0.4f, oz)), (gx + gy) % 2 == 0 ? Leaf : Green);
                 }
             }
         }
+
+        // Paths only where feet have gone: each cell walked over often enough shows trodden, the more
+        // worn the darker and wider, so the ways people really take come out of the sand by themselves.
+        // Each worn cell is joined to its worn neighbours by a strip, so a path reads as one track.
+        var trodden = Sand.Darkened(0.28f) * (wet ? new Color(0.78f, 0.76f, 0.72f) : Colors.White);
+        var worn = camp.Trodden.Select(t => (Cell: CampState.Cell(t.Key), Wear: (float)runner.PathWear(t.Value)))
+            .Where(t => t.Wear > 0).ToDictionary(t => t.Cell, t => t.Wear);
+        Vector3 On(float x, float z, float wear) => new(x, HeightAt(x, z) + 0.008f + 0.003f * wear, z);
+        foreach (var ((px, py), wear) in worn)
+        {
+            var colour = Sand.Lerp(trodden, 0.35f + 0.65f * wear);
+            var width = 0.5f + 0.5f * wear;
+            ground.AddColoured(new CylinderMesh { TopRadius = width / 2, BottomRadius = width / 2, Height = 0.012f, RadialSegments = 10 },
+                new Transform3D(Basis.Identity, On(px, py, wear)), colour);
+            foreach (var (dx, dy) in new[] { (1, 0), (0, 1), (1, 1), (-1, 1) })
+            {
+                if (!worn.TryGetValue((px + dx, py + dy), out var next))
+                {
+                    continue;
+                }
+
+                // Diagonal joins only where the step is not already joined round the corner.
+                if (dx != 0 && dy != 0 && (worn.ContainsKey((px + dx, py)) || worn.ContainsKey((px, py + dy))))
+                {
+                    continue;
+                }
+
+                var both = Math.Min(wear, next);
+                var length = new Vector2(dx, dy).Length();
+                var basis = new Basis(Vector3.Up, Mathf.Atan2(dx, dy));
+                ground.AddColoured(new BoxMesh { Size = new Vector3(0.5f + 0.5f * both, 0.012f, length) },
+                    new Transform3D(basis, On(px + dx / 2f, py + dy / 2f, both)), Sand.Lerp(trodden, 0.35f + 0.65f * both));
+            }
+        }
+
+        ground.Commit(_settlement);
 
         foreach (var project in camp.Projects)
         {
@@ -630,20 +692,6 @@ public partial class CampView : Node3D
                 }
             }
         }
-    }
-
-    // A worn path: a strip of trodden ground from one place to another.
-    private void Path(Vector2 from, Vector2 to, Color colour)
-    {
-        var length = from.DistanceTo(to);
-        if (length < 1)
-        {
-            return;
-        }
-
-        var mid = (from + to) / 2;
-        var angle = Mathf.RadToDeg(Mathf.Atan2(to.X - from.X, to.Y - from.Y));
-        Add(_settlement, new BoxMesh { Size = new Vector3(0.55f, 0.01f, length - 1.2f) }, colour, new Vector3(mid.X, HeightAt(mid.X, mid.Y) + 0.012f, mid.Y), new Vector3(0, angle, 0));
     }
 
     // One building, as far as it has got: phase 0 the ground cleared, then posts, frame, roof, and fitting

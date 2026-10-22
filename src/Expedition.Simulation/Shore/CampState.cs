@@ -157,6 +157,42 @@ public sealed class CampBuilding
     public double Condition { get; internal set; } = 100;
 }
 
+/// <summary>A cell of the camp walked over (R7): how worn it is, and when last trodden.</summary>
+public sealed class TroddenCell
+{
+    /// <summary>Times walked over, less what the ground has taken back.</summary>
+    public int Steps { get; internal set; }
+
+    /// <summary>When last walked over.</summary>
+    public long Last { get; internal set; }
+}
+
+/// <summary>A cell where a tree was felled or ground cleared, growing back while it is left alone (R7).</summary>
+public sealed class RegrowingCell
+{
+    /// <summary>True where a tree stood: it comes back as one. Otherwise ground that greens over.</summary>
+    public required bool Tree { get; init; }
+
+    /// <summary>Since when it has been left alone.</summary>
+    public long Since { get; internal set; }
+}
+
+/// <summary>How far a cell has grown back.</summary>
+public enum GrowthStage
+{
+    /// <summary>Just cut or cleared: a stump, or bare earth.</summary>
+    Bare,
+
+    /// <summary>Scrub and grass coming in.</summary>
+    Scrub,
+
+    /// <summary>Brush.</summary>
+    Brush,
+
+    /// <summary>A young tree.</summary>
+    Sapling,
+}
+
 /// <summary>A garden bed sown (R7).</summary>
 public sealed class GardenBed
 {
@@ -256,6 +292,41 @@ public sealed class CampState
 
     /// <summary>The first season judged, true when it was survived; null before.</summary>
     public bool? Survived { get; internal set; }
+
+    private readonly SortedDictionary<int, TroddenCell> _trodden = [];
+    private readonly SortedDictionary<int, RegrowingCell> _regrowing = [];
+
+    /// <summary>The cells walked over, by <see cref="Key"/>: the paths, as they are worn.</summary>
+    public IReadOnlyDictionary<int, TroddenCell> Trodden => _trodden;
+
+    /// <summary>The cells growing back, by <see cref="Key"/>.</summary>
+    public IReadOnlyDictionary<int, RegrowingCell> Regrowing => _regrowing;
+
+    /// <summary>When thatch was last cut.</summary>
+    public long ThatchLastCut { get; internal set; }
+
+    /// <summary>A cell's key in <see cref="Trodden"/> and <see cref="Regrowing"/>.</summary>
+    public static int Key(int x, int y) => y * 1000 + x;
+
+    /// <summary>The cell a key stands for.</summary>
+    public static (int X, int Y) Cell(int key) => (key % 1000, key / 1000);
+
+    internal TroddenCell Tread(int key)
+    {
+        if (!_trodden.TryGetValue(key, out var cell))
+        {
+            cell = new TroddenCell();
+            _trodden[key] = cell;
+        }
+
+        return cell;
+    }
+
+    internal void Untread(int key) => _trodden.Remove(key);
+
+    internal void Regrow(int key, RegrowingCell cell) => _regrowing[key] = cell;
+
+    internal void Regrown(int key) => _regrowing.Remove(key);
 
     internal void AddProject(CampProject project) => _projects.Add(project);
 

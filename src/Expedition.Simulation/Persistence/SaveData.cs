@@ -879,6 +879,15 @@ public sealed record CampData
     /// <summary>Thatch cut. Added in format 38.</summary>
     public int ThatchCut { get; init; }
 
+    /// <summary>When thatch was last cut. Added in format 40.</summary>
+    public long ThatchLastCut { get; init; }
+
+    /// <summary>The cells walked over. Added in format 40.</summary>
+    public IReadOnlyList<TroddenCellData> Trodden { get; init; } = [];
+
+    /// <summary>The cells growing back. Added in format 40.</summary>
+    public IReadOnlyList<RegrowingCellData> Regrowing { get; init; } = [];
+
     /// <summary>The next project's number. Added in format 38.</summary>
     public int NextProject { get; init; } = 1;
 
@@ -949,6 +958,38 @@ public sealed record CampBuildingData
 
     /// <summary>Turned a quarter. Added in format 39.</summary>
     public bool Turned { get; init; }
+}
+
+/// <summary>A cell of the camp walked over. Added in format 40.</summary>
+public sealed record TroddenCellData
+{
+    /// <summary>Column.</summary>
+    public int X { get; init; }
+
+    /// <summary>Row.</summary>
+    public int Y { get; init; }
+
+    /// <summary>Times walked over, less what has grown back.</summary>
+    public int Steps { get; init; }
+
+    /// <summary>When last walked over.</summary>
+    public long Last { get; init; }
+}
+
+/// <summary>A cell growing back. Added in format 40.</summary>
+public sealed record RegrowingCellData
+{
+    /// <summary>Column.</summary>
+    public int X { get; init; }
+
+    /// <summary>Row.</summary>
+    public int Y { get; init; }
+
+    /// <summary>A tree's place, or cleared ground.</summary>
+    public bool Tree { get; init; }
+
+    /// <summary>Left alone since.</summary>
+    public long Since { get; init; }
 }
 
 /// <summary>A garden bed. Added in format 38.</summary>

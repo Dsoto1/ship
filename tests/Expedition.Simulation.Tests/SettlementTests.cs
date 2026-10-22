@@ -5,6 +5,7 @@ using Expedition.Simulation.History;
 using Expedition.Simulation.Persistence;
 using Expedition.Simulation.Scenarios;
 using Expedition.Simulation.Shore;
+using Expedition.Simulation.Core;
 using Expedition.Simulation.World;
 
 namespace Expedition.Simulation.Tests;
@@ -71,7 +72,6 @@ public sealed class SettlementTests
         Assert.True(Refused(12, 3, "wet"));
         Assert.True(Refused(28, 4, "Rocks"));
         Assert.True(Refused(25, 6, "a place the camp already uses"));
-        Assert.True(Refused(17, 4, "path"));
         Assert.True(runner.Placement("building.hut", 11, 13).Allowed);
         Assert.True(runner.PlaceBuilding("building.hut", 11, 13).Succeeded);
         Assert.True(Refused(12, 14, "Another building"));
@@ -82,6 +82,101 @@ public sealed class SettlementTests
         var hut = Shipped.Shore!.Settlement!.Building("building.hut")!;
         var turned = SimulationRunner.FootprintOf(hut, 20, 12, turned: true);
         Assert.Equal((hut.Depth, hut.Width), (turned.X1 - turned.X0 + 1, turned.Y1 - turned.Y0 + 1));
+    }
+
+    [Fact]
+    public void ABuildingMayNotShutTheWayFromTheHearth()
+    {
+        var runner = Landed();
+        // The open way through the trees to the water is four cells wide: a hut across it shuts it.
+        var shut = Enumerable.Range(18, 5).SelectMany(y => Enumerable.Range(28, 6).Select(x => runner.Placement("building.hut", x, y)))
+            .Any(c => c.Problems.Any(p => p.Contains("shut the way from the hearth to the water", StringComparison.Ordinal)));
+        Assert.True(shut);
+    }
+
+    [Fact]
+    public void PeopleWalkRoundBuildings()
+    {
+        var runner = Landed();
+        Assert.True(runner.DeveloperRaise("building.hut", 0.6, (14, 13)).Succeeded);
+        var hut = SimulationRunner.FootprintOf(Shipped.Shore!.Settlement!.Building("building.hut")!, 14, 13, false);
+        var location = Shipped.Locations[SimulationRunner.CampLocation];
+        var path = runner.PathIn(location, new GridPosition(hut.X0 - 1, 13), new GridPosition(hut.X1 + 1, 13))!;
+        Assert.NotNull(path);
+        Assert.DoesNotContain(path, c => hut.Contains(c.X, c.Y));
+        // Someone caught inside walks out.
+        Assert.NotNull(runner.PathIn(location, new GridPosition(14, 13), new GridPosition(hut.X1 + 1, 13)));
+    }
+
+    [Fact]
+    public void PathsAreWornOnlyWhereFeetGo()
+    {
+        var runner = Landed();
+        runner.Advance(6 * 24 * 60);
+        var camp = runner.Campaign.Camp!;
+        var worn = camp.Trodden.Where(t => runner.PathWear(t.Value) > 0).Select(t => CampState.Cell(t.Key)).ToList();
+        Assert.NotEmpty(worn);
+        // A path, not a field: most of the beach is not worn.
+        Assert.InRange(worn.Count, 3, 36 * 26 / 4);
+        // Nobody goes to the far corner by the rocks.
+        Assert.False(camp.Trodden.TryGetValue(CampState.Key(2, 6), out var corner) && runner.PathWear(corner) > 0);
+    }
+
+    [Fact]
+    public void PathsFadeWhenLeftAlone()
+    {
+        var runner = Landed();
+        var camp = runner.Campaign.Camp!;
+        var key = CampState.Key(3, 7);
+        var cell = camp.Tread(key);
+        cell.Steps = 500;
+        cell.Last = runner.Campaign.Clock.Tick;
+        Assert.True(runner.PathWear(cell) > 0.9);
+        runner.Advance(30 * 24 * 60);
+        Assert.True(!camp.Trodden.TryGetValue(key, out var left) || runner.PathWear(left) == 0);
+    }
+
+    [Fact]
+    public void AFelledTreeGrowsBackWhenLeftAlone()
+    {
+        var runner = Landed();
+        var camp = runner.Campaign.Camp!;
+        camp.PolesCut = 8;
+        runner.Fell(new GridPosition(3, 21));
+        var (key, growing) = Assert.Single(camp.Regrowing);
+        Assert.True(growing.Tree);
+        Assert.Equal(GrowthStage.Bare, runner.Growth(growing));
+        var rules = Shipped.Shore!.Settlement!.Ground;
+        var stages = new List<GrowthStage>();
+        for (var day = 0; day < rules.TreeDays + 2 && camp.Regrowing.ContainsKey(key); day++)
+        {
+            runner.Advance(24 * 60);
+            if (camp.Regrowing.ContainsKey(key) && (stages.Count == 0 || stages[^1] != runner.Growth(growing)))
+            {
+                stages.Add(runner.Growth(growing));
+            }
+        }
+
+        Assert.Equal([GrowthStage.Bare, GrowthStage.Scrub, GrowthStage.Brush, GrowthStage.Sapling], stages);
+        Assert.False(camp.Regrowing.ContainsKey(key));
+        Assert.Equal(4, camp.PolesCut);
+    }
+
+    [Fact]
+    public void GroundGivenUpGrowsBack()
+    {
+        var runner = Landed();
+        Assert.True(runner.PlaceBuilding("building.hut", 11, 13).Succeeded);
+        var camp = runner.Campaign.Camp!;
+        var project = camp.Projects[0];
+        Assert.True(runner.CancelProject(project.Id).Succeeded);
+        Assert.Empty(camp.Regrowing);
+
+        Assert.True(runner.PlaceBuilding("building.hut", 11, 13).Succeeded);
+        project = camp.Projects[0];
+        project.Restore(1, 0, 0.5, 1, 0);
+        Assert.True(runner.CancelProject(project.Id).Succeeded);
+        Assert.Equal(12, camp.Regrowing.Count);
     }
 
     [Fact]

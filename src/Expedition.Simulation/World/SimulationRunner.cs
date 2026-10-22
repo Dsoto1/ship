@@ -964,7 +964,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         }
 
         var location = Content.Locations[placement.LocationId];
-        var path = Pathfinder.FindPath(location, placement.CellAt(Campaign.Clock.Tick), destination);
+        var path = PathIn(location, placement.CellAt(Campaign.Clock.Tick), destination);
         if (path is null)
         {
             return CommandResult.Rejected($"{character.Name} cannot reach {destination}.");
@@ -1217,7 +1217,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             var added = Campaign.SharedStore.TryAdd(taken.Value.Item, 1, Content.Items).Succeeded;
             if (added)
             {
-                NoteGathered(taken.Value.Item);
+                NoteGathered(taken.Value.Item, character);
             }
 
             return added;
@@ -1452,13 +1452,13 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
 
         var start = placement.CellAt(Campaign.Clock.Tick);
         if (preferredSpot is not null && free.FirstOrDefault(s => s.Id == preferredSpot) is { } preferred
-            && Pathfinder.FindPath(location, start, preferred.Cell) is { } preferredPath)
+            && PathIn(location, start, preferred.Cell) is { } preferredPath)
         {
             return (preferred, preferredPath, null);
         }
 
         var best = free
-            .Select(spot => (Spot: spot, Path: Pathfinder.FindPath(location, start, spot.Cell)))
+            .Select(spot => (Spot: spot, Path: PathIn(location, start, spot.Cell)))
             .Where(candidate => candidate.Path is not null)
             .OrderBy(candidate => candidate.Path!.Count)
             .FirstOrDefault();
@@ -1477,6 +1477,11 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         {
             placement.Movement = null;
             return;
+        }
+
+        if (placement.LocationId == CampLocation)
+        {
+            Tread(path);
         }
 
         var speed = Content.Locations[placement.LocationId].WalkCellsPerMinute ?? Content.Rules.WalkCellsPerMinute;

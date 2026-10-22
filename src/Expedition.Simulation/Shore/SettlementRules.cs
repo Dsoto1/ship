@@ -42,8 +42,50 @@ public sealed record SettlementRules
     /// <summary>The chance mending a broken tool saves it.</summary>
     public double MendChance { get; init; } = 0.8;
 
+    /// <summary>How the ground wears into paths and grows back.</summary>
+    public GroundRules Ground { get; init; } = new();
+
     /// <summary>A building by ID, or null.</summary>
     public BuildingDefinition? Building(string id) => Buildings.FirstOrDefault(b => b.Id == id);
+}
+
+/// <summary>
+/// Paths worn by feet, and the vegetation coming back where it was cut or cleared and is left alone (R7).
+/// </summary>
+public sealed record GroundRules
+{
+    /// <summary>Times walked over (less what has grown back) before a cell shows as trodden.</summary>
+    public int PathFaint { get; init; } = 40;
+
+    /// <summary>Times walked over for a path worn bare.</summary>
+    public int PathFull { get; init; } = 400;
+
+    /// <summary>The share of the wear the ground takes back a day while still walked.</summary>
+    public double PathWear { get; init; } = 0.04;
+
+    /// <summary>The share it takes back a day once left alone.</summary>
+    public double PathUntrod { get; init; } = 0.12;
+
+    /// <summary>Days without a foot on it before a path is left alone.</summary>
+    public int PathUntrodDays { get; init; } = 5;
+
+    /// <summary>Days left alone before cut or cleared ground greens over with scrub.</summary>
+    public int ScrubDays { get; init; } = 8;
+
+    /// <summary>Days before brush: cleared sand is then as it was.</summary>
+    public int BrushDays { get; init; } = 20;
+
+    /// <summary>Days before a felled tree's place has a sapling.</summary>
+    public int SaplingDays { get; init; } = 40;
+
+    /// <summary>Days before it is a tree again, poles for the cutting.</summary>
+    public int TreeDays { get; init; } = 75;
+
+    /// <summary>Days without cutting before the thatch grows back.</summary>
+    public int ThatchRegrowAfterDays { get; init; } = 10;
+
+    /// <summary>Bundles of thatch that grow back a day after that.</summary>
+    public int ThatchRegrowPerDay { get; init; } = 3;
 }
 
 /// <summary>A building: where it goes, how it is raised, and what it does.</summary>

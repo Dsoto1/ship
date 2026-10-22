@@ -68,7 +68,16 @@
     "judgeDay": 90,
     // Tools: the chance an hour of use that one breaks; the chance mending saves it.
     "toolBreaksPerHour": 0.002,
-    "mendChance": 0.8
+    "mendChance": 0.8,
+    // The ground: paths worn only by feet (a cell walked over this many times shows, this many is bare),
+    // fading back when left alone; and what was felled or cleared growing back when no one touches it:
+    // scrub, brush, a sapling, a tree again. [RESEARCH] Pioneer growth on a wet tropical shore is fast;
+    // the days are a game's reading of it.
+    "ground": {
+      "pathFaint": 40, "pathFull": 400, "pathWear": 0.04, "pathUntrod": 0.12, "pathUntrodDays": 5,
+      "scrubDays": 8, "brushDays": 20, "saplingDays": 40, "treeDays": 75,
+      "thatchRegrowAfterDays": 10, "thatchRegrowPerDay": 3
+    }
   },
   "sites": [
     {

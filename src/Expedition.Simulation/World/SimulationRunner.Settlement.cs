@@ -94,6 +94,11 @@ public sealed partial class SimulationRunner
         }
 
         camp.RemoveProject(project);
+        if (project.Phase > 0 || project.Done > 0)
+        {
+            GroundLeft(camp, FootprintOf(project));
+        }
+
         return CommandResult.Ok();
     }
 
@@ -444,7 +449,8 @@ public sealed partial class SimulationRunner
         return (item, yield.PerHour * (StockLeft(item) > 0 ? 1 : 0.3));
     }
 
-    private void NoteGathered(string item)
+    // What the forest's edge gave: so much less of it, a tree felled for every few poles, near where they cut.
+    private void NoteGathered(string item, Character character)
     {
         if (Campaign.Camp is not { } camp)
         {
@@ -454,10 +460,15 @@ public sealed partial class SimulationRunner
         if (item == "item.poles")
         {
             camp.PolesCut++;
+            if (camp.PolesCut % PolesPerTreeFelled == 0 && Campaign.Placements.TryGetValue(character.Id, out var placement))
+            {
+                Fell(placement.CellAt(Campaign.Clock.Tick));
+            }
         }
         else if (item == "item.thatch")
         {
             camp.ThatchCut++;
+            camp.ThatchLastCut = Campaign.Clock.Tick;
         }
     }
 
@@ -516,6 +527,7 @@ public sealed partial class SimulationRunner
             if (building.Condition <= 0)
             {
                 camp.RemoveBuilding(building);
+                GroundLeft(camp, FootprintOf(building));
                 Campaign.Record(ChronicleEntryKind.BuildingDown, [new(ChronicleParameters.To, building.Building)]);
             }
         }
@@ -574,6 +586,8 @@ public sealed partial class SimulationRunner
                 Campaign.Record(ChronicleEntryKind.CropFailed, [new(ChronicleParameters.To, crop.Id), new(ChronicleParameters.Reason, wet ? "wet" : untended ? "untended" : "soil")]);
             }
         }
+
+        StepGroundDay(camp);
 
         // The weather wears what is built, worse what was built badly (the garden's beds have their own trouble).
         foreach (var building in camp.Buildings.Where(b => !IsGarden(b)))

@@ -329,7 +329,7 @@ public sealed partial class SimulationRunner
         var start = placement.CellAt(Campaign.Clock.Tick);
         return spots
             .Where(s => Preference(s) < 9)
-            .Select(s => (Spot: s, Path: Pathfinder.FindPath(location, start, s.Cell), Rank: Preference(s)))
+            .Select(s => (Spot: s, Path: PathIn(location, start, s.Cell), Rank: Preference(s)))
             .Where(c => c.Path is not null)
             .OrderBy(c => c.Rank).ThenBy(c => c.Path!.Count).ThenBy(c => c.Spot.Id, StringComparer.Ordinal)
             .Select(c => ((WorkSpotDefinition, IReadOnlyList<GridPosition>)?)(c.Spot, c.Path!))

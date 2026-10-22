@@ -2742,3 +2742,12 @@ ground mean more clearing and give poles. Siting matters: stores keep drier high
 infirmary works better away from the huts, a garden does better at the forest's edge. Saved in format
 39, with old saves' plots turned into places. Tests: 553 in all. Screenshots: `r7-place-allowed.jpg`,
 `r7-place-refused.jpg`.
+
+**Paths and regrowth** (owner's ask). Paths are no longer drawn: they wear in only where feet go. Each
+walk treads the cells it passes, and so do each person's daily trips from their bed to the fire, the
+stores, the latrine and the water. The worn cells show as tracks once used enough, and fade when left.
+People walk round buildings and cut corners in the open, so the tracks run on the slant. Felled trees and
+ground given up grow back when left alone: stump, scrub, brush, a sapling, and a tree again at day 75,
+poles once more. Thatch comes back too. The placement rule is now that a building may not shut the way
+from the hearth to anywhere people go. Saved in format 40. Tests: 559. Screenshots:
+`r7-paths-day10.jpg`, `r7-paths-day47.jpg`.

@@ -25,8 +25,9 @@ public readonly record struct Footprint(int X0, int Y0, int X1, int Y1)
 
 /// <summary>
 /// The captain sets each building down where they choose (R7): its ground must be dry sand or the forest's
-/// edge, clear of the rocks, the driftwood, the camp's own places, the other buildings and the paths from the
-/// hearth to the water and the landing. Trees on the ground are felled in the clearing, more work and poles
+/// edge, clear of the rocks, the driftwood, the camp's own places and the other buildings, and must not shut
+/// the way from the hearth to the water, the landing or anywhere else people go: they walk round buildings.
+/// Trees on the ground are felled in the clearing, more work and poles
 /// for it. Where it stands matters: stores keep drier up the beach, the sick do better away from the huts, a
 /// garden at the forest's edge does better than one on the open sand. Each building's two work places are
 /// at its front, the sea side.
@@ -115,33 +116,33 @@ public sealed partial class SimulationRunner
         Content.Locations.TryGetValue(locationId, out var location) && location.FindSpot(spotId) is { } spot ? spot
         : locationId == CampLocation ? CampSpots().FirstOrDefault(s => s.Id == spotId) : null;
 
-    // The paths worn from the hearth to the landing and the water: kept clear.
-    private static bool OnPath(LocationDefinition location, int x, int y)
+    // What a building set down on this ground would shut off from the hearth, people walking round it and
+    // every other: the landing, the water, a place the camp uses, another building's front. Null if nothing.
+    private string? WayShut(LocationDefinition location, CampState camp, Footprint ground, (int X, int Y)[] front)
     {
         if (location.FindSpot("spot.hearth") is not { } hearth)
         {
-            return false;
+            return null;
         }
 
-        foreach (var to in new[] { "spot.landing_1", "spot.water_1" })
+        var all = AllGround(camp);
+        all.Add(ground);
+        bool Reached(GridPosition to) => Pathfinder.FindPath(location, hearth.Cell, to, cell => all.Any(g => g.Contains(cell.X, cell.Y))) is not null;
+        foreach (var (id, name) in new[] { ("spot.landing_1", "the landing"), ("spot.water_1", "the water") })
         {
-            if (location.FindSpot(to) is not { } end)
+            if (location.FindSpot(id) is { } end && !Reached(end.Cell))
             {
-                continue;
-            }
-
-            // Distance from the cell to the straight way between them.
-            double ax = hearth.X, ay = hearth.Y, bx = end.X - ax, by = end.Y - ay;
-            var t = Math.Clamp(((x - ax) * bx + (y - ay) * by) / (bx * bx + by * by), 0, 1);
-            var dx = x - (ax + t * bx);
-            var dy = y - (ay + t * by);
-            if (dx * dx + dy * dy < 1.0)
-            {
-                return true;
+                return name;
             }
         }
 
-        return false;
+        if (location.Spots.Any(s => s.Id != hearth.Id && location.IsWalkable(s.Cell) && !all.Any(g => g.Contains(s.X, s.Y)) && !Reached(s.Cell)))
+        {
+            return "a place the camp uses";
+        }
+
+        var fronts = camp.Projects.Select(p => FrontOf(p.X, FootprintOf(p))).Concat(camp.Buildings.Select(b => FrontOf(b.X, FootprintOf(b)))).Append(front);
+        return fronts.SelectMany(f => f).Any(f => !Reached(new GridPosition(f.X, f.Y))) ? "the front of a building" : null;
     }
 
     /// <summary>
@@ -172,7 +173,7 @@ public sealed partial class SimulationRunner
 
         var trees = 0;
         var fixedSpots = location.Spots.Select(s => (s.X, s.Y)).ToHashSet();
-        bool rock = false, spot = false, path = false;
+        bool rock = false, spot = false;
         for (var cy = ground.Y0; cy <= ground.Y1; cy++)
         {
             for (var cx = ground.X0; cx <= ground.X1; cx++)
@@ -182,13 +183,10 @@ public sealed partial class SimulationRunner
                     case LocationDefinition.Fitting:
                         rock = true;
                         break;
-                    case LocationDefinition.Blocked:
-                        trees++;
-                        break;
                 }
 
+                trees += StandingTree(location, camp, cx, cy) ? 1 : 0;
                 spot |= fixedSpots.Contains((cx, cy));
-                path |= OnPath(location, cx, cy);
             }
         }
 
@@ -200,11 +198,6 @@ public sealed partial class SimulationRunner
         if (spot)
         {
             problems.Add("It would cover a place the camp already uses.");
-        }
-
-        if (path)
-        {
-            problems.Add("It would stand across the path from the hearth to the water or the landing.");
         }
 
         var others = camp.Projects.Select(p => (Ground: FootprintOf(p), Front: FrontOf(p.X, FootprintOf(p))))
@@ -220,6 +213,12 @@ public sealed partial class SimulationRunner
                            || hearth is not null && Pathfinder.FindPath(location, hearth.Cell, new GridPosition(f.X, f.Y)) is null))
         {
             problems.Add("There is no open ground at its front to work from.");
+        }
+
+        // People walk round buildings: it must not shut the way from the hearth to anywhere they go.
+        if (problems.Count == 0 && WayShut(location, camp, ground, front) is { } shut)
+        {
+            problems.Add($"It would shut the way from the hearth to {shut}.");
         }
 
         if (trees > 0)
@@ -319,7 +318,7 @@ public sealed partial class SimulationRunner
         // The old plots first; else the best ground for it, with the fewest trees to fell, nearest the hearth.
         var hearth = location.FindSpot("spot.hearth");
         var open = Enumerable.Range(3, location.Height - 4).SelectMany(cy => Enumerable.Range(1, location.Width - 2).Select(cx => (X: cx, Y: cy)))
-            .OrderBy(at => SitingFactor(building, at.X, at.Y, camp) + 0.05 * TreesOn(location, FootprintOf(building, at.X, at.Y, false)))
+            .OrderBy(at => SitingFactor(building, at.X, at.Y, camp) + 0.05 * TreesOn(location, camp, FootprintOf(building, at.X, at.Y, false)))
             .ThenBy(at => hearth is null ? 0 : Math.Abs(at.X - hearth.X) + Math.Abs(at.Y - hearth.Y))
             .ThenBy(at => at.Y).ThenBy(at => at.X);
         var tried = LegacyPlots.Where(p => p.Key.StartsWith(building.Plot + "_", StringComparison.Ordinal)).Select(p => p.Value).Concat(open);
@@ -335,14 +334,14 @@ public sealed partial class SimulationRunner
     }
 
     // Trees standing on a building's ground.
-    private static int TreesOn(LocationDefinition location, Footprint ground)
+    private static int TreesOn(LocationDefinition location, CampState camp, Footprint ground)
     {
         var trees = 0;
         for (var cy = Math.Max(0, ground.Y0); cy <= Math.Min(location.Height - 2, ground.Y1); cy++)
         {
             for (var cx = Math.Max(1, ground.X0); cx <= Math.Min(location.Width - 2, ground.X1); cx++)
             {
-                trees += location.Rows[cy][cx] == LocationDefinition.Blocked ? 1 : 0;
+                trees += StandingTree(location, camp, cx, cy) ? 1 : 0;
             }
         }
 

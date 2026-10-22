@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 39;
+    public const int CurrentSchemaVersion = 40;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -194,6 +194,9 @@ public static class SaveSerializer
 
                 return root;
             },
+
+            // Format 40 wore paths by feet and let the vegetation grow back (R7): none yet in an older camp.
+            [39] = root => root,
 
             // Format 39 let buildings be placed anywhere (R7): those on the old fixed plots are given the
             // place each plot stood at.
@@ -733,6 +736,11 @@ public static class SaveSerializer
                     Beds = camp.Beds.Select(b => new GardenBedData { Crop = b.Crop, Sown = b.Sown, Health = b.Health, Tended = b.Tended }).ToList(),
                     Broken = new SortedDictionary<string, int>(camp.Broken.ToDictionary(), StringComparer.Ordinal),
                     PolesCut = camp.PolesCut, ThatchCut = camp.ThatchCut, NextProject = camp.NextProject, Survived = camp.Survived,
+                    ThatchLastCut = camp.ThatchLastCut,
+                    Trodden = camp.Trodden.Select(t => (Cell: Shore.CampState.Cell(t.Key), t.Value))
+                        .Select(t => new TroddenCellData { X = t.Cell.X, Y = t.Cell.Y, Steps = t.Value.Steps, Last = t.Value.Last }).ToList(),
+                    Regrowing = camp.Regrowing.Select(r => (Cell: Shore.CampState.Cell(r.Key), r.Value))
+                        .Select(r => new RegrowingCellData { X = r.Cell.X, Y = r.Cell.Y, Tree = r.Value.Tree, Since = r.Value.Since }).ToList(),
                 }
                 : null,
             Voyage = campaign.Voyage is { } voyage
@@ -1361,6 +1369,18 @@ public static class SaveSerializer
 
             camp.PolesCut = savedCamp.PolesCut;
             camp.ThatchCut = savedCamp.ThatchCut;
+            camp.ThatchLastCut = savedCamp.ThatchLastCut;
+            foreach (var trodden in savedCamp.Trodden)
+            {
+                var cell = camp.Tread(Shore.CampState.Key(trodden.X, trodden.Y));
+                cell.Steps = trodden.Steps;
+                cell.Last = trodden.Last;
+            }
+
+            foreach (var growing in savedCamp.Regrowing)
+            {
+                camp.Regrow(Shore.CampState.Key(growing.X, growing.Y), new Shore.RegrowingCell { Tree = growing.Tree, Since = growing.Since });
+            }
             camp.NextProject = savedCamp.NextProject;
             camp.Survived = savedCamp.Survived;
             camp.Restore(savedCamp.Works, savedCamp.Found, savedCamp.Afloat, savedCamp.NightsSheltered, savedCamp.NightsExposed);
