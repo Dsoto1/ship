@@ -50,7 +50,7 @@ This file tracks status and breaks the next work into tickets.
 | R5 | Shipwreck transition: casualties, location, salvage by accessibility, survivors' state kept (VOYAGE §39–40) | Done (2026-10-22): the transition and its report; survival ashore is R6 |
 | R6 | Landfall camp, the first 72 hours: assessment, water, shelter, fire, stores, sanitation (SETTLEMENT §3–6) | Done (2026-10-22): going ashore from the anchorage or the wreck, the site to be scouted, the camp's works by the captain's priorities and four hard choices, wet nights, swamp fever, spoiled stores, the first days' report; the beach drawn with its works (docs/R6_LANDFALL_CAMP.md) |
 | R7 | Establishment: construction projects, storage and spoilage, the first garden, seasons (SETTLEMENT §7–19) | First pass done (2026-10-22): buildings raised phase by phase with materials, tools and quality, and worn by the weather; tools kept, broken and mended; spoilage by place; the wet season and its storm; the garden as an experiment; the first season judged at day 90; buildings placed by the captain, where the ground matters (docs/R7_ESTABLISHMENT.md) |
-| R8 | The world around: exploration, the Ahuneri and Tesiwa, trade, the charter (SETTLEMENT §26–33) | Planned |
+| R8 | The world around: exploration, the Ahuneri and Tesiwa, trade, the charter (SETTLEMENT §26–33) | First pass done (2026-10-22): the coast known by going and being told; Mahenu, Oruwai and Kessat acting on their own; meetings through an interpreter; trade, gifts, leave, knowledge with effects; parties sent out; the Brennish; the palisade; the charter judged on day 180 (docs/R8_THE_WORLD_AROUND.md) |
 | 5c | Recruitment rules in full: investigation, references, counteroffers | Later (core moves into V4) |
 | 5d | Godot waterfront recruitment scene | Later, once the voyage is fun |
 | 6 | Voyage-to-crisis vertical slice | Becomes V2–V3 |
@@ -2757,3 +2757,42 @@ timbers at Punta Ceniza or sawn from poles at the workshop; a well where the sit
 near the latrine); a landing of stones and a staging at the water's edge, where the boat lands half as much again.
 The chandler sells tools and seed. The camp has a sound bed of surf, wind, rain and the work. Building models are
 priced and briefed, not made. Tests: 564. Screenshot: `r7-well-landing.jpg`.
+
+### R8 — The world around the camp (owner: "r7 and r8 go")
+
+**Decisions** (mine, in `docs/R8_THE_WORLD_AROUND.md`):
+- three communities;
+- their persons as data for now;
+- the charter's relief ship on day 180 wanting 40 logs, the factory, a palisade, half alive and the
+  trade peace;
+- the Brennish on day 50;
+- one grave choice (holding a canoe's people) that breaks the peace;
+- the headland's leave asked in R8, the move itself later.
+
+**What was built:**
+- **The coast** known by going and by being told, never by magic.
+- **The peoples** acting each day on their own trust, grievances and interests.
+- **Meetings** at the camp through whoever can interpret, with misunderstandings.
+- **Gifts that want answering;** trade at their valuation.
+- **Knowledge with effects:**
+  - fever lore;
+  - cassava and maize, and bitter cassava made safe;
+  - the storm warning;
+  - routes;
+  - three tellings of the garrison's fate.
+- **Parties** sent out with packed food.
+- **The Brennish ship.**
+- **The palisade.**
+- **The charter's judgement.**
+
+**In the game:**
+- the regional map from the Chart button ashore;
+- meetings in the event window, with the visitors' canoes on the beach;
+- the peoples and the charter on the Camp screen;
+- the palisade round the camp.
+
+**Saved in** format 41.
+
+**Tests:** `WorldTests` (12); 576 in all.
+
+**Screenshots:** `r8-meeting.jpg`, `r8-map.jpg`, `r8-palisade.jpg`, `r8-camp-panel.jpg`.

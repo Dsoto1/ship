@@ -195,6 +195,9 @@ public partial class Hud : CanvasLayer
     /// <summary>Whether the game is paused by an alert waiting to be acknowledged.</summary>
     public bool AlertShowing => _paused.Visible;
 
+    /// <summary>Whether a report or ending card is up.</summary>
+    public bool EndingShowing => _ending.Visible;
+
     /// <summary>Whether a management screen is open.</summary>
     public bool PanelOpen => _open is not null;
 
@@ -2592,6 +2595,9 @@ public partial class Hud : CanvasLayer
     private VBoxContainer _campProjects = null!;
     private Label _campStanding = null!;
     private Label _campKit = null!;
+    private Label _campWorld = null!;
+    private Label _campCharter = null!;
+    private CheckBox _palisade = null!;
     private string _campShown = "";
 
     private static readonly IReadOnlyDictionary<string, (string Label, string Tip)> PriorityNames = new Dictionary<string, (string, string)>
@@ -2646,6 +2652,15 @@ public partial class Hud : CanvasLayer
             orders.AddChild(Ui.Button("+ " + label, tip + ". Choose where on the beach.", () => PlaceRequested?.Invoke(building)));
         }
 
+        // The palisade is camp work round the whole camp, not set down (R8).
+        _palisade = new CheckBox
+        {
+            Text = "Raise a palisade round the camp", FocusMode = Control.FocusModeEnum.None,
+            TooltipText = "Stakes and withies: the charter wants a fortified post. Mahenu may read it as distrust; Kessat as strength. Thefts at night much less likely.",
+        };
+        _palisade.Toggled += on => { if (_runner is { } r) { ShowResult(r.OrderPalisade(on)); } };
+        build.AddChild(_palisade);
+
         _campProjects = new VBoxContainer();
         build.AddChild(_campProjects);
         _campStanding = Ui.Text("", Ui.TextMeta + 1, Ui.InkSoft, 340);
@@ -2674,6 +2689,17 @@ public partial class Hud : CanvasLayer
             choices.AddChild(box);
             _campChoiceBoxes.Add(box);
         }
+
+        // The world around the camp (R8): the peoples, what they have told, the charter.
+        var world = Ui.Card(_campBox, "The coast and its peoples", "The map of the coast, and parties sent out: the Chart button (M).");
+        _campWorld = Ui.Text("", Ui.TextMeta + 1, Ui.Ink, 340);
+        world.AddChild(_campWorld);
+        var charter = Ui.Card(_campBox, "The charter", "What the Company's relief ship will judge.");
+        _campCharter = Ui.Text("", Ui.TextMeta + 1, Ui.Ink, 340);
+        charter.AddChild(_campCharter);
+        // Up under the season, where they are seen.
+        _campBox.MoveChild(world.GetParent(), 2);
+        _campBox.MoveChild(charter.GetParent(), 3);
 
         var known = Ui.Card(_campBox, "What we know of the place", "Pale lines are not yet seen for certain.");
         _campKnown = new VBoxContainer();
@@ -2743,6 +2769,47 @@ public partial class Hud : CanvasLayer
         var beds = camp.Beds.Select(b => $"{rules.Crops.FirstOrDefault(c => c.Id == b.Crop)?.Name} {runner.Growth(b) * 100:0}% grown, {(b.Health > 0.66 ? "thriving" : b.Health > 0.33 ? "poorly" : "failing")}").ToList();
         _campKit.Text = "Tools: " + string.Join(", ", tools) + $"\nMaterials: poles {store.Count("item.poles")}, thatch {store.Count("item.thatch")}, stone {store.Count("item.stone")}, planks {store.Count("item.plank")}." +
             "\nGarden: " + (beds.Count == 0 ? (camp.Buildings.Any(b => rules.Building(b.Building)?.Beds > 0) ? "nothing sown." : "no garden yet.") : string.Join("; ", beds) + ".");
+        RefreshWorld(runner, camp);
+    }
+
+    // The peoples, what has been learned, and the charter (R8).
+    private void RefreshWorld(SimulationRunner runner, CampState camp)
+    {
+        _palisade.SetPressedNoSignal(camp.PalisadeOrdered);
+        _palisade.Text = camp.Work(CampWorks.Palisade) >= 1 ? "The palisade stands" : camp.Work(CampWorks.Palisade) > 0
+            ? $"Raise a palisade round the camp ({camp.Work(CampWorks.Palisade) * 100:0}% up)" : "Raise a palisade round the camp";
+        if (runner.Region is not { } region || runner.Campaign.World is not { } world)
+        {
+            _campWorld.Text = "No one else on this coast that is known of.";
+            _campCharter.Text = "";
+            return;
+        }
+
+        var peoples = region.Communities.Select(c =>
+        {
+            var state = world.Communities.TryGetValue(c.Id, out var s) ? s : null;
+            if (state is null || (!state.Met && state.Watched == 0))
+            {
+                return null;
+            }
+
+            if (!state.Met)
+            {
+                return $"{c.Name}: watching the camp from a distance.";
+            }
+
+            var wants = string.Join(", ", c.Wants.OrderByDescending(w => w.Value).Take(3).Select(w => runner.Content.Items[w.Key].Name.ToLowerInvariant()));
+            var owed = state.GiftOwedSince > 0 ? " Their gift is unanswered." : "";
+            return $"{c.Name} ({c.People}): {runner.Stance(c.Id)}, {SimulationRunner.TrustWords(state.Trust)}. They want {wants}.{owed}";
+        }).OfType<string>().ToList();
+        var learned = world.Learned.Keys.Select(k => region.Topic(k)?.Name).OfType<string>().ToList();
+        var away = world.Journeys.Count == 0 ? "" : $"\nAway: {world.Journeys.Sum(j => j.Members.Count)} in {world.Journeys.Count} {(world.Journeys.Count == 1 ? "party" : "parties")}.";
+        _campWorld.Text = (peoples.Count == 0 ? "No one has come to the camp yet." : string.Join("\n", peoples))
+                          + (learned.Count == 0 ? "" : "\nLearned: " + string.Join("; ", learned) + ".") + away;
+        var terms = runner.CharterTerms();
+        _campCharter.Text = world.Charter is { } verdict
+            ? $"Judged when the relief ship came: {(verdict == "in part" ? "kept in part" : verdict)}."
+            : $"The relief ship in about {runner.DaysToRelief:0} days. It will want:\n" + string.Join("\n", terms.Select(t => $"{(t.Met ? "✓" : "·")} {t.Term}"));
     }
 
     private string _campProjectsShown = "";

@@ -83,6 +83,11 @@ public partial class Main : Node3D
     private PortSound _portSound = null!;
     private ShipSound _shipSound = null!;
     private CampSound _campSound = null!;
+    private RegionView _region = null!;
+    private string? _developerMeeting;
+    private string? _developerLearn;
+    private string? _developerTrust;
+    private string? _developerMapSelect;
     private Node3D _portFigures = null!;
     // Ashore (R6): the beach of the first camp, with its people, laid on the coast in front of the anchorage.
     private CampView _camp = null!;
@@ -193,7 +198,7 @@ public partial class Main : Node3D
         _hud.ContinueRequested += CarryOn;
         _hud.EventChoiceMade += choice =>
         {
-            var (result, resolution) = _runner.ResolveEvent(choice);
+            var (result, resolution) = _runner.Campaign.World?.Meeting is not null ? _runner.ResolveMeeting(choice) : _runner.ResolveEvent(choice);
             if (resolution is null)
             {
                 _hud.ShowResult(result);
@@ -238,6 +243,11 @@ public partial class Main : Node3D
         talkLayer.AddChild(_chart);
         _astrolabe = new AstrolabeView { Name = "Astrolabe" };
         talkLayer.AddChild(_astrolabe);
+        // Ashore, the chart is the coast as it is known (R8).
+        _region = new RegionView { Name = "Region" };
+        talkLayer.AddChild(_region);
+        _region.Closed += CloseChart;
+        _region.Said += (result, message) => _hud.ShowResult(result, message);
         _hud.ChartRequested += ToggleChart;
         _hud.BelowRequested += ToggleBelow;
         _hud.PlaceRequested += StartPlacing;
@@ -469,6 +479,7 @@ public partial class Main : Node3D
 
         CheckAlerts();
         CheckEvent();
+        CheckMeeting();
         if (_runner.Campaign.Port is not null)
         {
             // What people say to the captain of their own accord (R2e): greetings in passing are a
@@ -555,6 +566,7 @@ public partial class Main : Node3D
             var ashoreCount = _content.Items.Keys.Sum(_runner.Campaign.SharedStore.Count);
             _camp.Show(ashoreCamp, ashoreCount, _runner.CampFireBurning, landing, _runner.CampWater() is not null, _world.Darkness, t);
             _camp.ShowSettlement(_runner);
+            _camp.ShowVisitors(_runner.Campaign.World?.Meeting is { Kind: "delegation" } meeting ? meeting.Community : null);
             FollowCaptain((float)delta);
         }
         else
@@ -1366,6 +1378,25 @@ public partial class Main : Node3D
         _ => _seaState,
     };
 
+    // A meeting on the coast stops the clock as an event does (R8): a people at the camp, a theft, a ship's boat.
+    private void CheckMeeting()
+    {
+        if (_runner.Campaign.World?.Meeting is null || _hud.EventShowing || _hud.EndingShowing || _runner.DescribeMeeting() is not { } description)
+        {
+            return;
+        }
+
+        SetSpeed(0);
+        _hud.HideAlert();
+        var choices = _runner.MeetingChoices().Select(c => (c.Id, c.Text, c.Available, c.Note)).ToList();
+        _hud.ShowEvent(description.Title, description.Text, choices);
+        if (_developerChoice is { } developerChoice)
+        {
+            _developerChoice = null;
+            _hud.DeveloperChoose(developerChoice);
+        }
+    }
+
     // An event stops the clock until the captain decides.
     private void CheckEvent()
     {
@@ -1683,7 +1714,7 @@ public partial class Main : Node3D
     private void SetSpeed(int index)
     {
 
-        if (index > 0 && _runner?.Campaign.PendingEvent is not null)
+        if (index > 0 && (_runner?.Campaign.PendingEvent is not null || _runner?.Campaign.World?.Meeting is not null))
         {
             _hud.ShowStatus("The captain must decide first.");
             return;
@@ -2239,6 +2270,10 @@ public partial class Main : Node3D
                     _offCoast = (offshore, north);
                     break;
                 case "chart": _openView = "chart"; break;
+                case "meeting": _developerMeeting = value; break;
+                case "mapselect": _developerMapSelect = value; break;
+                case "learn": _developerLearn = value; break;
+                case "trust": _developerTrust = value; break;
                 case "astrolabe": _openView = "astrolabe"; break;
                 case "hull" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var hullLeft): _forceHull = hullLeft; break;
                 case "rigging" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var riggingLeft): _forceRigging = riggingLeft; break;
@@ -2588,7 +2623,8 @@ public partial class Main : Node3D
                     var wanted = orders == "all" ? ["hut", "hut", "storehouse", "cookhouse", "garden", "infirmary", "workshop"] : orders.Split(',');
                     foreach (var (id, x, y, turned) in wanted.Select(ParseBuildOrder))
                     {
-                        var ordered = x is { } bx && y is { } by ? _runner.PlaceBuilding(id, bx, by, turned) : _runner.OrderBuilding(id);
+                        var ordered = id == "building.palisade" ? _runner.OrderPalisade(true)
+                            : x is { } bx && y is { } by ? _runner.PlaceBuilding(id, bx, by, turned) : _runner.OrderBuilding(id);
                         if (!ordered.Succeeded)
                         {
                             GD.PushWarning($"--build {id}: {ordered.Reason}");
@@ -2626,6 +2662,31 @@ public partial class Main : Node3D
             Callable.From(() => _hud.OpenPanel(open)).CallDeferred();
         }
 
+        // --trust=people.mahenu:30 (comma-separated), --learn=know.roots,..., --meeting=people.mahenu: the coast's
+        // peoples staged, for screenshots (R8).
+        foreach (var pair in (_developerTrust ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (pair.Split(':') is [var people, var level] && double.TryParse(level, System.Globalization.CultureInfo.InvariantCulture, out var trust))
+            {
+                _runner.DeveloperTrust(people, trust);
+            }
+        }
+
+        foreach (var topic in (_developerLearn ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            _runner.DeveloperLearn(topic);
+        }
+
+        // --meeting=none: no meeting waiting.
+        if (_developerMeeting == "none")
+        {
+            _runner.DeveloperDismissMeeting();
+        }
+        else if (_developerMeeting is { } meeting && !_runner.DeveloperMeeting(meeting).Succeeded)
+        {
+            GD.PushWarning($"--meeting: {meeting} would not come.");
+        }
+
         // --chart / --astrolabe: open them, for screenshots.
         if (_openView == "chart")
         {
@@ -2659,6 +2720,22 @@ public partial class Main : Node3D
     // Opens the chart (time stands still while it is open), or closes it.
     private void ToggleChart()
     {
+        if (_region.Visible)
+        {
+            _region.Visible = false;
+            CloseChart();
+            return;
+        }
+
+        if (_runner.Campaign.World is not null)
+        {
+            _speedBeforeChart ??= _speedIndex;
+            SetSpeed(0);
+            _region.Open(_runner, _developerMapSelect);
+            _developerMapSelect = null;
+            return;
+        }
+
         if (_chart.Visible)
         {
             _chart.Visible = false;

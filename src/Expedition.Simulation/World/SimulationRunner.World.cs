@@ -392,9 +392,10 @@ public sealed partial class SimulationRunner
         return choices;
     }
 
-    // Gifts the camp could answer with: what they value, in a fitting amount, of what the camp has.
+    // Gifts the camp could answer with: what they value, in a fitting amount, of what the camp has; the
+    // Company's trade goods before the tools the camp works with.
     private IEnumerable<(string Item, int Count)> GiftsToGive(CommunityDefinition community) =>
-        community.Wants.OrderByDescending(w => w.Value).ThenBy(w => w.Key, StringComparer.Ordinal)
+        community.Wants.OrderBy(w => Content.Items[w.Key].Category == "trade" ? 0 : 1).ThenByDescending(w => w.Value).ThenBy(w => w.Key, StringComparer.Ordinal)
             .Select(w => (w.Key, Count: GiftCount(w.Key)))
             .Where(g => Campaign.SharedStore.Count(g.Key) >= g.Count + (Content.Items[g.Key].Category == "tool" ? 1 : 0))
             .Take(2);
@@ -761,43 +762,41 @@ public sealed partial class SimulationRunner
             return null;
         }
 
-        // Shortest by days over the routes known; failing that, over all routes, to a place reported, as a guess.
-        foreach (var guessing in new[] { false, true })
+        // Shortest by days, a route not known costing half as much again: guessed at, and easily lost.
+        var best = new Dictionary<string, (double Days, string? From)> { [start.Id] = (0, null) };
+        var open = new SortedSet<(double Days, string Place)> { (0, start.Id) };
+        while (open.Count > 0)
         {
-            var best = new Dictionary<string, (double Days, string? From)> { [start.Id] = (0, null) };
-            var open = new SortedSet<(double Days, string Place)> { (0, start.Id) };
-            while (open.Count > 0)
+            var (days, here) = open.Min;
+            open.Remove(open.Min);
+            foreach (var route in region.Routes.Where(r => r.Other(here) is not null))
             {
-                var (days, here) = open.Min;
-                open.Remove(open.Min);
-                foreach (var route in region.Routes.Where(r => r.Other(here) is not null && (guessing || world.Routes.Contains(r.Key))))
+                var there = route.Other(here)!;
+                var cost = days + route.Days * (world.Routes.Contains(route.Key) ? 1 : 1.5);
+                if (!best.TryGetValue(there, out var known) || cost < known.Days - 1e-9)
                 {
-                    var there = route.Other(here)!;
-                    var cost = days + route.Days * (world.Routes.Contains(route.Key) ? 1 : 1.5);
-                    if (!best.TryGetValue(there, out var known) || cost < known.Days - 1e-9)
+                    if (known.From is not null)
                     {
-                        if (known.From is not null)
-                        {
-                            open.Remove((known.Days, there));
-                        }
-
-                        best[there] = (cost, here);
-                        open.Add((cost, there));
+                        open.Remove((known.Days, there));
                     }
+
+                    best[there] = (cost, here);
+                    open.Add((cost, there));
                 }
             }
+        }
 
-            if (best.TryGetValue(placeId, out var found))
+        if (best.TryGetValue(placeId, out var found))
+        {
+            var path = new List<string> { placeId };
+            while (best[path[^1]].From is { } from)
             {
-                var path = new List<string> { placeId };
-                while (best[path[^1]].From is { } from)
-                {
-                    path.Add(from);
-                }
-
-                path.Reverse();
-                return (path, found.Days, guessing);
+                path.Add(from);
             }
+
+            path.Reverse();
+            var guessed = path.Zip(path.Skip(1)).Any(step => !world.Routes.Contains(region.Routes.First(r => r.Other(step.First) == step.Second).Key));
+            return (path, found.Days, guessed);
         }
 
         return null;
@@ -1143,6 +1142,24 @@ public sealed partial class SimulationRunner
         world.Meeting = null;
         StepPeoplesDay(world, Campaign.Camp!);
         return world.Meeting?.Community == communityId ? CommandResult.Ok() : CommandResult.Rejected("They would not come.");
+    }
+
+    /// <summary>Developer tool: something learned from the people who know it, as if told.</summary>
+    public void DeveloperLearn(string topicId)
+    {
+        if (Campaign.World is { } world && Region?.Topic(topicId) is { } topic && Region.Community(topic.From.FirstOrDefault() ?? "") is { } from)
+        {
+            Teach(world, topic, from);
+        }
+    }
+
+    /// <summary>Developer tool for screenshots: whatever meeting is waiting goes away unanswered.</summary>
+    public void DeveloperDismissMeeting()
+    {
+        if (Campaign.World is { } world)
+        {
+            world.Meeting = null;
+        }
     }
 
     /// <summary>Developer tool: sets a people's trust.</summary>

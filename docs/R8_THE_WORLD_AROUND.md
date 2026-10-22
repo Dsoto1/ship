@@ -266,3 +266,94 @@ the plausibility pass, against what is known of coastal and riverine peoples of 
 - gift exchange;
 - canoe trade;
 - the Brennish dye-wood trade's history on such coasts.
+
+## As built (2026-10-22)
+
+![Mahenu's first visit: Narehwa lays down a gift of cassava bread; Ximena interprets, haltingly](screenshots/r8-meeting.jpg)
+![The coast as known on day 5: places told of (dashed, ?) and the routes heard of; Mahenu chosen, a party to be sent](screenshots/r8-map.jpg)
+![Day 17: the palisade round the camp, its gate on the sea side](screenshots/r8-palisade.jpg)
+![The Camp screen: the coast and its peoples, and the charter's terms](screenshots/r8-camp-panel.jpg)
+
+**Simulation** (`SimulationRunner.World.cs`, `Shore/RegionRules.cs`, `Shore/WorldState.cs`, `data/region.json`):
+- **The coast:** 15 places and 17 routes, each known as unknown, reported, seen or visited, with who said
+  so. On landing, the sailing directions give Punta Ceniza, Mahenu and the river.
+- **The peoples act at first light each day:**
+  - their ground used without leave is a slow grievance once they have met the newcomers;
+  - a gift left unanswered for eight days is an insult;
+  - grievance fades slowly;
+  - before they first come, they watch the camp from the water;
+  - a people that is wary or worse may steal a tool in the night (a palisade cuts that sharply);
+  - otherwise the first people whose time has come sends a delegation, the Ahuneri with a gift.
+- **Meetings** stop the clock like events, through the best interpreter at the camp:
+  - **the gift:** answered with trade goods first, accepted with nothing given yet, or refused;
+  - **business, as many rounds as the captain likes:**
+    - up to three trades at their own valuation (fairer as they trust the camp; less for what they
+      already have plenty of);
+    - questions about what they know;
+    - leave to cut the red wood or to stay on their ground;
+    - the palisade explained;
+    - a stolen tool asked back;
+  - **misunderstandings** by interpreter level, each with its own cost;
+  - **learning:** the best speaker short of functional may improve a level.
+- **Knowledge:** eleven topics with real effects:
+  - fever lore cuts the swamp fever by 40%;
+  - their roots and grain make cassava and maize garden crops, with cuttings and seed given;
+  - bitter cassava is safe once learned (`safeWith` on the item's sickness);
+  - the storm warning cuts storm damage by 40%;
+  - three topics reveal routes and places;
+  - three tellings of the garrison's fate.
+- **Journeys:**
+  - a party of one to four, packed with about three rations a day from the stores;
+  - routes not known cost half as much again, with a chance of getting lost;
+  - a guide (tracking 2+ or Ahuneri 2+) is quicker;
+  - on the road they eat only what they carry, and may turn an ankle or catch a fever;
+  - arriving, the way there is known, the places beyond are seen, and the people there take them in
+    or turn them back, by their stance;
+  - **Ximena at Mahenu** finds her son;
+  - **the hill** is a grave offence to Kessat;
+  - **the dye-wood** without leave is Oruwai's grievance.
+- **The Brennish** come on day 50: the boat's visit, buying, selling logs (against the charter), a
+  letter for the Company, warning them off (Kessat hears). When the ship leaves, someone stressed to
+  breaking may go with her.
+- **The charter** is judged on day 180:
+  - **its terms:** logs, the factory at Punta Ceniza, half alive, the trade peace, a palisade;
+  - **the verdict:** kept, in part, or revoked;
+  - **a letter home** sent by day 120 makes the relief ship better found.
+- **The trade peace** breaks if the captain holds a canoe's people over a theft, or sells logs to the
+  Brennish.
+- **The palisade:**
+  - it is camp work, ten rounds of six poles;
+  - Mahenu sees it at 30% and loses some trust, unless it is explained;
+  - Kessat gains some respect for it.
+- **The Company's trade chest** comes ashore: 40 knives, 12 bolts of cloth, 300 hooks.
+- **Saves:** format 41.
+- **Tests:** `WorldTests` (12). 576 in all.
+
+**The game:**
+- **The Chart button ashore** opens `RegionView`: the coast drawn as known, routes, parties on the way,
+  the villages coloured by stance. Choosing a place shows what is known, from whom, and whose ground it
+  is. From there a party is sent: who, why, and the days it will take.
+- **Meetings** use the event window. While a delegation is at the camp, their dugouts lie on the beach.
+- **The Camp screen:**
+  - the coast and its peoples (stance, trust, wants, what is owed, what has been learned);
+  - the charter's terms ticked off;
+  - the palisade order.
+- **The palisade** is drawn round the camp, stakes set from the gate both ways.
+- **Developer flags:**
+  - `--meeting=people.mahenu` (or `none`);
+  - `--learn=know.roots,...`;
+  - `--trust=people.mahenu:30`;
+  - `--chart --mapselect=place.mahenu`;
+  - `--build=palisade`.
+
+**What I noticed:**
+- **Ximena** claims Ahuneri 4 in port, and is 2 in truth, so she interprets "haltingly". That is the
+  port's hidden-quality system working as meant: worth knowing before relying on her.
+- **Sickness** at Punta Ceniza is still the camp's worst trouble. The fever lore helps, if Mahenu is
+  trusted enough to tell it.
+
+**Not yet**, beyond what is listed above:
+- **No full playthrough to day 180 has been judged for balance.** Meetings wait for the captain, so a
+  test run cannot play them out.
+- **The relief ship's arrival has no card in the game yet;** it is a chronicle entry.
+- **Gaspar Lezo** can be heard of, but not yet met or brought to the camp.
