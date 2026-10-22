@@ -231,7 +231,7 @@ public sealed partial class SimulationRunner
         }
 
         choices.Add(("castrena", "the coast of Castrena", navigation.True.DistanceTo(new ChartPoint(0, 0))));
-        foreach (var island in Content.Voyage?.Route?.Islands ?? [])
+        foreach (var island in Islands)
         {
             var (exists, at) = IslandTruth(island);
             if (exists)

@@ -129,6 +129,9 @@ public sealed partial class SimulationRunner
         _ => "distrustful",
     };
 
+    // Things said at one meeting before the visitors go home of themselves.
+    private const int LongestMeeting = 16;
+
     private void Trust(string communityId, double change, double grievance = 0)
     {
         if (Campaign.World?.Communities.TryGetValue(communityId, out var state) == true)
@@ -139,7 +142,7 @@ public sealed partial class SimulationRunner
     }
 
     // How well the camp can speak to a people: the best interpreter at the camp, not away.
-    private (int Level, Character? Who) Interpreter(CommunityDefinition community)
+    internal (int Level, Character? Who) Interpreter(CommunityDefinition community)
     {
         var atCamp = Ashore().Where(c => c.CanWork && !Away(c.Id)).ToList();
         var direct = atCamp.Select(c => (Level: c.Languages.Get(community.Language), Who: c)).OrderByDescending(x => x.Level).ThenBy(x => x.Who.Id.Value).FirstOrDefault();
@@ -279,6 +282,9 @@ public sealed partial class SimulationRunner
             case "theft":
                 return ($"A theft in the night", $"In the morning {Article(ItemName(meeting.Item!).ToLowerInvariant())} is gone from the stores, and there are tracks down to the lagoon's edge, and the mark of a canoe's keel. "
                     + $"{(community is null ? "" : $"It will be {community.Name}'s people: the camp has not stood well with them.")}");
+            case "survivor":
+                return ("Gaspar Lezo", "A man comes down the shore from Mahenu with two of Narehwa's people: bearded, burned dark, in a Mahenu wrap and the Company's old belt. "
+                    + "Gaspar Lezo, soldier of the garrison, the last of it. He talks Castrenan as if it were rusty, and Ahuneri without thinking. He has come to see the newcomers for himself.");
             case "brennish" when Region?.Brennish is { } ship:
                 return ($"{Capitalise(ship.Ship)}'s boat", $"A ship's boat comes in round the point under a Brennish flag: {ship.Master}, of {ship.Ship}, lying at the cove to the north. "
                     + "He has wine, biscuit and iron to sell, news a month old, and an eye on the camp's wood.");
@@ -314,6 +320,14 @@ public sealed partial class SimulationRunner
             choices.Add(new("let_go", "Let it go", true, "they will test the camp again"));
             choices.Add(new("take_up", "Take it up with them when they next come", true, null));
             choices.Add(new("seize", "Hold the next canoe's people until it is returned", true, "as the garrison did: it breaks the trade peace"));
+            return choices;
+        }
+
+        if (meeting.Kind == "survivor")
+        {
+            choices.Add(new("ask", "Ask him how the factory fell", true, null));
+            choices.Add(new("join", "Ask him to join the camp", true, "Oruwai holds the garrison against him"));
+            choices.Add(new("stay", "Leave him to Mahenu, with thanks", true, null));
             return choices;
         }
 
@@ -357,15 +371,19 @@ public sealed partial class SimulationRunner
 
         foreach (var (give, giveCount, get, getCount) in TradeOffers(community, state))
         {
+            var left = Campaign.SharedStore.Count(give) - giveCount;
             choices.Add(new($"trade:{give}:{giveCount}:{get}:{getCount}",
-                $"Trade {giveCount} {ItemName(give).ToLowerInvariant()} for {getCount} {ItemName(get).ToLowerInvariant()}", true, null));
+                $"Trade {giveCount} {ItemName(give).ToLowerInvariant()} for {getCount} {ItemName(get).ToLowerInvariant()}", true,
+                Content.Items[give].Category == "tool" ? $"the camp works with these: {left} left after" : null));
         }
 
         var (level, _) = Interpreter(community);
         foreach (var topic in Region.Knowledge.Where(k => k.From.Contains(id) && !Learned(k.Id)).Take(3))
         {
             var ready = state.Trust >= topic.Trust && level >= topic.Language;
-            choices.Add(new($"ask:{topic.Id}", $"Ask about {topic.Name}", true, ready ? null : level < topic.Language ? "the interpreter may not manage it" : "they may not say yet"));
+            choices.Add(meeting.Refused.Contains($"ask:{topic.Id}")
+                ? new($"ask:{topic.Id}", $"Ask about {topic.Name}", false, "asked already: another time")
+                : new($"ask:{topic.Id}", $"Ask about {topic.Name}", true, ready ? null : level < topic.Language ? "the interpreter may not manage it" : "they may not say yet"));
         }
 
         if (state.Grievous is { } stolen)
@@ -373,14 +391,15 @@ public sealed partial class SimulationRunner
             choices.Add(new("ask_back", $"Ask for the {ItemName(stolen).ToLowerInvariant()} back", true, null));
         }
 
-        if (PlaceKnown("place.dyewood") >= PlaceKnowledge.Reported && id != "people.tesiwa" && !state.Leave.Contains("wood"))
+        // Leave is asked of those whose the wood or the ground is.
+        if (PlaceKnown("place.dyewood") >= PlaceKnowledge.Reported && Region.Places.Any(p => p.Wood && p.Ground == id) && !state.Leave.Contains("wood"))
         {
-            choices.Add(new("leave:wood", "Ask leave to cut the red wood", true, null));
+            choices.Add(new("leave:wood", "Ask leave to cut the red wood", !meeting.Refused.Contains("leave:wood"), meeting.Refused.Contains("leave:wood") ? "asked already: another time" : null));
         }
 
         if (CampPlace?.Ground == id && Learned("know.ground") && !state.Leave.Contains("ground"))
         {
-            choices.Add(new("leave:ground", "Ask leave to stay on this ground", true, null));
+            choices.Add(new("leave:ground", "Ask leave to stay on this ground", !meeting.Refused.Contains("leave:ground"), meeting.Refused.Contains("leave:ground") ? "asked already: another time" : null));
         }
 
         if (id == "people.mahenu" && world.PalisadeNoticed && !world.PalisadeExplained)
@@ -397,7 +416,7 @@ public sealed partial class SimulationRunner
     private IEnumerable<(string Item, int Count)> GiftsToGive(CommunityDefinition community) =>
         community.Wants.OrderBy(w => Content.Items[w.Key].Category == "trade" ? 0 : 1).ThenByDescending(w => w.Value).ThenBy(w => w.Key, StringComparer.Ordinal)
             .Select(w => (w.Key, Count: GiftCount(w.Key)))
-            .Where(g => Campaign.SharedStore.Count(g.Key) >= g.Count + (Content.Items[g.Key].Category == "tool" ? 1 : 0))
+            .Where(g => Campaign.SharedStore.Count(g.Key) >= g.Count + (Content.Items[g.Key].Category == "tool" ? 2 : 0))
             .Take(2);
 
     private static int GiftCount(string item) => item switch
@@ -415,7 +434,8 @@ public sealed partial class SimulationRunner
         var offers = new List<(string, int, string, int)>();
         var fairness = Math.Clamp(0.8 + state.Trust / 200 + 0.15 * community.Trade, 0.7, 1.05);
         var brennish = Campaign.World?.Brennish == 1 && community.Id == "people.tesiwa";
-        var wanted = community.Wants.Where(w => Campaign.SharedStore.Count(w.Key) >= GiftCount(w.Key) + (Content.Items[w.Key].Category == "tool" ? 1 : 0))
+        // A tool is offered only while the camp keeps two to work with: it cannot build with what it has traded.
+        var wanted = community.Wants.Where(w => Campaign.SharedStore.Count(w.Key) >= GiftCount(w.Key) + (Content.Items[w.Key].Category == "tool" ? 2 : 0))
             .OrderByDescending(w => w.Value).ThenBy(w => w.Key, StringComparer.Ordinal).Take(3).ToList();
         // Logs first if the charter wants them and they have any; then food.
         var gets = community.Offers.OrderBy(o => o.Key == "item.embrawood" ? 0 : Content.Items[o.Key].HungerRelief > 0 ? 1 : 2).ThenBy(o => o.Key, StringComparer.Ordinal).ToList();
@@ -459,9 +479,22 @@ public sealed partial class SimulationRunner
         {
             "theft" => Theft(world, meeting, choiceId),
             "brennish" => BrennishChoice(world, choiceId),
+            "survivor" => SurvivorChoice(world, choiceId),
             _ => Delegation(world, meeting, choiceId),
         };
         meeting.Round++;
+        if (!ok && (choiceId.StartsWith("ask:", StringComparison.Ordinal) || choiceId.StartsWith("leave:", StringComparison.Ordinal)))
+        {
+            meeting.Refused.Add(choiceId);
+        }
+
+        // A long meeting ends of itself: they have the day's work at home.
+        if (!ends && meeting.Kind == "delegation" && meeting.Round >= LongestMeeting)
+        {
+            ends = true;
+            text += " The day is getting on, and they go back to their canoes.";
+        }
+
         if (ends)
         {
             world.Meeting = null;
@@ -673,6 +706,59 @@ public sealed partial class SimulationRunner
                 return ("Two men from a canoe at the weir are held at the camp under guard. The tool comes back that night, left on the beach. The men are let go at dawn. No one comes from the lagoon after that, and the Company's peace with its people is broken.", true, false);
             default:
                 return ("It is let go. Whoever took it will know the camp can be taken from.", true, true);
+        }
+    }
+
+    // ================================================================ the garrison's survivor
+
+    // Gaspar Lezo comes down from Mahenu to the camp once a party has met him there.
+    private void StepSurvivorDay(WorldState world)
+    {
+        if (world.Survivor == 1 && world.Meeting is null && Campaign.PendingEvent is null && world.Journeys.Count == 0 && Stance("people.mahenu") is not ("hostile" or "avoiding"))
+        {
+            world.Survivor = 2;
+            world.Meeting = new Meeting { Kind = "survivor", Community = "people.mahenu", Tick = Campaign.Clock.Tick };
+        }
+    }
+
+    private (string Text, bool Ends, bool Ok) SurvivorChoice(WorldState world, string choiceId)
+    {
+        switch (choiceId)
+        {
+            case "ask":
+                return ("\"Captain Ordás took Oruwai's young men to cut wood, and kept them in the stockade at night so they would not run. One died there. "
+                        + "They came for him at the new moon, Oruwai and men from up the river, and the palisade was nothing to them; they knew where every stake was, they had cut them.\" "
+                        + "He looks at your own stakes, and says no more about it.", false, true);
+            case "join":
+            {
+                world.Survivor = 3;
+                var gaspar = Campaign.CreateCharacter("Gaspar Lezo", 36, "Almara", Content.Rules.PersonalCarryCapacity);
+                gaspar.Sex = Sex.Male;
+                gaspar.StatusId = "status.sailor";
+                gaspar.Membership = Membership.Crew;
+                gaspar.Languages.Set("language.castrenan", 4);
+                gaspar.Languages.Set("language.ahuneri", 4);
+                foreach (var (skill, level) in new[] { ("skill.foraging", 3), ("skill.fishing", 3), ("skill.tracking", 2), ("skill.carpentry", 1), ("skill.languages", 2) })
+                {
+                    gaspar.Skills.Set(skill, level);
+                }
+
+                gaspar.Attributes.Set("attribute.strength", 3);
+                gaspar.Attributes.Set("attribute.endurance", 4);
+                gaspar.Appearance = AppearanceGenerator.Generate(gaspar, Content.Appearance, Campaign.Randomness.Characters);
+                var location = Content.Locations[CampLocation];
+                Campaign.SetPlacement(gaspar.Id, new CharacterPlacement(CampLocation, location.FindSpot("spot.scout_1")?.Cell ?? location.FindSpot("spot.hearth")!.Cell));
+                AssignCampDuties();
+                Trust("people.oruwai", -6, 10);
+                Trust("people.mahenu", 2);
+                return ("He thinks about it a long while, looking at the camp. \"I'll come. I'd like to hear Castrenan in the evenings again.\" "
+                        + "He goes back for his things, and is at the hearth by dark. Word of it will reach Oruwai.", true, true);
+            }
+
+            default:
+                world.Survivor = 4;
+                Trust("people.mahenu", 3);
+                return ("He nods. \"Mahenu has been good to me. Come up and see me; I'll tell you what I can.\" He goes back along the shore with Narehwa's people.", true, true);
         }
     }
 
@@ -970,6 +1056,15 @@ public sealed partial class SimulationRunner
                 journey.Report.Add(speaks >= 2
                     ? $"{community.Name} took them in for a night, fed them, and asked a great many questions."
                     : $"{community.Name} fed them and watched them, and they understood little of what was said.");
+                // The garrison's survivor, once his story is known.
+                if (peopleId == "people.mahenu" && world.Survivor is 0 or 4 && Learned("know.garrison_mahenu"))
+                {
+                    journey.Report.Add(world.Survivor == 0
+                        ? "At Mahenu a bearded man in a Mahenu wrap came out to them speaking Castrenan: Gaspar Lezo, of the garrison. He asked after Almara, and said he would come down to the camp."
+                        : "Gaspar Lezo sat with them at Mahenu, and said he would come down to the camp again.");
+                    world.Survivor = 1;
+                }
+
                 // Ximena among them at Mahenu.
                 if (peopleId == "people.mahenu" && party.Any(c => c.PersonId == "person.ximena"))
                 {
@@ -1122,6 +1217,7 @@ public sealed partial class SimulationRunner
 
         StepPeoplesDay(world, camp);
         StepBrennishDay(world, camp);
+        StepSurvivorDay(world);
         if (world.Charter is null && Region is { } region && CampDay >= region.Charter.ReliefDay)
         {
             JudgeCharter(world, camp);
@@ -1133,6 +1229,15 @@ public sealed partial class SimulationRunner
     /// <summary>Developer tool for tests and screenshots: a people at the camp now, whatever the day.</summary>
     public CommandResult DeveloperMeeting(string communityId)
     {
+        // "survivor": Gaspar Lezo, come down from Mahenu.
+        if (communityId == "survivor" && Campaign.World is { } met)
+        {
+            met.Survivor = 1;
+            met.Meeting = null;
+            StepSurvivorDay(met);
+            return met.Meeting?.Kind == "survivor" ? CommandResult.Ok() : CommandResult.Rejected("He would not come.");
+        }
+
         if (Campaign.World is not { } world || Region?.Community(communityId) is null)
         {
             return CommandResult.Rejected("No such people.");

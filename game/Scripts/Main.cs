@@ -435,8 +435,10 @@ public partial class Main : Node3D
         // Each new voyage gets its own seed; the seed is saved, so a reported problem can be replayed.
         var seed = (ulong)System.Random.Shared.NextInt64();
         ReadDeveloperArguments(ref seed);
-        StartCampaign(_testDeck ? WithWatches(TestDeckScenario.Create(_content, seed)) : ExpeditionScenario.Create(_content, seed),
-            _testDeck ? "At sea. Left-click a crew member, right-click to send them." : "La Bocana. Right-click to walk; click anyone to look at them.");
+        // --load=PATH: a save written elsewhere (a long run played out by the tests' captain), for staging scenes.
+        StartCampaign(_loadPath is { } path ? new SimulationRunner(SaveSerializer.Deserialize(System.IO.File.ReadAllText(path), _content), _content)
+            : _testDeck ? WithWatches(TestDeckScenario.Create(_content, seed)) : ExpeditionScenario.Create(_content, seed),
+            _loadPath is not null ? "Loaded." : _testDeck ? "At sea. Left-click a crew member, right-click to send them." : "La Bocana. Right-click to walk; click anyone to look at them.");
         if (_startZoom is { } size)
         {
             _camera.Size = size;
@@ -670,7 +672,7 @@ public partial class Main : Node3D
         _shipSound.Sea(inPort || ashore || voyage is null ? 0f : _seaState, inPort || ashore || weather is null ? 0f : (float)weather.WindLeaguesPerHour, Mathf.Max(_seaFog, _deck.Cutaway ? 0.7f : 0f), pumping, (float)delta);
         _coastView.Show(inPort ? null : voyage?.Navigation, _runner.Coast, _content.Voyage?.Route?.Bearing ?? 0, _shipCentre, _camera.Size, _world.Darkness, _gloom, (float)delta);
         var raised = inPort || voyage?.Navigation is not { Call: { Sighted: true } call } ? null
-            : _content.Voyage?.Route?.Islands.FirstOrDefault(i => i.Id == call.Island);
+            : _runner.Islands.FirstOrDefault(i => i.Id == call.Island);
         _islandView.Show(raised, raised is null ? default : _runner.IslandTruth(raised).At, voyage?.Navigation, voyage?.Navigation?.Call?.Anchored == true,
             _content.Voyage?.Route?.Bearing ?? 0, _shipCentre, _camera.Size, _world.Darkness, _gloom, (float)delta);
         var cooking = _runner.Campaign.ActiveTasks.Values.Any(task => task.DefinitionId == "task.cook");
@@ -1443,6 +1445,12 @@ public partial class Main : Node3D
                 ShowSeasonJudged(entry);
             }
 
+            if (entry.Kind == ChronicleEntryKind.CharterJudged)
+            {
+                SetSpeed(0);
+                ShowCharterJudged(entry);
+            }
+
             if (entry.Kind == ChronicleEntryKind.CampFirstDays && !_reportShown)
             {
                 _reportShown = true;
@@ -1646,6 +1654,37 @@ public partial class Main : Node3D
             $"The garden: {harvests} measures brought in; {failed} beds lost.\n\n" +
             (survived ? "They are dry, fed and watered, and the place has begun to look lived in. The coast's people have surely been watching."
                 : $"Still wanting: {entry.Get(ChronicleParameters.Reason)}. The camp goes on, but the charter's patience is not endless."),
+            "Carry on", () => { });
+    }
+
+    // At day 180 the relief ship, and the Company's judgement on the charter (R8).
+    private void ShowCharterJudged(ChronicleEntry entry)
+    {
+        if (_runner.Campaign.Camp is not { } camp || _runner.Region is not { } region || _runner.Campaign.World is not { } world)
+        {
+            return;
+        }
+
+        var outcome = entry.Get(ChronicleParameters.Outcome);
+        var alive = _runner.Campaign.Crew.Count(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated);
+        // Gaspar Lezo joined the camp after the landing: he meets her, but was not one of those who landed.
+        var joined = world.Survivor == 3 && _runner.Campaign.Crew.Any(c => c.Name == "Gaspar Lezo" && c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated) ? 1 : 0;
+        var lost = camp.LandedCount - (alive - joined);
+        var peoples = region.Communities.Select(c => $"{c.Name}: {_runner.Stance(c.Id)}" + (world.Communities.GetValueOrDefault(c.Id) is { Met: true } state ? $", {SimulationRunner.TrustWords(state.Trust)}" : "")).ToList();
+        var lacking = entry.Get(ChronicleParameters.Reason);
+        _hud.ShowEnding(outcome switch { "kept" => "The relief ship: the charter kept", "in part" => "The relief ship: the charter kept in part", _ => "The relief ship: the charter revoked" },
+            $"A hundred and eighty days ashore at {_runner.CampSite?.Name}, and a Company ship in the offing. {alive - joined} of the {camp.LandedCount} who landed meet her" + (joined > 0 ? ", and Gaspar Lezo with them" : "") + (lost > 0 ? $"; {lost} are not here to." : ".") + "\n\n" +
+            $"{entry.Get(ChronicleParameters.Level)} logs of embrawood go aboard. The camp is {_runner.CampStage()}, with {camp.Buildings.Count} buildings standing{(camp.Work(Expedition.Simulation.Shore.CampWorks.Palisade) >= 1 ? " inside a palisade" : "")}.\n" +
+            $"Learned of the coast: {world.Learned.Count} things." + (world.Survivor == 3 ? " Gaspar Lezo, the garrison's last man, is with the camp." : "") + "\n" +
+            $"The peoples: {string.Join("; ", peoples)}.\n\n" +
+            outcome switch
+            {
+                "kept" => "The master reads the charter's terms against what he sees and signs them off. The factory stands again, and the Company will send more.",
+                "in part" => $"Wanting: {lacking}. The master will report it so; the Company will send again, but on harder terms.",
+                _ => world.PeaceBroken || world.LogsSold > 0
+                    ? "The trade peace is broken, or the wood sold to interlopers: the master has his orders, and the charter is void."
+                    : $"Wanting: {lacking}. The charter is void; the master offers passage home to those who want it.",
+            },
             "Carry on", () => { });
     }
 
@@ -2002,6 +2041,7 @@ public partial class Main : Node3D
     // person at the screen: --seed=N, --speed=0..3, --advance=MINUTES (simulate before the first frame),
     // --screenshot=PATH (save the screen after a few seconds, then quit), --hour=H (start at that hour).
     private string? _screenshotPath;
+    private string? _loadPath;
     private int _advanceOnStart;
     private float? _startZoom;
     private string? _forceWeather;
@@ -2238,6 +2278,7 @@ public partial class Main : Node3D
             switch (parts[0])
             {
                 case "seed" when ulong.TryParse(value, out var number): seed = number; break;
+                case "load": _loadPath = value; break;
                 case "speed" when int.TryParse(value, out var speed): SetSpeed(Math.Clamp(speed, 0, TicksPerSecond.Length - 1)); break;
                 case "advance" when int.TryParse(value, out var minutes): _advanceOnStart = minutes; break;
                 case "screenshot": _screenshotPath = value; break;

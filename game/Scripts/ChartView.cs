@@ -343,7 +343,7 @@ public partial class ChartView : Control
     // The islands section: where each lies from her by the reckoning, and the orders that fit.
     private void RefreshIslands(VoyageState ship, Navigation navigation)
     {
-        var islands = _runner?.Content.Voyage?.Route?.Islands ?? [];
+        var islands = _runner?.Islands ?? [];
         _islandBox.Visible = islands.Count > 0 && !navigation.Sighted;
         if (!_islandBox.Visible || _runner is null)
         {
@@ -625,7 +625,7 @@ public partial class ChartCanvas : Control
         }
 
         // The islands: a charted one drawn as land, a reported one dashed, with a query.
-        foreach (var island in _runner.Content.Voyage?.Route?.Islands ?? [])
+        foreach (var island in _runner.Islands)
         {
             var at = At(island.X, island.Y);
             var radius = Mathf.Max(5f, 2.5f * Zoom);
@@ -671,7 +671,7 @@ public partial class ChartCanvas : Control
         // The course: to the offing on the destination's latitude, then down it to the coast.
         var reckoned = navigation.Reckoned;
         var offing = new ChartPoint(d.X + navigation.Offing, d.Y);
-        if (navigation.Call is { Anchored: false } call && _runner.Content.Voyage?.Route?.Islands.FirstOrDefault(i => i.Id == call.Island) is { } bound)
+        if (navigation.Call is { Anchored: false } call && _runner.Islands.FirstOrDefault(i => i.Id == call.Island) is { } bound)
         {
             var aim = call.SeenAt ?? bound.Charted;
             Dashed(At(reckoned.X, reckoned.Y), At(aim.X, aim.Y));

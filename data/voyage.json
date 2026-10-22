@@ -22,7 +22,9 @@
     "windFrom": 25, "windVariation": 85, "closestToWind": 67.5, "tackMargin": 12, "longestBoard": 10,
     "pointsOfSail": [[67.5, 0.88], [90, 1.02], [135, 1.12], [180, 1.02]],
     // Islands off the route where she might water. The Aguada is charted and settled, some twenty leagues
-    // west of the course a quarter of the way down; Esquiva is only reported, and may not be there.
+    // west of the course a quarter of the way down; Esquiva is only reported, and may not be there. Those
+    // with a "band" are this world's other islands: each voyage's seed picks one of each band (near the
+    // port, halfway, near the coast), so no two passages meet the same ocean.
     "islands": [
       { "id": "island.aguada", "name": "Isla de la Aguada", "x": -142, "y": -154, "sightingLeagues": 10,
         "spring": 1, "forage": 0.35, "settled": true,
@@ -34,7 +36,30 @@
         "looks": "A high green island with a cloud on its peak, a white beach under it and a few houses where a stream comes down." },
       { "id": "island.esquiva", "name": "Isla Esquiva", "x": -208, "y": -300, "reported": true, "existsChance": 0.55, "positionError": 12,
         "sightingLeagues": 7, "spring": 0.45, "forage": 1,
-        "looks": "A low wooded island, birds wheeling over it in thousands, surf all round and one cove on the lee side." }
+        "looks": "A low wooded island, birds wheeling over it in thousands, surf all round and one cove on the lee side." },
+      { "id": "island.losas", "name": "Las Losas", "band": "near", "x": -87, "y": -70, "sightingLeagues": 6, "spring": 0, "forage": 0.6,
+        "looks": "Flat grey rocks barely clear of the swell, white with birds; no tree, no water, eggs and fish for the taking." },
+      { "id": "island.brigida", "name": "Santa Brígida", "band": "near", "x": -68, "y": -100, "sightingLeagues": 9, "spring": 0.6, "forage": 0.3, "settled": true,
+        "sells": [
+          { "item": "item.water", "quantity": 20, "price": 50, "stock": 3, "looks": "From the hermitage's cistern, a little stale but sweet." },
+          { "item": "item.fish", "quantity": 15, "price": 35, "stock": 3, "looks": "Split and salted by the fishermen's wives." }
+        ],
+        "looks": "A steep island with a white hermitage on its shoulder and a fishing hamlet in the cove below." },
+      { "id": "island.verdel", "name": "Isla Verdel", "band": "middle", "x": -217, "y": -208, "reported": true, "existsChance": 0.85, "positionError": 8,
+        "sightingLeagues": 8, "spring": 1, "forage": 0.7,
+        "looks": "A green island, wooded to the water, a stream coming down over the beach in a fan of fresh water on the sand." },
+      { "id": "island.calma", "name": "La Calma", "band": "middle", "x": -179, "y": -229, "sightingLeagues": 11, "spring": 0.3, "forage": 0.9,
+        "looks": "A burnt cone of a mountain, black sand round its foot, goats on the slopes and a seep of water under the cliff." },
+      { "id": "island.hermanas", "name": "Las Tres Hermanas", "band": "far", "x": -329, "y": -336, "reported": true, "existsChance": 0.7, "positionError": 10,
+        "sightingLeagues": 6, "spring": 0.5, "forage": 1,
+        "looks": "Three low cays in a line, rain pools in the rock, turtles on the beaches at night." },
+      { "id": "island.ascua", "name": "Ascua", "band": "far", "x": -291, "y": -350, "sightingLeagues": 10, "spring": 0.8, "forage": 0.4, "settled": true,
+        "sells": [
+          { "item": "item.water", "quantity": 30, "price": 70, "stock": 3, "looks": "From the well behind the Lusaran fishermen's huts." },
+          { "item": "item.fruit", "quantity": 20, "price": 55, "stock": 2, "looks": "Bananas and a few oranges, grown in a walled garden." },
+          { "item": "item.fish", "quantity": 15, "price": 40, "stock": 3, "looks": "Dried on racks along the beach." }
+        ],
+        "looks": "A long island with a Lusaran fishing station on it: drying racks, a chapel bell, boats drawn up." }
     ],
     "coast": {
       "destination": "coast.punta_ceniza",

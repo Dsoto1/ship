@@ -251,7 +251,7 @@ public partial class Hud : CanvasLayer
             PanelId.People => "People — the roster",
             PanelId.Expedition => _runner?.Campaign.Voyage is null ? "Expedition — objectives and papers" : "The voyage — at a glance",
             PanelId.Cargo => "Cargo — the manifest",
-            PanelId.Ship => _runner?.Campaign.Camp is not null ? "The camp — the first days" : "Ship — condition and orders",
+            PanelId.Ship => _runner?.Campaign.Camp is not null ? (_runner.CampDay < 3 ? "The camp — the first days" : $"The camp — {_runner.CampStage()}") : "Ship — condition and orders",
             PanelId.Chart => "Chart",
             _ => "Chronicle — the record of the expedition",
         };

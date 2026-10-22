@@ -35,7 +35,7 @@ public sealed class Inventory
     public string Name { get; }
 
     /// <summary>Weight and volume limits.</summary>
-    public InventoryCapacity Capacity { get; }
+    public InventoryCapacity Capacity { get; internal set; }
 
     /// <summary>All items held, by item ID, in ID order. Quantities are always positive.</summary>
     public IReadOnlyDictionary<string, int> Quantities => _quantities;

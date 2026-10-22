@@ -352,8 +352,27 @@ the plausibility pass, against what is known of coastal and riverine peoples of 
 - **Sickness** at Punta Ceniza is still the camp's worst trouble. The fever lore helps, if Mahenu is
   trusted enough to tell it.
 
-**Not yet**, beyond what is listed above:
-- **No full playthrough to day 180 has been judged for balance.** Meetings wait for the captain, so a
-  test run cannot play them out.
-- **The relief ship's arrival has no card in the game yet;** it is a chronicle entry.
-- **Gaspar Lezo** can be heard of, but not yet met or brought to the camp.
+**Done since** (the full arc, `docs/SETTLEMENT_VALIDATION.md`):
+- **A full playthrough to day 180** by a careful test captain, on three seeds: the charter kept on all
+  three. The faults it found are fixed there.
+- **The relief ship's arrival** has its card in the game.
+- **Gaspar Lezo** can be met at Mahenu and brought to the camp (§12 below).
+- **Meetings end:** a question or a request for leave refused is not pressed again at the same meeting,
+  and visitors go home of themselves after sixteen exchanges.
+- **Leave for the wood** is asked only of the people whose wood it is (Oruwai), not of Mahenu.
+- **Tools:** a tool is offered in trade or as a gift only while the camp keeps two of it, and a trade
+  of tools says how many will be left.
+
+### 12. Gaspar Lezo, the garrison's survivor
+
+Once Mahenu has told what happened to the garrison (trust 42, an interpreter at 3), a party that goes
+to Mahenu meets him. He comes down to the camp after the party is home, and the captain may:
+- **ask him how the factory fell:** the commander kept Oruwai's young men in the stockade at night to
+  cut wood, and Oruwai and Kessat came for him at the new moon;
+- **ask him to join:** he is one of the camp from then on, an interpreter at 4, a forager and
+  fisherman. Oruwai holds the garrison against him: their trust falls by 6, their grievance rises by 10;
+- **leave him to Mahenu:** Mahenu is glad of it. A later party to Mahenu may ask him again.
+
+Taking him in early can cost the wood: in the test run he joined on day 19, and Oruwai never trusted the
+camp enough again to give leave to cut. The test captain now asks him once the wood is secured.
+`--meeting=survivor` stages his visit for a screenshot.

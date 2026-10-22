@@ -2796,3 +2796,41 @@ priced and briefed, not made. Tests: 564. Screenshot: `r7-well-landing.jpg`.
 **Tests:** `WorldTests` (12); 576 in all.
 
 **Screenshots:** `r8-meeting.jpg`, `r8-map.jpg`, `r8-palisade.jpg`, `r8-camp-panel.jpg`.
+
+### The full arc to the relief ship, and more islands (owner: "do option 1 and add more islands")
+
+**More islands:** six new islands in three bands, near, middle and far, two in each. Each voyage's seed
+picks one of each band, so no two voyages meet the same ocean. The Aguada and the Esquiva are always
+there. New are:
+- bare rock with no spring;
+- islands settled by others, who sell water, fruit and fish;
+- a tall volcanic island, seen from eleven leagues;
+- islands only reported, which may not be there at all.
+
+**The full arc** (`docs/SETTLEMENT_VALIDATION.md`):
+- **A test captain** (tests only) plays a campaign from landing to day 180 the way a careful captain
+  would.
+- **`FullArcTests`** holds the result: the charter kept at Punta Ceniza.
+- **Playing it out found six faults, fixed:**
+  - meetings that never ended;
+  - a request refused that could be pressed again and again;
+  - the camp trading away its last axes;
+  - the palisade's stakes not counted in the call for poles;
+  - leave for the wood asked of the wrong people;
+  - the camp's store still limited to the ship's hold, so logs were lost.
+- **The relief ship's card** on day 180: who meets her, the logs, the camp, the peoples, the verdict and
+  why.
+- **Gaspar Lezo**, the garrison's survivor, can be met at Mahenu and taken into the camp, at a cost
+  with Oruwai.
+- **The four settlement validation scenes** (SETTLEMENT §51 A–D) are staged from the test captain's
+  run with the new `--load=PATH`, and judged: all four *Partly*.
+
+**Saved in** format 41: a meeting's refused requests and Gaspar's state are new, both optional fields.
+
+**Tests:** 581 in all, including:
+- `FullArcTests`;
+- two new `WorldTests`;
+- `IslandTests`' bands across 30 seeds.
+
+**Screenshots:** `r9-scene-a-first-night.jpg` … `r9-scene-d-charter.jpg`, `r9-relief-ship.jpg`,
+`r9-gaspar-lezo.jpg`.

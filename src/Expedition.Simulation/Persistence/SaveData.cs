@@ -1198,6 +1198,9 @@ public sealed record WorldData
     /// <summary>The Brennish ship's visit, 0..3.</summary>
     public int Brennish { get; init; }
 
+    /// <summary>The garrison's survivor, 0..4.</summary>
+    public int Survivor { get; init; }
+
     /// <summary>She was warned off.</summary>
     public bool BrennishWarned { get; init; }
 
@@ -1312,6 +1315,9 @@ public sealed record MeetingData
 
     /// <summary>Their gift's item.</summary>
     public string? GiftItem { get; init; }
+
+    /// <summary>What was refused at this meeting.</summary>
+    public IReadOnlyList<string> Refused { get; init; } = [];
 
     /// <summary>How many.</summary>
     public int GiftCount { get; init; }
