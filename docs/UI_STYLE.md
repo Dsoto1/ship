@@ -104,7 +104,20 @@ ECONOMY_LOOP §43:
 Each row is a bar and a word (poor, weak, fair, good, strong), never one score. They come from the best
 skills aboard and what is in the hold, and each tooltip says why. The person card is framed.
 
-**At sea.**
+**At sea.** The chart screen follows the owner's chart reference. It sits between the bars, in three
+columns:
+- **Left:** its sections (Navigation, Observations, Course & Waypoints, Known Lands, Chart Notes), then
+  what to show: the route, the estimated position, names, the graticule, the wind, and soundings and notes.
+- **Middle:** the chart. The reckoned track is ticked in red at each noon, the ship is drawn at her
+  place in her ring of doubt, a ship is drawn in the open sea, and hills stand inland.
+- **Right**, on parchment: the section chosen.
+  - Navigation: the estimated position in large type with its doubt, then the course (with "Change the
+    course…"), distance, speed, time to land and the wind, each with its icon; then the noon sight and
+    the navigator.
+  - Observations: the sights and the casts of the lead, by day, newest first.
+  - Known Lands: the islands and, near the coast, the lead and what is in view.
+
+The chart itself:
 - **The chart** is parchment, the sea washed blue, the land laid to the chart's edge with a darker shore.
   Names are in Fell italic.
 - Castrena runs off the chart's east edge. North of what the sailing directions cover, the Ember Coast is
