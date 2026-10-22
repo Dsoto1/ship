@@ -63,6 +63,7 @@ public partial class Main : Node3D
     private IslandView _islandView = null!;
     private readonly List<SeaBird> _birds = [];
     private float _seaState = 1f;
+    private float _seaFog;
     private float _gloom;
     private float _portFog;
     private float _portWind;
@@ -467,7 +468,12 @@ public partial class Main : Node3D
         var voyage = _runner.Campaign.Voyage;
         var weather = voyage is null ? null : _content.Voyage?.Weathers.FirstOrDefault(w => w.Id == voyage.WeatherId);
         var step = Mathf.Clamp((float)delta * 0.6f, 0, 1);
-        _seaState = Mathf.Lerp(_seaState, (float)(weather?.SeaState ?? 0.8), step);
+        // The signs of a blow coming (VOYAGE §20): a long swell gets up and the sky greys ahead of it,
+        // once the hands have read them.
+        var omen = voyage?.NextWeatherId is { } coming && _content.Voyage?.Weathers.FirstOrDefault(w => w.Id == coming) is { SeaState: >= 2 } foreseen
+                   && weather is not null && foreseen.SeaState > weather.SeaState + 0.3 ? 1f : 0f;
+        _seaState = Mathf.Lerp(_seaState, (float)(weather?.SeaState ?? 0.8) + 0.35f * omen, step);
+        _seaFog = Mathf.Lerp(_seaFog, (float)(weather?.Fog ?? 0), step * 0.5f);
         // The port's weather (R2d): stone wets quickly in rain and dries slowly, fog and wind come and go.
         var portWeather = _runner.PortWeather;
         var raining = (float)(portWeather?.Rain ?? 0);
@@ -475,7 +481,7 @@ public partial class Main : Node3D
         _portFog = Mathf.MoveToward(_portFog, (float)(portWeather?.Fog ?? 0), (float)delta * 0.08f);
         _portWind = Mathf.MoveToward(_portWind, (float)(portWeather?.Wind ?? 0), (float)delta * 0.2f);
         // A shower greys the sky a little, even in fair weather.
-        _gloom = Mathf.Lerp(_gloom, _runner.Campaign.Port is not null ? (float)(portWeather?.Gloom ?? 0) : Mathf.Max((float)(weather?.Gloom ?? 0), _runner.Raining ? 0.35f : 0f), step);
+        _gloom = Mathf.Lerp(_gloom, _runner.Campaign.Port is not null ? (float)(portWeather?.Gloom ?? 0) : Mathf.Max((float)(weather?.Gloom ?? 0) + 0.15f * omen, _runner.Raining ? 0.35f : 0f), step);
         var targetSink = voyage is null ? 0f : voyage.Outcome == Expedition.Simulation.Voyage.VoyageOutcome.Foundered ? 3.2f : (float)voyage.Bilge / 100f * 0.8f;
         _sink = Mathf.Lerp(_sink, targetSink, Mathf.Clamp((float)delta * 0.4f, 0, 1));
         if (_gloom > 0.75f && speed > 0 && _flicker.NextDouble() < delta * 0.12)
@@ -589,7 +595,7 @@ public partial class Main : Node3D
             }
         }
         var making = voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } ? 0.3f + (float)voyage.SpeedLeaguesPerHour * 1.3f : 0f;
-        _world.UpdateWorld(hour, _seaState, making, (float)delta, _camera.Target, hull, _gloom, inPort ? _portFog : 0f, inPort ? 0f : Mathf.DegToRad(_ship.RotationDegrees.Y), inPort ? null : _runner.Raining);
+        _world.UpdateWorld(hour, _seaState, making, (float)delta, _camera.Target, hull, _gloom, inPort ? _portFog : _seaFog, inPort ? 0f : Mathf.DegToRad(_ship.RotationDegrees.Y), inPort ? null : _runner.Raining);
         _shipSound.Rain(!inPort && _runner.Raining ? Mathf.Clamp(0.4f + _seaState * 0.25f, 0, 1) : 0f, (float)delta);
         _coastView.Show(inPort ? null : voyage?.Navigation, _runner.Coast, _content.Voyage?.Route?.Bearing ?? 0, _shipCentre, _camera.Size, _world.Darkness, _gloom, (float)delta);
         var raised = inPort || voyage?.Navigation is not { Call: { Sighted: true } call } ? null
@@ -1682,6 +1688,7 @@ public partial class Main : Node3D
     private string? _seaWeather;
     private bool _founder;
     private bool _crewLife;
+    private bool _legs;
     private string? _island;
     private string? _openView;
     private string? _forceCarryAway;
@@ -1907,6 +1914,7 @@ public partial class Main : Node3D
                 case "seaweather": _seaWeather = value; break;
                 case "founder": _founder = true; break;
                 case "crewlife": _crewLife = true; break;
+                case "legs": _legs = true; break;
                 case "island": _island = value; break;
                 case "offcoast" when value.Split(',') is [var off, var along]
                                      && double.TryParse(off, System.Globalization.CultureInfo.InvariantCulture, out var offshore)
@@ -2040,6 +2048,15 @@ public partial class Main : Node3D
                 _runner.Advance(90);
                 _selected = hands[0].Id;
             }
+        }
+
+        // --legs: two legs laid off south of the course, and a note on the chart.
+        if (_legs && _runner.Campaign.Voyage?.Navigation is { } plotted)
+        {
+            var at = plotted.Reckoned;
+            _runner.PlotLeg(new Expedition.Simulation.Voyage.ChartPoint(at.X - 45, at.Y - 22));
+            _runner.PlotLeg(new Expedition.Simulation.Voyage.ChartPoint(at.X - 110, at.Y - 30));
+            _runner.WriteOnChart(new Expedition.Simulation.Voyage.ChartPoint(at.X - 20, at.Y + 6), "Weed and terns: land?");
         }
 
         // --founder: she fills and goes down now, for the wreck.

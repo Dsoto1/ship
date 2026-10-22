@@ -145,6 +145,18 @@ public sealed record WeatherDefinition
     /// <summary>How much darker and greyer the sky is, 0..1. Drives the visuals.</summary>
     public double Gloom { get; init; }
 
+    /// <summary>
+    /// Fog, 0..1: how far it closes in. Land and islands are raised that much nearer (none at all in thick
+    /// fog until close aboard), and the sun is hidden from the noon sight.
+    /// </summary>
+    public double Fog { get; init; }
+
+    /// <summary>How far the lookout sees, as a share of a clear day's: gloom and fog both shorten it.</summary>
+    public double Seeing => Math.Max(0.08, (1 - 0.6 * Gloom) * (1 - 0.88 * Fog));
+
+    /// <summary>Whether the sun can be seen to take it: not in fog, nor under a storm's cloud.</summary>
+    public bool SunHidden => Fog >= 0.5 || Gloom >= 0.7;
+
     /// <summary>The part of the hours in this weather that bring rain, 0..1: squalls in a fresh breeze, steady rain in a gale.</summary>
     public double Rain { get; init; }
 

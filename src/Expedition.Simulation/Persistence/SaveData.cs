@@ -430,6 +430,12 @@ public sealed record NavigationData
     /// <summary>The approach to the coast. Added in format 28; null before the coast is raised or near.</summary>
     public ApproachData? Approach { get; init; }
 
+    /// <summary>The legs laid off, each [east, north]. Added in format 36.</summary>
+    public IReadOnlyList<IReadOnlyList<double>> Legs { get; init; } = [];
+
+    /// <summary>What is written on the chart. Added in format 36.</summary>
+    public IReadOnlyList<ChartNoteData> Notes { get; init; } = [];
+
     /// <summary>The island she has made for, or null on the passage. Added in format 29.</summary>
     public IslandCallData? Call { get; init; }
 }
@@ -913,4 +919,20 @@ public sealed record PromiseData
 
     /// <summary>When it must be kept by.</summary>
     public required long Due { get; init; }
+}
+
+/// <summary>A note on the chart. Added in format 36.</summary>
+public sealed record ChartNoteData
+{
+    /// <summary>Where: [east, north].</summary>
+    public required IReadOnlyList<double> At { get; init; }
+
+    /// <summary>What it says.</summary>
+    public required string Text { get; init; }
+
+    /// <summary>When written.</summary>
+    public long Tick { get; init; }
+
+    /// <summary>The captain's own, or the voyage's mark.</summary>
+    public bool ByCaptain { get; init; }
 }

@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 35;
+    public const int CurrentSchemaVersion = 36;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -194,6 +194,9 @@ public static class SaveSerializer
 
                 return root;
             },
+
+            // Format 36 added legs laid off and notes on the chart: an older chart has none.
+            [35] = root => root,
 
             // Format 35 added standing orders: an older voyage keeps the default calls and gives no orders.
             [34] = root => root,
@@ -688,6 +691,8 @@ public static class SaveSerializer
                             Track = n.Track.Select(p => (IReadOnlyList<double>)[p.X, p.Y]).ToList(),
                             Sights = n.Sights.Select(s => new NoonSightData { Day = s.Day, Taker = s.Taker.Value, Y = s.Y, Error = s.Error }).ToList(),
                             WindFrom = n.WindFrom, Tack = n.Tack, BoardHours = n.BoardHours,
+                            Legs = n.Legs.Select(p => (IReadOnlyList<double>)[p.X, p.Y]).ToList(),
+                            Notes = n.Notes.Select(note => new ChartNoteData { At = [note.At.X, note.At.Y], Text = note.Text, Tick = note.Tick, ByCaptain = note.ByCaptain }).ToList(),
                             Approach = n.Sighted || n.NearWarned || n.Soundings.Count > 0
                                 ? new ApproachData
                                 {
@@ -1172,6 +1177,12 @@ public static class SaveSerializer
                     navigation.Restore(Point(saved.True), Point(saved.Reckoned), Point(saved.Drift), saved.LogError, saved.Heading, saved.RunningDown,
                         saved.LastSightDay, saved.Navigator is { } navigator ? new CharacterId(navigator) : null, saved.Track.Select(Point),
                         saved.Sights.Select(s => new Voyage.NoonSight(s.Day, new CharacterId(s.Taker), s.Y, s.Error)), saved.WindFrom ?? route.WindFrom, saved.Tack, saved.BoardHours);
+                    if (saved.Legs.Any(p => p.Count != 2) || saved.Notes.Any(n => n.At.Count != 2 || n.Text.Length > 120))
+                    {
+                        throw new SaveLoadException("The chart's legs or notes are invalid.");
+                    }
+
+                    navigation.RestoreChart(saved.Legs.Select(Point), saved.Notes.Select(n => new Voyage.ChartNote(Point(n.At), n.Text, n.Tick, n.ByCaptain)));
                     if (saved.Call is { } call)
                     {
                         if (!route.Islands.Any(i => i.Id == call.Island) || call.SeenAt is { Count: not 2 } || call.Searched < 0)

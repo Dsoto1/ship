@@ -97,7 +97,7 @@ public sealed partial class SimulationRunner
         if (!call.Sighted)
         {
             var day = Campaign.Clock.TimeOfDay.TotalHours is >= 6 and < 19;
-            var range = (day ? island.SightingLeagues * (1 - 0.6 * weather.Gloom) : 1.2) * (ship.WatchKept ? 1 : 0.15);
+            var range = (day ? island.SightingLeagues * weather.Seeing : 1.2 * (1 - 0.7 * weather.Fog)) * (ship.WatchKept ? 1 : 0.15);
             if (exists && navigation.True.DistanceTo(at) <= range)
             {
                 var seen = new ChartPoint(navigation.Reckoned.X + at.X - navigation.True.X, navigation.Reckoned.Y + at.Y - navigation.True.Y);
@@ -115,6 +115,7 @@ public sealed partial class SimulationRunner
                     navigation.Call = null;
                     navigation.Target = null;
                     Campaign.Record(ChronicleEntryKind.IslandNotFound, [new(ChronicleParameters.To, island.Id)]);
+                    MarkChart($"No {island.Name} here", island.Charted);
                 }
             }
 
@@ -135,6 +136,7 @@ public sealed partial class SimulationRunner
             }
 
             Campaign.Record(ChronicleEntryKind.Anchored, [new(ChronicleParameters.To, island.Id), new(ChronicleParameters.Reason, island.Reported ? "found" : "fix")]);
+            MarkChart($"{island.Name}: anchored here", navigation.Reckoned);
         }
     }
 

@@ -175,6 +175,10 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
                 $"{who} is learning {SkillWord(entry.Get(ChronicleParameters.To))} from {(entry.Characters.Count > 1 ? Name(entry.Characters[1]) : "a shipmate")}.",
             ChronicleEntryKind.CargoInjury =>
                 $"Cargo breaking loose caught {who}: {Condition(entry.Get(ChronicleParameters.Condition)).ToLowerInvariant()} (-{entry.Get(ChronicleParameters.Damage)} health){Because(entry)}.",
+            ChronicleEntryKind.LegPlotted => $"The captain laid off a leg on the chart: {entry.Get(ChronicleParameters.Level)} laid off.",
+            ChronicleEntryKind.LegReached => entry.Get(ChronicleParameters.Level) == "0"
+                ? "She reached the end of the last leg laid off, by the reckoning: back on the passage's own course."
+                : $"She reached a leg's end, by the reckoning; {entry.Get(ChronicleParameters.Level)} more laid off.",
             ChronicleEntryKind.StandingOrderActed => entry.Get(ChronicleParameters.Reason) switch
             {
                 Voyage.StandingOrderReasons.HoveTo => $"By the captain's standing order, the officer of the watch hove her to: {WeatherName(entry.Get(ChronicleParameters.To))}.",

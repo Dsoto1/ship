@@ -19,8 +19,10 @@ public sealed partial class SimulationRunner
     private bool SailTheRoute(VoyageState ship, Navigation navigation, RouteRules route)
     {
         SteerForIsland(navigation);
+        SteerForLeg(navigation);
         navigation.Sail(ship.SpeedLeaguesPerHour, HoursPerTick, route.Coast?.StandOffLeagues ?? 0);
         CallAtIsland(ship, navigation, Content.Voyage!.Weather(ship.WeatherId));
+        ReachLeg(navigation);
         bool arrived;
         if (route.Coast is { } coast)
         {
@@ -80,11 +82,17 @@ public sealed partial class SimulationRunner
         return Math.Sqrt(-2 * Math.Log(u)) * Math.Cos(Math.Tau * random.NextDouble());
     }
 
-    /// <summary>True between the hours the sun can be taken at noon, if today's sight is not yet taken.</summary>
-    public bool CanTakeNoonSight =>
+    /// <summary>True between the hours the sun can be taken at noon, if today's sight is not yet taken and the sun can be seen.</summary>
+    public bool CanTakeNoonSight => NoonNow && !SunHidden;
+
+    /// <summary>True between the hours of the noon sight, if today's is not yet taken, whether or not the sun shows.</summary>
+    public bool NoonNow =>
         Campaign.Voyage is { Outcome: VoyageOutcome.UnderWay, Navigation: { Sighted: false } navigation } && Content.Voyage?.Route is { } route
         && navigation.LastSightDay != Campaign.Clock.Day
         && Campaign.Clock.TimeOfDay.TotalHours >= route.SightFrom && Campaign.Clock.TimeOfDay.TotalHours < route.SightUntil;
+
+    /// <summary>True when fog or a storm's cloud hides the sun: there is no sight to be had.</summary>
+    public bool SunHidden => Campaign.Voyage is { } ship && Content.Voyage is { } rules && rules.Weather(ship.WeatherId).SunHidden;
 
     /// <summary>
     /// Takes the sun at noon: <paramref name="care"/> (0..1) is how well it was done, from the astrolabe in
@@ -95,7 +103,8 @@ public sealed partial class SimulationRunner
     {
         if (!CanTakeNoonSight || Campaign.Voyage?.Navigation is not { } navigation || Content.Voyage?.Route is not { } route)
         {
-            return (CommandResult.Rejected("The noon sight is taken once a day, between half past eleven and half past twelve."), null);
+            return (CommandResult.Rejected(NoonNow && SunHidden ? "The sun is hidden: there is no sight to be had today."
+                : "The noon sight is taken once a day, between half past eleven and half past twelve."), null);
         }
 
         if (!Campaign.Characters.TryGetValue(taker, out var who) || !who.CanWork)

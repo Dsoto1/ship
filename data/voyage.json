@@ -62,12 +62,19 @@
     {
       "id": "weather.calm", "name": "a flat calm", "windLeaguesPerHour": 0.25, "seaState": 0.3, "gloom": 0, "rain": 0,
       "leakMultiplier": 0.7, "hullWearPerHour": 0.02, "riggingWearPerHour": 0.03, "minHours": 6, "maxHours": 20,
-      "next": { "weather.fair": 3, "weather.calm": 0.6 }
+      "next": { "weather.fair": 3, "weather.calm": 0.6, "weather.fog": 0.7 }
+    },
+    {
+      // Fog: a light air and a grey wall close round her. The lookout sees a cable or two, the sun is
+      // hidden from the noon sight, and land is raised only close aboard.
+      "id": "weather.fog", "name": "a fog", "windLeaguesPerHour": 0.55, "seaState": 0.5, "gloom": 0.3, "fog": 0.92, "rain": 0.08,
+      "leakMultiplier": 0.8, "hullWearPerHour": 0.03, "riggingWearPerHour": 0.06, "minHours": 4, "maxHours": 16,
+      "next": { "weather.calm": 1, "weather.fair": 2.5, "weather.fresh": 0.5 }
     },
     {
       "id": "weather.fair", "name": "a fair wind", "windLeaguesPerHour": 1.05, "seaState": 0.8, "gloom": 0, "rain": 0.04,
       "leakMultiplier": 1.0, "hullWearPerHour": 0.05, "riggingWearPerHour": 0.12, "minHours": 8, "maxHours": 30,
-      "next": { "weather.calm": 0.8, "weather.fair": 1.5, "weather.fresh": 3, "weather.gale": 0.8 }
+      "next": { "weather.calm": 0.8, "weather.fair": 1.5, "weather.fresh": 3, "weather.gale": 0.8, "weather.fog": 0.25 }
     },
     {
       "id": "weather.fresh", "name": "a fresh breeze", "windLeaguesPerHour": 1.5, "seaState": 1.25, "gloom": 0.1, "rain": 0.22,

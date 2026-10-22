@@ -39,8 +39,8 @@ This file tracks status and breaks the next work into tickets.
 | A-2 | Asset pass: recorded CC0 beds for surf, market crowd, tavern, wind and rain (Freesound) | Done (2026-10-19), awaiting the owner's listen |
 | R2e | Recognition and the departure sequence (steps 13, 14) | Done (2026-10-19) |
 | R3 | Visual validation: the four port scenes of PORT_EXPERIENCE §21, then Test B ship, with the hybrid pipeline (D-021) | Part one done (2026-10-19): A and C judged, all staged, baseline profiled; part two after C-1 (D-028) |
-| R4a | Wind, heading and sailing: wind direction, visibility, warning signs; why she is slow (VOYAGE §5, §20) | Largely done (2026-10-21): she turns to her course; wind direction, points of sail, tacking, braced yards, heel. Visibility and warning signs not yet |
-| R4b | True vs estimated position; the chart: dead reckoning, a latitude sight, uncertainty region, route legs, annotations (NAVIGATION) | Largely done (2026-10-21): truth and reckoning, the noon sight and astrolabe, the chart with its doubt. Route legs and annotations not yet |
+| R4a | Wind, heading and sailing: wind direction, visibility, warning signs; why she is slow (VOYAGE §5, §20) | Done (2026-10-22): she turns to her course; wind direction, points of sail, tacking, braced yards, heel; fog and visibility, the signs of a blow read sooner by seamen, and why she makes the pace she does |
+| R4b | True vs estimated position; the chart: dead reckoning, a latitude sight, uncertainty region, route legs, annotations (NAVIGATION) | Done (2026-10-22): truth and reckoning, the noon sight and astrolabe, the chart with its doubt, legs laid off with their days, notes and the voyage's marks |
 | R4c | Standing navigation orders and configurable interrupts; alerts by severity (VOYAGE §8, §35; NAV §7–9) | Done (2026-10-22): standing orders kept by the officer of the watch, and calls with thresholds the captain sets. Following plotted legs comes with route legs (R4b) |
 | R4d | Watch rotation and the assignment board (VOYAGE §9, §17) | Done (2026-10-21): the watch bill, the round, the day's work, all hands, the turned-out watch, tired hands' mistakes |
 | R4e | Localized damage, repair quality and history, cargo zones, the storm with preparation (VOYAGE §4, §21–23) | Done (2026-10-21): warning, three preparations, leaks plugged or patched with their history, cargo shifting, stores wetted. Cargo zones not yet |
@@ -2567,3 +2567,46 @@ nags.
 Orders out of reason are refused. Saved in format 35 (`VoyageData.Orders`, with what the orders have
 done and not undone). Tests: `StandingOrdersTests` (9). Checkboxes throughout the interface are now
 drawn in brass, so they can be seen. Screenshot: `docs/screenshots/r4c-orders.jpg`.
+
+### R4a and R4b, finished: fog, the signs, why she is slow; legs and notes on the chart
+
+**Fog and visibility** (VOYAGE §20).
+- **A new weather, *a fog*:** a light air, a grey wall round her. It comes out of calms and fair
+  weather and clears to them.
+- **What fog and gloom do:** each weather now has a *seeing*, the share of a clear day's range the
+  lookout has. Gloom and fog both shorten it: in thick fog land and islands are raised at about a
+  tenth of the usual distance, and only close aboard at night.
+- **The noon sight:** the sun is hidden in fog and under a storm's cloud. The chart says so ("Noon, but
+  the sun is hidden: there is no sight to be had today"), and the doubt grows on.
+- **In the view:** fog closes in grey on the water.
+
+**The signs of a blow, read sooner by seamen** (VOYAGE §20).
+- **How far ahead:** the most seasoned hand aboard reads the signs, now from half the rules' 6 hours
+  (a crew of landsmen) to one and a quarter times it (a seaman of the first rank).
+- **What it buys:** the warning, the preparations by duty, and the standing order to make ready all
+  come that much sooner.
+- **In the view:** once the signs are read, a long swell gets up and the sky greys ahead of the blow.
+
+**Why she is slow** (VOYAGE §5).
+- **The reasons:** every factor in her speed (the wind, worn rigging, no watch, a sprung yard, topmasts
+  struck, the sail carried, the point of sailing) is named with how much it costs or gives, worst
+  first.
+- **Where it shows:** in the Ship screen and the passage pill: "the wind: a fog (×0.52), the wind abeam
+  (×0.88)".
+
+**Legs laid off** (NAVIGATION §6, §27).
+- **Laying them off:** on the chart, *Lay off a leg* and click. Up to 8 legs; not on or near the land.
+- **Sailing them:** she steers for each in turn by the reckoning, and on reaching one (2 leagues, by the
+  reckoning) takes up the next, then the passage's own course.
+- **The plan:** each leg's length and a range of days at the passage's usual pace, then the rest of the
+  passage: an estimate, never a promise.
+- **On the chart:** legs are drawn in red, numbered.
+
+**Writing on the chart** (NAVIGATION §22).
+- **The captain's notes:** written where clicked, and rubbed out at will.
+- **The voyage's own marks**, in blue where they happened by the reckoning, which cannot be rubbed
+  out: a gale or a storm met, fog, an island not found, anchored off an island, land raised. The
+  chart becomes the record of the voyage.
+
+Saved in format 36 (legs and notes in the chart). Developer flag `--legs`. Tests:
+`ChartAndWeatherTests` (7). Screenshots: `docs/screenshots/r4b-legs.jpg`, `r4a-fog.jpg`.

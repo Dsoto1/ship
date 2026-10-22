@@ -168,6 +168,35 @@ public sealed class Navigation
     private readonly List<ChartPoint> _track = [];
     private readonly List<NoonSight> _sights = [];
     private readonly List<Sounding> _soundings = [];
+    private readonly List<ChartPoint> _legs = [];
+    private readonly List<ChartNote> _notes = [];
+
+    /// <summary>
+    /// The legs the captain has laid off (NAVIGATION §6): points on the chart she steers for in turn, by the
+    /// reckoning, before the passage's own course takes her on. Empty: the passage course.
+    /// </summary>
+    public IReadOnlyList<ChartPoint> Legs => _legs;
+
+    /// <summary>What is written on the chart: the captain's notes, and what the voyage has marked there.</summary>
+    public IReadOnlyList<ChartNote> Notes => _notes;
+
+    internal void AddLeg(ChartPoint point) => _legs.Add(point);
+
+    internal void RemoveLeg(int index) => _legs.RemoveAt(index);
+
+    internal void ClearLegs() => _legs.Clear();
+
+    internal void Note(ChartNote note) => _notes.Add(note);
+
+    internal void RemoveNote(int index) => _notes.RemoveAt(index);
+
+    internal void RestoreChart(IEnumerable<ChartPoint> legs, IEnumerable<ChartNote> notes)
+    {
+        _legs.Clear();
+        _legs.AddRange(legs);
+        _notes.Clear();
+        _notes.AddRange(notes);
+    }
 
     /// <summary>A new passage from the port, bound for <paramref name="destination"/>, making its latitude <paramref name="offing"/> leagues out.</summary>
     public Navigation(ChartPoint destination, double offing = 60)
@@ -453,3 +482,10 @@ public sealed class Navigation
         LastSoundingTick = _soundings.Count > 0 ? _soundings[^1].Tick : -1;
     }
 }
+
+/// <summary>Something written on the chart (NAVIGATION §22): where, what, when, and whose.</summary>
+/// <param name="At">Where on the chart, by the reckoning then.</param>
+/// <param name="Text">What it says.</param>
+/// <param name="Tick">When it was written.</param>
+/// <param name="ByCaptain">True for the captain's own note; false for what the voyage marked (a gale met, an island not found).</param>
+public sealed record ChartNote(ChartPoint At, string Text, long Tick, bool ByCaptain);

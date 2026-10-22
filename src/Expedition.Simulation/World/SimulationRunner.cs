@@ -615,6 +615,11 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             if (next != weather.Id)
             {
                 Campaign.Record(ChronicleEntryKind.WeatherChanged, [new(ChronicleParameters.From, weather.Id), new(ChronicleParameters.To, next)]);
+                if (rules.Weather(next) is { SeaState: >= 2 } or { Fog: >= 0.5 } && rules.Weather(next).SeaState > weather.SeaState - 0.5)
+                {
+                    var name = rules.Weather(next).Name;
+                    MarkChart(char.ToUpperInvariant(name[0]) + name[1..]);
+                }
             }
 
             weather = rules.Weather(next);
@@ -687,6 +692,37 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             Campaign.Record(ChronicleEntryKind.Landfall, [new(ChronicleParameters.To, ship.Destination)]);
             Campaign.TryTransitionTo(CampaignPhase.Landfall, $"sighted {ship.Destination}");
         }
+    }
+
+    /// <summary>
+    /// Why she is making the speed she is (VOYAGE_EXPERIENCE §5): each thing that slows or speeds her, with
+    /// how much, worst first. Only what makes a difference of a few in a hundred.
+    /// </summary>
+    public IReadOnlyList<(string Reason, double Factor)> SpeedReasons()
+    {
+        if (Campaign.Voyage is not { Outcome: VoyageOutcome.UnderWay } ship || Content.Voyage is not { } rules)
+        {
+            return [];
+        }
+
+        var weather = rules.Weather(ship.WeatherId);
+        var reasons = new List<(string, double)>
+        {
+            ($"the wind: {weather.Name}", weather.WindLeaguesPerHour / rules.Weather("weather.fair").WindLeaguesPerHour),
+            ("worn rigging", rules.RiggingSpeedFloor + (1 - rules.RiggingSpeedFloor) * ship.Rigging / 100),
+            ("no one on watch", ship.WatchKept ? 1 : rules.NoWatchSpeedMultiplier),
+            ("the topsail yard sprung", ship.YardSprung ? rules.SprungYardSpeed : 1),
+            ("lying to for the island", HeldForIsland(ship) ? 0 : 1),
+            ("topmasts struck", ship.Prepared.Contains(Preparations.Aloft) ? rules.Storms.AloftSpeed : 1),
+            (ship.SailPlan == SailPlan.PressOn ? "every sail set" : ship.SailPlan == SailPlan.HoveTo ? "hove to" : "sail for the weather", rules.Plan(ship.SailPlan).Speed),
+        };
+        if (ship.Navigation is { Sighted: false } sailing && rules.Route is { } points)
+        {
+            var point = points.SpeedOnPoint(sailing.OffWind);
+            reasons.Add((sailing.Beating ? "beating to windward" : Math.Abs(sailing.OffWind) > 150 ? "running before the wind" : Math.Abs(sailing.OffWind) > 110 ? "the wind on her quarter" : "the wind abeam", point));
+        }
+
+        return reasons.Where(r => Math.Abs(r.Item2 - 1) >= 0.03).OrderBy(r => r.Item2).ToList();
     }
 
     // A squall carries something away aloft: the main topsail yard is sprung, or a line parts. Either

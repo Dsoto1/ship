@@ -233,4 +233,10 @@ public enum ChronicleEntryKind
 
     /// <summary>The captain was called, as the standing orders say (parameters: reason, level, need or to = detail).</summary>
     CaptainCalled,
+
+    /// <summary>The captain laid off a leg on the chart (parameter: level = how many legs now).</summary>
+    LegPlotted,
+
+    /// <summary>She reached a leg's end by the reckoning (parameter: level = legs left).</summary>
+    LegReached,
 }

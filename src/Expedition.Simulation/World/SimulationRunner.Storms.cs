@@ -44,7 +44,11 @@ public sealed partial class SimulationRunner
     private void Forewarn(VoyageState ship, VoyageRules rules, WeatherDefinition weather)
     {
         var storms = rules.Storms;
-        if (ship.NextWeatherId is not null || Campaign.Clock.Tick < ship.WeatherUntilTick - (long)(storms.WarningHours * SimulationClock.TicksPerHour))
+        // The most seasoned hand reads the signs: a seaman of long experience sees a blow coming half as
+        // long again as most; a crew of landsmen, only when it is nearly on them.
+        var seaman = Campaign.Crew.Where(c => c.CanWork && c.Id != Campaign.CaptainId)
+            .OrderByDescending(c => c.Skills.Get("skill.seamanship")).ThenBy(c => c.Id.Value).FirstOrDefault();
+        if (ship.NextWeatherId is not null || Campaign.Clock.Tick < ship.WeatherUntilTick - (long)(WarningHours(storms, seaman) * SimulationClock.TicksPerHour))
         {
             return;
         }
@@ -54,11 +58,16 @@ public sealed partial class SimulationRunner
         var coming = rules.Weather(next);
         if (coming.SeaState >= 2 && coming.SeaState > weather.SeaState + 0.3)
         {
-            var seaman = Campaign.Crew.Where(c => c.CanWork && c.Id != Campaign.CaptainId)
-                .OrderByDescending(c => c.Skills.Get("skill.seamanship")).ThenBy(c => c.Id.Value).FirstOrDefault();
             Campaign.Record(ChronicleEntryKind.StormWarning, [new(ChronicleParameters.To, next)], seaman is null ? [] : [seaman.Id]);
         }
     }
+
+    /// <summary>
+    /// How many hours ahead a blow's signs are read: the rules' warning, from half of it for a crew with no
+    /// seamanship to one and a quarter times it for a seaman of the first rank.
+    /// </summary>
+    public static double WarningHours(StormRules storms, Characters.Character? seaman) =>
+        storms.WarningHours * (0.5 + 0.15 * (seaman?.Skills.Get("skill.seamanship") ?? 0));
 
     /// <summary>True while heavy weather is foreseen or blowing: the time to prepare.</summary>
     public bool StormComing =>

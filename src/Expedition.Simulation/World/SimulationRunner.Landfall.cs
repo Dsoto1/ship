@@ -45,7 +45,7 @@ public sealed partial class SimulationRunner
             }
 
             var hour = Campaign.Clock.TimeOfDay.TotalHours;
-            var range = (hour is >= 6 and < 19 ? coast.SightingLeagues * (1 - 0.6 * weather.Gloom) : coast.NightSightingLeagues)
+            var range = (hour is >= 6 and < 19 ? coast.SightingLeagues * weather.Seeing : coast.NightSightingLeagues * (1 - 0.7 * weather.Fog))
                         * (ship.WatchKept ? 1 : coast.NoLookout);
             if (navigation.Offshore <= coast.StrikeLeagues && range < navigation.Offshore + 0.01)
             {
@@ -67,6 +67,7 @@ public sealed partial class SimulationRunner
             else if (navigation.Offshore <= range)
             {
                 Campaign.Record(ChronicleEntryKind.LandSighted, [new(ChronicleParameters.Level, navigation.Offshore.ToString("0.0", CultureInfo.InvariantCulture))]);
+                MarkChart("Land raised");
                 Raise(navigation, coast);
             }
 

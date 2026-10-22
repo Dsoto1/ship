@@ -970,7 +970,9 @@ public partial class Hud : CanvasLayer
 
             var togo = DaysToGo(ship);
             chips.Add((Ui.IconLead, $"{ship.ReckonedRemaining:0} lg · {DaysText(togo)}", Severity.Information,
-                $"About {ship.ReckonedRemaining:0} leagues to {ship.Destination} by your reckoning: {DaysText(togo)} at the passage's usual pace. Click for the voyage at a glance (X).", PanelId.Expedition));
+                $"About {ship.ReckonedRemaining:0} leagues to {ship.Destination} by your reckoning: {DaysText(togo)} at the passage's usual pace. " +
+                $"Making {ship.SpeedLeaguesPerHour * 24:0} leagues a day now" + (PaceWhy(runner) is { Length: > 0 } why ? $": {why}." : ".") +
+                "\nClick for the voyage at a glance (X).", PanelId.Expedition));
             var (food, water) = runner.SupplyForecast();
             var waterVerdict = Verdict("Water", water, togo);
             var foodVerdict = Verdict("Food", food, togo);
@@ -1028,6 +1030,10 @@ public partial class Hud : CanvasLayer
     }
 
     private readonly List<PanelId?> _pillTargets = [];
+
+    // Why she makes the pace she does, in words: "hove to (×0.3), beating to windward (×0.88)".
+    private static string PaceWhy(SimulationRunner runner) =>
+        string.Join(", ", runner.SpeedReasons().Take(4).Select(r => $"{r.Reason} (×{r.Factor:0.##})"));
 
     // Days still to go, as a range at the passage's usual pace: steadier than the last hour's speed,
     // which a calm makes infinite and a gale doubles.
@@ -2365,6 +2371,7 @@ public partial class Hud : CanvasLayer
         _shipReport.Text =
             $"{Capital(ship.ShipName)}, bound for {ship.Destination}: about {ship.ReckonedRemaining:0} leagues, {DaysText(togo)}.\n" +
             $"{Ui.IconWind} {Capital(_formatter.WeatherName(ship.WeatherId))} · {sail} · {ship.SpeedLeaguesPerHour * 24:0} leagues a day at this pace\n" +
+            (PaceWhy(runner) is { Length: > 0 } why ? $"   {why}\n" : "") +
             (ship.WatchKept ? $"{Ui.IconPeople} The watch is kept." : $"{Ui.IconOf(Severity.Urgent)} Nobody on watch: she sails slowly and blind.") +
             $"   {Ui.IconPurse} {ship.Funds} sueldos";
 

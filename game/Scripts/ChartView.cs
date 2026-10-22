@@ -35,6 +35,12 @@ public partial class ChartView : Control
     private Button _north = null!;
     private Button _south = null!;
     private SimulationRunner? _runner;
+    private Label _legs = null!;
+    private Button _plot = null!;
+    private Button _clearLegs = null!;
+    private LineEdit _noteText = null!;
+    private Button _placeNote = null!;
+    private Button _rubOut = null!;
 
     /// <summary>The captain goes to take the noon sight himself.</summary>
     public event Action? SightRequested;
@@ -92,6 +98,34 @@ public partial class ChartView : Control
             }
         };
         side.AddChild(_navigator);
+
+        // Laying off a course in legs, and writing on the chart (NAVIGATION §6, §22).
+        var course = new VBoxContainer();
+        course.AddThemeConstantOverride("separation", Ui.SpaceS);
+        side.AddChild(course);
+        course.AddChild(new HSeparator());
+        course.AddChild(Ui.Text("The course", Ui.TextHeading, Ui.Brass));
+        _legs = Ui.Text("", Ui.TextBody, Ui.Ink, 320);
+        course.AddChild(_legs);
+        var legButtons = new HBoxContainer();
+        legButtons.AddThemeConstantOverride("separation", Ui.SpaceS);
+        course.AddChild(legButtons);
+        _plot = Ui.Button("Lay off a leg", "Then click the chart where she is to steer for: legs are steered in turn, by the reckoning", null, toggle: true);
+        _plot.Toggled += on => { if (on) _placeNote.SetPressedNoSignal(false); };
+        legButtons.AddChild(_plot);
+        _clearLegs = Ui.Button("Clear the legs", "Back to the passage's own course", () => { _runner?.ClearLegs(); Refresh(); });
+        legButtons.AddChild(_clearLegs);
+        _noteText = new LineEdit { PlaceholderText = "A note for the chart…", MaxLength = 60, SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        course.AddChild(_noteText);
+        var noteButtons = new HBoxContainer();
+        noteButtons.AddThemeConstantOverride("separation", Ui.SpaceS);
+        course.AddChild(noteButtons);
+        _placeNote = Ui.Button("Write it on the chart", "Then click the chart where it belongs", null, toggle: true);
+        _placeNote.Toggled += on => { if (on) _plot.SetPressedNoSignal(false); };
+        noteButtons.AddChild(_placeNote);
+        _rubOut = Ui.Button("Rub out my last", "Rub out the last note you wrote (the voyage's own marks stay)", RubOutLast);
+        noteButtons.AddChild(_rubOut);
+        _canvas.Clicked += OnChartClicked;
 
         // The islands: make for one to water, or go back to the passage.
         _islandBox = new VBoxContainer();
@@ -171,6 +205,48 @@ public partial class ChartView : Control
     private static string Capitalise(string text) => text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];
 
     // The lead is hove by the navigator if there is one, else by the first able hand.
+    private void OnChartClicked(ChartPoint at)
+    {
+        if (_runner is null)
+        {
+            return;
+        }
+
+        if (_plot.ButtonPressed)
+        {
+            var result = _runner.PlotLeg(at);
+            if (!result.Succeeded)
+            {
+                _legs.Text = result.Reason;
+                return;
+            }
+        }
+        else if (_placeNote.ButtonPressed)
+        {
+            var result = _runner.WriteOnChart(at, _noteText.Text);
+            if (!result.Succeeded)
+            {
+                _legs.Text = result.Reason;
+                return;
+            }
+
+            _noteText.Text = "";
+            _placeNote.SetPressedNoSignal(false);
+        }
+
+        Refresh();
+    }
+
+    private void RubOutLast()
+    {
+        if (_runner?.Campaign.Voyage?.Navigation is { } navigation)
+        {
+            var last = navigation.Notes.ToList().FindLastIndex(n => n.ByCaptain);
+            _runner.RubOut(last);
+            Refresh();
+        }
+    }
+
     private void HeaveTheLead()
     {
         if (_runner?.Campaign.Voyage?.Navigation is not { } navigation)
@@ -238,7 +314,8 @@ public partial class ChartView : Control
             : $"Last sight: day {last.Day + 1}, by {_runner.Campaign.Characters[last.Taker].Name}: {_runner.Latitude(last.Y)}.";
         var today = navigation.LastSightDay == day
             ? "Today's sight is taken."
-            : _runner.CanTakeNoonSight ? "The sun is near noon: take it now." : $"Taken between {Hour(window?.SightFrom ?? 11.5)} and {Hour(window?.SightUntil ?? 12.5)}.";
+            : _runner.CanTakeNoonSight ? "The sun is near noon: take it now."
+            : _runner.NoonNow && _runner.SunHidden ? "Noon, but the sun is hidden: there is no sight to be had today." : $"Taken between {Hour(window?.SightFrom ?? 11.5)} and {Hour(window?.SightUntil ?? 12.5)}.";
         _sight.Text = $"{lastText}\n{today}";
         _take.Disabled = !_runner.CanTakeNoonSight;
         // With the coast in sight the sun has nothing more to tell: the land gives the place.
@@ -251,6 +328,15 @@ public partial class ChartView : Control
 
         RefreshCoast(navigation);
         RefreshIslands(ship, navigation);
+        var plan = _runner.LegPlan();
+        _legs.Text = (navigation.Legs.Count == 0 ? "The passage's own course: for the offing, then down the latitude.\n" : "")
+                     + string.Join("\n", plan.Select((leg, i) => $"{(i < plan.Count - 1 ? $"Leg {i + 1}" : navigation.Legs.Count == 0 ? "To the coast" : "Then the passage")}: " +
+                                                                  $"{leg.Leagues:0} leagues, ~{Math.Floor(leg.LowDays):0}–{Math.Ceiling(leg.HighDays):0} d"))
+                     + (_plot.ButtonPressed ? "\nClick the chart to lay off a leg." : _placeNote.ButtonPressed ? "\nClick the chart where the note belongs." : "");
+        _plot.Disabled = navigation.Sighted;
+        _clearLegs.Disabled = navigation.Legs.Count == 0;
+        _rubOut.Disabled = !navigation.Notes.Any(n => n.ByCaptain);
+        _placeNote.Disabled = _noteText.Text.Trim().Length == 0;
         _canvas.Show(_runner, navigation, alongX, alongY);
     }
 
@@ -438,6 +524,23 @@ public partial class ChartCanvas : Control
     private Rect2 _world;
     private bool _coastSheet;
 
+    /// <summary>The chart was clicked: where, in the chart's leagues east and north of the port.</summary>
+    public event Action<ChartPoint>? Clicked;
+
+    public override void _Ready() => MouseFilter = MouseFilterEnum.Stop;
+
+    public override void _GuiInput(InputEvent @event)
+    {
+        if (@event is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left } click && _world.Size.X > 0)
+        {
+            var scale = Zoom;
+            var origin = (Size - _world.Size * scale) / 2;
+            var local = click.Position - origin;
+            Clicked?.Invoke(new ChartPoint(_world.Position.X + local.X / scale, _world.End.Y - local.Y / scale));
+            AcceptEvent();
+        }
+    }
+
     /// <summary>Sets what to draw.</summary>
     public void Show(SimulationRunner runner, Navigation navigation, double doubtX, double doubtY)
     {
@@ -575,12 +678,34 @@ public partial class ChartCanvas : Control
         }
         else if (!navigation.Sighted && navigation.Call is null)
         {
-            if (!navigation.RunningDown)
+            // The legs laid off, numbered, then the passage's own course from the last of them.
+            var from = reckoned;
+            for (var i = 0; i < navigation.Legs.Count; i++)
             {
-                Dashed(At(reckoned.X, reckoned.Y), At(offing.X, offing.Y));
+                var leg = navigation.Legs[i];
+                Dashed(At(from.X, from.Y), At(leg.X, leg.Y), Red);
+                DrawArc(At(leg.X, leg.Y), 6, 0, Mathf.Tau, 16, Red, 1.5f);
+                DrawString(font, At(leg.X, leg.Y) + new Vector2(-3, 4), $"{i + 1}", HorizontalAlignment.Left, -1, 10, Red);
+                from = leg;
             }
 
-            Dashed(At(navigation.RunningDown ? reckoned.X : offing.X, d.Y), At(d.X, d.Y));
+            var runningDown = navigation.Legs.Count == 0 ? navigation.RunningDown : from.X <= offing.X;
+            if (!runningDown)
+            {
+                Dashed(At(from.X, from.Y), At(offing.X, offing.Y));
+            }
+
+            Dashed(At(runningDown ? from.X : offing.X, d.Y), At(d.X, d.Y));
+        }
+
+        // What is written on the chart: the captain's notes in ink, the voyage's own marks in blue.
+        foreach (var note in navigation.Notes)
+        {
+            var at = At(note.At.X, note.At.Y);
+            var ink = note.ByCaptain ? InkLine : SoundingInk;
+            DrawLine(at, at + new Vector2(0, -12), ink, 1.2f);
+            DrawColoredPolygon([at + new Vector2(0, -12), at + new Vector2(7, -9.5f), at + new Vector2(0, -7)], ink);
+            DrawString(font, at + new Vector2(9, -7), note.Text, HorizontalAlignment.Left, -1, 10, ink);
         }
 
         // The reckoned track, noon by noon, and each sight's latitude as a short bar across it.
@@ -651,12 +776,12 @@ public partial class ChartCanvas : Control
         DrawString(ThemeDB.FallbackFont, at + new Vector2(7, -6), name, HorizontalAlignment.Left, -1, 12, InkLine);
     }
 
-    private void Dashed(Vector2 from, Vector2 to)
+    private void Dashed(Vector2 from, Vector2 to, Color? colour = null)
     {
         var length = from.DistanceTo(to);
         for (var s = 0f; s < length; s += 10)
         {
-            DrawLine(from.Lerp(to, s / length), from.Lerp(to, Mathf.Min(s + 5, length) / length), InkLine, 1.2f);
+            DrawLine(from.Lerp(to, s / length), from.Lerp(to, Mathf.Min(s + 5, length) / length), colour ?? InkLine, 1.2f);
         }
     }
 
