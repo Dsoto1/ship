@@ -37,6 +37,7 @@
   { "id": "item.cutlass", "name": "Cutlass", "category": "tool", "weightKg": 1.0, "volumeLitres": 0.8, "packedIn": "chest", "perPackage": 6 },
   { "id": "item.fishing_net", "name": "Net and lines", "category": "tool", "weightKg": 5.0, "volumeLitres": 8.0, "packedIn": "bale", "perPackage": 1 },
   // What the site gives to build with (R7).
+  { "id": "item.stone", "name": "Stone", "category": "material", "weightKg": 20.0, "volumeLitres": 8.0, "packedIn": "plank", "perPackage": 1 },
   { "id": "item.poles", "name": "Poles", "category": "material", "weightKg": 8.0, "volumeLitres": 30.0, "packedIn": "plank", "perPackage": 4 },
   { "id": "item.thatch", "name": "Thatch (bundle)", "category": "material", "weightKg": 3.0, "volumeLitres": 20.0, "packedIn": "bale", "perPackage": 6 },
   // The seed chest (R7), and what a garden gives back if it takes.

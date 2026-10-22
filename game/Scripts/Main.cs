@@ -82,6 +82,7 @@ public partial class Main : Node3D
     private PortView _port = null!;
     private PortSound _portSound = null!;
     private ShipSound _shipSound = null!;
+    private CampSound _campSound = null!;
     private Node3D _portFigures = null!;
     // Ashore (R6): the beach of the first camp, with its people, laid on the coast in front of the anchorage.
     private CampView _camp = null!;
@@ -646,10 +647,15 @@ public partial class Main : Node3D
         }
         var making = voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } ? 0.3f + (float)voyage.SpeedLeaguesPerHour * 1.3f : 0f;
         _world.UpdateWorld(hour, _seaState, making, (float)delta, _camera.Target, hull, _gloom, inPort ? _portFog : _seaFog, inPort ? 0f : Mathf.DegToRad(_ship.RotationDegrees.Y), inPort ? null : _runner.Raining);
-        _shipSound.Rain(!inPort && _runner.Raining ? Mathf.Clamp(0.4f + _seaState * 0.25f, 0, 1) : 0f, (float)delta);
+        // Ashore the camp has its own sounds: the surf, the wind in the trees, the rain, the work (R7).
+        var ashore = _runner.Campaign.Camp is not null;
+        _campSound.Update(ashore, _runner.Raining, _runner.StormAshore,
+            ashore ? _runner.Campaign.ActiveTasks.Values.Where(t => _runner.Campaign.Placements.TryGetValue(t.CharacterId, out var p) && !p.IsMoving).Select(t => t.DefinitionId) : [],
+            (float)TicksPerSecond[_speedIndex], (float)delta);
+        _shipSound.Rain(!inPort && !ashore && _runner.Raining ? Mathf.Clamp(0.4f + _seaState * 0.25f, 0, 1) : 0f, (float)delta);
         var pumping = !inPort && _runner.Campaign.ActiveTasks.Values.Any(t => _content.Tasks[t.DefinitionId].ShipPerHour?.Bilge < 0);
         // Below decks the sea and wind come muffled through her planking.
-        _shipSound.Sea(inPort || voyage is null ? 0f : _seaState, inPort || weather is null ? 0f : (float)weather.WindLeaguesPerHour, Mathf.Max(_seaFog, _deck.Cutaway ? 0.7f : 0f), pumping, (float)delta);
+        _shipSound.Sea(inPort || ashore || voyage is null ? 0f : _seaState, inPort || ashore || weather is null ? 0f : (float)weather.WindLeaguesPerHour, Mathf.Max(_seaFog, _deck.Cutaway ? 0.7f : 0f), pumping, (float)delta);
         _coastView.Show(inPort ? null : voyage?.Navigation, _runner.Coast, _content.Voyage?.Route?.Bearing ?? 0, _shipCentre, _camera.Size, _world.Darkness, _gloom, (float)delta);
         var raised = inPort || voyage?.Navigation is not { Call: { Sighted: true } call } ? null
             : _content.Voyage?.Route?.Islands.FirstOrDefault(i => i.Id == call.Island);
@@ -1934,6 +1940,8 @@ public partial class Main : Node3D
         AddChild(_portSound);
         _shipSound = new ShipSound { Name = "ShipSound" };
         AddChild(_shipSound);
+        _campSound = new CampSound { Name = "CampSound" };
+        AddChild(_campSound);
         _portFigures = new Node3D { Name = "PortFigures" };
         AddChild(_portFigures);
         _crowd = new PortCrowd { Name = "PortCrowd" };

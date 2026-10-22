@@ -18,6 +18,9 @@ public sealed record SettlementRules
     /// <summary>Bundles of thatch it gives.</summary>
     public int Thatch { get; init; } = 260;
 
+    /// <summary>Loads of stone the point's rocks give, where the site has rock.</summary>
+    public int Stone { get; init; } = 90;
+
     /// <summary>The share of that a site without brush has (driftwood, sedge).</summary>
     public double Scarce { get; init; } = 0.2;
 
@@ -126,6 +129,15 @@ public sealed record BuildingDefinition
 
     /// <summary>Garden beds, once it is made.</summary>
     public int Beds { get; init; }
+
+    /// <summary>A well: water at the camp, where the site has it to dig for.</summary>
+    public bool Water { get; init; }
+
+    /// <summary>A landing at the water's edge: the boat lands more each trip; walked over, not round.</summary>
+    public bool Landing { get; init; }
+
+    /// <summary>Thatched: worn by the weather and repaired.</summary>
+    public bool Roofed => Phases.Any(p => p.Task == "task.thatch_roof");
 }
 
 /// <summary>A phase of raising a building: a task, done so many times on its plot.</summary>

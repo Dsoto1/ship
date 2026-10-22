@@ -198,6 +198,34 @@
         "face": "S"
       },
       {
+        "id": "spot.stone_1",
+        "x": 27,
+        "y": 2,
+        "tasks": [
+          "task.gather_stone"
+        ],
+        "kind": "HammerStation"
+      },
+      {
+        "id": "spot.stone_2",
+        "x": 7,
+        "y": 4,
+        "tasks": [
+          "task.gather_stone"
+        ],
+        "kind": "HammerStation"
+      },
+      {
+        "id": "spot.headland",
+        "x": 34,
+        "y": 7,
+        "tasks": [
+          "task.salvage_timbers"
+        ],
+        "kind": "HammerStation",
+        "face": "E"
+      },
+      {
         "id": "spot.poles_1",
         "x": 8,
         "y": 18,

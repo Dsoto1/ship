@@ -879,6 +879,12 @@ public sealed record CampData
     /// <summary>Thatch cut. Added in format 38.</summary>
     public int ThatchCut { get; init; }
 
+    /// <summary>Stone gathered. Added in format 40.</summary>
+    public int StoneGathered { get; init; }
+
+    /// <summary>Planks salvaged. Added in format 40.</summary>
+    public int TimberSalvaged { get; init; }
+
     /// <summary>When thatch was last cut. Added in format 40.</summary>
     public long ThatchLastCut { get; init; }
 

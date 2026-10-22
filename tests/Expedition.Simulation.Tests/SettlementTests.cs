@@ -180,6 +180,101 @@ public sealed class SettlementTests
     }
 
     [Fact]
+    public void AWellIsDugOnlyWhereThereIsWaterToDigFor()
+    {
+        // At Punta Ceniza the ground is rock and the spring is near: no well.
+        var ceniza = Landed();
+        Assert.Contains(ceniza.Placement("building.well", 8, 9).Problems, p => p.Contains("no water to be had", StringComparison.Ordinal));
+
+        var river = Landed("coast.rio_bermejo");
+        var check = river.Placement("building.well", 8, 9);
+        Assert.True(check.Allowed, string.Join("; ", check.Problems));
+        Assert.Contains(check.Notes, n => n.Contains("Sweet water", StringComparison.Ordinal));
+        Assert.Contains(river.Placement("building.well", 30, 14).Notes, n => n.Contains("latrine", StringComparison.Ordinal));
+
+        Assert.True(river.DeveloperRaise("building.well", 0.6, (8, 9)).Succeeded);
+        var water = river.CampWater();
+        Assert.Equal("water.well", water?.Id);
+        Assert.Equal("spring", water!.Kind);
+    }
+
+    [Fact]
+    public void ALandingRunsDownToTheWaterAndTheBoatLandsMore()
+    {
+        var runner = Landed("coast.rio_bermejo");
+        Assert.Contains(runner.Placement("building.landing", 24, 8).Problems, p => p.Contains("water's edge", StringComparison.Ordinal));
+        var check = runner.Placement("building.landing", 24, 2);
+        Assert.True(check.Allowed, string.Join("; ", check.Problems));
+        Assert.Contains(Landed("coast.bajos_largos").Placement("building.landing", 24, 2).Problems, p => p.Contains("no rock", StringComparison.Ordinal));
+
+        double Load(SimulationRunner r)
+        {
+            var camp = r.Campaign.Camp!;
+            var before = camp.Afloat.Sum(a => a.Value * Shipped.Items[a.Key].WeightKg);
+            r.Land(camp, null);
+            return before - camp.Afloat.Sum(a => a.Value * Shipped.Items[a.Key].WeightKg);
+        }
+
+        var without = Load(Landed("coast.rio_bermejo"));
+        Assert.True(runner.DeveloperRaise("building.landing", 0.6, (24, 2)).Succeeded);
+        Assert.True(Load(runner) > without * 1.3, $"{without} kg without a landing");
+    }
+
+    [Fact]
+    public void ALandingIsRaisedWithStoneGatheredAndPlanksSawn()
+    {
+        var runner = Landed("coast.rio_bermejo");
+        runner.Advance(24 * 60);
+        var camp = runner.Campaign.Camp!;
+        Assert.True(runner.DeveloperRaise("building.workshop").Succeeded);
+        // None of her own planks: they must be sawn.
+        runner.Campaign.SharedStore.TryRemove("item.plank", runner.Campaign.SharedStore.Count("item.plank"));
+        Assert.True(runner.PlaceBuilding("building.landing", 24, 2).Succeeded);
+        for (var day = 0; day < 40 && !camp.Buildings.Any(b => b.Building == "building.landing"); day++)
+        {
+            runner.Advance(24 * 60);
+        }
+
+        Assert.Contains(camp.Buildings, b => b.Building == "building.landing");
+        Assert.True(camp.StoneGathered >= 18);
+        Assert.Equal(0, camp.TimberSalvaged);
+    }
+
+    [Fact]
+    public void TheFactorysTimbersAreSalvagedForPlanks()
+    {
+        var runner = Landed();
+        runner.Advance(24 * 60);
+        var camp = runner.Campaign.Camp!;
+        for (var day = 0; day < 10 && !camp.Found.Contains("find.factory"); day++)
+        {
+            runner.Advance(24 * 60);
+        }
+
+        Assert.Contains("find.factory", camp.Found);
+        Assert.Equal(30, runner.StockLeft("camp_timber"));
+        runner.Campaign.SharedStore.TryRemove("item.plank", runner.Campaign.SharedStore.Count("item.plank"));
+        Assert.True(runner.PlaceBuilding("building.landing", 24, 2).Succeeded);
+        for (var day = 0; day < 20 && camp.TimberSalvaged == 0; day++)
+        {
+            runner.Advance(24 * 60);
+        }
+
+        Assert.True(camp.TimberSalvaged > 0);
+        Assert.True(runner.StockLeft("camp_timber") < 30);
+    }
+
+    [Fact]
+    public void TheChandlerSellsToolsAndSeed()
+    {
+        var goods = Shipped.Port!.Goods.Select(g => g.Item).ToHashSet();
+        foreach (var item in new[] { "item.axe", "item.saw", "item.adze", "item.spade", "item.mattock", "item.seed_onion", "item.seed_cabbage" })
+        {
+            Assert.Contains(item, goods);
+        }
+    }
+
+    [Fact]
     public void TheGroundFillsUp()
     {
         var runner = Landed();

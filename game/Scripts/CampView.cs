@@ -707,6 +707,8 @@ public partial class CampView : Node3D
             "building.workshop" => (3.6f, 3.0f, 2.2f),
             "building.cookhouse" => (3.0f, 3.0f, 2.1f),
             "building.garden" => (7.4f, 3.8f, 1.1f),
+            "building.landing" => (3.8f, 2.8f, 1f),
+            "building.well" => (1.6f, 1.6f, 1.5f),
             _ => (3.2f, 2.8f, 2.1f),
         };
         var phases = building.Phases.Select(p => p.Task).ToList();
@@ -718,13 +720,86 @@ public partial class CampView : Node3D
 
         // The ground cleared: a patch of turned earth, pegged out.
         var clear = Reached("task.clear_ground");
-        if (clear > 0 || phase > 0)
+        if (!building.Landing && (clear > 0 || phase > 0))
         {
             Add(parent, new BoxMesh { Size = new Vector3(w + 0.8f, 0.02f, d + 0.8f) }, Cleared, at + new Vector3(0, 0.01f, 0));
             foreach (var (cx, cz) in new[] { (-1, -1), (1, -1), (1, 1), (-1, 1) })
             {
                 Add(parent, new CylinderMesh { TopRadius = 0.03f, BottomRadius = 0.03f, Height = 0.5f }, Pole, at + new Vector3(cx * (w / 2 + 0.3f), 0.25f, cz * (d / 2 + 0.3f)));
             }
+        }
+
+        if (building.Water)
+        {
+            // A well: the pit going down, its spoil heaped beside it; then lined with wattle to a curb, and
+            // a pair of posts and a beam to draw from.
+            var dug = Reached("task.dig_well");
+            if (dug > 0 || phase > phases.IndexOf("task.dig_well"))
+            {
+                Add(parent, new CylinderMesh { TopRadius = 0.55f, BottomRadius = 0.55f, Height = 0.02f, RadialSegments = 14 }, Earth.Darkened(0.55f), at + new Vector3(0, 0.025f, 0));
+                Add(parent, new SphereMesh { Radius = 0.3f + 0.35f * dug, Height = 0.25f + 0.4f * dug, RadialSegments = 8, Rings = 4 }, Sand.Darkened(0.15f), at + new Vector3(0.95f, 0.05f, 0.4f));
+            }
+
+            var lined = Reached("task.line_well");
+            if (lined > 0)
+            {
+                var curb = 0.15f + 0.45f * lined;
+                Add(parent, new CylinderMesh { TopRadius = 0.62f, BottomRadius = 0.66f, Height = curb, RadialSegments = 14 }, Brush, at + new Vector3(0, curb / 2, 0));
+                Add(parent, new CylinderMesh { TopRadius = 0.5f, BottomRadius = 0.5f, Height = 0.02f, RadialSegments = 14 }, new Color(0.12f, 0.16f, 0.18f), at + new Vector3(0, curb + 0.01f, 0));
+            }
+
+            if (lined >= 1)
+            {
+                foreach (var side in new[] { -1, 1 })
+                {
+                    Add(parent, new CylinderMesh { TopRadius = 0.05f, BottomRadius = 0.06f, Height = 1.5f }, Pole, at + new Vector3(side * 0.75f, 0.75f, 0));
+                }
+
+                Add(parent, new BoxMesh { Size = new Vector3(1.7f, 0.1f, 0.1f) }, Pole, at + new Vector3(0, 1.45f, 0));
+                Add(parent, new CylinderMesh { TopRadius = 0.14f, BottomRadius = 0.11f, Height = 0.22f, RadialSegments = 8 }, Cask, at + new Vector3(0.2f, 0.95f, 0));
+            }
+
+            return;
+        }
+
+        if (building.Landing)
+        {
+            // A landing: stones bedded in rows from the water's edge up, then a planked staging on posts over
+            // the seaward end, where the boat comes alongside.
+            var laid = Reached("task.lay_stones");
+            var rows = (int)Math.Ceiling(6 * laid);
+            for (var row = 0; row < rows; row++)
+            {
+                for (var k = 0; k < 7; k++)
+                {
+                    var jitter = ((row * 7 + k) * 37 % 11) / 11f - 0.5f;
+                    Add(parent, new BoxMesh { Size = new Vector3(0.48f, 0.16f, 0.42f) }, Stone.Lightened(0.08f * jitter),
+                        at + new Vector3(-w / 2 + 0.3f + k * (w - 0.6f) / 6f + 0.06f * jitter, 0.06f, -d / 2 + 0.25f + row * (d - 0.5f) / 5f), new Vector3(0, 20 * jitter, 0));
+                }
+            }
+
+            var staged = Reached("task.build_staging");
+            var planks = (int)Math.Ceiling(8 * staged);
+            // The staging runs out from the hard over the water, narrower than it, on posts driven in the sand.
+            const float span = 1.2f;
+            var out0 = -d / 2 - 1.6f;
+            if (staged > 0)
+            {
+                foreach (var pz in new[] { out0 + 0.1f, -d / 2, -d / 2 + 0.9f })
+                {
+                    foreach (var px in new[] { -span / 2, span / 2 })
+                    {
+                        Add(parent, new CylinderMesh { TopRadius = 0.07f, BottomRadius = 0.08f, Height = 1.4f }, Pole.Darkened(0.2f), at + new Vector3(px, -0.15f, pz));
+                    }
+                }
+            }
+
+            for (var i = 0; i < planks; i++)
+            {
+                Add(parent, new BoxMesh { Size = new Vector3(span + 0.3f, 0.06f, 0.3f) }, Pole.Lightened(0.12f), at + new Vector3(0, 0.5f, out0 + 0.15f + i * 0.32f));
+            }
+
+            return;
         }
 
         if (isGarden)

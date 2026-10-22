@@ -752,7 +752,7 @@ public partial class ChartCanvas : Control
     {
         var points = line.Select(p => At(p.X, p.Y)).ToArray();
         // Land shaded on its landward side.
-        var shade = points.Concat(points.Reverse().Select(p => p + new Vector2(west ? -40 : 40, 0))).ToArray();
+        var shade = points.Concat(points.AsEnumerable().Reverse().Select(p => p + new Vector2(west ? -40 : 40, 0))).ToArray();
         DrawColoredPolygon(shade, new Color(Land, 0.55f));
         DrawPolyline(points, InkLine, 2);
         // The name on the land, near the top of the drawn coast and clear of the graticule's labels.

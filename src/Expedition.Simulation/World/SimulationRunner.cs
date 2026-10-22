@@ -1206,9 +1206,9 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
     {
         // Ashore at the camp, what has been found there: the water, the shore's food; and what the forest's
         // edge gives to build with (R7).
-        if (yield.Ashore is "camp_water" or "camp_food" or "camp_poles" or "camp_thatch")
+        if (yield.Ashore is "camp_water" or "camp_food" or "camp_poles" or "camp_thatch" or "camp_stone" or "camp_timber")
         {
-            var taken = yield.Ashore is "camp_poles" or "camp_thatch" ? GatherYield(yield.Ashore, yield) : CampYield(character, yield.Ashore);
+            var taken = yield.Ashore is "camp_poles" or "camp_thatch" or "camp_stone" or "camp_timber" ? GatherYield(yield.Ashore, yield) : CampYield(character, yield.Ashore);
             if (taken is null || !Campaign.Randomness.Tasks.Chance(taken.Value.PerHour * rate * HoursPerTick))
             {
                 return true;
@@ -1217,7 +1217,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             var added = Campaign.SharedStore.TryAdd(taken.Value.Item, 1, Content.Items).Succeeded;
             if (added)
             {
-                NoteGathered(taken.Value.Item, character);
+                NoteGathered(yield.Ashore, character);
             }
 
             return added;

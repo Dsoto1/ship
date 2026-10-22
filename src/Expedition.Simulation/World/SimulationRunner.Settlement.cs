@@ -133,7 +133,8 @@ public sealed partial class SimulationRunner
             { RepairsBuilding: true } => standing is { Condition: < RepairBelow },
             { MendsTool: true } => kind is { Mends: true },
             { Garden: not null } => kind is { Beds: > 0 },
-            _ => false,
+            // Whatever else it is for: the workshop's sawing, the well's water.
+            _ => kind is not null && WorkAt(kind).Contains(task.Id),
         };
     }
 
@@ -166,11 +167,21 @@ public sealed partial class SimulationRunner
             wanted += camp.Buildings.Count(b => b.Condition < RepairBelow) * 4;
         }
 
+        // Planks with no ruin to salvage them from are sawn from poles at the workshop.
+        if (item == "item.poles" && StockLeft("camp_timber") <= 0 && StandingOf(b => b.Mends).Any()
+            && Content.Tasks.TryGetValue("task.pit_saw_planks", out var saw) && saw.Makes.GetValueOrDefault("item.plank") is > 0 and var made)
+        {
+            wanted += (MaterialShort("item.plank") + made - 1) / made * saw.Consumes.GetValueOrDefault("item.poles");
+        }
+
         return Math.Max(0, wanted - Campaign.SharedStore.Count(item) - Campaign.ActiveTasks.Values.Count(t => Content.Tasks[t.DefinitionId].Yield?.Item == item) * 4);
     }
 
-    // What the forest's edge has left of a material near the camp.
-    private int StockLeft(string item)
+    /// <summary>
+    /// What the site has left near the camp of what is gathered there (a yield's <c>ashore</c>): poles and
+    /// thatch at the forest's edge, stone on the rocks, planks in a ruin found.
+    /// </summary>
+    public int StockLeft(string ashore)
     {
         if (Campaign.Camp is not { } camp || Settling is not { } rules || CampSite is not { } site)
         {
@@ -178,7 +189,14 @@ public sealed partial class SimulationRunner
         }
 
         var share = site.Brush ? 1 : rules.Scarce;
-        return item == "item.poles" ? (int)(rules.Poles * share) - camp.PolesCut : (int)(rules.Thatch * share) - camp.ThatchCut;
+        return ashore switch
+        {
+            "camp_poles" => (int)(rules.Poles * share) - camp.PolesCut,
+            "camp_thatch" => (int)(rules.Thatch * share) - camp.ThatchCut,
+            "camp_stone" => site.Stone ? rules.Stone - camp.StoneGathered : 0,
+            "camp_timber" => site.Finds.Where(f => f.Planks > 0 && camp.Found.Contains(f.Id)).Sum(f => f.Planks) - camp.TimberSalvaged,
+            _ => 0,
+        };
     }
 
     // Whether the settlement wants a work now (DutyCondition.Camp, R7's part).
@@ -195,6 +213,11 @@ public sealed partial class SimulationRunner
                                        && camp.Projects.Any(p => PhaseOf(p)?.Task == task.Id && PhaseLeft(p) > 0),
             "poles" => MaterialShort("item.poles") > 0,
             "thatch" => MaterialShort("item.thatch") > 0,
+            "stone" => MaterialShort("item.stone") > 0 && StockLeft("camp_stone") > 0,
+            // Planks: salvaged from a ruin while there are any, else sawn at the workshop.
+            "timber" => MaterialShort("item.plank") > 0 && StockLeft("camp_timber") > 0,
+            "planks" => MaterialShort("item.plank") > 0 && StockLeft("camp_timber") <= 0
+                        && !Campaign.ActiveTasks.Values.Any(t => t.DefinitionId == task.Id),
             "mend" => camp.Broken.Count > 0 && !Campaign.ActiveTasks.Values.Any(t => Content.Tasks[t.DefinitionId].MendsTool),
             "repair_dry" => !Raining && camp.Buildings.Any(b => b.Condition < RepairBelow)
                             && !Campaign.ActiveTasks.Values.Any(t => Content.Tasks[t.DefinitionId].RepairsBuilding),
@@ -295,6 +318,11 @@ public sealed partial class SimulationRunner
             FinishPhase(character, definition, spotId);
         }
 
+        foreach (var (item, count) in definition.Makes)
+        {
+            Campaign.SharedStore.TryAdd(item, count, Content.Items);
+        }
+
         if (definition.MendsTool && camp.Broken.Keys.FirstOrDefault() is { } tool)
         {
             camp.Break(tool, -1);
@@ -391,6 +419,9 @@ public sealed partial class SimulationRunner
 
     private bool IsGarden(CampBuilding building) => Settling?.Building(building.Building) is { Beds: > 0 };
 
+    // Thatched, and so worn by the weather (a well, a landing, a garden have their own troubles).
+    private bool Roofed(CampBuilding building) => Settling?.Building(building.Building) is { Roofed: true };
+
     // Beds the garden has room for, after those sown and being sown.
     private int FreeBeds() =>
         Campaign.Camp is { } camp
@@ -445,30 +476,44 @@ public sealed partial class SimulationRunner
     // What the forest's edge gives this minute, by what is left near; further off, much less. Counted as cut.
     private (string Item, double PerHour)? GatherYield(string ashore, TaskYield yield)
     {
+        // Stone and a ruin's timbers are there or not; the forest's edge, cut back, still gives a little.
+        if (ashore is "camp_stone" or "camp_timber")
+        {
+            return StockLeft(ashore) > 0 ? (yield.Item, yield.PerHour) : null;
+        }
+
         var item = ashore == "camp_poles" ? "item.poles" : "item.thatch";
-        return (item, yield.PerHour * (StockLeft(item) > 0 ? 1 : 0.3));
+        return (item, yield.PerHour * (StockLeft(ashore) > 0 ? 1 : 0.3));
     }
 
-    // What the forest's edge gave: so much less of it, a tree felled for every few poles, near where they cut.
-    private void NoteGathered(string item, Character character)
+    // What the site gave: so much less of it; a tree felled for every few poles, near where they cut.
+    private void NoteGathered(string ashore, Character character)
     {
         if (Campaign.Camp is not { } camp)
         {
             return;
         }
 
-        if (item == "item.poles")
+        switch (ashore)
         {
-            camp.PolesCut++;
-            if (camp.PolesCut % PolesPerTreeFelled == 0 && Campaign.Placements.TryGetValue(character.Id, out var placement))
-            {
-                Fell(placement.CellAt(Campaign.Clock.Tick));
-            }
-        }
-        else if (item == "item.thatch")
-        {
-            camp.ThatchCut++;
-            camp.ThatchLastCut = Campaign.Clock.Tick;
+            case "camp_poles":
+                camp.PolesCut++;
+                if (camp.PolesCut % PolesPerTreeFelled == 0 && Campaign.Placements.TryGetValue(character.Id, out var placement))
+                {
+                    Fell(placement.CellAt(Campaign.Clock.Tick));
+                }
+
+                break;
+            case "camp_thatch":
+                camp.ThatchCut++;
+                camp.ThatchLastCut = Campaign.Clock.Tick;
+                break;
+            case "camp_stone":
+                camp.StoneGathered++;
+                break;
+            case "camp_timber":
+                camp.TimberSalvaged++;
+                break;
         }
     }
 
@@ -521,7 +566,7 @@ public sealed partial class SimulationRunner
     private void StormDamage(CampState camp)
     {
         var random = Campaign.Randomness.Events;
-        foreach (var building in camp.Buildings.Where(b => !IsGarden(b)).ToList())
+        foreach (var building in camp.Buildings.Where(Roofed).ToList())
         {
             building.Condition -= (1.2 - building.Quality) * 3 * (0.5 + random.NextDouble());
             if (building.Condition <= 0)
@@ -590,7 +635,7 @@ public sealed partial class SimulationRunner
         StepGroundDay(camp);
 
         // The weather wears what is built, worse what was built badly (the garden's beds have their own trouble).
-        foreach (var building in camp.Buildings.Where(b => !IsGarden(b)))
+        foreach (var building in camp.Buildings.Where(Roofed))
         {
             building.Condition = Math.Max(1, building.Condition - (1 - building.Quality) * (wet ? 1.2 : 0.3));
         }
@@ -671,7 +716,7 @@ public sealed partial class SimulationRunner
     /// <summary>
     /// The camp's stage, from what it has rather than points (SETTLEMENT §7): a landfall camp; a survival
     /// camp with water, protected stores, a latrine and food; an established outpost with dry roofs for
-    /// all, a workshop, an infirmary and a garden.
+    /// all, a workshop, an infirmary, a garden and, if there is a boat, a landing.
     /// </summary>
     public string CampStage()
     {
@@ -682,7 +727,8 @@ public sealed partial class SimulationRunner
 
         var survival = CampWater() is not null && (StorehouseStands || camp.Work(CampWorks.Cover) >= 1)
                        && camp.Work(CampWorks.Latrine) >= 1 && (CampFood() is not null || camp.Beds.Count > 0);
-        var outpost = survival && HutBerths >= Ashore().Count && StandingOf(b => b.Mends).Any() && InfirmaryBerths > 0 && StandingOf(b => b.Beds > 0).Any();
+        var outpost = survival && HutBerths >= Ashore().Count && StandingOf(b => b.Mends).Any() && InfirmaryBerths > 0 && StandingOf(b => b.Beds > 0).Any()
+                      && (!camp.Boat || StandingOf(b => b.Landing).Any());
         return outpost ? "an established outpost" : survival ? "a survival camp" : "a landfall camp";
     }
 }

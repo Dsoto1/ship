@@ -9,6 +9,7 @@ the site's own water, food and finds are in data/shore.json.
   the water path   up the right side into the forest, to the water (its true distance is the site's)
   the forest edge  rows 18-23, a scout's way in on the left; poles and thatch cut along it (R7)
   the buildings    R7: set down by the captain on the dry sand and the forest's edge, not listed here
+  stone, headland  R7: stone gathered on the rocks; the way up to the headland and its ruin, on the right
 Run: python3 tools/gen_shore_camp.py
 """
 import json, os, random
@@ -59,6 +60,11 @@ spot("spot.scout_2", 5, 23, ["task.scout"], face="S")
 
 # R7: buildings are set down where the captain chooses; their work places come with them (the simulation's
 # CampSpots), so none are listed here.
+# R7: stone from the point's rocks, and the way up to the headland, where a burned factory stands at Punta
+# Ceniza (its timbers salvaged; elsewhere nothing to be had there).
+spot("spot.stone_1", 27, 2, ["task.gather_stone"], kind="HammerStation")
+spot("spot.stone_2", 7, 4, ["task.gather_stone"], kind="HammerStation")
+spot("spot.headland", 34, 7, ["task.salvage_timbers"], kind="HammerStation", face="E")
 for id_, (x, y) in CUTS.items():
     spot(id_, x, y, ["task.cut_poles"] if "poles" in id_ else ["task.cut_thatch"], kind="HammerStation", face="S")
 

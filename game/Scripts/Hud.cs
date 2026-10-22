@@ -2604,7 +2604,7 @@ public partial class Hud : CanvasLayer
         [CampPriorities.Food] = ("The food kept dry", "The stores covered, and the shore's food gathered"),
         [CampPriorities.Sanitation] = ("A latrine", "Without one the camp grows foul and the flux comes"),
         [CampPriorities.Scouting] = ("Scouting", "Rested hands sent out to find water, food, and who else is here"),
-        [CampPriorities.Building] = ("Building", "The ordered buildings' phases, the poles and thatch for them, repairs, mending tools"),
+        [CampPriorities.Building] = ("Building", "The ordered buildings' phases; the poles, thatch, stone and planks for them; repairs, mending tools"),
         [CampPriorities.Garden] = ("The garden", "Sowing, weeding and tending, bringing in"),
     };
 
@@ -2638,6 +2638,8 @@ public partial class Hud : CanvasLayer
                      ("building.infirmary", "Infirmary", "The sick laid apart and tended: they mend better and pass it on less"),
                      ("building.workshop", "Workshop", "Broken tools mended at a bench: most are saved"),
                      ("building.garden", "Garden", "Cleared, dug and fenced; then sown from the seed chest. An experiment."),
+                     ("building.well", "Well", "Water dug for at the camp, where the site has it: keep it away from the latrine"),
+                     ("building.landing", "Landing", "Stones and a staging at the water's edge: the boat lands half as much again"),
                  })
         {
             var building = id;
@@ -2699,7 +2701,8 @@ public partial class Hud : CanvasLayer
         _campSeason.Text = $"Day {Math.Floor(day) + 1:0} ashore. {season} The camp is {runner.CampStage()}.{judged}";
 
         var key = string.Join("|", camp.Projects.Select(p => $"{p.Id}:{p.Phase}:{p.Done}:{p.Laid}"))
-                  + "#" + runner.Campaign.SharedStore.Count("item.poles") / 5 + ":" + runner.Campaign.SharedStore.Count("item.thatch") / 6;
+                  + "#" + runner.Campaign.SharedStore.Count("item.poles") / 5 + ":" + runner.Campaign.SharedStore.Count("item.thatch") / 6
+                  + ":" + runner.Campaign.SharedStore.Count("item.stone") / 3 + ":" + runner.Campaign.SharedStore.Count("item.plank");
         if (key != _campProjectsShown)
         {
             _campProjectsShown = key;
@@ -2738,7 +2741,7 @@ public partial class Hud : CanvasLayer
         var tools = new[] { "item.axe", "item.adze", "item.saw", "item.spade", "item.mattock", "item.cutlass", "item.auger" }
             .Select(t => $"{runner.Content.Items[t].Name.ToLowerInvariant()} {store.Count(t)}" + (camp.Broken.GetValueOrDefault(t) > 0 ? $" (+{camp.Broken[t]} broken)" : ""));
         var beds = camp.Beds.Select(b => $"{rules.Crops.FirstOrDefault(c => c.Id == b.Crop)?.Name} {runner.Growth(b) * 100:0}% grown, {(b.Health > 0.66 ? "thriving" : b.Health > 0.33 ? "poorly" : "failing")}").ToList();
-        _campKit.Text = "Tools: " + string.Join(", ", tools) + $"\nMaterials: poles {store.Count("item.poles")}, thatch {store.Count("item.thatch")}." +
+        _campKit.Text = "Tools: " + string.Join(", ", tools) + $"\nMaterials: poles {store.Count("item.poles")}, thatch {store.Count("item.thatch")}, stone {store.Count("item.stone")}, planks {store.Count("item.plank")}." +
             "\nGarden: " + (beds.Count == 0 ? (camp.Buildings.Any(b => rules.Building(b.Building)?.Beds > 0) ? "nothing sown." : "no garden yet.") : string.Join("; ", beds) + ".");
     }
 

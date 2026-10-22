@@ -2751,3 +2751,9 @@ ground given up grow back when left alone: stump, scrub, brush, a sapling, and a
 poles once more. Thatch comes back too. The placement rule is now that a building may not shut the way
 from the hearth to anywhere people go. Saved in format 40. Tests: 559. Screenshots:
 `r7-paths-day10.jpg`, `r7-paths-day47.jpg`.
+
+**The rest of R7** (owner: "r7 and r8 go"). Stone gathered on the rocks; planks salvaged from the factory's
+timbers at Punta Ceniza or sawn from poles at the workshop; a well where the site has water to dig for (fouled
+near the latrine); a landing of stones and a staging at the water's edge, where the boat lands half as much again.
+The chandler sells tools and seed. The camp has a sound bed of surf, wind, rain and the work. Building models are
+priced and briefed, not made. Tests: 564. Screenshot: `r7-well-landing.jpg`.

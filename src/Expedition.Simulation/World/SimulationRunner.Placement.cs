@@ -42,11 +42,33 @@ public sealed partial class SimulationRunner
         ["store_1"] = (28, 14), ["cook_1"] = (15, 8), ["infirmary_1"] = (5, 18), ["workshop_1"] = (30, 10), ["garden_1"] = (27, 18),
     };
 
-    // Building work done at a building's front; the workshop mends there too, the garden has its own.
-    private static readonly IReadOnlyList<string> BuildingWork =
-        ["task.clear_ground", "task.set_posts", "task.raise_frame", "task.thatch_roof", "task.fit_out", "task.repair_building"];
-    private static readonly IReadOnlyList<string> GardenWork =
-        ["task.clear_ground", "task.dig_beds", "task.fence_garden", "task.sow_garden", "task.tend_garden", "task.harvest"];
+    // The work done at a building's front: its phases, the thatch's repair if it is roofed, and what it does
+    // once made: the workshop's mending and sawing, the garden's work, the well's water.
+    private static IReadOnlyList<string> WorkAt(BuildingDefinition building)
+    {
+        var tasks = building.Phases.Select(p => p.Task).Distinct().ToList();
+        if (building.Roofed)
+        {
+            tasks.Add("task.repair_building");
+        }
+
+        if (building.Mends)
+        {
+            tasks.AddRange(["task.mend_tools", "task.pit_saw_planks"]);
+        }
+
+        if (building.Beds > 0)
+        {
+            tasks.AddRange(["task.sow_garden", "task.tend_garden", "task.harvest"]);
+        }
+
+        if (building.Water)
+        {
+            tasks.Add("task.fetch_water");
+        }
+
+        return tasks;
+    }
 
     // Wet sand: nothing is built at or below this row.
     private const int WetSandRow = 2;
@@ -71,8 +93,14 @@ public sealed partial class SimulationRunner
 
     private Footprint FootprintOf(CampBuilding building) => FootprintOf(Settling!.Building(building.Building)!, building.X, building.Y, building.Turned);
 
-    // A building's two work places, at its front.
-    private static (int X, int Y)[] FrontOf(int x, Footprint ground) => [(x - 1, ground.Y0 - 1), (x, ground.Y0 - 1)];
+    // A building's two work places, at its front: the sea side, or for a landing, which runs into the sea,
+    // its head on the dry sand.
+    private static (int X, int Y)[] FrontOf(BuildingDefinition building, int x, Footprint ground) =>
+        building.Landing ? [(x - 1, ground.Y1 + 1), (x, ground.Y1 + 1)] : [(x - 1, ground.Y0 - 1), (x, ground.Y0 - 1)];
+
+    private (int X, int Y)[] FrontOf(CampProject project) => FrontOf(Settling!.Building(project.Building)!, project.X, FootprintOf(project));
+
+    private (int X, int Y)[] FrontOf(CampBuilding building) => FrontOf(Settling!.Building(building.Building)!, building.X, FootprintOf(building));
 
     private string? _campSpotsKey;
     private IReadOnlyList<WorkSpotDefinition> _campSpots = [];
@@ -100,8 +128,8 @@ public sealed partial class SimulationRunner
                 continue;
             }
 
-            var tasks = building.Beds > 0 ? GardenWork : building.Mends ? [.. BuildingWork, "task.mend_tools"] : BuildingWork;
-            var front = FrontOf(x, FootprintOf(building, x, y, turned));
+            var tasks = WorkAt(building);
+            var front = FrontOf(building, x, FootprintOf(building, x, y, turned));
             spots.Add(new WorkSpotDefinition { Id = $"plot.{plot}.a", X = front[0].X, Y = front[0].Y, Tasks = tasks, Kind = "HammerStation" });
             spots.Add(new WorkSpotDefinition { Id = $"plot.{plot}.b", X = front[1].X, Y = front[1].Y, Tasks = tasks, Kind = "HammerStation" });
         }
@@ -118,15 +146,20 @@ public sealed partial class SimulationRunner
 
     // What a building set down on this ground would shut off from the hearth, people walking round it and
     // every other: the landing, the water, a place the camp uses, another building's front. Null if nothing.
-    private string? WayShut(LocationDefinition location, CampState camp, Footprint ground, (int X, int Y)[] front)
+    private string? WayShut(LocationDefinition location, CampState camp, BuildingDefinition building, Footprint ground, (int X, int Y)[] front)
     {
         if (location.FindSpot("spot.hearth") is not { } hearth)
         {
             return null;
         }
 
-        var all = AllGround(camp);
-        all.Add(ground);
+        // People walk round every building but a landing.
+        var all = camp.Projects.Where(p => Settling?.Building(p.Building) is { Landing: false }).Select(FootprintOf)
+            .Concat(camp.Buildings.Where(b => Settling?.Building(b.Building) is { Landing: false }).Select(FootprintOf)).ToList();
+        if (!building.Landing)
+        {
+            all.Add(ground);
+        }
         bool Reached(GridPosition to) => Pathfinder.FindPath(location, hearth.Cell, to, cell => all.Any(g => g.Contains(cell.X, cell.Y))) is not null;
         foreach (var (id, name) in new[] { ("spot.landing_1", "the landing"), ("spot.water_1", "the water") })
         {
@@ -141,7 +174,7 @@ public sealed partial class SimulationRunner
             return "a place the camp uses";
         }
 
-        var fronts = camp.Projects.Select(p => FrontOf(p.X, FootprintOf(p))).Concat(camp.Buildings.Select(b => FrontOf(b.X, FootprintOf(b)))).Append(front);
+        var fronts = camp.Projects.Select(FrontOf).Concat(camp.Buildings.Select(FrontOf)).Append(front);
         return fronts.SelectMany(f => f).Any(f => !Reached(new GridPosition(f.X, f.Y))) ? "the front of a building" : null;
     }
 
@@ -160,15 +193,27 @@ public sealed partial class SimulationRunner
         }
 
         var ground = FootprintOf(building, x, y, turned);
-        var front = FrontOf(x, ground);
-        if (ground.X0 < 1 || ground.X1 > location.Width - 2 || ground.Y1 > location.Height - 2 || ground.Y0 - 1 <= 0)
+        var front = FrontOf(building, x, ground);
+        if (ground.X0 < 1 || ground.X1 > location.Width - 2 || ground.Y1 > location.Height - 2 || ground.Y0 < 1 || (!building.Landing && ground.Y0 - 1 <= 0))
         {
             return new PlacementCheck(false, ["It will not fit there."], notes, 0);
         }
 
-        if (ground.Y0 <= WetSandRow)
+        // A landing runs down into the wet sand, where the boat comes in; nothing else may.
+        if (building.Landing ? ground.Y0 > WetSandRow : ground.Y0 <= WetSandRow)
         {
-            problems.Add("The sand there is wet: the tide comes up to it.");
+            problems.Add(building.Landing ? "A landing must run down to the water's edge." : "The sand there is wet: the tide comes up to it.");
+        }
+
+        var site = CampSite;
+        if (building.Landing && site is { Stone: false })
+        {
+            problems.Add("There is no rock here to gather stone for a landing.");
+        }
+
+        if (building.Water && site?.Well is null)
+        {
+            problems.Add("There is no water to be had by digging here.");
         }
 
         var trees = 0;
@@ -200,8 +245,8 @@ public sealed partial class SimulationRunner
             problems.Add("It would cover a place the camp already uses.");
         }
 
-        var others = camp.Projects.Select(p => (Ground: FootprintOf(p), Front: FrontOf(p.X, FootprintOf(p))))
-            .Concat(camp.Buildings.Select(b => (Ground: FootprintOf(b), Front: FrontOf(b.X, FootprintOf(b))))).ToList();
+        var others = camp.Projects.Select(p => (Ground: FootprintOf(p), Front: FrontOf(p)))
+            .Concat(camp.Buildings.Select(b => (Ground: FootprintOf(b), Front: FrontOf(b)))).ToList();
         if (others.Any(o => o.Ground.Overlaps(ground) || o.Front.Any(f => ground.Contains(f.X, f.Y)) || front.Any(f => o.Ground.Contains(f.X, f.Y) || o.Front.Contains(f))))
         {
             problems.Add("Another building is in the way.");
@@ -216,7 +261,7 @@ public sealed partial class SimulationRunner
         }
 
         // People walk round buildings: it must not shut the way from the hearth to anywhere they go.
-        if (problems.Count == 0 && WayShut(location, camp, ground, front) is { } shut)
+        if (problems.Count == 0 && WayShut(location, camp, building, ground, front) is { } shut)
         {
             problems.Add($"It would shut the way from the hearth to {shut}.");
         }
@@ -242,6 +287,11 @@ public sealed partial class SimulationRunner
             notes.Add(factor < 1 ? "At the forest's edge: sheltered, better soil." : factor > 1 ? "Open sand: the crops will waste more." : "Middling ground for a garden.");
         }
 
+        if (building.Water && site?.Well is { } well)
+        {
+            notes.Add(WellFouled(x, y) ? "Close by the latrine: the water will foul." : well.Kind == "brackish" ? "The water will come in brackish." : "Sweet water, at the camp.");
+        }
+
         if (building.Berths > 0 && hearth is not null && Math.Sqrt(Math.Pow(x - hearth.X, 2) + Math.Pow(y - hearth.Y, 2)) > HutFar)
         {
             notes.Add("A long walk from the fire.");
@@ -249,6 +299,13 @@ public sealed partial class SimulationRunner
 
         return new PlacementCheck(problems.Count == 0, problems, notes, trees);
     }
+
+    // A well within this many cells of the latrine is fouled by it.
+    private const double WellLatrineDistance = 6;
+
+    private bool WellFouled(int x, int y) =>
+        Content.Locations.TryGetValue(CampLocation, out var location) && location.FindSpot("spot.latrine") is { } latrine
+        && Math.Sqrt(Math.Pow(latrine.X - x, 2) + Math.Pow(latrine.Y - y, 2)) < WellLatrineDistance;
 
     // What the ground does for a building: the stores' spoiling, the infirmary's contagion, the garden's waste.
     private const double StoresHigh = 0.85;

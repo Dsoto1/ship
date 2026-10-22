@@ -43,6 +43,14 @@
         "phases": [ { "task": "task.clear_ground", "times": 1 }, { "task": "task.set_posts", "times": 2 }, { "task": "task.raise_frame", "times": 2 }, { "task": "task.thatch_roof", "times": 3 } ] },
       { "id": "building.workshop", "width": 4, "depth": 4, "name": "Workshop", "plot": "workshop", "mends": true,
         "phases": [ { "task": "task.clear_ground", "times": 1 }, { "task": "task.set_posts", "times": 2 }, { "task": "task.raise_frame", "times": 2 }, { "task": "task.thatch_roof", "times": 2 } ] },
+      // A well: only where the site has water to be dug for (a site's "well"). It brings the water to the camp,
+      // but a latrine within six cells fouls it. Lined with wattle and poles against the sand falling in.
+      { "id": "building.well", "width": 2, "depth": 2, "name": "Well", "plot": "well", "water": true,
+        "phases": [ { "task": "task.clear_ground", "times": 1 }, { "task": "task.dig_well", "times": 4 }, { "task": "task.line_well", "times": 2 } ] },
+      // A landing: a hard of stones laid down the wet sand, and a timber staging, by the boat. The boat lands
+      // half as much again each trip. Set down at the water's edge; it is walked over, not round.
+      { "id": "building.landing", "width": 4, "depth": 3, "name": "Landing", "plot": "landing", "landing": true,
+        "phases": [ { "task": "task.lay_stones", "times": 3 }, { "task": "task.build_staging", "times": 2 } ] },
       { "id": "building.garden", "width": 8, "depth": 5, "name": "Garden", "plot": "garden", "beds": 6,
         "phases": [ { "task": "task.clear_ground", "times": 3 }, { "task": "task.dig_beds", "times": 3 }, { "task": "task.fence_garden", "times": 2 } ] }
     ],
@@ -57,6 +65,8 @@
     // What the forest's edge gives before it must be gone further for (and the work it then takes).
     "poles": 140,
     "thatch": 260,
+    // Loads of stone to be had from the point's rocks, where the site has rock.
+    "stone": 90,
     "scarce": 0.2,
     // The first wet season: it comes this many days after landing, rain this many times as often.
     "wetFromDay": 20,
@@ -103,7 +113,7 @@
       "finds": [
         { "id": "find.factory", "kind": "ruin", "name": "the burned factory",
           "text": "The factory is burned to the ground. The palisade is down, the storehouse a ring of black posts, and there is no sign of the garrison.",
-          "planks": 8, "hint": "The factory on the headland, burned." },
+          "planks": 30, "hint": "The factory on the headland, burned." },
         { "id": "find.fish_weir", "kind": "people", "name": "a fish weir",
           "text": "A fish weir of stakes and woven cane across a channel of the lagoon, kept in repair: someone fishes here.",
           "hint": "Lines of stakes in the lagoon." },
@@ -118,6 +128,8 @@
       "rain": 0.1,
       "fever": 0.008,
       "brush": true,
+      // Water near the river is to be had by digging, clearer than the river's.
+      "well": { "kind": "spring", "perHour": 30 },
       "seen": [ "A wide river mouth, its water red-brown with mud, the banks thick with forest to the edge." ],
       "water": [
         { "id": "water.river", "name": "the river, above the tide", "kind": "stream", "perHour": 50, "walk": 18, "known": false,
@@ -138,6 +150,9 @@
       "rain": 0.08,
       "fever": 0.003,
       "brush": false,
+      "stone": false,
+      // Behind the dunes, water floats on the salt: dug deep enough, a well gives it sweet.
+      "well": { "kind": "spring", "perHour": 25 },
       "seen": [ "Long sand spits and shoals, grey sand without a tree on it, and the forest a long way back." ],
       "water": [
         { "id": "water.seep", "name": "a seep dug in the sand", "kind": "brackish", "perHour": 15, "walk": 8, "known": false,
@@ -174,6 +189,9 @@
       "rain": 0.12,
       "fever": 0.012,
       "brush": true,
+      "stone": false,
+      // Dug in the mud, the water comes in brackish.
+      "well": { "kind": "brackish", "perHour": 25 },
       "seen": [ "Mangroves standing in black mud, the water among them neither sea nor river, and the air thick with flies." ],
       "water": [
         { "id": "water.mangrove", "name": "water among the mangroves", "kind": "brackish", "perHour": 20, "walk": 6, "known": true, "hint": null },
@@ -190,6 +208,7 @@
       "rain": 0.06,
       "fever": 0.0,
       "brush": true,
+      "well": { "kind": "spring", "perHour": 30 },
       "seen": [ "A coast of their own country: fields above the beach, a track, and far off a bell tower." ],
       "water": [ { "id": "water.brook", "name": "a brook by the track", "kind": "stream", "perHour": 40, "walk": 16, "known": true, "hint": null } ],
       "food": [ { "id": "food.fishing", "name": "fish off the beach", "item": "item.fish", "perHour": 3, "hint": null } ],
@@ -226,6 +245,7 @@
       "rain": 0.08,
       "fever": 0.004,
       "brush": true,
+      "well": { "kind": "spring", "perHour": 25 },
       "seen": [ "A beach, and forest behind it." ],
       "water": [ { "id": "water.stream", "name": "a stream", "kind": "stream", "perHour": 30, "walk": 20, "known": false, "hint": "None to be seen." } ],
       "food": [ { "id": "food.shore_shellfish", "name": "shellfish on the rocks", "item": "item.shellfish", "perHour": 5, "unfamiliar": true, "hint": null } ],

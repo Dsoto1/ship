@@ -87,6 +87,12 @@ public sealed record ShoreSite
     /// <summary>Whether there is brush and poles to build with.</summary>
     public bool Brush { get; init; } = true;
 
+    /// <summary>Whether there is rock to gather stone from (R7).</summary>
+    public bool Stone { get; init; } = true;
+
+    /// <summary>The water a well would give, dug at the camp; null where there is none to dig for (R7).</summary>
+    public WellWater? Well { get; init; }
+
     /// <summary>What is seen from the beach on landing.</summary>
     public IReadOnlyList<string> Seen { get; init; } = [];
 
@@ -98,6 +104,16 @@ public sealed record ShoreSite
 
     /// <summary>Everything else there is to find: ruins, signs of people.</summary>
     public IReadOnlyList<ShoreFind> Finds { get; init; } = [];
+}
+
+/// <summary>The water a well dug at the camp gives.</summary>
+public sealed record WellWater
+{
+    /// <summary>spring (sweet) or brackish.</summary>
+    public string Kind { get; init; } = "spring";
+
+    /// <summary>Measures an hour a hand can draw.</summary>
+    public double PerHour { get; init; } = 25;
 }
 
 /// <summary>A source of water.</summary>
