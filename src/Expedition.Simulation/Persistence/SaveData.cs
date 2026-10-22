@@ -82,6 +82,9 @@ public sealed record SaveData
     /// <summary>The voyage, or null when not at sea. Added in format 11.</summary>
     public VoyageData? Voyage { get; init; }
 
+    /// <summary>The ship lost and how the survivors came ashore, or null. Added in format 33.</summary>
+    public WreckData? Wreck { get; init; }
+
     /// <summary>Standing duties, by character ID. Added in format 10.</summary>
     public required IReadOnlyList<DutyData> Duties { get; init; }
 
@@ -775,4 +778,44 @@ public sealed record LeakData
 
     /// <summary>When last repaired, or -1.</summary>
     public long RepairedTick { get; init; } = -1;
+}
+
+/// <summary>A saved wreck. Added in format 33.</summary>
+public sealed record WreckData
+{
+    /// <summary>foundered or struck.</summary>
+    public required string Cause { get; init; }
+
+    /// <summary>When.</summary>
+    public required long Tick { get; init; }
+
+    /// <summary>Where ashore: an ID.</summary>
+    public required string Ashore { get; init; }
+
+    /// <summary>Its name.</summary>
+    public required string AshoreName { get; init; }
+
+    /// <summary>Leagues the boat ran.</summary>
+    public double Leagues { get; init; }
+
+    /// <summary>Days in the boat.</summary>
+    public double DaysInBoat { get; init; }
+
+    /// <summary>Whether the boat got away.</summary>
+    public bool BoatLaunched { get; init; }
+
+    /// <summary>Who came ashore.</summary>
+    public IReadOnlyList<int> Survivors { get; init; } = [];
+
+    /// <summary>Who was lost.</summary>
+    public IReadOnlyList<int> Lost { get; init; } = [];
+
+    /// <summary>What was got into the boat.</summary>
+    public IReadOnlyDictionary<string, int> Saved { get; init; } = new SortedDictionary<string, int>(StringComparer.Ordinal);
+
+    /// <summary>Water and drink used up in the boat.</summary>
+    public int Drunk { get; init; }
+
+    /// <summary>What is still in the wreck.</summary>
+    public IReadOnlyDictionary<string, int> Remains { get; init; } = new SortedDictionary<string, int>(StringComparer.Ordinal);
 }

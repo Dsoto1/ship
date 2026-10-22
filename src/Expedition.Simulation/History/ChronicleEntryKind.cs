@@ -117,6 +117,12 @@ public enum ChronicleEntryKind
     /// <summary>Stores wetted below open hatches (parameters: to = item, level = lost).</summary>
     StoresWetted,
 
+    /// <summary>
+    /// The ship lost and the survivors ashore (parameters: cause = foundered or struck, to = where ashore,
+    /// level = days in the boat, need = survivors, reason = boat or noBoat).
+    /// </summary>
+    Wrecked,
+
     /// <summary>Bought from islanders (parameters: to = item, level = quantity, need = price, from = island).</summary>
     IslandTrade,
 

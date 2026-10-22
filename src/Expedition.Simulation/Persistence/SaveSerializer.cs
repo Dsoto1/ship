@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 32;
+    public const int CurrentSchemaVersion = 33;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -194,6 +194,9 @@ public static class SaveSerializer
 
                 return root;
             },
+
+            // Format 33 added the wreck: an older shipwreck has none recorded.
+            [32] = root => root,
 
             // Format 32 carried the purse to sea: an older voyage has an empty one.
             [31] = root => root,
@@ -633,6 +636,15 @@ public static class SaveSerializer
             LastEventTick = campaign.LastEventTick,
             Rationing = campaign.Rationing,
             SpoilageNoted = campaign.SpoilageNoted.Order(StringComparer.Ordinal).ToList(),
+            Wreck = campaign.Wreck is { } wreck
+                ? new WreckData
+                {
+                    Cause = wreck.Cause, Tick = wreck.Tick, Ashore = wreck.Ashore, AshoreName = wreck.AshoreName, Leagues = wreck.Leagues, DaysInBoat = wreck.DaysInBoat,
+                    BoatLaunched = wreck.BoatLaunched, Survivors = wreck.Survivors.Select(id => id.Value).ToList(), Lost = wreck.Lost.Select(id => id.Value).ToList(),
+                    Saved = new SortedDictionary<string, int>(wreck.Saved.ToDictionary(), StringComparer.Ordinal), Drunk = wreck.Drunk,
+                    Remains = new SortedDictionary<string, int>(wreck.Remains.ToDictionary(), StringComparer.Ordinal),
+                }
+                : null,
             Voyage = campaign.Voyage is { } voyage
                 ? new VoyageData
                 {
@@ -1177,6 +1189,23 @@ public static class SaveSerializer
                 voyage.Navigation = navigation;
             }
             campaign.SetVoyage(voyage);
+        }
+
+        if (data.Wreck is { } savedWreck)
+        {
+            if (savedWreck.Survivors.Concat(savedWreck.Lost).Any(id => !campaign.Characters.ContainsKey(new CharacterId(id)))
+                || savedWreck.Saved.Concat(savedWreck.Remains).Any(pair => !content.Items.ContainsKey(pair.Key) || pair.Value < 0))
+            {
+                throw new SaveLoadException("The wreck names someone not in the save, or stores that do not exist.");
+            }
+
+            campaign.Wreck = new Voyage.WreckState
+            {
+                Cause = savedWreck.Cause, Tick = savedWreck.Tick, Ashore = savedWreck.Ashore, AshoreName = savedWreck.AshoreName, Leagues = savedWreck.Leagues,
+                DaysInBoat = savedWreck.DaysInBoat, BoatLaunched = savedWreck.BoatLaunched,
+                Survivors = savedWreck.Survivors.Select(id => new CharacterId(id)).ToList(), Lost = savedWreck.Lost.Select(id => new CharacterId(id)).ToList(),
+                Saved = savedWreck.Saved.ToDictionary(), Drunk = savedWreck.Drunk, Remains = savedWreck.Remains.ToDictionary(),
+            };
         }
 
         foreach (var saved in data.Knowledge)

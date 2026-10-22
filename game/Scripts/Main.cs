@@ -1401,6 +1401,10 @@ public partial class Main : Node3D
                 $"{ship.ShipName}'s company is gone. She drifts on, empty.\n\n{losses}\n\n" +
                 "Keep the water and food coming, rest the exhausted before they collapse, and think twice about the choices that cost lives.");
         }
+        else if (_runner.Campaign.Wreck is { } wreck)
+        {
+            ShowWreck(ship, wreck, days);
+        }
         else
         {
             var boat = dead.Count == 0 ? $"All {alive} got into the ship's boat as she went." : $"{losses} The {alive} left alive got into the ship's boat as she went.";
@@ -1409,6 +1413,31 @@ public partial class Main : Node3D
                 "Watch the bilge, keep hands on the pumps in heavy weather, and patch the hull while there is oakum and plank to do it.");
         }
     }
+
+    // The wreck, as it went: how, where they came ashore, who was lost and how, what the boat saved and
+    // what is left in the wreck (VOYAGE_EXPERIENCE §39).
+    private void ShowWreck(Expedition.Simulation.Voyage.VoyageState ship, Expedition.Simulation.Voyage.WreckState wreck, double days)
+    {
+        string Names(IEnumerable<CharacterId> ids) => string.Join(", ", ids.Select(id => _runner.Campaign.Characters[id]).Select(c =>
+            c.SurvivalState == SurvivalState.Missing ? $"{c.Name} (never seen again)" : c.Name));
+        string Stores(IReadOnlyDictionary<string, int> stores) => stores.Count == 0 ? "nothing"
+            : string.Join(", ", stores.OrderByDescending(p => p.Value).Take(6).Select(p => $"{p.Value} {(_content.Items.TryGetValue(p.Key, out var item) ? item.Name.ToLowerInvariant() : p.Key)}"));
+        var how = wreck.Cause == "struck"
+            ? $"On day {Math.Floor(days) + 1:0}, {ship.ShipName} struck unseen and broke up on the coast at {wreck.AshoreName}." +
+              (wreck.BoatLaunched ? " The boat was got away and brought them in through the surf." : " The boat was stove; they reached the shore as they could, on spars and casks.")
+            : $"{Capital(ship.ShipName)} filled faster than her crew could pump and went down. The boat ran {wreck.Leagues:0} leagues in {wreck.DaysInBoat:0.#} days " +
+              $"and came ashore at {wreck.AshoreName}.";
+        var survivors = wreck.Survivors.Where(id => _runner.Campaign.Characters[id].SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated).ToList();
+        _hud.ShowEnding("Shipwreck", how + "\n\n" +
+            $"Ashore: {Names(survivors)}.\n" +
+            (wreck.Lost.Count > 0 ? $"Lost: {Names(wreck.Lost)}.\n" : "Not a soul was lost.\n") +
+            $"Got into the boat: {Stores(wreck.Saved)}." + (wreck.Drunk > 0 ? $" Of the water and wine, {wreck.Drunk} measures drunk on the way." : "") + "\n" +
+            (wreck.Remains.Count > 0 ? $"Still in the wreck, to be got at: {Stores(wreck.Remains)}.\n" : "Everything else went down with her.\n") +
+            "\nThey come ashore as they were: bruised, half drowned, worn out, their quarrels and loyalties with them. " +
+            "What they make of it ashore is the next part of the story (R6).");
+    }
+
+    private static string Capital(string text) => text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];
 
     private void CarryOn()
     {
@@ -1635,6 +1664,7 @@ public partial class Main : Node3D
     private double? _forceWind;
     private (double Offshore, double North)? _offCoast;
     private string? _seaWeather;
+    private bool _founder;
     private string? _island;
     private string? _openView;
     private string? _forceCarryAway;
@@ -1858,6 +1888,7 @@ public partial class Main : Node3D
                 case "seadays" when int.TryParse(value, out var seaDays): _seaDays = seaDays; break;
                 case "wind" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var wind): _forceWind = wind; break;
                 case "seaweather": _seaWeather = value; break;
+                case "founder": _founder = true; break;
                 case "island": _island = value; break;
                 case "offcoast" when value.Split(',') is [var off, var along]
                                      && double.TryParse(off, System.Globalization.CultureInfo.InvariantCulture, out var offshore)
@@ -1972,6 +2003,12 @@ public partial class Main : Node3D
         if (_forceWind is { } windFrom)
         {
             _runner.DeveloperSetWind(windFrom);
+        }
+
+        // --founder: she fills and goes down now, for the wreck.
+        if (_founder)
+        {
+            _runner.DeveloperFounder();
         }
 
         // --panel=ship (people, cargo, ...): open that screen, once at sea if she is sailing.

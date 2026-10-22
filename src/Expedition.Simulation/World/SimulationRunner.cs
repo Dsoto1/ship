@@ -660,7 +660,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         {
             ship.Outcome = VoyageOutcome.Foundered;
             Campaign.Record(ChronicleEntryKind.Foundered, [new(ChronicleParameters.To, ship.ShipName)]);
-            Campaign.TryTransitionTo(CampaignPhase.ShipwreckSurvival, $"{ship.ShipName} filled and foundered");
+            Wreck(ship, rules, "foundered");
         }
         else if (landfall)
         {

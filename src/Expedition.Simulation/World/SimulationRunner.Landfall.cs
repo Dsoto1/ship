@@ -54,6 +54,14 @@ public sealed partial class SimulationRunner
                 Campaign.Record(ChronicleEntryKind.StruckTheCoast, [
                     new(ChronicleParameters.Damage, Number(coast.StrikeDamage)), new(ChronicleParameters.Level, Number(ship.Hull)),
                 ]);
+                if (ship.Hull <= 0)
+                {
+                    // She broke her back on it.
+                    ship.Outcome = VoyageOutcome.Foundered;
+                    Wreck(ship, Content.Voyage!, "struck");
+                    return false;
+                }
+
                 Raise(navigation, coast);
             }
             else if (navigation.Offshore <= range)

@@ -130,6 +130,10 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
             ChronicleEntryKind.LeakReopened => $"The plug {entry.Get(ChronicleParameters.To)} burst in the seas: the leak is open again.",
             ChronicleEntryKind.CargoShifted => $"Cargo not lashed broke loose in the hold and shifted: {entry.Get(ChronicleParameters.Level)} of {ItemWord(entry.Get(ChronicleParameters.To))} lost, the hull strained.",
             ChronicleEntryKind.StoresWetted => $"Water down the open hatches wetted the stores: {entry.Get(ChronicleParameters.Level)} of {ItemWord(entry.Get(ChronicleParameters.To))} spoiled.",
+            ChronicleEntryKind.Wrecked => (entry.Get(ChronicleParameters.Cause) == "struck"
+                    ? $"She broke up on the coast. {entry.Get(ChronicleParameters.Need)} came ashore at {entry.Get(ChronicleParameters.To)}" +
+                      (entry.Get(ChronicleParameters.Reason) == "boat" ? " in the boat." : ", the boat stove, as best they could.")
+                    : $"She went down. {entry.Get(ChronicleParameters.Need)} in the boat reached {entry.Get(ChronicleParameters.To)} after {entry.Get(ChronicleParameters.Level)} days.") ,
             ChronicleEntryKind.IslandTrade =>
                 $"Bought from the people of {Island(entry.Get(ChronicleParameters.From))?.Name ?? "the island"}: {entry.Get(ChronicleParameters.Level)} {ItemWord(entry.Get(ChronicleParameters.To))}, for {entry.Get(ChronicleParameters.Need)} sueldos. " +
                 $"{Island(entry.Get(ChronicleParameters.From))?.Sells.FirstOrDefault(g => g.Item == entry.Get(ChronicleParameters.To))?.Looks}".TrimEnd(),

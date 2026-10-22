@@ -537,6 +537,9 @@ public sealed class CampaignState
     /// <summary>Takes a character off every map, for example someone who leaves the port.</summary>
     internal void RemovePlacement(CharacterId id) => _placements.Remove(id);
 
+    /// <summary>The ship lost, and how the survivors came ashore; null unless she was wrecked.</summary>
+    public Voyage.WreckState? Wreck { get; internal set; }
+
     /// <summary>Preparations in port, or null when not in port.</summary>
     public Port.PortState? Port { get; private set; }
 

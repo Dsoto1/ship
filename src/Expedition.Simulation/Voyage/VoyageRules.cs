@@ -50,6 +50,9 @@ public sealed record VoyageRules
     /// <summary>How heavy weather is met: warning, preparation, leaks, cargo.</summary>
     public StormRules Storms { get; init; } = new();
 
+    /// <summary>How a wreck goes: the boat, what can be got at, who is lost.</summary>
+    public WreckRules Wreck { get; init; } = new();
+
     /// <summary>Weather the voyage starts in.</summary>
     public required string StartingWeather { get; init; }
 

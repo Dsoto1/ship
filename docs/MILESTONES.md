@@ -47,7 +47,7 @@ This file tracks status and breaks the next work into tickets.
 | R4f | Medical crisis, grievances by stages, skill growth and mentorship; events become state-caused (VOYAGE §15, §18–19, §25–26, §42) | Planned |
 | R4g | Landfall approach: soundings, sighting, identifying the coast, wrong landfall (NAV §30–31) | Done (2026-10-21) |
 | R4h | Voyage validation: calm morning, fog, storm, aftermath; sound; the ship's visible history (VOYAGE §46) | Planned |
-| R5 | Shipwreck transition: casualties, location, salvage by accessibility, survivors' state kept (VOYAGE §39–40) | Planned |
+| R5 | Shipwreck transition: casualties, location, salvage by accessibility, survivors' state kept (VOYAGE §39–40) | Done (2026-10-22): the transition and its report; survival ashore is R6 |
 | R6 | Landfall camp, the first 72 hours: assessment, water, shelter, fire, stores, sanitation (SETTLEMENT §3–6) | Planned |
 | R7 | Establishment: construction projects, storage and spoilage, the first garden, seasons (SETTLEMENT §7–19) | Planned |
 | R8 | The world around: exploration, the Ahuneri and Tesiwa, trade, the charter (SETTLEMENT §26–33) | Planned |
@@ -2313,3 +2313,56 @@ left)"), and the Ship panel shows the purse. Each purchase goes in the chronicle
 
 Saved in format 32: the purse, and the lots bought. Test: in `IslandTests`. Screenshot:
 `docs/screenshots/island-trade.jpg`.
+
+### R5 — The shipwreck, as a transition
+
+Losing the ship used to end the game on a line. Now it is a transition (VOYAGE_EXPERIENCE §39), worked
+through in order (`SimulationRunner.Wreck.cs`, `Voyage/Wreck.cs`).
+
+**How she is lost.**
+- **Foundering.** She fills at sea and goes down slowly enough to get the boat away.
+- **Breaking up.** She strikes unseen on the far coast with the hull already at its last, and breaks
+  her back; the boat may be stove (35%).
+
+**Who is lost at the wreck.** Each person's chance:
+
+| Situation | Chance of being lost |
+|---|---|
+| Foundering | 4% |
+| Breaking up | 15% |
+| Asleep below when she struck at night | +12% |
+| Incapacitated | +40% |
+| Heavy weather | +10% |
+| No boat | +15% |
+| Seamanship | less, a little |
+
+A third of the lost are never seen again (missing rather than dead). Everyone who comes through is
+bruised or half drowned.
+
+**What is got into the boat.** By what can be reached, within what the boat carries (1,100 kg, people
+at 70 kg each).
+- **Reach:** water and food 50%, tools 90%, materials 30%, drink 30%, the rest 15%.
+- **Sudden loss:** breaking up at night or in heavy weather, a fifth less than that.
+- **Single items** (one marlinspike) are saved by chance at that share.
+
+**Where they come ashore.**
+- **Foundered:** the boat makes for the nearest land there truly is: the Ember Coast, the coast of
+  Castrena, or an island that is really there. That takes days (22 leagues a day), on two measures of
+  water a person a day. With the water gone, each day costs lives.
+- **Broken up:** they are ashore where she struck, and the wreck lies close by with what is left in
+  her, to be got at later.
+
+**The survivors carry over as they were:** their needs (worn out, thirsty if the water ran short),
+injuries, knowledge and relationships. The clock moves on by the days in the boat. If the captain is
+lost, command passes as before. If no one comes ashore, all hands are lost.
+
+**The report** replaces the old "Foundered" screen: how she went; who came ashore; who was lost and how;
+what was got into the boat and drunk on the way; and what is still in the wreck. A sample: the Garza
+went down 97 leagues out, the boat ran four and a half days to the coast of Castrena, and two died of
+thirst on the last day with 59 litres of water and 6 of wine drunk.
+
+Saved in format 33 (`Campaign.Wreck`). Developer flag `--founder` sinks her now. Tests: `WreckTests` (5).
+Screenshot: `docs/screenshots/shipwreck.jpg`.
+
+**Not yet (R6):** the shore itself. Making camp, water, shelter, salvaging the wreck, and deciding what
+to do next.
