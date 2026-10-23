@@ -1,6 +1,6 @@
 # Playtest guide: the settlement, its people, its buildings, the ship
 
-This guide is for checking the latest work in the running game: workplaces (step W), the community (C),
+This guide is for checking the latest work in the running game: the menus and port fixes, the building kit trial, workplaces (step W), the community (C),
 people (P), the new buildings, and the ship (S). Set up Git, .NET and Godot first, as `TESTING_ON_MAC.md`
 describes.
 
@@ -40,6 +40,40 @@ from Finder into the Terminal window: it fills in the path. Then add `/Contents/
 | `--panel=ship` | The Camp drawer open (People: `--panel=people`). |
 
 Save with **Cmd + S** and load with **Cmd + L** at any point, or from the menu (**Esc**). Launched with shortcuts, the game skips the title screen.
+
+## 0a. Menus and saving
+
+Launch with nothing after the `--` (or Godot's Run button).
+
+- [ ] **Title screen:** New voyage, Continue, Load, Settings, Quit.
+- [ ] **Pause menu:** Esc (or the Menu tab) gives Resume, Save, Load, Settings, Controls, Main menu, Quit.
+- [ ] **Save slots:** save under a name, save over it, delete one. The list shows day, place and when saved.
+- [ ] **Loading:** a save from the list puts you back where you were; Continue loads the latest.
+- [ ] **Settings:** volume, window, interface size, edge panning, what pauses the game. Kept after a restart.
+
+## 0b. The port: moving and looking
+
+```
+-- --menu=none
+```
+
+- [ ] **Click to walk:** left-click the ground, the captain walks there, with the preparation card open.
+- [ ] **Preparation card:** the – button folds it; Readiness has its own toggle.
+- [ ] **Event windows:** can be tucked to a bar at the top.
+- [ ] **Camera:** middle-drag, two-finger drag and pinch; edge panning if on.
+- [ ] **Walking:** feet keep pace with the ground at 1×, 2× and 10×.
+- [ ] **The tavern:** thin walls, framed doorway, the inside shows as you reach the door, no flicker.
+- [ ] **House fronts:** no beams across windows or doors; windows set back with sills and shutters.
+
+## 0c. Port houses from the free kit (trial)
+
+```
+-- --menu=none --kit=alternate
+```
+
+- [ ] Every other house is built from the kit; no gaps or floating pieces.
+- [ ] With `--kit` instead, every ordinary house is, and the game runs smoothly.
+- [ ] Which do you prefer, and why?
 
 ## 1. Workplaces (step W)
 
