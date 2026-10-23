@@ -234,7 +234,7 @@ public sealed partial class SimulationRunner
                 continue;
             }
 
-            var every = community.VisitEveryDays * (state.Trust < 0 ? 1.5 : 1) * (1.3 - 0.5 * community.Trade);
+            var every = community.VisitEveryDays * (state.Trust < 0 ? 1.5 : 1) * (1.3 - 0.5 * community.Trade) * (TradingHouseStands ? TradingHouseVisits : 1);
             state.NextVisit = now + (long)(every * SimulationClock.TicksPerDay);
             var meeting = new Meeting { Kind = "delegation", Community = community.Id, Tick = now };
             if (community.GiftCulture && state.Trust > -15)
@@ -549,7 +549,7 @@ public sealed partial class SimulationRunner
                 }
 
                 Campaign.SharedStore.TryAdd(get, getCount, Content.Items);
-                Trust(community.Id, 1.5);
+                Trust(community.Id, TradingHouseStands ? 2.5 : 1.5);
                 return ($"{giveCount} {ItemName(give).ToLowerInvariant()} for {getCount} {ItemName(get).ToLowerInvariant()}: a fair exchange, as they see it.", false, true);
             }
 

@@ -75,6 +75,16 @@ public sealed partial class SimulationRunner
             tasks.Add("task.smoke_fish");
         }
 
+        if (building.Salts)
+        {
+            tasks.AddRange(["task.boil_salt", "task.salt_fish"]);
+        }
+
+        if (building.Forges)
+        {
+            tasks.Add("task.forge_tool");
+        }
+
         return tasks;
     }
 
@@ -214,6 +224,11 @@ public sealed partial class SimulationRunner
         if (building.Landing ? ground.Y0 > WetSandRow : ground.Y0 <= WetSandRow)
         {
             problems.Add(building.Landing ? "A landing must run down to the water's edge." : "The sand there is wet: the tide comes up to it.");
+        }
+
+        if (UnknownHow(building) is { } unknown)
+        {
+            problems.Add(unknown);
         }
 
         var site = CampSite;
@@ -388,6 +403,12 @@ public sealed partial class SimulationRunner
             return CommandResult.Rejected("There is nothing to build here.");
         }
 
+        // What is not known how to make is refused before any ground is looked for.
+        if (UnknownHow(building) is { } unknown)
+        {
+            return CommandResult.Rejected(unknown);
+        }
+
         // The old plots first; else the best ground for it, with the fewest trees to fell, nearest the hearth.
         var hearth = location.FindSpot("spot.hearth");
         var open = Enumerable.Range(3, location.Height - 4).SelectMany(cy => Enumerable.Range(1, location.Width - 2).Select(cx => (X: cx, Y: cy)))
@@ -404,6 +425,18 @@ public sealed partial class SimulationRunner
         }
 
         return CommandResult.Rejected($"There is no ground left for another {building.Name.ToLowerInvariant()}.");
+    }
+
+    // Why a building cannot be made yet for want of what the coast's peoples know, or null.
+    private string? UnknownHow(BuildingDefinition building)
+    {
+        if (building.Knowledge is not { } knowledge || Learned(knowledge))
+        {
+            return null;
+        }
+
+        var from = Region?.Topic(knowledge)?.From.Select(f => Region!.Community(f)?.Name ?? f).ToList() ?? [];
+        return $"No one at the camp knows how to make {building.Name.ToLowerInvariant()}: it is to be learned of {(from.Count == 0 ? "the coast's people" : string.Join(" or ", from))}.";
     }
 
     // Trees standing on a building's ground.

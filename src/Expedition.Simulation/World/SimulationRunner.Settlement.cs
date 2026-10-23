@@ -188,6 +188,19 @@ public sealed partial class SimulationRunner
             wanted += (MaterialShort("item.plank") + made - 1) / made * saw.Consumes.GetValueOrDefault("item.poles");
         }
 
+        // Poles burned at the forge for its charcoal, and under the salt pans' pots.
+        if (item == "item.poles" && StandingOf(b => b.Forges).Any() && ToolWanted() is not null
+            && Content.Tasks.TryGetValue("task.forge_tool", out var forging) && Campaign.SharedStore.Count("item.iron") >= forging.Consumes.GetValueOrDefault("item.iron"))
+        {
+            wanted += forging.Consumes.GetValueOrDefault(item);
+        }
+
+        if (item == "item.poles" && StandingOf(b => b.Salts).Any() && Campaign.SharedStore.Count("item.salt") < SaltKept
+            && Content.Tasks.TryGetValue("task.boil_salt", out var boiling))
+        {
+            wanted += boiling.Consumes.GetValueOrDefault(item);
+        }
+
         return Math.Max(0, wanted - Campaign.SharedStore.Count(item) - Campaign.ActiveTasks.Values.Count(t => Content.Tasks[t.DefinitionId].Yield?.Item == item) * 4);
     }
 
@@ -234,6 +247,12 @@ public sealed partial class SimulationRunner
                         && !Campaign.ActiveTasks.Values.Any(t => t.DefinitionId == task.Id),
             // Fish smoked once there is a rack-load of it, one batch at a time.
             "smoke" => Campaign.SharedStore.Count("item.fish") >= task.Consumes.GetValueOrDefault("item.fish", 1)
+                       && !Campaign.ActiveTasks.Values.Any(t => t.DefinitionId == task.Id),
+            // Salt boiled until there is a little laid by; fish salted while there is salt and fish for it.
+            "salt" => Campaign.SharedStore.Count("item.salt") < SaltKept && !Campaign.ActiveTasks.Values.Any(t => t.DefinitionId == task.Id),
+            "salt_fish" => task.Consumes.All(c => Campaign.SharedStore.Count(c.Key) >= c.Value) && !Campaign.ActiveTasks.Values.Any(t => t.DefinitionId == task.Id),
+            // A tool forged while there is the iron for it and a tool the camp is short of.
+            "forge" => task.Consumes.All(c => Campaign.SharedStore.Count(c.Key) >= c.Value) && ToolWanted() is not null
                        && !Campaign.ActiveTasks.Values.Any(t => t.DefinitionId == task.Id),
             "mend" => camp.Broken.Count > 0 && !Campaign.ActiveTasks.Values.Any(t => Content.Tasks[t.DefinitionId].MendsTool),
             "repair_dry" => !Raining && camp.Buildings.Any(b => b.Condition < RepairBelow)
@@ -353,6 +372,12 @@ public sealed partial class SimulationRunner
             }
 
             Campaign.Record(saved ? ChronicleEntryKind.ToolMended : ChronicleEntryKind.ToolLost, [new(ChronicleParameters.To, tool)], character.Id);
+        }
+
+        if (definition.ForgesTool && ToolWanted() is { } made)
+        {
+            Campaign.SharedStore.TryAdd(made, 1, Content.Items);
+            Campaign.Record(ChronicleEntryKind.ToolMade, [new(ChronicleParameters.To, made)], character.Id);
         }
 
         if (definition.RepairsBuilding && camp.Buildings.Where(b => b.Plot == PlotOf(spotId)).OrderBy(b => b.Condition).FirstOrDefault() is { } worn)

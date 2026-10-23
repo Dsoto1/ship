@@ -148,6 +148,21 @@ public sealed record BuildingDefinition
     /// <summary>A smokehouse: fresh fish smoked there, to keep.</summary>
     public bool Smokes { get; init; }
 
+    /// <summary>A chapel: Sunday kept there.</summary>
+    public bool Chapel { get; init; }
+
+    /// <summary>A trading house: the coast's peoples come oftener, and a fair trade counts for more.</summary>
+    public bool Trades { get; init; }
+
+    /// <summary>Salt pans: salt made, and fish salted.</summary>
+    public bool Salts { get; init; }
+
+    /// <summary>A forge: tools made from bar iron.</summary>
+    public bool Forges { get; init; }
+
+    /// <summary>What must be learned of the coast's people before it can be built (R8), or null.</summary>
+    public string? Knowledge { get; init; }
+
     /// <summary>Thatched: worn by the weather and repaired.</summary>
     public bool Roofed => Phases.Any(p => p.Task == "task.thatch_roof");
 }

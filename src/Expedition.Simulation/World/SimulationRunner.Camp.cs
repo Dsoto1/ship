@@ -31,12 +31,12 @@ public sealed partial class SimulationRunner
         [CampPriorities.Shelter] = ["task.rig_sail_shelter", "task.cut_brush_shelter"],
         [CampPriorities.Stores] = ["task.land_stores"],
         [CampPriorities.Fire] = ["task.make_fire", "task.tend_fire", "task.cook_ashore"],
-        [CampPriorities.Food] = ["task.cover_stores", "task.forage_shore", "task.smoke_fish"],
+        [CampPriorities.Food] = ["task.cover_stores", "task.forage_shore", "task.smoke_fish", "task.salt_fish", "task.boil_salt"],
         [CampPriorities.Sanitation] = ["task.dig_latrine"],
         [CampPriorities.Scouting] = ["task.scout"],
         [CampPriorities.Building] = ["task.repair_building", "task.clear_ground", "task.set_posts", "task.raise_frame", "task.thatch_roof", "task.fit_out",
             "task.dig_beds", "task.fence_garden", "task.dig_well", "task.line_well", "task.lay_stones", "task.build_staging",
-            "task.raise_palisade", "task.cut_poles", "task.cut_thatch", "task.gather_stone", "task.salvage_timbers", "task.pit_saw_planks", "task.mend_tools"],
+            "task.raise_palisade", "task.cut_poles", "task.cut_thatch", "task.gather_stone", "task.salvage_timbers", "task.pit_saw_planks", "task.mend_tools", "task.forge_tool"],
         [CampPriorities.Garden] = ["task.harvest", "task.sow_garden", "task.tend_garden"],
     };
 

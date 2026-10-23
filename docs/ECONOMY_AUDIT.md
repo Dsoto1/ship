@@ -71,7 +71,7 @@ against the code as it stands: **Yes**, **Partly** or **No**, with where it is o
 | §29–30 Priorities and delegation | Camp priorities and choices; standing orders at sea; **priorities per project, critical to paused, and leads** (WORKPLACES.md). | Leads for the camp's other work. |
 | §34 Policies | Priorities, sailcloth, scouts, foraging; **rations, the working day and reserve targets** (COMMUNITY.md). | Emergency labour, trade restrictions, exploration priority. |
 | §43 Readiness | The port's checklist (hands, the way, stores for the passage). | The spec's two-part summary: voyage cover and landfall capability, in words, no score. |
-| §44 Self-sufficiency | The camp's stage, and the 90-day verdict; **eight milestones** (COMMUNITY.md). | A tool made, not only mended. |
+| §44 Self-sufficiency | The camp's stage, and the 90-day verdict; **eight milestones** (COMMUNITY.md). | None: tools are forged now (STRUCTURES.md). |
 
 ## What is not there yet
 

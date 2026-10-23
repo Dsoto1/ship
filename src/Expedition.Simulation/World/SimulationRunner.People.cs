@@ -86,6 +86,7 @@ public sealed partial class SimulationRunner
         }
 
         Homes(camp);
+        KeepSunday();
         var random = Campaign.Randomness.Characters;
         var here = Ashore().Where(c => c.SurvivalState is SurvivalState.Alive && !Away(c.Id)).ToList();
         var single = here.Where(c => c.Age >= AdultFrom && !Campaign.Households.Any(h => h.Adults.Contains(c.Id))).ToList();
@@ -346,6 +347,9 @@ public sealed partial class SimulationRunner
             Campaign.Record(ChronicleEntryKind.Joined, [new(ChronicleParameters.From, "relief")], settler.Id);
             made.Add(settler);
         }
+
+        // And the Company sends iron for the forge, with the settlers it sends.
+        Campaign.SharedStore.TryAdd("item.iron", count == region.Charter.SettlersKept ? 20 : 10, Content.Items);
 
         for (var pair = 0; pair < couples && pair * 2 + 1 < made.Count; pair++)
         {

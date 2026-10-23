@@ -50,6 +50,19 @@
       // A smokehouse: racks over a slow fire under a low roof, where fresh fish is smoked to keep for months.
       { "id": "building.smokehouse", "width": 3, "depth": 3, "name": "Smokehouse", "plot": "smokehouse", "smokes": true,
         "phases": [ { "task": "task.clear_ground", "times": 1 }, { "task": "task.set_posts", "times": 1 }, { "task": "task.raise_frame", "times": 1 }, { "task": "task.thatch_roof", "times": 1 } ] },
+      // A chapel: a cross, an altar and a roof. Sunday is kept there: the company rests easier for it.
+      { "id": "building.chapel", "width": 4, "depth": 5, "name": "Chapel", "plot": "chapel", "chapel": true,
+        "phases": [ { "task": "task.clear_ground", "times": 1 }, { "task": "task.set_posts", "times": 2 }, { "task": "task.raise_frame", "times": 2 }, { "task": "task.thatch_roof", "times": 2 }, { "task": "task.fit_out", "times": 1 } ] },
+      // A trading house: a roofed place to receive a people's delegations and lay out the goods. They come
+      // more often, and a fair trade there counts for more.
+      { "id": "building.trading_house", "width": 5, "depth": 4, "name": "Trading house", "plot": "trading", "trades": true,
+        "phases": [ { "task": "task.clear_ground", "times": 1 }, { "task": "task.set_posts", "times": 2 }, { "task": "task.raise_frame", "times": 2 }, { "task": "task.thatch_roof", "times": 2 } ] },
+      // Salt pans, as Kessat makes them: clay-lined pans and a boiling shed. Only once it is learned how.
+      { "id": "building.salt_pans", "width": 5, "depth": 3, "name": "Salt pans", "plot": "salt", "salts": true, "knowledge": "know.salt",
+        "phases": [ { "task": "task.clear_ground", "times": 2 }, { "task": "task.set_posts", "times": 1 }, { "task": "task.thatch_roof", "times": 1 } ] },
+      // A forge: a hearth, bellows, an anvil on a stump. Bar iron made into the tools the camp is shortest of.
+      { "id": "building.forge", "width": 4, "depth": 4, "name": "Forge", "plot": "forge", "forges": true,
+        "phases": [ { "task": "task.clear_ground", "times": 1 }, { "task": "task.set_posts", "times": 2 }, { "task": "task.raise_frame", "times": 1 }, { "task": "task.thatch_roof", "times": 2 } ] },
       // A well: only where the site has water to be dug for (a site's "well"). It brings the water to the camp,
       // but a latrine within six cells fouls it. Lined with wattle and poles against the sand falling in.
       { "id": "building.well", "width": 2, "depth": 2, "name": "Well", "plot": "well", "water": true,

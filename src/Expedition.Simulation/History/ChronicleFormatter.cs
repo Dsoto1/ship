@@ -106,6 +106,7 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
                 : $"{who} and {Other(entry)} made a home together.",
             ChronicleEntryKind.Expecting => $"{who} is expecting a child.",
             ChronicleEntryKind.ChildBorn => $"A child was born to {Other(entry)}: {who}.",
+            ChronicleEntryKind.ToolMade => $"{who} forged {Article(ItemWord(entry.Get(ChronicleParameters.To)))} at the camp's forge.",
             ChronicleEntryKind.WentHome => $"{who} took passage home on the relief ship.",
             ChronicleEntryKind.HullStruck =>
                 $"A heavy sea struck {Ship()} and opened a seam (hull down {entry.Get(ChronicleParameters.Damage)}, now {entry.Get(ChronicleParameters.Level)}%).",

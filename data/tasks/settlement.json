@@ -172,6 +172,8 @@
     // carried down.
     "requiredTools": ["item.axe"],
     "yield": { "item": "item.plank", "perHour": 0.8, "ashore": "camp_timber" },
+    // And what iron is in the ash: nails, hinges, a barrel's hoops.
+    "makes": { "item.iron": 1 },
     "dutyWhen": { "camp": "timber", "startBetween": [[6, 14]] },
     "needsPerHour": { "fatigue": 7.0, "thirst": 1.5 }
   },
@@ -226,6 +228,43 @@
     "makes": { "item.smoked_fish": 10 },
     "dutyWhen": { "camp": "smoke" },
     "needsPerHour": { "fatigue": 2.0, "thirst": 1.0 }
+  },
+  {
+    "id": "task.boil_salt",
+    "needsWorkSpot": true,
+    "name": "Boil salt",
+    "durationMinutes": 120,
+    // The brine from the pans boiled down in pots over a slow fire, the salt raked out to dry.
+    "skill": "skill.cooking",
+    "consumes": { "item.poles": 1 },
+    "makes": { "item.salt": 2 },
+    "dutyWhen": { "camp": "salt", "startBetween": [[6, 14]] },
+    "needsPerHour": { "fatigue": 3.0, "thirst": 2.0 }
+  },
+  {
+    "id": "task.salt_fish",
+    "needsWorkSpot": true,
+    "name": "Salt fish",
+    "durationMinutes": 120,
+    // Fish split, rubbed with salt and laid in it, then dried: it keeps for a year.
+    "skill": "skill.cooking",
+    "consumes": { "item.fish": 10, "item.salt": 2 },
+    "makes": { "item.salt_fish": 10 },
+    "dutyWhen": { "camp": "salt_fish" },
+    "needsPerHour": { "fatigue": 2.0, "thirst": 1.0 }
+  },
+  {
+    "id": "task.forge_tool",
+    "needsWorkSpot": true,
+    "name": "Forge a tool",
+    "durationMinutes": 240,
+    // Bar iron heated and hammered to an axe head, a spade's shoe, a mattock: poles burned down for the charcoal.
+    "skill": "skill.crafting",
+    "minSkill": 1,
+    "consumes": { "item.iron": 3, "item.poles": 2 },
+    "forgesTool": true,
+    "dutyWhen": { "camp": "forge", "startBetween": [[6, 13]] },
+    "needsPerHour": { "fatigue": 6.0, "thirst": 2.5 }
   },
   {
     "id": "task.mend_tools",

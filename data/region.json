@@ -111,7 +111,7 @@
         { "id": "person.teskaat", "name": "Teskaat", "role": "a trader of Kessat", "about": "Knows a little Brennish and a good deal of the lagoon's trade tongue; comes quietly, and counts everything twice." }
       ],
       "wants": { "item.trade_cloth": 10, "item.sailcloth": 8, "item.axe": 8, "item.trade_knives": 5, "item.wine": 4, "item.fishhooks": 2 },
-      "offers": { "item.maize": 1, "item.smoked_meat": 1.5, "item.fruit": 0.8 }
+      "offers": { "item.maize": 1, "item.smoked_meat": 1.5, "item.fruit": 0.8, "item.salt": 1.2, "item.iron": 4 }
     }
   ],
   // What the peoples know and will tell, to those they trust enough, through an interpreter good enough.
@@ -136,6 +136,8 @@
     { "id": "know.brennish", "name": "who trades with whom", "from": ["people.tesiwa", "people.mahenu"], "trust": 25, "language": 2,
       "text": "The Brennish ships put in at a cove beyond the salt pans and trade iron to Kessat for salt, food and wood the Tesiwa do not own.",
       "reveals": ["place.salt_pans", "place.brennish_cove"] },
+    { "id": "know.salt", "name": "how they make salt", "from": ["people.tesiwa"], "trust": 15, "language": 1,
+      "text": "Sea water let into clay-lined pans above the tide line, left to the sun, then the brine boiled down in pots over a slow fire: the salt Kessat trades up and down the coast." },
     { "id": "know.garrison_tesiwa", "name": "Kessat's tale of the factory", "from": ["people.tesiwa"], "trust": 12, "language": 1,
       "text": "Sattek laughs. The lagoon people burned the foreigners' house, he says, and it was Kessat's Brennish iron that cut its gate." },
     { "id": "know.garrison_oruwai", "name": "Oruwai's tale of the factory", "from": ["people.oruwai"], "trust": 25, "language": 2,
@@ -152,5 +154,5 @@
   // An interloper's ship at the cove (SETTLEMENT §32).
   "brennish": { "ship": "the Merle", "master": "Master Corran Hale", "arriveDay": 50, "stayDays": 12,
     "names": ["Wat Penner", "Hob Askew", "Dickon Marle", "Ned Tolley"],
-    "sells": { "item.wine_hob": 18, "item.biscuit_hob": 14, "item.axe": 70 }, "buysLog": 25 }
+    "sells": { "item.wine_hob": 18, "item.biscuit_hob": 14, "item.axe": 70, "item.iron": 30 }, "buysLog": 25 }
 }

@@ -185,7 +185,7 @@ public sealed partial class SimulationRunner
         ("storehouse", "A storehouse", "The first storehouse standing: the stores off the ground and dry"),
         ("homes", "Homes for all", "Dry berths in huts for everyone ashore"),
         ("harvest", "A harvest", "The first crop brought in from the garden"),
-        ("tool", "A tool mended", "A broken tool mended at the camp, not lost"),
+        ("tool", "A tool mended", "A broken tool mended at the camp, not lost, or one forged"),
         ("apprentice", "An apprentice trained", "Someone taught a level of a skill ashore, by a mentor or a workplace's lead"),
         ("trade", "Stable trade", "A people of the coast who trust the camp and have traded with it"),
         ("season", "The first season", "The first season survived (judged on its day)"),
@@ -206,7 +206,7 @@ public sealed partial class SimulationRunner
             "storehouse" => StorehouseStands,
             "homes" => HutBerths > 0 && HutBerths >= Ashore().Count,
             "harvest" => Since(ChronicleEntryKind.Harvested),
-            "tool" => Since(ChronicleEntryKind.ToolMended),
+            "tool" => Since(ChronicleEntryKind.ToolMended) || Since(ChronicleEntryKind.ToolMade),
             "apprentice" => Since(ChronicleEntryKind.SkillImproved, e => e.Get(ChronicleParameters.From) is { Length: > 0 }),
             "trade" => Campaign.World?.Communities.Values.Any(c => c.Met && c.Trust >= 20 && c.Grievance < 25 && c.Received.Values.Sum() >= 3) == true,
             "season" => camp.Survived == true,
@@ -268,6 +268,7 @@ public sealed partial class SimulationRunner
             if (people > 0 && berths < people) bad.Add($"{people - berths} with no cover at night");
             else if (people > 0 && HutBerths >= people) good.Add("dry huts for all");
             if (CookhouseStands) good.Add("hot food from the cookhouse");
+            if (StandingOf(b => b.Chapel).Any()) good.Add("Sunday kept at the chapel");
             if (HouseholdsWithoutHomes > 0) bad.Add(HouseholdsWithoutHomes == 1 ? "a household with no house of its own" : $"{HouseholdsWithoutHomes} households with no house of their own");
             else if (Campaign.Households.Count > 0) good.Add("every household in a house of its own");
             foreach (var reached in camp.Milestones.Where(m => now - m.Value <= 7 * SimulationClock.TicksPerDay))

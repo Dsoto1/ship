@@ -131,6 +131,9 @@ public sealed record TaskDefinition
     /// <summary>Ashore (R7): mends a broken tool at the workshop.</summary>
     public bool MendsTool { get; init; }
 
+    /// <summary>Makes, from what it consumes, the tool the camp is shortest of (a forge's work).</summary>
+    public bool ForgesTool { get; init; }
+
     /// <summary>Ashore (R7): makes good the worst-kept building.</summary>
     public bool RepairsBuilding { get; init; }
 

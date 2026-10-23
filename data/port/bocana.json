@@ -356,6 +356,14 @@
    "looks": "seasoned oak, straight-grained."
   },
   {
+   "item": "item.iron",
+   "quantity": 5,
+   "price": 40,
+   "stock": 6,
+   "soldPerDay": 0,
+   "looks": "Biscayan bar iron, a hand broad, stamped at the forge."
+  },
+  {
    "item": "item.axe",
    "quantity": 1,
    "price": 45,

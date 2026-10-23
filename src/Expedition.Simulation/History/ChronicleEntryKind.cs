@@ -321,6 +321,9 @@ public enum ChronicleEntryKind
     /// <summary>A child was born at the camp (step P; characters: the child, then the mother).</summary>
     ChildBorn,
 
+    /// <summary>A tool forged at the camp (parameters: to = the tool).</summary>
+    ToolMade,
+
     /// <summary>Someone worn out went home on the relief ship when the charter was revoked (step P).</summary>
     WentHome,
 }
