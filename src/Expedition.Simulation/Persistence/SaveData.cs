@@ -76,6 +76,9 @@ public sealed record SaveData
     /// <summary>Whether the crew are on short rations. Added in format 12.</summary>
     public required bool Rationing { get; init; }
 
+    /// <summary>Whether the short rations are emergency rations. Added in format 43.</summary>
+    public bool EmergencyRations { get; init; }
+
     /// <summary>Items whose spoiling the crew has found. Added in format 20.</summary>
     public IReadOnlyList<string> SpoilageNoted { get; init; } = [];
 
@@ -905,6 +908,18 @@ public sealed record CampData
 
     /// <summary>The palisade ordered. Added in format 41.</summary>
     public bool PalisadeOrdered { get; init; }
+
+    /// <summary>The working day (a <see cref="Shore.WorkHours"/> name). Added in format 43.</summary>
+    public string Hours { get; init; } = nameof(Shore.WorkHours.Normal);
+
+    /// <summary>Days of food kept in hand. Added in format 43.</summary>
+    public int ReserveFoodDays { get; init; } = 4;
+
+    /// <summary>Days of water kept in hand. Added in format 43.</summary>
+    public int ReserveWaterDays { get; init; } = 4;
+
+    /// <summary>The milestones reached, and when. Added in format 43.</summary>
+    public IReadOnlyDictionary<string, long> Milestones { get; init; } = new Dictionary<string, long>();
 
     /// <summary>The world around the camp (R8), or null. Added in format 41.</summary>
     public WorldData? World { get; init; }

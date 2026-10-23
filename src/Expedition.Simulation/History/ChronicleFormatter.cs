@@ -77,9 +77,24 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
                 "HoveTo" => "The captain ordered the ship hove to, to ride it out.",
                 _ => "The captain ordered sail set for the weather.",
             },
-            ChronicleEntryKind.RationingChanged => entry.Get(ChronicleParameters.To) == "short"
-                ? "The captain put the crew on short rations."
-                : "The crew are back on full rations.",
+            ChronicleEntryKind.RationingChanged => entry.Get(ChronicleParameters.To) switch
+            {
+                "short" => "The captain put the crew on short rations.",
+                "emergency" => "The captain put the crew on emergency rations: water once a day, food every other day.",
+                _ => "The crew are back on full rations.",
+            },
+            ChronicleEntryKind.MilestoneReached => entry.Get(ChronicleParameters.To) switch
+            {
+                "water" => "The camp has reliable water of its own.",
+                "storehouse" => "The first storehouse stands: the stores are off the ground and dry.",
+                "homes" => "There are dry berths in huts for everyone ashore.",
+                "harvest" => "The first harvest is in.",
+                "tool" => "A broken tool was mended at the camp instead of lost.",
+                "apprentice" => "Someone has been taught a skill ashore: the camp trains its own.",
+                "trade" => "A people of the coast trust the camp and trade with it.",
+                "season" => "The first season is survived.",
+                var other => $"A milestone: {other}.",
+            },
             ChronicleEntryKind.HullStruck =>
                 $"A heavy sea struck {Ship()} and opened a seam (hull down {entry.Get(ChronicleParameters.Damage)}, now {entry.Get(ChronicleParameters.Level)}%).",
             ChronicleEntryKind.RiggingCarriedAway => entry.Get(ChronicleParameters.To) == "yard"

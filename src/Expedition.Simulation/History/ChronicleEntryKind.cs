@@ -305,4 +305,7 @@ public enum ChronicleEntryKind
 
     /// <summary>The camp moved to another site (step 2; parameters: from = the old site's name, to = the new one's, need = how many came, level = kg carried).</summary>
     CampMoved,
+
+    /// <summary>A self-sufficiency milestone reached (step C; parameters: to = the milestone).</summary>
+    MilestoneReached,
 }

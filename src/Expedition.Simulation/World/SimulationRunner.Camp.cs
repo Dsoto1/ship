@@ -51,8 +51,6 @@ public sealed partial class SimulationRunner
     private const int BoatSailcloth = 2;
 
     // Days of water and of food ashore the hands keep fetching and gathering towards.
-    private const double WaterDaysWanted = 4;
-    private const double FoodDaysWanted = 4;
 
     /// <summary>The landing site's description, once ashore.</summary>
     public ShoreSite? CampSite => Campaign.Camp is { } camp && Content.Shore is { } shore ? shore.Site(camp.Site) : null;
@@ -203,7 +201,7 @@ public sealed partial class SimulationRunner
             return;
         }
 
-        var duties = camp.Priorities.SelectMany(p => PriorityTasks[p]).Where(Content.Tasks.ContainsKey).ToList();
+        var duties = WorkedPriorities(camp).SelectMany(p => PriorityTasks[p]).Where(Content.Tasks.ContainsKey).ToList();
         foreach (var person in Ashore())
         {
             Campaign.SetDuties(person.Id, duties);
@@ -233,13 +231,13 @@ public sealed partial class SimulationRunner
             "fire" => Planned(CampWorks.Fire) < 1,
             "fire_low" => camp.Work(CampWorks.Fire) >= 1 && camp.FireUntil < Campaign.Clock.Tick + SimulationClock.TicksPerHour,
             "cooking" => camp.Work(CampWorks.Fire) >= 1 && camp.FireUntil > Campaign.Clock.Tick,
-            "water" => CampWater() is not null && Content.Drinks.Sum(d => store.Count(d.Id) * d.ThirstRelief) < WaterDaysWanted * people * DailyThirst,
+            "water" => CampWater() is not null && Content.Drinks.Sum(d => store.Count(d.Id) * d.ThirstRelief) < camp.ReserveWaterDays * people * DailyThirst,
             "land" => camp.Afloat.Count > 0 && !Raining,
             "cover" => Planned(CampWorks.Cover) < 1 && Content.Foods.Any(f => store.Count(f.Id) > 0),
             "latrine" => Planned(CampWorks.Latrine) < 1,
             "palisade" => camp.PalisadeOrdered && Planned(CampWorks.Palisade) < 1,
             "forage" => camp.Choices.Forage && CampFood() is not null
-                        && Content.Foods.Sum(f => store.Count(f.Id) * f.HungerRelief) < FoodDaysWanted * people * DailyHunger,
+                        && Content.Foods.Sum(f => store.Count(f.Id) * f.HungerRelief) < camp.ReserveFoodDays * people * DailyHunger,
             "scout" => camp.Choices.SendScouts && NextFind(camp, site) is not null
                        && !Campaign.ActiveTasks.Values.Any(t => Content.Tasks[t.DefinitionId].Scouts),
             _ => SettlementWants(need, task),

@@ -86,6 +86,19 @@ public sealed record CampChoices
     public bool Forage { get; init; } = true;
 }
 
+/// <summary>How long the camp's working day is (step C).</summary>
+public enum WorkHours
+{
+    /// <summary>The day's work ends three hours sooner, and hands rest sooner: less done, less strain.</summary>
+    Short,
+
+    /// <summary>As the work has always been.</summary>
+    Normal,
+
+    /// <summary>Three hours more of it, and hands work on more tired: more done, and it tells on them.</summary>
+    Long,
+}
+
 /// <summary>How much a project matters against the others (ECONOMY_LOOP §29): the hands take the highest first.</summary>
 public enum ProjectPriority
 {
@@ -402,6 +415,22 @@ public sealed class CampState
 
     /// <summary>True while the captain wants the palisade raised (R8).</summary>
     public bool PalisadeOrdered { get; internal set; }
+
+    /// <summary>The camp's working day (step C, ECONOMY_LOOP §34).</summary>
+    public WorkHours Hours { get; internal set; } = WorkHours.Normal;
+
+    /// <summary>Days of food the camp keeps in hand before it stops gathering more (§34).</summary>
+    public int ReserveFoodDays { get; internal set; } = 4;
+
+    /// <summary>Days of water the camp keeps in hand before it stops fetching more.</summary>
+    public int ReserveWaterDays { get; internal set; } = 4;
+
+    private readonly SortedDictionary<string, long> _milestones = new(StringComparer.Ordinal);
+
+    /// <summary>The self-sufficiency milestones reached, and when (§44).</summary>
+    public IReadOnlyDictionary<string, long> Milestones => _milestones;
+
+    internal void Reached(string milestone, long tick) => _milestones.TryAdd(milestone, tick);
 
     /// <summary>The first season judged, true when it was survived; null before.</summary>
     public bool? Survived { get; internal set; }

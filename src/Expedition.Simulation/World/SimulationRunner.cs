@@ -532,8 +532,10 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             return false;
         }
 
+        // Ashore the camp's working day moves when the day's work may still be begun.
         var hour = Campaign.Clock.TimeOfDay.TotalHours;
-        return when.StartBetween is not { } windows || windows.Any(w => hour >= w[0] && hour < w[1]);
+        var shift = Campaign.Camp is not null ? DayEndShift : 0;
+        return when.StartBetween is not { } windows || windows.Any(w => hour >= w[0] && hour < w[1] + shift);
     }
 
     /// <summary>
@@ -1105,8 +1107,15 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         RecordRates(character.Id, NeedLedger.Baseline, Content.Rules.BaselineNeedsPerHour);
         if (Campaign.Rationing)
         {
-            character.Needs.Apply(RationingStress, HoursPerTick);
-            RecordRates(character.Id, RationingSource, RationingStress);
+            // Emergency rations weigh twice as heavy.
+            var rationing = Campaign.EmergencyRations ? RationingStress + RationingStress : RationingStress;
+            character.Needs.Apply(rationing, HoursPerTick);
+            RecordRates(character.Id, RationingSource, rationing);
+        }
+
+        if (Campaign.Camp is not null && Campaign.Placements.TryGetValue(character.Id, out var ashore) && ashore.LocationId == CampLocation)
+        {
+            WorkingDayStrain(character, definition is { IsRest: false });
         }
         if (definition is not null)
         {
@@ -1290,7 +1299,7 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
         // half the usual. The stores last longer, but hunger and thirst climb day by day.
         var minuteOfDay = Campaign.Clock.Tick % SimulationClock.TicksPerDay;
         var mayEat = !Campaign.Rationing ? character.Needs.Hunger >= rules.EatAtHunger
-            : minuteOfDay == RationFoodHour * SimulationClock.TicksPerHour && character.Needs.Hunger > 0;
+            : minuteOfDay == RationFoodHour * SimulationClock.TicksPerHour && character.Needs.Hunger > 0 && FoodDay;
         var mayDrink = !Campaign.Rationing ? character.Needs.Thirst >= rules.DrinkAtThirst
             : minuteOfDay == RationWaterHour * SimulationClock.TicksPerHour && character.Needs.Thirst > 0;
         if (mayEat)

@@ -379,7 +379,8 @@ public sealed partial class SimulationRunner
         }
 
         Campaign.Rationing = on;
-        Campaign.Record(ChronicleEntryKind.RationingChanged, [new(ChronicleParameters.To, on ? "short" : "full")]);
+        Campaign.EmergencyRations &= on;
+        Campaign.Record(ChronicleEntryKind.RationingChanged, [new(ChronicleParameters.To, !on ? "full" : Campaign.EmergencyRations ? "emergency" : "short")]);
         return CommandResult.Ok();
     }
 

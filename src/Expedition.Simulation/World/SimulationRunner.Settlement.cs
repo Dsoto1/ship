@@ -540,6 +540,7 @@ public sealed partial class SimulationRunner
 
         var hour = Campaign.Clock.TimeOfDay.TotalHours;
         var day = CampDay;
+        StepCommunity(camp);
         if (CookhouseStands)
         {
             camp.FireUntil = Campaign.Clock.Tick + (long)(campRules.FireHours * SimulationClock.TicksPerHour);

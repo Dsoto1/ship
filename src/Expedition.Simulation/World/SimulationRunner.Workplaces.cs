@@ -224,7 +224,7 @@ public sealed partial class SimulationRunner
 
         // Out of the hours the work is begun in: night, or too late in the day to begin it.
         var hour = Campaign.Clock.TimeOfDay.TotalHours;
-        if (task.DutyWhen?.StartBetween is { Count: > 0 } windows && !windows.Any(w => hour >= w[0] && hour < w[1]))
+        if (task.DutyWhen?.StartBetween is { Count: > 0 } windows && !windows.Any(w => hour >= w[0] && hour < w[1] + DayEndShift))
         {
             var next = windows.Select(w => w[0]).Order().FirstOrDefault(h => h > hour, windows.Min(w => w[0]));
             return $"{(hour >= 20 || hour < 5 ? "Night" : "Too late in the day")}: {task.Name.ToLowerInvariant()} is begun again at {(int)next:00}:00.";

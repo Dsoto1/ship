@@ -194,7 +194,7 @@ public class SaveLoadTests
         });
         var migrations = new Dictionary<int, Func<JsonObject, JsonObject>>
         {
-            [42] = root =>
+            [43] = root =>
             {
                 root["phase"] = root["stage"]!.DeepClone();
                 root.Remove("stage");
@@ -202,7 +202,7 @@ public class SaveLoadTests
             },
         };
 
-        var loaded = SaveSerializer.Deserialize(formatOne, TestContent.Create(), migrations, currentVersion: 43);
+        var loaded = SaveSerializer.Deserialize(formatOne, TestContent.Create(), migrations, currentVersion: 44);
 
         Assert.Equal(CampaignPhase.Voyage, loaded.Phase);
         Assert.Equal(current, SaveSerializer.Serialize(loaded));
@@ -214,9 +214,9 @@ public class SaveLoadTests
         var json = SaveSerializer.Serialize(StormDamagedVoyage().Campaign);
 
         var ex = Assert.Throws<SaveLoadException>(() =>
-            SaveSerializer.Deserialize(json, TestContent.Create(), new Dictionary<int, Func<JsonObject, JsonObject>>(), currentVersion: 43));
+            SaveSerializer.Deserialize(json, TestContent.Create(), new Dictionary<int, Func<JsonObject, JsonObject>>(), currentVersion: 44));
 
-        Assert.Contains("no upgrade from format 42", ex.Message);
+        Assert.Contains("no upgrade from format 43", ex.Message);
     }
 
     [Fact]

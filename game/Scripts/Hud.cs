@@ -1140,17 +1140,22 @@ public partial class Hud : CanvasLayer
                 string.Join(", ", living.Where(SimulationRunner.SickOrHurt).Select(c => c.Name)) + ": sick or hurt.\nClick for the roster (P).", PanelId.People));
         }
 
-        var strain = living.Count == 0 ? 0 : living.Average(c => c.Needs.Stress);
-        var (word, severity) = strain switch
-        {
-            < 30 => ("Good", Severity.Positive),
-            < 50 => ("Fair", Severity.Information),
-            < 70 => ("Low", Severity.Attention),
-            _ => ("Breaking", Severity.Critical),
-        };
-        chips.Add((Ui.IconMorale, $"Morale {word}", severity,
-            $"How the company bears it: the strain they carry, on average {strain:0} of 100. Rest, food, shelter and fair treatment ease it.", PanelId.People));
+        var community = runner.Community();
+        var severity = ConditionSeverity(community.Word);
+        chips.Add((Ui.IconMorale, $"Morale {community.Word}", severity,
+            $"How the company bears it: the strain they carry, on average {community.Strain:0} of 100.\n"
+            + string.Join("\n", community.Causes.Select(c => $"{(c.Good ? "+" : "−")} {c.Text}")), runner.Campaign.Camp is not null ? PanelId.Ship : PanelId.People));
     }
+
+    // The colour of the community's word.
+    private static Severity ConditionSeverity(string word) => word switch
+    {
+        "Good" => Severity.Positive,
+        "Steady" => Severity.Information,
+        "Strained" => Severity.Attention,
+        "Low" => Severity.Urgent,
+        _ => Severity.Critical,
+    };
 
     private Button _belowButton = null!;
 
@@ -1232,11 +1237,11 @@ public partial class Hud : CanvasLayer
 
         else if (campaign.Camp is { } camp && runner.Content.Shore?.Settlement is { } settling)
         {
-            var (food, water) = runner.SupplyForecast();
-            chips.Add((Ui.IconFood, $"Food {food:0} d", food < 7 ? Severity.Critical : food < 20 ? Severity.Attention : Severity.Information,
-                $"About {food:0} days of food in the stores at the everyday rate, before what is gathered, fished and grown.\nClick for the stores (C).", PanelId.Cargo));
-            chips.Add((Ui.IconWater, $"Water {water:0} d", water < 3 ? Severity.Critical : water < 8 ? Severity.Attention : Severity.Information,
-                $"About {water:0} days of water kept, before what is fetched.\nClick for the stores (C).", PanelId.Cargo));
+            var (foodLow, foodHigh, waterLow, waterHigh) = runner.SupplyRange();
+            chips.Add((Ui.IconFood, $"Food {SimulationRunner.DaysRange(foodLow, foodHigh)}", foodLow < 7 ? Severity.Critical : foodLow < 20 ? Severity.Attention : Severity.Information,
+                $"Food in the stores for {SimulationRunner.DaysRange(foodLow, foodHigh)} as the rations serve it, from hard work to the everyday rate, before what is gathered, fished and grown.\nClick for the stores (C).", PanelId.Cargo));
+            chips.Add((Ui.IconWater, $"Water {SimulationRunner.DaysRange(waterLow, waterHigh)}", waterLow < 3 ? Severity.Critical : waterLow < 8 ? Severity.Attention : Severity.Information,
+                $"Water kept for {SimulationRunner.DaysRange(waterLow, waterHigh)}, before what is fetched.\nClick for the stores (C).", PanelId.Cargo));
             AddCompany(runner, chips, "People");
             var day = runner.CampDay;
             chips.Add((Ui.IconSeason, runner.StormAshore ? "Storm" : runner.WetSeason ? "Wet" : $"Dry, {Math.Max(0, settling.WetFromDay - day):0} d",
@@ -2870,6 +2875,42 @@ public partial class Hud : CanvasLayer
         season.AddChild(_campSeason);
 
         // How the settlement stands, in bars (the style guide's settlement overview).
+        // The community (step C): how it stands and why; the captain's policies; the milestones.
+        var community = Ui.Card(_campBox, "The community", "How the company bears it, and why.");
+        var condition = new HBoxContainer();
+        community.AddChild(condition);
+        _communityWord = Ui.Title("", Ui.TextDisplay - 2);
+        condition.AddChild(_communityWord);
+        _communityStrain = Ui.Text("", Ui.TextMeta, Ui.InkSoft);
+        _communityStrain.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+        condition.AddChild(_communityStrain);
+        _communityCauses = new VBoxContainer();
+        _communityCauses.AddThemeConstantOverride("separation", 1);
+        community.AddChild(_communityCauses);
+
+        var policies = Ui.Card(_campBox, "Policies", "The camp's rules, kept until changed.");
+        Segmented(policies, "Rations", "supplies", ["Full", "Short", "Emergency"],
+            ["Eat and drink when hungry and thirsty.", "Food and water once a day each, about half: the stores last longer; hunger, thirst and strain climb.", "Water once a day, food every other day: for the worst; the strain is doubled."],
+            i => _runner?.SetRations((Rations)i), () => (int)(_runner?.Rations ?? Rations.Full));
+        Segmented(policies, "Working day", "time", ["Short", "Normal", "Long"],
+            ["The day's work ends three hours sooner and hands rest sooner: less done, less strain, some ease.", "As the work has always been.", "Three hours more of it and hands work on more tired: more done, and it tells on them."],
+            i => _runner?.SetWorkHours((WorkHours)i), () => (int)(_runner?.Campaign.Camp?.Hours ?? WorkHours.Normal));
+        string[] days = [.. SimulationRunner.ReserveChoices.Select(d => $"{d} days")];
+        Segmented(policies, "Keep food", "food", days,
+            [.. SimulationRunner.ReserveChoices.Select(d => $"Gather and fish until {d} days of food are in hand; below half of it, food comes first.")],
+            i => _runner?.SetReserves(SimulationRunner.ReserveChoices[i], _runner.Campaign.Camp?.ReserveWaterDays ?? 4),
+            () => Math.Max(0, SimulationRunner.ReserveChoices.ToList().IndexOf(_runner?.Campaign.Camp?.ReserveFoodDays ?? 4)));
+        Segmented(policies, "Keep water", "water", days,
+            [.. SimulationRunner.ReserveChoices.Select(d => $"Fetch water until {d} days of it are in hand; below half of it, water comes first.")],
+            i => _runner?.SetReserves(_runner.Campaign.Camp?.ReserveFoodDays ?? 4, SimulationRunner.ReserveChoices[i]),
+            () => Math.Max(0, SimulationRunner.ReserveChoices.ToList().IndexOf(_runner?.Campaign.Camp?.ReserveWaterDays ?? 4)));
+
+        var milestones = Ui.Card(_campBox, "Self-sufficiency", "What would let the camp stand on its own.");
+        _milestoneRows = new VBoxContainer();
+        _milestoneRows.AddThemeConstantOverride("separation", Ui.SpaceXs);
+        milestones.AddChild(_milestoneRows);
+        _communityCards = [community.GetParent<Control>(), policies.GetParent<Control>(), milestones.GetParent<Control>()];
+
         var overview = Ui.Card(_campBox, "Settlement overview");
         foreach (var name in new[] { "Food", "Water", "Shelter", "Tools", "Health", "Morale" })
         {
@@ -2976,11 +3017,14 @@ public partial class Hud : CanvasLayer
         _campCharter = Ui.Text("", Ui.TextMeta + 1, Ui.Ink, 340);
         charter.AddChild(_campCharter);
         // The overview and the build menu first; the coast and the charter under the season, where they are seen.
-        _campBox.MoveChild(overview.GetParent(), 0);
-        _campBox.MoveChild(build.GetParent(), 1);
-        _campBox.MoveChild(_workplacesCard, 2);
-        _campBox.MoveChild(world.GetParent(), 4);
-        _campBox.MoveChild(charter.GetParent(), 5);
+        _campBox.MoveChild(_communityCards[0], 0);
+        _campBox.MoveChild(overview.GetParent(), 1);
+        _campBox.MoveChild(_communityCards[1], 2);
+        _campBox.MoveChild(build.GetParent(), 3);
+        _campBox.MoveChild(_workplacesCard, 4);
+        _campBox.MoveChild(_communityCards[2], 5);
+        _campBox.MoveChild(world.GetParent(), 7);
+        _campBox.MoveChild(charter.GetParent(), 8);
 
         var known = Ui.Card(_campBox, "What we know of the place", "Pale lines are not yet seen for certain.");
         _campKnown = new VBoxContainer();
@@ -3230,6 +3274,109 @@ public partial class Hud : CanvasLayer
     ];
 
     private readonly Dictionary<string, Gauge> _campGauges = [];
+    private Label _communityWord = null!;
+    private Label _communityStrain = null!;
+    private VBoxContainer _communityCauses = null!;
+    private VBoxContainer _milestoneRows = null!;
+    private Control[] _communityCards = [];
+    private readonly List<(Button[] Buttons, Func<int> Current)> _segments = [];
+    private string _communityShown = "";
+
+    // A policy as a row of segments: its name, then one button for each choice, the one in force lit.
+    private void Segmented(VBoxContainer parent, string name, string icon, string[] choices, string[] tips, Action<int> chosen, Func<int> current)
+    {
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", Ui.SpaceS);
+        parent.AddChild(row);
+        row.AddChild(Ui.Icon(icon, 18));
+        var label = Ui.Text(name, Ui.TextBody, Ui.Ink);
+        label.CustomMinimumSize = new Vector2(96, 0);
+        row.AddChild(label);
+        var group = new ButtonGroup();
+        var buttons = new Button[choices.Length];
+        for (var i = 0; i < choices.Length; i++)
+        {
+            var index = i;
+            var button = Ui.Button(Ui.ButtonKind.Tab, choices[i], tips[i], () => { chosen(index); _communityShown = ""; }, toggle: true);
+            button.ButtonGroup = group;
+            button.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            button.AddThemeFontOverride("font", Ui.SansSemibold);
+            button.AddThemeFontSizeOverride("font_size", Ui.TextMeta + 1);
+            row.AddChild(button);
+            buttons[i] = button;
+        }
+
+        _segments.Add((buttons, current));
+    }
+
+    // The community's condition, the policies in force, the milestones.
+    private void RefreshCommunity(SimulationRunner runner, CampState camp)
+    {
+        foreach (var (buttons, current) in _segments)
+        {
+            var on = current();
+            for (var i = 0; i < buttons.Length; i++)
+            {
+                buttons[i].SetPressedNoSignal(i == on);
+            }
+        }
+
+        var condition = runner.Community();
+        var milestones = runner.Milestones();
+        var key = condition.Word + string.Join("|", condition.Causes) + string.Join("|", milestones.Select(m => m.Reached));
+        _communityStrain.Text = $"strain {condition.Strain:0} of 100";
+        if (key == _communityShown)
+        {
+            return;
+        }
+
+        _communityShown = key;
+        _communityWord.Text = condition.Word;
+        _communityWord.AddThemeColorOverride("font_color", Ui.Of(ConditionSeverity(condition.Word)) is var c && c == Ui.Ink ? Ui.Gold : c);
+        foreach (var child in _communityCauses.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        foreach (var cause in condition.Causes)
+        {
+            var row = new HBoxContainer();
+            row.AddThemeConstantOverride("separation", Ui.SpaceS);
+            row.AddChild(Ui.Text(cause.Good ? "+" : "−", Ui.TextBody, cause.Good ? Ui.Of(Severity.Positive) : Ui.Of(Severity.Attention)));
+            row.AddChild(Ui.Text(Capital(cause.Text), Ui.TextBody, Ui.Ink, 320));
+            _communityCauses.AddChild(row);
+        }
+
+        if (condition.Causes.Count == 0)
+        {
+            _communityCauses.AddChild(Ui.Text("Nothing weighs on them much, and nothing much lifts them.", Ui.TextMeta + 1, Ui.InkSoft, 340));
+        }
+
+        foreach (var child in _milestoneRows.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        foreach (var milestone in milestones)
+        {
+            var row = new HBoxContainer { TooltipText = milestone.Wants, MouseFilter = Control.MouseFilterEnum.Stop };
+            row.AddThemeConstantOverride("separation", Ui.SpaceS);
+            var box = new PanelContainer { CustomMinimumSize = new Vector2(18, 18), MouseFilter = Control.MouseFilterEnum.Ignore, SizeFlagsVertical = Control.SizeFlags.ShrinkCenter };
+            box.AddThemeStyleboxOverride("panel", Ui.Box(Ui.InsetGround, milestone.Reached is null ? Ui.Rule : Ui.Of(Severity.Positive), 1, 1));
+            if (milestone.Reached is not null)
+            {
+                box.AddChild(Ui.Icon("tick", 14, Ui.Of(Severity.Positive)));
+            }
+
+            row.AddChild(box);
+            var words = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore };
+            words.AddThemeConstantOverride("separation", -3);
+            row.AddChild(words);
+            words.AddChild(Ui.Text(milestone.Title, Ui.TextBody, milestone.Reached is null ? Ui.Ink : Ui.Of(Severity.Positive)));
+            words.AddChild(Ui.Text(milestone.Reached is { } at ? $"Reached day {at / SimulationClock.TicksPerDay + 1}." : milestone.Wants, Ui.TextMeta, Ui.InkSoft, 300));
+            _milestoneRows.AddChild(row);
+        }
+    }
     private readonly Dictionary<string, Button> _buildCards = [];
     private TextureRect _buildIcon = null!;
     private Label _buildName = null!;
@@ -3305,8 +3452,9 @@ public partial class Hud : CanvasLayer
     {
         var living = runner.Campaign.Crew.Where(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated).ToList();
         var (food, water) = runner.SupplyForecast();
-        _campGauges["Food"].Set(food / 60 * 100, $"{food:0} days", food < 7 ? Severity.Critical : food < 20 ? Severity.Attention : Severity.Positive, "Days of food in the stores at the everyday rate");
-        _campGauges["Water"].Set(water / 30 * 100, $"{water:0} days", water < 3 ? Severity.Critical : water < 8 ? Severity.Attention : Severity.Positive, "Days of water kept");
+        var (foodLow, foodHigh, waterLow, waterHigh) = runner.SupplyRange();
+        _campGauges["Food"].Set(foodHigh / 60 * 100, SimulationRunner.DaysRange(foodLow, foodHigh), food < 7 ? Severity.Critical : food < 20 ? Severity.Attention : Severity.Positive, "Days of food in the stores at the everyday rate");
+        _campGauges["Water"].Set(waterHigh / 30 * 100, SimulationRunner.DaysRange(waterLow, waterHigh), water < 3 ? Severity.Critical : water < 8 ? Severity.Attention : Severity.Positive, "Days of water kept");
         var berths = (int)camp.Work(CampWorks.Shelter) + runner.HutBerths;
         _campGauges["Shelter"].Set(living.Count == 0 ? 100 : 100.0 * berths / living.Count, $"{berths} of {living.Count} berths", berths >= living.Count ? Severity.Positive : Severity.Attention, "Berths under cover, shelters and huts");
         var store = runner.Campaign.SharedStore;
@@ -3318,9 +3466,9 @@ public partial class Hud : CanvasLayer
         var fit = living.Count(c => !SimulationRunner.SickOrHurt(c));
         _campGauges["Health"].Set(living.Count == 0 ? 0 : 100.0 * fit / living.Count, fit == living.Count ? "all well" : $"{living.Count - fit} sick or hurt",
             fit == living.Count ? Severity.Positive : (living.Count - fit) * 3 >= living.Count ? Severity.Urgent : Severity.Attention, "The sick and hurt, of the living");
-        var strain = living.Count == 0 ? 0 : living.Average(c => c.Needs.Stress);
-        _campGauges["Morale"].Set(100 - strain, strain < 30 ? "good" : strain < 50 ? "fair" : strain < 70 ? "low" : "breaking",
-            strain < 30 ? Severity.Positive : strain < 50 ? Severity.Information : strain < 70 ? Severity.Attention : Severity.Critical, "How the company bears it: the strain they carry");
+        var community = runner.Community();
+        _campGauges["Morale"].Set(100 - community.Strain, community.Word.ToLowerInvariant(), ConditionSeverity(community.Word) is var bearing && bearing == Severity.Information ? Severity.Positive : bearing,
+            "How the company bears it: the community card above says why");
         if (_buildChosen is null)
         {
             ChooseBuilding(BuildMenu[0].Id);
@@ -3335,6 +3483,7 @@ public partial class Hud : CanvasLayer
         }
 
         RefreshOverview(runner, camp);
+        RefreshCommunity(runner, camp);
 
         var hours = (runner.Campaign.Clock.Tick - camp.Landed) / (double)SimulationClock.TicksPerHour;
         var people = runner.Campaign.Crew.Count(c => c.SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated);

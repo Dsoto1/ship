@@ -95,6 +95,9 @@ public sealed class CampaignState
     /// <summary>True while the crew are on short rations.</summary>
     public bool Rationing { get; internal set; }
 
+    /// <summary>True when the short rations are emergency rations: food only every other day (step C).</summary>
+    public bool EmergencyRations { get; internal set; }
+
     /// <summary>Items whose spoiling has been found and recorded: each is recorded once.</summary>
     public IReadOnlySet<string> SpoilageNoted => _spoilageNoted;
 

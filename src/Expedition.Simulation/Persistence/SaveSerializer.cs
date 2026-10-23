@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 42;
+    public const int CurrentSchemaVersion = 43;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -194,6 +194,10 @@ public static class SaveSerializer
 
                 return root;
             },
+
+            // Format 43 added the camp's policies and milestones (step C): an older camp works the usual day,
+            // keeps four days of each, and has reached none yet (they are reached again when next met).
+            [42] = root => root,
 
             // Format 42 gave workplaces leads and priorities, and buildings their history (step W): an older
             // camp's projects are of ordinary priority with no lead, and its buildings have no history.
@@ -708,6 +712,7 @@ public static class SaveSerializer
                 .Select(pair => new EventRecordData { Event = pair.Key, Count = pair.Value.Count, LastTick = pair.Value.LastTick }).ToList(),
             LastEventTick = campaign.LastEventTick,
             Rationing = campaign.Rationing,
+            EmergencyRations = campaign.EmergencyRations,
             SpoilageNoted = campaign.SpoilageNoted.Order(StringComparer.Ordinal).ToList(),
             Life = SaveLife(campaign.Life),
             Wreck = campaign.Wreck is { } wreck
@@ -1139,6 +1144,7 @@ public static class SaveSerializer
             data.EventHistory.Select(e => new KeyValuePair<string, Events.EventRecord>(e.Event, new Events.EventRecord(e.Count, e.LastTick))),
             data.LastEventTick);
         campaign.Rationing = data.Rationing;
+        campaign.EmergencyRations = data.Rationing && data.EmergencyRations;
         foreach (var item in data.SpoilageNoted)
         {
             if (!content.Items.ContainsKey(item) || !campaign.NoteSpoilage(item))
@@ -1631,6 +1637,8 @@ public static class SaveSerializer
         Regrowing = camp.Regrowing.Select(r => (Cell: Shore.CampState.Cell(r.Key), r.Value))
             .Select(r => new RegrowingCellData { X = r.Cell.X, Y = r.Cell.Y, Tree = r.Value.Tree, Since = r.Value.Since }).ToList(),
         PalisadeOrdered = camp.PalisadeOrdered,
+        Hours = camp.Hours.ToString(), ReserveFoodDays = camp.ReserveFoodDays, ReserveWaterDays = camp.ReserveWaterDays,
+        Milestones = new SortedDictionary<string, long>(camp.Milestones.ToDictionary(), StringComparer.Ordinal),
     };
 
     private static Shore.CampState RestoreCamp(CampData savedCamp, CampaignState campaign, GameContent content)
@@ -1748,6 +1756,16 @@ public static class SaveSerializer
         camp.Trips = savedCamp.Trips;
         camp.Reported = savedCamp.Reported;
         camp.PalisadeOrdered = savedCamp.PalisadeOrdered;
+        if (!Enum.TryParse<Shore.WorkHours>(savedCamp.Hours, out var hours) || savedCamp.ReserveFoodDays is < 1 or > 60 || savedCamp.ReserveWaterDays is < 1 or > 60)
+        {
+            throw new SaveLoadException("The camp's working day or reserves are not ones there can be.");
+        }
+
+        (camp.Hours, camp.ReserveFoodDays, camp.ReserveWaterDays) = (hours, savedCamp.ReserveFoodDays, savedCamp.ReserveWaterDays);
+        foreach (var (milestone, tick) in savedCamp.Milestones)
+        {
+            camp.Reached(milestone, tick);
+        }
         camp.StoreId = savedCamp.StoreId;
         if (camp.StoreId is { } store && !campaign.Inventories.ContainsKey(new InventoryId(store)))
         {
