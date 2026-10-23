@@ -79,6 +79,12 @@ public sealed record SaveData
     /// <summary>Whether the short rations are emergency rations. Added in format 43.</summary>
     public bool EmergencyRations { get; init; }
 
+    /// <summary>The households. Added in format 44.</summary>
+    public IReadOnlyList<HouseholdData> Households { get; init; } = [];
+
+    /// <summary>The next household's number. Added in format 44.</summary>
+    public int NextHousehold { get; init; } = 1;
+
     /// <summary>Items whose spoiling the crew has found. Added in format 20.</summary>
     public IReadOnlyList<string> SpoilageNoted { get; init; } = [];
 
@@ -170,6 +176,37 @@ public sealed record CharacterData
 
     /// <summary>Condition IDs.</summary>
     public required IReadOnlyList<string> Conditions { get; init; }
+
+    /// <summary>When they were born, if at the camp. Added in format 44.</summary>
+    public long? Born { get; init; }
+
+    /// <summary>How they came to the company (born, relief, brennish or a people's ID), or null. Added in format 44.</summary>
+    public string? Came { get; init; }
+
+    /// <summary>When they came to the company, or null. Added in format 44.</summary>
+    public long? Joined { get; init; }
+}
+
+/// <summary>A saved household. Added in format 44.</summary>
+public sealed record HouseholdData
+{
+    /// <summary>Its number.</summary>
+    public required int Id { get; init; }
+
+    /// <summary>The couple's character IDs.</summary>
+    public required IReadOnlyList<int> Adults { get; init; }
+
+    /// <summary>Their children's character IDs.</summary>
+    public IReadOnlyList<int> Children { get; init; } = [];
+
+    /// <summary>When they made a home together.</summary>
+    public required long Formed { get; init; }
+
+    /// <summary>The people whose customs they keep, or null.</summary>
+    public string? Customs { get; init; }
+
+    /// <summary>When a child is due, or null.</summary>
+    public long? Due { get; init; }
 }
 
 /// <summary>Saved need values.</summary>

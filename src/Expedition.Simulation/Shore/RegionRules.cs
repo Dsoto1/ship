@@ -121,6 +121,12 @@ public sealed record CommunityDefinition
     /// <summary>Its language.</summary>
     public required string Language { get; init; }
 
+    /// <summary>Names given to its men, for those who come to live at the camp (step P).</summary>
+    public IReadOnlyList<string> MaleNames { get; init; } = [];
+
+    /// <summary>Names given to its women.</summary>
+    public IReadOnlyList<string> FemaleNames { get; init; } = [];
+
     /// <summary>How it stands to the newcomers at first, -100..100.</summary>
     public double Trust { get; init; }
 
@@ -216,6 +222,18 @@ public sealed record CharterRules
 
     /// <summary>Whether the factory must be fortified.</summary>
     public bool Palisade { get; init; } = true;
+
+    /// <summary>Settlers the relief ship brings when the charter is kept (step P).</summary>
+    public int SettlersKept { get; init; } = 8;
+
+    /// <summary>And when it is kept in part.</summary>
+    public int SettlersInPart { get; init; } = 4;
+
+    /// <summary>The settlers' names, men and women, in pairs: the first of each list are husband and wife.</summary>
+    public IReadOnlyList<string> SettlerMen { get; init; } = [];
+
+    /// <summary>See <see cref="SettlerMen"/>.</summary>
+    public IReadOnlyList<string> SettlerWomen { get; init; } = [];
 }
 
 /// <summary>An interloper's ship that puts in at the cove (SETTLEMENT §32).</summary>
@@ -238,4 +256,7 @@ public sealed record BrennishRules
 
     /// <summary>What she pays for a log of embrawood.</summary>
     public int BuysLog { get; init; } = 25;
+
+    /// <summary>Names of her hands, for one who leaves her for the camp (step P).</summary>
+    public IReadOnlyList<string> Names { get; init; } = [];
 }

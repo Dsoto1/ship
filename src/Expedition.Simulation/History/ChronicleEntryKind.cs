@@ -308,4 +308,19 @@ public enum ChronicleEntryKind
 
     /// <summary>A self-sufficiency milestone reached (step C; parameters: to = the milestone).</summary>
     MilestoneReached,
+
+    /// <summary>Someone came to live at the camp (step P; parameters: from = relief, brennish or the people they are of).</summary>
+    Joined,
+
+    /// <summary>Two people made a home together (step P; parameters: from = the people whose customs the household keeps, if any).</summary>
+    HouseholdFormed,
+
+    /// <summary>A woman of the camp is expecting a child (step P).</summary>
+    Expecting,
+
+    /// <summary>A child was born at the camp (step P; characters: the child, then the mother).</summary>
+    ChildBorn,
+
+    /// <summary>Someone worn out went home on the relief ship when the charter was revoked (step P).</summary>
+    WentHome,
 }

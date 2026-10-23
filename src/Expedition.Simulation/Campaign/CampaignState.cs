@@ -92,6 +92,18 @@ public sealed class CampaignState
     /// <summary>When the last event fired (long.MinValue / 2 if none has).</summary>
     public long LastEventTick { get; internal set; } = long.MinValue / 2;
 
+    private readonly List<Household> _households = [];
+
+    /// <summary>The households ashore: couples, and their children (step P, ECONOMY_LOOP §32).</summary>
+    public IReadOnlyList<Household> Households => _households;
+
+    internal void AddHousehold(Household household) => _households.Add(household);
+
+    internal void RemoveHousehold(Household household) => _households.Remove(household);
+
+    /// <summary>The number the next household takes.</summary>
+    public int NextHousehold { get; internal set; } = 1;
+
     /// <summary>True while the crew are on short rations.</summary>
     public bool Rationing { get; internal set; }
 

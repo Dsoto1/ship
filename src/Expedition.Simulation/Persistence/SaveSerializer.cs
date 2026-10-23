@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 43;
+    public const int CurrentSchemaVersion = 44;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -194,6 +194,10 @@ public static class SaveSerializer
 
                 return root;
             },
+
+            // Format 44 added households, and when and how each person came (step P): an older company has no
+            // households, and everyone in it came with the ship.
+            [43] = root => root,
 
             // Format 43 added the camp's policies and milestones (step C): an older camp works the usual day,
             // keeps four days of each, and has reached none yet (they are reached again when next met).
@@ -627,6 +631,9 @@ public static class SaveSerializer
                     }
                     : null,
                 Conditions = c.Health.Conditions.Order(StringComparer.Ordinal).ToList(),
+                Born = c.Born,
+                Came = c.Came,
+                Joined = c.Joined,
             }).ToList(),
             Inventories = campaign.Inventories.Values.OrderBy(i => i.Id.Value, StringComparer.Ordinal).Select(i => new InventoryData
             {
@@ -713,6 +720,12 @@ public static class SaveSerializer
             LastEventTick = campaign.LastEventTick,
             Rationing = campaign.Rationing,
             EmergencyRations = campaign.EmergencyRations,
+            Households = campaign.Households.Select(h => new HouseholdData
+            {
+                Id = h.Id, Adults = h.Adults.Select(a => a.Value).ToList(), Children = h.Children.Select(c => c.Value).ToList(),
+                Formed = h.Formed, Customs = h.Customs, Due = h.Due,
+            }).ToList(),
+            NextHousehold = campaign.NextHousehold,
             SpoilageNoted = campaign.SpoilageNoted.Order(StringComparer.Ordinal).ToList(),
             Life = SaveLife(campaign.Life),
             Wreck = campaign.Wreck is { } wreck
@@ -1145,6 +1158,28 @@ public static class SaveSerializer
             data.LastEventTick);
         campaign.Rationing = data.Rationing;
         campaign.EmergencyRations = data.Rationing && data.EmergencyRations;
+        foreach (var saved in data.Households)
+        {
+            if (saved.Adults.Concat(saved.Children).Any(id => !campaign.Characters.ContainsKey(new CharacterId(id))))
+            {
+                throw new SaveLoadException($"Household {saved.Id} has someone who is not in the company.");
+            }
+
+            var household = new Household { Id = saved.Id, Formed = saved.Formed, Customs = saved.Customs, Due = saved.Due };
+            foreach (var adult in saved.Adults)
+            {
+                household.AddAdult(new CharacterId(adult));
+            }
+
+            foreach (var child in saved.Children)
+            {
+                household.AddChild(new CharacterId(child));
+            }
+
+            campaign.AddHousehold(household);
+        }
+
+        campaign.NextHousehold = Math.Max(data.NextHousehold, data.Households.Select(h => h.Id + 1).DefaultIfEmpty(1).Max());
         foreach (var item in data.SpoilageNoted)
         {
             if (!content.Items.ContainsKey(item) || !campaign.NoteSpoilage(item))
@@ -1475,6 +1510,9 @@ public static class SaveSerializer
         character.StatusId = saved.StatusId;
         character.Membership = ParseEnum<Membership>(saved.Membership, "membership");
         character.PersonId = saved.PersonId;
+        character.Born = saved.Born;
+        character.Came = saved.Came;
+        character.Joined = saved.Joined;
 
         if (saved.Appearance is { } looks)
         {

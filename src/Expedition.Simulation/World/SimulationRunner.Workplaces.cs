@@ -46,7 +46,7 @@ public sealed partial class SimulationRunner
         }
 
         if (lead is { } id && (!Campaign.Characters.TryGetValue(id, out var person) || person.Membership != Membership.Crew
-                               || person.SurvivalState is SurvivalState.Dead or SurvivalState.Missing))
+                               || person.SurvivalState is SurvivalState.Dead or SurvivalState.Missing || IsChild(person)))
         {
             return CommandResult.Rejected("Only one of the company can lead the work.");
         }

@@ -49,7 +49,7 @@ public sealed class Character
     public string Name { get; }
 
     /// <summary>Age in years.</summary>
-    public int Age { get; }
+    public int Age { get; internal set; }
 
     /// <summary>Place of origin, for example a city or region.</summary>
     public string Origin { get; }
@@ -65,6 +65,18 @@ public sealed class Character
 
     /// <summary>Sex, recorded as a fact.</summary>
     public Sex Sex { get; set; }
+
+    /// <summary>When they were born, for those born during the campaign; null for the rest (step P).</summary>
+    public long? Born { get; set; }
+
+    /// <summary>
+    /// How they came to the company after it sailed, for the record (ECONOMY_LOOP §45): <c>born</c>, <c>relief</c>,
+    /// <c>brennish</c>, or the community they came from (<c>people.mahenu</c>); null for those who sailed.
+    /// </summary>
+    public string? Came { get; set; }
+
+    /// <summary>When they came; null for those who sailed.</summary>
+    public long? Joined { get; set; }
 
     /// <summary>Languages spoken and how well.</summary>
     public Languages Languages { get; } = new();

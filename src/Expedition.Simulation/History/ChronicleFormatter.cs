@@ -95,6 +95,18 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
                 "season" => "The first season is survived.",
                 var other => $"A milestone: {other}.",
             },
+            ChronicleEntryKind.Joined => entry.Get(ChronicleParameters.From) switch
+            {
+                "relief" => $"{who} came ashore from the relief ship, to settle.",
+                "brennish" => $"{who} came over from the Brennish ship, to stay.",
+                var from => $"{who} of {CommunityName(from)} came to live at the camp.",
+            },
+            ChronicleEntryKind.HouseholdFormed => entry.Get(ChronicleParameters.From) is { } customs
+                ? $"{who} and {Other(entry)} made a home together, as is the custom of {CommunityName(customs)}."
+                : $"{who} and {Other(entry)} made a home together.",
+            ChronicleEntryKind.Expecting => $"{who} is expecting a child.",
+            ChronicleEntryKind.ChildBorn => $"A child was born to {Other(entry)}: {who}.",
+            ChronicleEntryKind.WentHome => $"{who} took passage home on the relief ship.",
             ChronicleEntryKind.HullStruck =>
                 $"A heavy sea struck {Ship()} and opened a seam (hull down {entry.Get(ChronicleParameters.Damage)}, now {entry.Get(ChronicleParameters.Level)}%).",
             ChronicleEntryKind.RiggingCarriedAway => entry.Get(ChronicleParameters.To) == "yard"
@@ -245,7 +257,9 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
                 "in part" => $"The relief ship has come. The charter is kept in part: {entry.Get(ChronicleParameters.Level)} logs go aboard, and the Company will want {entry.Get(ChronicleParameters.Reason)}.",
                 _ => $"The relief ship has come, and the Company's charter is revoked{(string.IsNullOrEmpty(entry.Get(ChronicleParameters.Reason)) ? "" : $": wanting {entry.Get(ChronicleParameters.Reason)}")}.",
             },
-            ChronicleEntryKind.WetSeason => "The wet season has come: rain most days now, the ground turning to mud.",
+            ChronicleEntryKind.WetSeason => entry.Get(ChronicleParameters.To) == "dry"
+                ? "The rains are over: the dry season has come again."
+                : "The wet season has come: rain most days now, the ground turning to mud.",
             ChronicleEntryKind.StormAshore => "A storm, the change of the season: wind and rain off the sea, and no work out of doors.",
             ChronicleEntryKind.SeasonJudged => entry.Get(ChronicleParameters.Outcome) == "survived"
                 ? $"The first season is survived: {entry.Get(ChronicleParameters.Need)} alive, dry, fed and watered."
@@ -469,5 +483,7 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
         double.TryParse(level, NumberStyles.Float, CultureInfo.InvariantCulture, out var q) ? q >= 0.75 ? "sound" : q >= 0.5 ? "fair" : "rough" : "fair";
 
     // A people's name, from the coast's rules.
+    private string Other(ChronicleEntry entry) => entry.Characters.Count > 1 ? Name(entry.Characters[1]) : "another";
+
     private string CommunityName(string? id) => id is not null && content.Shore?.Region?.Community(id) is { } community ? community.Name : "the coast's people";
 }

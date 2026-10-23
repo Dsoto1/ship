@@ -73,6 +73,8 @@
     "scarce": 0.2,
     // The first wet season: it comes this many days after landing, rain this many times as often.
     "wetFromDay": 20,
+    // The wet season's length, and the year: it comes again each year (step P).
+    "wetDays": 170, "yearDays": 365,
     "wetRain": 4,
     // The storm at the change of season.
     "stormDay": 30,

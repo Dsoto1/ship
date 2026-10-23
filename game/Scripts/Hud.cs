@@ -577,16 +577,7 @@ public partial class Hud : CanvasLayer
         _unread = 0;
         _formatter = new ChronicleFormatter(runner.Campaign, runner.Content);
 
-        // Only the expedition's own people are listed; the port's people are met in the world.
-        foreach (var character in runner.Campaign.Characters.Values.Where(c => c.Membership == Membership.Crew).OrderBy(c => c.Id))
-        {
-            var id = character.Id;
-            var button = Ui.Button("", "Select; Focus shows them on deck", () => CharacterChosen?.Invoke(id));
-            button.Alignment = HorizontalAlignment.Left;
-            button.ClipText = true;
-            _crewList.AddChild(button);
-            _crewButtons.Add((button, id));
-        }
+        AddCrewButtons(runner);
 
         // Work that is only done ashore (at the forge, in the tavern) is not ordered aboard.
         var aboard = runner.Content.Locations.Values.Where(l => l.Id != runner.Content.Port?.Location).SelectMany(l => l.Spots).SelectMany(s => s.Tasks).ToHashSet();
@@ -1244,10 +1235,10 @@ public partial class Hud : CanvasLayer
                 $"Water kept for {SimulationRunner.DaysRange(waterLow, waterHigh)}, before what is fetched.\nClick for the stores (C).", PanelId.Cargo));
             AddCompany(runner, chips, "People");
             var day = runner.CampDay;
-            chips.Add((Ui.IconSeason, runner.StormAshore ? "Storm" : runner.WetSeason ? "Wet" : $"Dry, {Math.Max(0, settling.WetFromDay - day):0} d",
+            chips.Add((Ui.IconSeason, runner.StormAshore ? "Storm" : runner.WetSeason ? "Wet" : $"Dry, {runner.DryDaysLeft:0} d",
                 runner.StormAshore ? Severity.Urgent : runner.WetSeason ? Severity.Attention : Severity.Information,
                 runner.StormAshore ? "A storm is blowing: no work out of doors." : runner.WetSeason ? "The wet season: rain most days; roofing waits for dry spells."
-                    : $"The dry season, about {Math.Max(0, settling.WetFromDay - day):0} days left of it by the signs: build and roof before the rains.", PanelId.Ship));
+                    : $"The dry season, about {runner.DryDaysLeft:0} days left of it by the signs: build and roof before the rains.", PanelId.Ship));
         }
 
         while (_status.GetChildCount() > chips.Count)
@@ -1914,6 +1905,11 @@ public partial class Hud : CanvasLayer
         _crewList.AddThemeConstantOverride("separation", 2);
         roster.AddChild(_crewList);
 
+        var homes = Ui.Card(body, "Households", "ashore");
+        _householdCard = (Control)homes.GetParent();
+        _households = Ui.Text("", Ui.TextMeta + 1, Ui.Ink, 340);
+        homes.AddChild(_households);
+
         var person = Ui.Card(body);
         _name = Ui.Heading("");
         person.AddChild(_name);
@@ -1989,8 +1985,62 @@ public partial class Hud : CanvasLayer
         needs.AddChild(_pack);
     }
 
+    // Only the expedition's own people are listed; the port's people are met in the world. Those who join
+    // ashore, settlers and children, are added as they come.
+    private void AddCrewButtons(SimulationRunner runner)
+    {
+        var listed = _crewButtons.Select(b => b.Id).ToHashSet();
+        foreach (var character in runner.Campaign.Characters.Values.Where(c => c.Membership == Membership.Crew && !listed.Contains(c.Id)).OrderBy(c => c.Id))
+        {
+            var id = character.Id;
+            var button = Ui.Button("", "Select; Focus shows them on deck", () => CharacterChosen?.Invoke(id));
+            button.Alignment = HorizontalAlignment.Left;
+            button.ClipText = true;
+            _crewList.AddChild(button);
+            _crewButtons.Add((button, id));
+        }
+    }
+
+    // The households ashore: who lives with whom, their children, and whose customs they keep.
+    private void RefreshHouseholds(SimulationRunner runner)
+    {
+        var homes = runner.Campaign.Households;
+        _householdCard.Visible = runner.Campaign.Camp is not null;
+        if (!_householdCard.Visible)
+        {
+            return;
+        }
+
+        string Name(CharacterId id) => runner.Campaign.Characters[id] is { } c ? (c.SurvivalState == SurvivalState.Dead ? $"{c.Name} †" : c.Name) : "?";
+        var lines = homes.Select(h =>
+        {
+            var line = string.Join(" and ", h.Adults.Select(Name));
+            if (h.Children.Count > 0)
+            {
+                line += $"; {string.Join(", ", h.Children.Select(id => $"{Name(id)} ({runner.Campaign.Characters[id].Age})"))}";
+            }
+
+            if (h.Customs is { } customs && runner.Content.Shore?.Region?.Community(customs) is { } people)
+            {
+                line += $" · keeps the customs of {people.Name}";
+            }
+
+            return h.Due is not null ? line + " · a child expected" : line;
+        }).ToList();
+        var joined = runner.Campaign.Characters.Values.Count(c => c.Came is not null and not "born");
+        var children = runner.Campaign.Characters.Values.Count(c => SimulationRunner.IsChild(c) && c.SurvivalState != SurvivalState.Dead);
+        _households.Text = (lines.Count == 0 ? "No households yet: a home is made when two are fond of each other, or one of a people of the coast comes to live with one of the company."
+            : string.Join("\n", lines)) + $"\n\n{joined} have joined since the landing; {children} children, who do no work.";
+    }
+
     private void RefreshRoster(SimulationRunner runner, CharacterId? selected)
     {
+        if (runner.Campaign.Characters.Values.Count(c => c.Membership == Membership.Crew) != _crewButtons.Count)
+        {
+            AddCrewButtons(runner);
+        }
+
+        RefreshHouseholds(runner);
         foreach (var (button, id) in _crewButtons)
         {
             var character = runner.Campaign.Characters[id];
@@ -2018,6 +2068,25 @@ public partial class Hud : CanvasLayer
         }
     }
 
+    private static string HouseholdLine(SimulationRunner runner, Character character)
+    {
+        var came = character.Came switch
+        {
+            "born" => "Born at the camp",
+            "relief" => "Came with the relief ship to settle",
+            "brennish" => "Came over from the Brennish ship",
+            { } people => $"Came to live at the camp from {runner.Content.Shore?.Region?.Community(people)?.Name ?? "the coast"}",
+            null => null,
+        };
+        var home = runner.HouseholdOf(character.Id) is { } h
+            ? h.Adults.Contains(character.Id)
+                ? runner.PartnerOf(character.Id) is { } partner ? $"Lives with {partner.Name}" + (h.Children.Count > 0 ? $", {h.Children.Count} {(h.Children.Count == 1 ? "child" : "children")}" : "") : "Keeps a household"
+                : $"Child of {string.Join(" and ", h.Adults.Select(a => runner.Campaign.Characters[a].Name))}"
+            : null;
+        var parts = new[] { came, home }.OfType<string>().ToList();
+        return parts.Count == 0 ? "" : string.Join(" · ", parts) + "\n";
+    }
+
     private static string WatchShort(Expedition.Simulation.Voyage.Watch watch) => watch switch
     {
         Expedition.Simulation.Voyage.Watch.Starboard => "stbd",
@@ -2027,6 +2096,8 @@ public partial class Hud : CanvasLayer
     };
 
     private Label _lifeText = null!;
+    private Control _householdCard = null!;
+    private Label _households = null!;
     private OptionButton _learnSkill = null!;
     private OptionButton _learnFrom = null!;
     private Label _learnText = null!;
@@ -2163,7 +2234,8 @@ public partial class Hud : CanvasLayer
         var status = character.StatusId is not null && runner.Content.Statuses.TryGetValue(character.StatusId, out var standing) ? standing.Name.ToLowerInvariant() : "standing unknown";
         var health = character.Health.Value >= 90 ? "well" : character.Health.Value >= 60 ? "hurt" : character.Health.Value >= 30 ? "badly hurt" : "close to death";
         _details.Text =
-            $"{character.Age}, {status}, from {character.Origin}\n" +
+            $"{character.Age}{(SimulationRunner.IsChild(character) ? " (a child)" : "")}, {status}, from {character.Origin}\n" +
+            HouseholdLine(runner, character) +
             (character.Appearance is { } looks ? $"{AppearanceText.Describe(looks, runner.Content.Appearance)}\n" : "") +
             $"{character.SurvivalState} · {health}\n\n" +
             $"{(isCaptain ? "Skills" : "Skills, as far as you know")}:\n{(skills.Length == 0 ? "  not yet known: watch them work, or ask" : (isCaptain ? "  " + skills : skills))}\n" +
@@ -3042,7 +3114,7 @@ public partial class Hud : CanvasLayer
         var day = runner.CampDay;
         var season = runner.StormAshore ? "A storm is blowing: no work out of doors."
             : runner.WetSeason ? "The wet season: rain most days; roofing waits for dry spells."
-            : $"The dry season, about {Math.Max(0, rules.WetFromDay - day):0} days left of it by the signs.";
+            : $"The dry season, about {runner.DryDaysLeft:0} days left of it by the signs.";
         var judged = camp.Survived switch
         {
             true => " The first season is survived.",

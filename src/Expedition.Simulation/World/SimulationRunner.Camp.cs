@@ -204,7 +204,7 @@ public sealed partial class SimulationRunner
         var duties = WorkedPriorities(camp).SelectMany(p => PriorityTasks[p]).Where(Content.Tasks.ContainsKey).ToList();
         foreach (var person in Ashore())
         {
-            Campaign.SetDuties(person.Id, duties);
+            Campaign.SetDuties(person.Id, IsChild(person) ? [] : duties);
         }
     }
 

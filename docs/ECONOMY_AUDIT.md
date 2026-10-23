@@ -78,10 +78,10 @@ against the code as it stands: **Yes**, **Partly** or **No**, with where it is o
 | Spec | Missing | Where it goes |
 |---|---|---|
 | §31 Workplaces led by a person | **Done for buildings (WORKPLACES.md):** a lead's skill sets pace, quality and safety, and teaches. Not yet for the hearth, the water or the garden as a whole. | Step W, later |
-| §32 Households (now approved: couples and children) | No households, dwellings by family, or shared possessions. | Step P |
+| §32 Households (now approved: couples and children) | **Done in part (PEOPLE.md):** couples, among the company and with people of the coast by their customs; children. | Dwellings by family, shared possessions. |
 | §33 Community condition | **Done (COMMUNITY.md):** a word with its causes, + and −. The causes explain the strain; most do not yet add to it themselves. | Step P (households, belonging) |
-| §39 Population growth as people | Only Gaspar Lezo joins. The relief ship brings no settlers. | Step P |
-| §40 Distribution | People eat from the one pool. Kitchens and households distributing comes with households. | Step P |
+| §39 Population growth as people | **Done (PEOPLE.md):** the relief ship's settlers, people of the coast who come to live, a Brennish hand who stays, births; the worn out go home if the charter is revoked. | Castaways. |
+| §40 Distribution | People eat from the one pool. | Kitchens and households distributing. |
 | §45 Buildings carry history | **Done (WORKPLACES.md):** when built, under whom, by whom, from what, storms and repairs. A person's record does not yet say what they led. | Step P |
 
 ## The guardrails (§58)
@@ -123,7 +123,7 @@ first camp then a better site, people joining, couples and children, playing on 
    - Rations ashore, working hours and reserve targets (§18, §34).
    - Self-sufficiency milestones (§44).
    - Projections given in ranges.
-4. **Step P, people.**
+4. **Step P, people.** *Done in first pass (PEOPLE.md); distribution and castaways still to come.*
    - **Arrivals:** the relief ship's settlers when the charter is kept, castaways, Brennish deserters, people of
      the coast who choose to come (§39).
    - **Households:** couples, including with people of the coast, shaped by both sides' customs (§32).

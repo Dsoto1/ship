@@ -269,6 +269,11 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             return CommandResult.Rejected($"{character.Name} is {character.SurvivalState} and cannot work.");
         }
 
+        if (!task.IsRest && IsChild(character))
+        {
+            return CommandResult.Rejected($"{character.Name} is a child, and does not work.");
+        }
+
         if (!task.IsRest && character.Needs.Fatigue >= Content.Rules.MaxFatigueToStartWork)
         {
             return CommandResult.Rejected($"{character.Name} is too exhausted to work and needs rest.");

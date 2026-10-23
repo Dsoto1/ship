@@ -44,7 +44,13 @@ public sealed partial class SimulationRunner
     public double CampDay => Campaign.Camp is { } camp ? (Campaign.Clock.Tick - camp.Landed) / (double)SimulationClock.TicksPerDay : 0;
 
     /// <summary>True once the wet season has come.</summary>
-    public bool WetSeason => Campaign.Camp is not null && Settling is { } rules && CampDay >= rules.WetFromDay;
+    public bool WetSeason => Campaign.Camp is not null && Settling is { } rules && CampDay >= rules.WetFromDay
+                             && (CampDay - rules.WetFromDay) % rules.YearDays < rules.WetDays;
+
+    /// <summary>Days of the dry season left before the rains come, or 0 in the wet (the year turns, step P).</summary>
+    public double DryDaysLeft => Settling is not { } rules || WetSeason ? 0
+        : CampDay < rules.WetFromDay ? rules.WetFromDay - CampDay
+        : rules.YearDays - (CampDay - rules.WetFromDay) % rules.YearDays;
 
     /// <summary>True while the storm at the change of season blows.</summary>
     public bool StormAshore => Campaign.Camp is not null && Settling is { } rules && CampDay >= rules.StormDay && CampDay < rules.StormDay + rules.StormHours / 24.0;
@@ -547,9 +553,15 @@ public sealed partial class SimulationRunner
         }
 
         // The wet season comes, and the storm at its change.
-        if (Math.Abs(day - rules.WetFromDay) < 1.0 / 48)
+        // Each year: the rains, then the dry.
+        var intoYear = day >= rules.WetFromDay ? (day - rules.WetFromDay) % rules.YearDays : -1;
+        if (intoYear >= 0 && intoYear < 1.0 / 48)
         {
             Campaign.Record(ChronicleEntryKind.WetSeason, []);
+        }
+        else if (intoYear >= 0 && Math.Abs(intoYear - rules.WetDays) < 1.0 / 48)
+        {
+            Campaign.Record(ChronicleEntryKind.WetSeason, [new(ChronicleParameters.To, "dry")]);
         }
 
         if (StormAshore)
@@ -610,6 +622,7 @@ public sealed partial class SimulationRunner
     // the buildings.
     private void StepSettlementDay(CampState camp, SettlementRules rules)
     {
+        StepPeopleDay(camp);
         var wet = WetSeason;
 
         // Spoilage by place: in the open, under a sail, in the storehouse (as well as it was made).

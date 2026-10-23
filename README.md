@@ -84,6 +84,7 @@ assets so it imports them.
 - [`docs/SETTLEMENT_EXPERIENCE.md`](docs/SETTLEMENT_EXPERIENCE.md) — the landfall and settlement brief (D-024)
 - [`docs/UI_UX_DESIGN_SYSTEM.md`](docs/UI_UX_DESIGN_SYSTEM.md) — the interface authority for every phase (D-026)
 - [`docs/COMMUNITY.md`](docs/COMMUNITY.md) — the community's condition and why, rations, working day and reserves ashore, self-sufficiency milestones
+- [`docs/PEOPLE.md`](docs/PEOPLE.md) — settlers and newcomers, households and their customs, children, the years past day 180
 - [`docs/WORKPLACES.md`](docs/WORKPLACES.md) — workplaces led by a person, project priorities, why work stops, buildings' history
 - [`docs/UI_STYLE.md`](docs/UI_STYLE.md) — the look: navy, gold and parchment, the fonts, icons, top bar and tabs
 - [`docs/PORT_VISUAL_PASS.md`](docs/PORT_VISUAL_PASS.md) — the port visual slice: audit, approved plan (D-026)

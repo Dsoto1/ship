@@ -77,6 +77,8 @@
   "communities": [
     {
       "id": "people.mahenu", "name": "Mahenu", "people": "the Ahuneri", "place": "place.mahenu", "language": "language.ahuneri",
+      // Names given among the Ahuneri (step P: those who come to live at the camp).
+      "maleNames": ["Tahamu", "Ekewa", "Sarohe", "Inatu", "Werama", "Kahori"], "femaleNames": ["Narimu", "Aweta", "Hiruna", "Selawe", "Tumahi", "Oreka"],
       "trust": 8, "trade": 0.8, "caution": 0.35, "giftCulture": true, "firstVisitDay": 3, "visitEveryDays": 6,
       "about": "Mahenu traded logs and food to the old factory for iron. Its council is for renewed trade, on its own terms; it has not forgotten the ship that took people from a fishing camp.",
       "persons": [
@@ -88,6 +90,7 @@
     },
     {
       "id": "people.oruwai", "name": "Oruwai", "people": "the Ahuneri", "place": "place.oruwai", "language": "language.ahuneri",
+      "maleNames": ["Oruhe", "Mekaru", "Tewani", "Hasori"], "femaleNames": ["Iwaru", "Kemara", "Satehi", "Ruwena"],
       "trust": -6, "trade": 0.55, "caution": 0.75, "giftCulture": true, "firstVisitDay": 12, "visitEveryDays": 10,
       "about": "Oruwai holds the dye-wood and the fishing grounds at the lagoon's mouth. Its council would keep the newcomers weak and at a distance, and has reason to.",
       "persons": [
@@ -99,6 +102,7 @@
     },
     {
       "id": "people.tesiwa", "name": "Kessat", "people": "the Tesiwa", "place": "place.kessat", "language": "language.tesiwa",
+      "maleNames": ["Kesh", "Tavet", "Ulmak", "Ressin", "Doban"], "femaleNames": ["Yassi", "Tenka", "Mirrat", "Osseh", "Kalli"],
       "trust": 0, "trade": 0.7, "caution": 0.5, "giftCulture": false, "firstVisitDay": 20, "visitEveryDays": 12,
       "about": "The river people of Kessat hold the river route inland. They resent the lagoon villages' hold on the foreigners' trade, and they have been trading with the Brennish.",
       "persons": [
@@ -140,8 +144,13 @@
       "text": "Narehwa tells it all, slowly. The garrison's commander took Oruwai's people for wood; Oruwai and men of Kessat burned the factory; most of the garrison died at the gate. Two ran to Mahenu, and Mahenu would not give them up, though Oruwai still holds it against them. One died of the fever. The other, Gaspar Lezo, lives at Mahenu still, and will speak to you if you come." }
   ],
   // The Company's charter (SETTING §3), judged when the relief ship comes.
-  "charter": { "site": "coast.ceniza_headland", "reliefDay": 180, "logs": 40, "aliveShare": 0.5, "aliveAtLeast": 4, "palisade": true },
+  // The relief ship brings settlers when the charter is kept (step P), some of them families.
+  "charter": { "site": "coast.ceniza_headland", "reliefDay": 180, "logs": 40, "aliveShare": 0.5, "aliveAtLeast": 4, "palisade": true,
+    "settlersKept": 8, "settlersInPart": 4,
+    "settlerMen": ["Andrés Pardo", "Tomé Casal", "Rui Valença", "Lope Ibarra", "Marcos Seixo", "Bento Lagos", "Inácio Feo", "Diogo Ramalho"],
+    "settlerWomen": ["Leonor Pardo", "Beatriz Casal", "Inês Valença", "Catalina Ibarra", "Joana Seixo", "Mencía Lagos", "Isabel Feo", "Teresa Ramalho"] },
   // An interloper's ship at the cove (SETTLEMENT §32).
   "brennish": { "ship": "the Merle", "master": "Master Corran Hale", "arriveDay": 50, "stayDays": 12,
+    "names": ["Wat Penner", "Hob Askew", "Dickon Marle", "Ned Tolley"],
     "sells": { "item.wine_hob": 18, "item.biscuit_hob": 14, "item.axe": 70 }, "buysLog": 25 }
 }

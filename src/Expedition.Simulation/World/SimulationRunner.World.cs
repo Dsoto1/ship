@@ -797,6 +797,8 @@ public sealed partial class SimulationRunner
                 Campaign.RemovePlacement(gone.Id);
                 News($"{gone.Name} is gone from the camp, and a canoe with them. Gone to the Brennish ship, they say.");
             }
+
+            BrennishStays(ship);
         }
     }
 
@@ -1222,6 +1224,7 @@ public sealed partial class SimulationRunner
             new(ChronicleParameters.Reason, string.Join(", ", terms.Where(t => !t.Met).Select(t => t.Term))),
             new(ChronicleParameters.Level, logs.ToString(CultureInfo.InvariantCulture)),
         ]);
+        ReliefArrivals(world, Region);
     }
 
     // ================================================================ the palisade

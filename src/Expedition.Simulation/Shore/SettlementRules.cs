@@ -27,6 +27,12 @@ public sealed record SettlementRules
     /// <summary>Days after landing that the wet season comes.</summary>
     public int WetFromDay { get; init; } = 20;
 
+    /// <summary>How long the wet season lasts; then the dry, until it comes again a year on (step P).</summary>
+    public int WetDays { get; init; } = 170;
+
+    /// <summary>Days in a year.</summary>
+    public int YearDays { get; init; } = 365;
+
     /// <summary>How many times as often it rains in the wet.</summary>
     public double WetRain { get; init; } = 4;
 
