@@ -441,7 +441,7 @@ public partial class PortView : Node3D
                 break;
             case "cooperage":
                 House(left, right, back, front, new Color(0.76f, 0.68f, 0.56f), Stone, 1, 3.6f, frame: true, baseHeight);
-                AddBox(new Vector3(middleX, baseHeight + 1.4f, front + 0.04f), new Vector3(3.2f, 2.6f, 0.06f), Shadow);
+                WideDoor(middleX, baseHeight, front, 3.2f, 2.7f, Timber);
                 for (var i = 0; i < 3; i++)
                 {
                     Cask(new Vector3(right - 0.8f - i * 0.75f, baseHeight + 0.42f, front + 0.6f), false);
@@ -451,16 +451,14 @@ public partial class PortView : Node3D
                 break;
             case "smithy":
                 House(left, right, back, front, DarkStone.Lightened(0.15f), DarkStone, 1, 3.4f, frame: false, baseHeight);
-                AddBox(new Vector3(middleX, baseHeight + 1.3f, front + 0.04f), new Vector3(3f, 2.4f, 0.06f), Shadow);
+                WideDoor(middleX, baseHeight, front, 3f, 2.5f, DarkStone.Lightened(0.25f));
                 AddBox(new Vector3(right - 1.2f, baseHeight + 6.4f, (back + front) / 2f), new Vector3(1.1f, 3.2f, 1.1f), DarkStone);
                 AddChild(Smoke(new Vector3(right - 1.2f, baseHeight + 8.1f, (back + front) / 2f), dark: true));
                 AddBox(new Vector3(middleX - 0.8f, baseHeight + 0.6f, front - 0.4f), new Vector3(1.2f, 0.4f, 0.6f), new Color(1f, 0.45f, 0.12f), emissive: true);
                 Fire(new Vector3(middleX - 0.8f, baseHeight + 1.2f, front + 0.4f), 4f);
                 break;
             case "sailloft":
-                House(left, right, back, front, new Color(0.8f, 0.76f, 0.66f), Stone, 2, 3.2f, frame: true, baseHeight);
-                AddBox(new Vector3(middleX, baseHeight + 4.8f, front + 0.06f), new Vector3(2.2f, 2f, 0.08f), Timber);
-                AddBox(new Vector3(middleX, baseHeight + 1.4f, front + 0.06f), new Vector3(1.6f, 2.6f, 0.08f), Timber);
+                House(left, right, back, front, new Color(0.8f, 0.76f, 0.66f), Stone, 2, 3.2f, frame: true, baseHeight, loft: true);
                 break;
             default:
                 House(left, right, back, front, Plaster.Darkened(0.04f), Stone, 3, 3f, frame: true, baseHeight);
@@ -705,8 +703,8 @@ public partial class PortView : Node3D
         // The shell: upper floors, roof, and the front wall above the sill (windows and the door's head).
         RoomShell("room.three_anchors", () =>
         {
-            House(left, split, room, front, wall, wall, 2, Storey, frame: true, baseHeight, detail: true);
-            House(split, right, room, front, new Color(0.8f, 0.74f, 0.62f), new Color(0.8f, 0.74f, 0.62f), 3, 3f, frame: true, baseHeight, detail: true);
+            House(left, split, room, front, wall, wall, 2, Storey, frame: true, baseHeight, detail: true, ground: false);
+            House(split, right, room, front, new Color(0.8f, 0.74f, 0.62f), new Color(0.8f, 0.74f, 0.62f), 3, 3f, frame: true, baseHeight, detail: true, ground: false);
             AddBox(new Vector3(28f, baseHeight + 1.4f, front + 0.06f), new Vector3(1.0f, 2.5f, 0.08f), Timber);
             foreach (var x in new[] { 25f, 32f })
             {
@@ -840,7 +838,7 @@ public partial class PortView : Node3D
 
         RoomShell("room.chamber", () =>
         {
-            House(left, right, room, front, stone, Stone, 2, Storey, frame: false, baseHeight, detail: true);
+            House(left, right, room, front, stone, Stone, 2, Storey, frame: false, baseHeight, detail: true, ground: false);
             Arch(new Vector3(5f, baseHeight, front + 0.02f), 1.9f, 3.0f);
             for (var x = left + 0.7f; x < right; x += (right - left - 1.4f) / 4f)
             {
@@ -908,7 +906,7 @@ public partial class PortView : Node3D
 
         RoomShell("room.counting", () =>
         {
-            House(left, right, room, front, Ochre, Stone, 3, 3f, frame: true, baseHeight, detail: true);
+            House(left, right, room, front, Ochre, Stone, 3, 3f, frame: true, baseHeight, detail: true, ground: false);
             var middleX = (left + right) / 2f;
             AddBox(new Vector3(middleX, baseHeight + 3.4f, front + 0.6f), new Vector3(right - left, 0.15f, 1.2f), Timber);
             for (var x = left + 0.2f; x <= right; x += 1.7f)
@@ -987,7 +985,7 @@ public partial class PortView : Node3D
 
         RoomShell("room.chandlery", () =>
         {
-            House(left, right, room, front, wall, Stone, 2, Storey, frame: true, baseHeight, detail: true);
+            House(left, right, room, front, wall, Stone, 2, Storey, frame: true, baseHeight, detail: true, ground: false);
             var middleX = (left + right) / 2f;
             AddBox(new Vector3(50f, baseHeight + 1.6f, front + 0.06f), new Vector3(2.6f, 3.0f, 0.08f), Timber);
             AddBox(new Vector3(middleX, baseHeight + 5.5f, front + 0.06f), new Vector3(1.4f, 1.6f, 0.08f), Timber);
@@ -1064,57 +1062,268 @@ public partial class PortView : Node3D
     }
 
     // A house over a rectangle, facing south: stone ground floor, plastered storeys, a pitched tiled roof.
-    private void House(float left, float right, float back, float front, Color wall, Color plinth, int storeys, float storeyHeight, bool frame, float baseHeight, bool detail = true)
+    private void House(float left, float right, float back, float front, Color wall, Color plinth, int storeys, float storeyHeight, bool frame, float baseHeight, bool detail = true,
+        bool ground = true, bool loft = false)
     {
         var width = right - left;
         var depth = front - back;
         var height = storeys * storeyHeight;
         var centre = new Vector3((left + right) / 2f, baseHeight, (back + front) / 2f);
+        // A timber-framed house oversails its ground floor (a jetty): the upper storeys stand forward of it.
+        var jetty = frame && storeys > 1 && detail ? 0.3f : 0.05f;
+        var upperFront = front + jetty;
 
         AddBox(centre + new Vector3(0, storeyHeight / 2f, 0), new Vector3(width, storeyHeight, depth), plinth);
         if (storeys > 1)
         {
-            AddBox(centre + new Vector3(0, storeyHeight + (height - storeyHeight) / 2f, 0), new Vector3(width + 0.1f, height - storeyHeight, depth + 0.1f), wall);
+            AddBox(new Vector3(centre.X, baseHeight + storeyHeight + (height - storeyHeight) / 2f, (back - 0.05f + upperFront) / 2f),
+                new Vector3(width + 0.1f, height - storeyHeight, upperFront - back + 0.05f), wall);
         }
 
         var eave = baseHeight + height;
         var ridge = eave + Mathf.Min(depth * 0.42f, 3.6f);
-        Roof(new Vector3(left - 0.4f, eave, front + 0.5f), new Vector3(right + 0.4f, eave, front + 0.5f), ridge, centre.Z);
+        var eaveFront = Mathf.Max(front + 0.5f, upperFront + 0.3f);
+        Roof(new Vector3(left - 0.4f, eave, eaveFront), new Vector3(right + 0.4f, eave, eaveFront), ridge, centre.Z);
         Roof(new Vector3(right + 0.4f, eave, back - 0.5f), new Vector3(left - 0.4f, eave, back - 0.5f), ridge, centre.Z);
-        Gable(left, eave, ridge, back, front, centre.Z, wall);
-        Gable(right, eave, ridge, back, front, centre.Z, wall);
+        Gable(left, eave, ridge, back, upperFront, centre.Z, wall);
+        Gable(right, eave, ridge, back, upperFront, centre.Z, wall);
 
-        if (frame && storeys > 1 && detail)
+        if (!detail)
         {
-            for (var s = 1; s <= storeys; s++)
+            // Seen only far off, behind others: windows as dark openings with a sill, nothing more.
+            for (var s = 1; s < storeys; s++)
             {
-                AddBox(new Vector3(centre.X, baseHeight + s * storeyHeight, front + 0.06f), new Vector3(width + 0.1f, 0.18f, 0.08f), Timber);
+                var y = baseHeight + s * storeyHeight + storeyHeight * 0.5f;
+                foreach (var x in Bays(left, right, 2.6f))
+                {
+                    AddBox(new Vector3(x, y, upperFront + 0.02f), new Vector3(0.7f, 1.0f, 0.04f), Shadow);
+                    AddBox(new Vector3(x, y - 0.56f, upperFront + 0.06f), new Vector3(0.86f, 0.08f, 0.12f), plinth.Lightened(0.1f));
+                }
             }
 
-            for (var x = left; x <= right + 0.01f; x += 1.5f)
+            return;
+        }
+
+        // The bays: windows in the middle of each, and the timbers, where there are any, only between them.
+        var bays = Bays(left, right, 2.2f);
+        var bayWidth = width / bays.Count;
+        var surround = frame ? Timber : (wall.Lightened(0.12f) == wall ? wall.Darkened(0.08f) : wall.Lightened(0.12f));
+
+        // The ground floor: a base course along the foot, and dressed stone at the corners.
+        AddBox(new Vector3(centre.X, baseHeight + 0.22f, front + 0.04f), new Vector3(width + 0.08f, 0.44f, 0.08f), plinth.Darkened(0.12f));
+        foreach (var x in new[] { left + 0.15f, right - 0.15f })
+        {
+            for (var y = baseHeight + 0.45f; y < baseHeight + storeyHeight - 0.2f; y += 0.5f)
             {
-                AddBox(new Vector3(x, baseHeight + storeyHeight + (height - storeyHeight) / 2f, front + 0.06f), new Vector3(0.14f, height - storeyHeight, 0.08f), Timber);
+                var wide = (int)((y - baseHeight) / 0.5f) % 2 == 0 ? 0.34f : 0.22f;
+                AddBox(new Vector3(x + (x < centre.X ? wide / 2f - 0.15f : 0.15f - wide / 2f), y + 0.2f, front + 0.03f), new Vector3(wide, 0.4f, 0.06f), plinth.Lightened(0.08f));
             }
         }
 
-        for (var s = 1; s < storeys; s++)
+        if (storeys > 1)
         {
-            var y = baseHeight + s * storeyHeight + storeyHeight * 0.5f;
-            for (var x = left + 1.2f; x < right - 0.8f; x += detail ? 2f : 2.6f)
+            if (frame)
             {
-                AddBox(new Vector3(x, y, front + 0.06f), new Vector3(0.7f, 1.0f, 0.06f), Shadow);
-                if (detail)
+                // The jetty: a bressumer beam along the oversail, and a bracket under it at each post.
+                AddBox(new Vector3(centre.X, baseHeight + storeyHeight + 0.09f, upperFront + 0.05f), new Vector3(width + 0.14f, 0.22f, 0.12f), Timber);
+                for (var i = 0; i <= bays.Count; i++)
                 {
-                    AddBox(new Vector3(x - 0.55f, y, front + 0.09f), new Vector3(0.35f, 1.0f, 0.04f), Shutter);
-                    AddBox(new Vector3(x + 0.55f, y, front + 0.09f), new Vector3(0.35f, 1.0f, 0.04f), Shutter);
+                    var x = left + i * bayWidth;
+                    AddBox(new Vector3(Mathf.Clamp(x, left + 0.08f, right - 0.08f), baseHeight + storeyHeight - 0.25f, front + jetty / 2f + 0.02f),
+                        new Vector3(0.12f, 0.12f, jetty + 0.25f), Timber, rotation: new Vector3(-40, 0, 0));
+                }
+
+                // The frame: a rail at each floor and at the sills, posts at the corners and between the bays, and
+                // braces in the end panels, all standing proud of the plaster.
+                for (var s = 1; s <= storeys; s++)
+                {
+                    AddBox(new Vector3(centre.X, baseHeight + s * storeyHeight - (s == storeys ? 0.1f : 0f), upperFront + 0.05f), new Vector3(width + 0.1f, 0.16f, 0.1f), Timber);
+                    if (s < storeys)
+                    {
+                        AddBox(new Vector3(centre.X, baseHeight + s * storeyHeight + storeyHeight * 0.5f - 0.62f, upperFront + 0.04f), new Vector3(width + 0.08f, 0.1f, 0.08f), Timber);
+                    }
+                }
+
+                for (var i = 0; i <= bays.Count; i++)
+                {
+                    var x = Mathf.Clamp(left + i * bayWidth, left + 0.07f, right - 0.07f);
+                    AddBox(new Vector3(x, baseHeight + storeyHeight + (height - storeyHeight) / 2f, upperFront + 0.05f), new Vector3(0.16f, height - storeyHeight, 0.1f), Timber);
+                }
+
+                for (var s = 1; s < storeys; s++)
+                {
+                    var foot = baseHeight + s * storeyHeight + 0.1f;
+                    var head = foot + storeyHeight - 0.25f;
+                    foreach (var (x0, x1) in new[] { (left + 0.1f, left + Mathf.Min(0.75f, bayWidth * 0.3f)), (right - 0.1f, right - Mathf.Min(0.75f, bayWidth * 0.3f)) })
+                    {
+                        var run = new Vector2(x1 - x0, head - foot);
+                        AddBox(new Vector3((x0 + x1) / 2f, (foot + head) / 2f, upperFront + 0.045f), new Vector3(0.12f, run.Length(), 0.08f), Timber,
+                            rotation: new Vector3(0, 0, -Mathf.RadToDeg(Mathf.Atan2(run.X, run.Y))));
+                    }
+                }
+            }
+            else
+            {
+                // A stone house: a string course at each floor.
+                for (var s = 1; s < storeys; s++)
+                {
+                    AddBox(new Vector3(centre.X, baseHeight + s * storeyHeight, upperFront + 0.05f), new Vector3(width + 0.12f, 0.14f, 0.1f), plinth.Lightened(0.06f));
+                }
+            }
+
+            var middle = bays.Count / 2;
+            for (var s = 1; s < storeys; s++)
+            {
+                var y = baseHeight + s * storeyHeight + storeyHeight * 0.5f;
+                for (var i = 0; i < bays.Count; i++)
+                {
+                    if (loft && s == storeys - 1 && i == middle)
+                    {
+                        LoftDoor(bays[i], y, upperFront, eave);
+                        continue;
+                    }
+
+                    // Every so often a bay has a door onto a balcony instead of a window.
+                    Window(new Vector3(bays[i], y, upperFront), surround, tall: s == 1 && bays.Count >= 3 && i == middle && ((int)left + s) % 3 == 0);
+                }
+            }
+
+            // The ground floor of an ordinary house: its door in the middle bay, windows in the others.
+            if (ground)
+            {
+                for (var i = 0; i < bays.Count; i++)
+                {
+                    if (i == middle)
+                    {
+                        Door(bays[i], baseHeight, front, plinth);
+                    }
+                    else
+                    {
+                        Window(new Vector3(bays[i], baseHeight + storeyHeight * 0.55f, front), plinth.Lightened(0.1f));
+                    }
                 }
             }
         }
 
-        // The east side faces the camera too: a window or two.
-        if (detail && depth > 4 && storeys > 1)
+        // Fascia and rafter ends under the front eave.
+        AddBox(new Vector3(centre.X, eave - 0.1f, eaveFront - 0.05f), new Vector3(width + 0.8f, 0.14f, 0.06f), Timber.Lightened(0.05f));
+        for (var x = left - 0.2f; x <= right + 0.2f; x += 0.6f)
         {
-            AddBox(new Vector3(right + 0.06f, baseHeight + storeyHeight * 1.5f, centre.Z), new Vector3(0.06f, 1.0f, 0.7f), Shadow);
+            AddBox(new Vector3(x, eave - 0.16f, (upperFront + eaveFront) / 2f), new Vector3(0.09f, 0.09f, eaveFront - upperFront), Timber);
+        }
+
+        // The east side faces the camera too: windows along it, and the gable's own little window.
+        if (depth > 4 && storeys > 1)
+        {
+            var count = Mathf.Max(1, (int)(depth / 3.2f));
+            for (var i = 0; i < count; i++)
+            {
+                var z = back + depth * (i + 0.5f) / count;
+                Window(new Vector3(right + 0.05f, baseHeight + storeyHeight * 1.5f, z), surround, side: true);
+            }
+        }
+
+        if (depth > 3.5f)
+        {
+            AddBox(new Vector3(right + 0.06f, eave + (ridge - eave) * 0.4f, centre.Z), new Vector3(0.05f, 0.5f, 0.4f), Shadow);
+            AddBox(new Vector3(right + 0.09f, eave + (ridge - eave) * 0.4f - 0.3f, centre.Z), new Vector3(0.08f, 0.06f, 0.56f), surround);
+        }
+    }
+
+    // A street door: the dark doorway, a plank door standing half open in it, the jambs and lintel stood
+    // forward of the wall, and a step.
+    private void Door(float x, float baseHeight, float front, Color stone)
+    {
+        const float W = 1.0f, H = 2.1f;
+        AddBox(new Vector3(x, baseHeight + H / 2f, front + 0.015f), new Vector3(W, H, 0.03f), Shadow);
+        AddBox(new Vector3(x - W / 2f + 0.2f, baseHeight + H / 2f, front + 0.25f), new Vector3(0.06f, H - 0.05f, W * 0.5f), Timber.Lightened(0.1f), rotation: new Vector3(0, 10, 0));
+        foreach (var side in new[] { -1f, 1f })
+        {
+            AddBox(new Vector3(x + side * (W / 2f + 0.08f), baseHeight + H / 2f, front + 0.06f), new Vector3(0.16f, H, 0.12f), stone.Lightened(0.08f));
+        }
+
+        AddBox(new Vector3(x, baseHeight + H + 0.1f, front + 0.07f), new Vector3(W + 0.42f, 0.2f, 0.14f), stone.Lightened(0.08f));
+        AddBox(new Vector3(x, baseHeight + 0.06f, front + 0.2f), new Vector3(W + 0.3f, 0.12f, 0.4f), stone.Darkened(0.05f));
+    }
+
+    // A workshop's wide doorway: the dark opening, posts and a heavy lintel stood forward of the wall, the
+    // two great leaves folded back against it, and a worn sill.
+    private void WideDoor(float x, float baseHeight, float front, float width, float height, Color frame)
+    {
+        AddBox(new Vector3(x, baseHeight + height / 2f, front + 0.015f), new Vector3(width, height, 0.03f), Shadow);
+        foreach (var side in new[] { -1f, 1f })
+        {
+            AddBox(new Vector3(x + side * (width / 2f + 0.1f), baseHeight + height / 2f, front + 0.08f), new Vector3(0.2f, height, 0.16f), frame);
+            AddBox(new Vector3(x + side * (width / 2f + 0.25f), baseHeight + height / 2f - 0.05f, front + 0.7f), new Vector3(0.06f, height - 0.15f, width / 2f - 0.1f),
+                Timber.Lightened(0.1f), rotation: new Vector3(0, side * 12f, 0));
+        }
+
+        AddBox(new Vector3(x, baseHeight + height + 0.14f, front + 0.09f), new Vector3(width + 0.7f, 0.28f, 0.18f), frame);
+        AddBox(new Vector3(x, baseHeight + 0.04f, front + 0.25f), new Vector3(width + 0.2f, 0.08f, 0.5f), Stone.Darkened(0.1f));
+    }
+
+    // A loft door under the eaves, its leaves open, and the hoist beam over it with its block and rope.
+    private void LoftDoor(float x, float y, float front, float eave)
+    {
+        AddBox(new Vector3(x, y, front + 0.015f), new Vector3(1.4f, 1.9f, 0.03f), Shadow);
+        foreach (var side in new[] { -1f, 1f })
+        {
+            AddBox(new Vector3(x + side * 0.78f, y, front + 0.06f), new Vector3(0.14f, 2.0f, 0.12f), Timber);
+            AddBox(new Vector3(x + side * 1.05f, y, front + 0.32f), new Vector3(0.05f, 1.85f, 0.7f), Timber.Lightened(0.08f), rotation: new Vector3(0, side * 25f, 0));
+        }
+
+        AddBox(new Vector3(x, y - 1.0f, front + 0.12f), new Vector3(1.7f, 0.12f, 0.24f), Timber);
+        AddBox(new Vector3(x, eave - 0.35f, front + 0.6f), new Vector3(0.16f, 0.16f, 1.3f), Timber);
+        AddBox(new Vector3(x, eave - 0.55f, front + 1.15f), new Vector3(0.14f, 0.24f, 0.14f), Timber.Lightened(0.1f));
+        AddBox(new Vector3(x, eave - 1.6f, front + 1.15f), new Vector3(0.025f, 2f, 0.025f), Rope);
+    }
+
+    // The middles of the bays a front of this width divides into, each about <paramref name="bay"/> wide.
+    private static List<float> Bays(float left, float right, float bay)
+    {
+        var count = Mathf.Max(1, Mathf.RoundToInt((right - left - 0.4f) / bay));
+        var width = (right - left) / count;
+        return Enumerable.Range(0, count).Select(i => left + width * (i + 0.5f)).ToList();
+    }
+
+    // A window in a wall (or, tall, a door onto a little balcony): the dark opening set back behind its
+    // surround, a sill that stands out and catches the light, a lintel, a cross of glazing bars, and the
+    // shutters folded back against the wall at an angle. On the east side it faces +X.
+    private void Window(Vector3 at, Color surround, bool tall = false, bool side = false)
+    {
+        var (w, h) = tall ? (0.8f, 1.7f) : (0.76f, 1.0f);
+        var y = tall ? at.Y - 0.25f : at.Y;
+        Vector3 Out(float across, float up, float outward) => side ? new Vector3(at.X + outward, y + up, at.Z + across) : new Vector3(at.X + across, y + up, at.Z + outward);
+        Vector3 Size(float across, float up, float outward) => side ? new Vector3(outward, up, across) : new Vector3(across, up, outward);
+        AddBox(Out(0, 0, 0.015f), Size(w, h, 0.03f), Shadow);
+        // The surround stands forward of the opening, so the opening reads as set back into the wall.
+        AddBox(Out(-w / 2f - 0.06f, 0, 0.07f), Size(0.12f, h + 0.1f, 0.1f), surround);
+        AddBox(Out(w / 2f + 0.06f, 0, 0.07f), Size(0.12f, h + 0.1f, 0.1f), surround);
+        AddBox(Out(0, h / 2f + 0.08f, 0.08f), Size(w + 0.3f, 0.14f, 0.12f), surround);
+        AddBox(Out(0, -h / 2f - 0.06f, 0.11f), Size(w + 0.34f, 0.08f, 0.2f), surround.Lightened(0.08f));
+        AddBox(Out(0, 0, 0.04f), Size(0.04f, h, 0.03f), Timber);
+        AddBox(Out(0, tall ? 0.25f : 0.08f, 0.04f), Size(w, 0.04f, 0.03f), Timber);
+        if (tall)
+        {
+            // A little balcony: a floor on brackets and a rail.
+            AddBox(Out(0, -h / 2f - 0.1f, 0.32f), Size(w + 0.7f, 0.08f, 0.55f), Timber.Lightened(0.06f));
+            AddBox(Out(0, -h / 2f + 0.45f, 0.58f), Size(w + 0.7f, 0.06f, 0.05f), Timber);
+            for (var x = -w / 2f - 0.3f; x <= w / 2f + 0.31f; x += 0.25f)
+            {
+                AddBox(Out(x, -h / 2f + 0.18f, 0.58f), Size(0.04f, 0.5f, 0.04f), Timber);
+            }
+        }
+
+        // Shutters open, hinged at the jambs and swung out from the wall.
+        foreach (var sign in new[] { -1f, 1f })
+        {
+            var leaf = w / 2f;
+            var swing = 65f * Mathf.Pi / 180f;
+            var across = sign * (w / 2f + 0.12f + Mathf.Cos(swing) * leaf / 2f);
+            var outward = 0.12f + Mathf.Sin(swing) * leaf / 2f;
+            var turn = side ? new Vector3(0, -sign * 65f + 90f, 0) : new Vector3(0, -sign * 65f, 0);
+            var position = side ? new Vector3(at.X + outward, y, at.Z + across) : new Vector3(at.X + across, y, at.Z + outward);
+            AddBox(position, new Vector3(leaf, h, 0.04f), Shutter, rotation: turn);
         }
     }
 
