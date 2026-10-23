@@ -25,6 +25,9 @@ public sealed record RegionRules
     /// <summary>The Brennish ship at the cove.</summary>
     public BrennishRules? Brennish { get; init; }
 
+    /// <summary>The privateers who work the coast (step S).</summary>
+    public PrivateerRules? Privateer { get; init; }
+
     /// <summary>A place by ID, or null.</summary>
     public RegionPlace? Place(string id) => Places.FirstOrDefault(p => p.Id == id);
 
@@ -234,6 +237,25 @@ public sealed record CharterRules
 
     /// <summary>See <see cref="SettlerMen"/>.</summary>
     public IReadOnlyList<string> SettlerWomen { get; init; } = [];
+}
+
+/// <summary>Privateers who work the coast for what a new post has (step S).</summary>
+public sealed record PrivateerRules
+{
+    /// <summary>Her name, with its article.</summary>
+    public required string Ship { get; init; }
+
+    /// <summary>Her master.</summary>
+    public required string Master { get; init; }
+
+    /// <summary>The camp's day she is first about.</summary>
+    public int FirstDay { get; init; } = 110;
+
+    /// <summary>Days before another comes.</summary>
+    public int EveryDays { get; init; } = 150;
+
+    /// <summary>What she asks to go away, in sueldos.</summary>
+    public int Demand { get; init; } = 200;
 }
 
 /// <summary>An interloper's ship that puts in at the cove (SETTLEMENT §32).</summary>

@@ -285,6 +285,8 @@ public sealed partial class SimulationRunner
             case "survivor":
                 return ("Gaspar Lezo", "A man comes down the shore from Mahenu with two of Narehwa's people: bearded, burned dark, in a Mahenu wrap and the Company's old belt. "
                     + "Gaspar Lezo, soldier of the garrison, the last of it. He talks Castrenan as if it were rusty, and Ahuneri without thinking. He has come to see the newcomers for himself.");
+            case "privateer" when Region?.Privateer is { } privateer:
+                return DescribePrivateer(privateer);
             case "brennish" when Region?.Brennish is { } ship:
                 return ($"{Capitalise(ship.Ship)}'s boat", $"A ship's boat comes in round the point under a Brennish flag: {ship.Master}, of {ship.Ship}, lying at the cove to the north. "
                     + "He has wine, biscuit and iron to sell, news a month old, and an eye on the camp's wood.");
@@ -329,6 +331,11 @@ public sealed partial class SimulationRunner
             choices.Add(new("join", "Ask him to join the camp", true, "Oruwai holds the garrison against him"));
             choices.Add(new("stay", "Leave him to Mahenu, with thanks", true, null));
             return choices;
+        }
+
+        if (meeting.Kind == "privateer" && Region?.Privateer is { } privateer)
+        {
+            return PrivateerChoices(privateer);
         }
 
         if (meeting.Kind == "brennish" && Region?.Brennish is { } ship)
@@ -479,6 +486,7 @@ public sealed partial class SimulationRunner
         {
             "theft" => Theft(world, meeting, choiceId),
             "brennish" => BrennishChoice(world, choiceId),
+            "privateer" => PrivateerChoice(world, choiceId),
             "survivor" => SurvivorChoice(world, choiceId),
             _ => Delegation(world, meeting, choiceId),
         };
@@ -840,7 +848,7 @@ public sealed partial class SimulationRunner
     // ================================================================ journeys
 
     /// <summary>True while someone is away from the camp with a party.</summary>
-    public bool Away(CharacterId id) => Campaign.World?.Journeys.Any(j => j.Members.Contains(id)) == true;
+    public bool Away(CharacterId id) => Campaign.World?.Journeys.Any(j => j.Members.Contains(id)) == true || Aboard(id);
 
     /// <summary>The way a party would go to <paramref name="placeId"/>, by routes known, and how many days: or null.</summary>
     public (IReadOnlyList<string> Path, double Days, bool Guessed)? Way(string placeId)

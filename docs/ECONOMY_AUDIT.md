@@ -66,7 +66,7 @@ against the code as it stands: **Yes**, **Partly** or **No**, with where it is o
 | §7 Same goods, continuous state | Quantity persists. Provenance only where it matters: Hob's sacks and barrels are their own items, spoil and sicken. | Containers with a history (a cask that leaked, a barrel used for water ashore). |
 | §11–12 Physical logistics, local storage | **Now kept** (THE_MOVE): each camp's stores lie in one place, the beach stack or the storehouse. What is brought in is carried there by hand, materials are taken up there on the way to the work, and between camps everything is carried. | Several stores in one camp (a workshop's tools, a cache by the work). |
 | §18 Projection and rationing | Days of food and water at sea; short rations as a standing order at sea; **rations ashore (full, short, emergency) and the camp's projections in ranges** (COMMUNITY.md). | Ranges at sea too. |
-| §22 An intact ship has a cost | The ship rides at anchor and her hull wears. | Choosing who stays aboard, and using her afterwards for fishing, trading or exploring by sea. |
+| §22 An intact ship has a cost | **Done in part (THE_SHIP.md):** who stays aboard, her upkeep and careening, fishing and coasting by sea, her guns, privateers. | Trading by sea. |
 | §28 Bottlenecks named | The camp's "still wanting" list; the first-days report; **each project says why it has stopped** (WORKPLACES.md). | For the camp's other work, not only buildings. |
 | §29–30 Priorities and delegation | Camp priorities and choices; standing orders at sea; **priorities per project, critical to paused, and leads** (WORKPLACES.md). | Leads for the camp's other work. |
 | §34 Policies | Priorities, sailcloth, scouts, foraging; **rations, the working day and reserve targets** (COMMUNITY.md). | Emergency labour, trade restrictions, exploration priority. |
@@ -129,7 +129,7 @@ first camp then a better site, people joining, couples and children, playing on 
    - **Households:** couples, including with people of the coast, shaped by both sides' customs (§32).
    - **Children and years:** births, and children growing up over years after day 180.
    - **Distribution:** by household and kitchen (§40).
-5. **Step S, the ship after landfall.**
+5. **Step S, the ship after landfall.** *Done in first pass (THE_SHIP.md); trading by sea still to come.*
    - Who stays aboard.
    - The ship fishing, trading and exploring by sea.
    - Her own upkeep (§22, §56).

@@ -357,6 +357,29 @@ public sealed class CampState
     /// <summary>True if there is a boat for landing stores.</summary>
     public bool Boat { get; internal set; } = true;
 
+    private readonly List<CharacterId> _keepers = [];
+
+    /// <summary>The ship's company: who stays aboard her at anchor to keep her (step S).</summary>
+    public IReadOnlyList<CharacterId> Keepers => _keepers;
+
+    internal void SetKeepers(IEnumerable<CharacterId> keepers)
+    {
+        _keepers.Clear();
+        _keepers.AddRange(keepers.Distinct().OrderBy(k => k.Value));
+    }
+
+    /// <summary>Guns aboard the ship (step S).</summary>
+    public int Guns { get; internal set; }
+
+    /// <summary>Guns landed and mounted on the gun platform.</summary>
+    public int GunsAshore { get; internal set; }
+
+    /// <summary>What the ship is away doing (fish, coast), or null while she lies at anchor.</summary>
+    public string? Errand { get; internal set; }
+
+    /// <summary>When she is back from her errand.</summary>
+    public long ErrandBack { get; internal set; }
+
     /// <summary>The inventory the camp's stores lie in, where they lie: the shared store while it is the camp.</summary>
     public string? StoreId { get; internal set; }
 

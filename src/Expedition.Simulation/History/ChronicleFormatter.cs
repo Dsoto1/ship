@@ -106,6 +106,19 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
                 : $"{who} and {Other(entry)} made a home together.",
             ChronicleEntryKind.Expecting => $"{who} is expecting a child.",
             ChronicleEntryKind.ChildBorn => $"A child was born to {Other(entry)}: {who}.",
+            ChronicleEntryKind.ShipErrand => entry.Get(ChronicleParameters.To) == "fish"
+                ? "The ship weighed and stood out for a day's fishing off the coast."
+                : "The ship weighed and stood out along the coast, to see what lies on it.",
+            ChronicleEntryKind.ShipLost => entry.Get(ChronicleParameters.Reason) == "privateer"
+                ? "The privateer cut out the ship from the anchorage and took her to sea."
+                : "In the storm the ship dragged her anchors and went ashore, and broke up: there was no one aboard to veer cable.",
+            ChronicleEntryKind.PrivateerMet => entry.Get(ChronicleParameters.Outcome) switch
+            {
+                "fought off" => $"A privateer came, and the camp's guns ({entry.Get(ChronicleParameters.Level)}) drove her off.",
+                "beaten" => "A privateer came: the guns were fought and not well enough, and her people plundered the camp.",
+                "paid" => "A privateer came, and was paid to go.",
+                _ => "A privateer came: the camp took to the forest, and she took what she found.",
+            },
             ChronicleEntryKind.ToolMade => $"{who} forged {Article(ItemWord(entry.Get(ChronicleParameters.To)))} at the camp's forge.",
             ChronicleEntryKind.WentHome => $"{who} took passage home on the relief ship.",
             ChronicleEntryKind.HullStruck =>

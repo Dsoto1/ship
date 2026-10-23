@@ -254,6 +254,9 @@ public sealed partial class SimulationRunner
             // A tool forged while there is the iron for it and a tool the camp is short of.
             "forge" => task.Consumes.All(c => Campaign.SharedStore.Count(c.Key) >= c.Value) && ToolWanted() is not null
                        && !Campaign.ActiveTasks.Values.Any(t => t.DefinitionId == task.Id),
+            // The ship hove down on the slip while she is in, and her hull wants it.
+            "careen" => camp.ShipAtAnchor && camp.Errand is null && Campaign.Voyage is { Hull: < 90 }
+                        && task.Consumes.All(c => Campaign.SharedStore.Count(c.Key) >= c.Value) && !Campaign.ActiveTasks.Values.Any(t => t.DefinitionId == task.Id),
             "mend" => camp.Broken.Count > 0 && !Campaign.ActiveTasks.Values.Any(t => Content.Tasks[t.DefinitionId].MendsTool),
             "repair_dry" => !Raining && camp.Buildings.Any(b => b.Condition < RepairBelow)
                             && !Campaign.ActiveTasks.Values.Any(t => Content.Tasks[t.DefinitionId].RepairsBuilding),
@@ -372,6 +375,11 @@ public sealed partial class SimulationRunner
             }
 
             Campaign.Record(saved ? ChronicleEntryKind.ToolMended : ChronicleEntryKind.ToolLost, [new(ChronicleParameters.To, tool)], character.Id);
+        }
+
+        if (definition.Careens && camp.ShipAtAnchor && Campaign.Voyage is { } careened)
+        {
+            careened.Apply(new ShipEffects { Hull = CareenHull }, 1);
         }
 
         if (definition.ForgesTool && ToolWanted() is { } made)
@@ -640,10 +648,7 @@ public sealed partial class SimulationRunner
             Campaign.Record(ChronicleEntryKind.BuildingDown, [new(ChronicleParameters.To, sail ? "shelter.sail" : "shelter.brush")]);
         }
 
-        if (camp.ShipAtAnchor && Campaign.Voyage is { } ship)
-        {
-            ship.Apply(new ShipEffects { Hull = -0.4 }, 1);
-        }
+        ShipInStorm(camp);
     }
 
     // At first light: stores spoil by where they are kept, the garden grows or wastes, the weather wears
@@ -651,6 +656,7 @@ public sealed partial class SimulationRunner
     private void StepSettlementDay(CampState camp, SettlementRules rules)
     {
         StepPeopleDay(camp);
+        StepShipDay(camp);
         var wet = WetSeason;
 
         // Spoilage by place: in the open, under a sail, in the storehouse (as well as it was made).

@@ -36,7 +36,7 @@ public sealed partial class SimulationRunner
         [CampPriorities.Scouting] = ["task.scout"],
         [CampPriorities.Building] = ["task.repair_building", "task.clear_ground", "task.set_posts", "task.raise_frame", "task.thatch_roof", "task.fit_out",
             "task.dig_beds", "task.fence_garden", "task.dig_well", "task.line_well", "task.lay_stones", "task.build_staging",
-            "task.raise_palisade", "task.cut_poles", "task.cut_thatch", "task.gather_stone", "task.salvage_timbers", "task.pit_saw_planks", "task.mend_tools", "task.forge_tool"],
+            "task.raise_palisade", "task.cut_poles", "task.cut_thatch", "task.gather_stone", "task.salvage_timbers", "task.pit_saw_planks", "task.mend_tools", "task.forge_tool", "task.careen"],
         [CampPriorities.Garden] = ["task.harvest", "task.sow_garden", "task.tend_garden"],
     };
 
@@ -85,6 +85,7 @@ public sealed partial class SimulationRunner
         var camp = new CampState
         {
             Site = site.Id, Landed = Campaign.Clock.Tick, ShipAtAnchor = anchored, Boat = anchored || wreck!.BoatLaunched, LandedCount = Ashore().Count,
+            Guns = anchored ? GunsAboard : 0,
         };
 
         // What is still afloat: all her hold at anchor; what is left in a wreck on this coast.

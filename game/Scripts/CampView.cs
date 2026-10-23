@@ -1482,6 +1482,10 @@ public partial class CampView : Node3D
             "building.trading_house" => (4.2f, 3.2f, 2.2f),
             "building.salt_pans" => (4.4f, 2.4f, 0.9f),
             "building.forge" => (3.2f, 3.2f, 2.0f),
+            "building.lookout" => (1.6f, 1.6f, 4.0f),
+            "building.boat_shed" => (4.4f, 3.4f, 2.4f),
+            "building.magazine" => (2.4f, 2.4f, 1.6f),
+            "building.battery" => (3.6f, 2.6f, 0.9f),
             _ => (3.2f, 2.8f, 2.1f),
         };
         var phases = building.Phases.Select(p => p.Task).ToList();

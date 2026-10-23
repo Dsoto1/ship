@@ -267,6 +267,19 @@
     "needsPerHour": { "fatigue": 6.0, "thirst": 2.5 }
   },
   {
+    "id": "task.careen",
+    "needsWorkSpot": true,
+    "name": "Careen the ship",
+    "durationMinutes": 240,
+    // The ship hove down on the slip at the tide: weed and worm scraped off her bottom, the seams paid with
+    // oakum, a sprung plank replaced.
+    "skill": "skill.ship_repair",
+    "consumes": { "item.oakum": 2, "item.plank": 1 },
+    "careens": true,
+    "dutyWhen": { "camp": "careen", "startBetween": [[6, 13]] },
+    "needsPerHour": { "fatigue": 6.0, "thirst": 2.0 }
+  },
+  {
     "id": "task.mend_tools",
     "needsWorkSpot": true,
     "name": "Mend a broken tool",

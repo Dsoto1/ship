@@ -40,6 +40,8 @@
   { "id": "item.iron", "name": "Bar iron", "category": "material", "weightKg": 1.0, "volumeLitres": 0.15, "packedIn": "chest", "perPackage": 20 },
   { "id": "item.salt", "name": "Salt", "category": "material", "weightKg": 1.0, "volumeLitres": 1.0, "packedIn": "sack", "perPackage": 20 },
   { "id": "item.salt_fish", "name": "Salt fish", "category": "food", "weightKg": 0.35, "volumeLitres": 0.5, "hungerRelief": 12, "packedIn": "basket", "perPackage": 20, "spoilsPerDay": 0.004 },
+  { "id": "item.powder", "name": "Powder (charges)", "category": "munition", "weightKg": 1.0, "volumeLitres": 1.0, "packedIn": "barrel", "perPackage": 25 },
+  { "id": "item.shot", "name": "Round shot", "category": "munition", "weightKg": 1.5, "volumeLitres": 0.3, "packedIn": "crate", "perPackage": 20 },
   { "id": "item.trade_knives", "name": "Iron knives", "category": "trade", "weightKg": 0.3, "volumeLitres": 0.3, "packedIn": "chest", "perPackage": 20 },
   { "id": "item.trade_cloth", "name": "Bolt of cloth", "category": "trade", "weightKg": 4.0, "volumeLitres": 8.0, "packedIn": "bale", "perPackage": 4 },
   { "id": "item.fishhooks", "name": "Iron fishhooks", "category": "trade", "weightKg": 0.02, "volumeLitres": 0.01, "packedIn": "chest", "perPackage": 100 },

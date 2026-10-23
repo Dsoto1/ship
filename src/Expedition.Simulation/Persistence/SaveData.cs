@@ -859,6 +859,21 @@ public sealed record CampData
     /// <summary>The ship at anchor off.</summary>
     public bool ShipAtAnchor { get; init; }
 
+    /// <summary>The ship's company aboard her. Added in format 46.</summary>
+    public IReadOnlyList<int> Keepers { get; init; } = [];
+
+    /// <summary>Guns aboard; null in a save from before format 46, when an anchored ship had all six.</summary>
+    public int? Guns { get; init; }
+
+    /// <summary>Guns on the gun platform. Added in format 46.</summary>
+    public int GunsAshore { get; init; }
+
+    /// <summary>The ship's errand, or null. Added in format 46.</summary>
+    public string? Errand { get; init; }
+
+    /// <summary>When she is back from it. Added in format 46.</summary>
+    public long ErrandBack { get; init; }
+
     /// <summary>A boat to land stores with.</summary>
     public bool Boat { get; init; }
 
@@ -1313,6 +1328,15 @@ public sealed record WorldData
 
     /// <summary>The Brennish ship's visit, 0..3.</summary>
     public int Brennish { get; init; }
+
+    /// <summary>The privateer, 0..2. Added in format 46.</summary>
+    public int Privateer { get; init; }
+
+    /// <summary>When the privateer is next about. Added in format 46.</summary>
+    public long PrivateerNext { get; init; }
+
+    /// <summary>How often a privateer has come. Added in format 46.</summary>
+    public int PrivateerVisits { get; init; }
 
     /// <summary>The garrison's survivor, 0..4.</summary>
     public int Survivor { get; init; }

@@ -38,7 +38,7 @@ clothing made on them, textures divided into one shared sheet, clips reduced to 
 | Nature Kit | The coast's trees (palms and broadleaf), bushes, broad-leaved plants, grasses, rocks, stumps, logs, flowers and fungi ashore | Kenney | https://kenney.nl/assets/nature-kit | CC0 | `Nature/` (58 files) |
 | Stylized Nature MegaKit (free edition) | The coast's broadleaf and twisted trees, bushes, ferns, broad-leaved plants, grasses, clover, flowers, fungi, rocks and pebbles ashore | Quaternius | https://quaternius.itch.io/stylized-nature-megakit | CC0 | `Nature/MegaKit/` (86 files; textures scaled to 512 px; foliage masks coloured green) |
 | IM FELL Great Primer (Roman, Italic, SC), Source Serif 4, Source Sans 3 | All the interface's type: titles and headings (Fell), reading text (Source Serif), labels and numbers (Source Sans) | Igino Marini (IM FELL); Adobe (Source Serif, Source Sans) | https://fonts.google.com | SIL OFL 1.1 | `Fonts/` (Fell.ttf, FellItalic.ttf, FellSC.ttf, SourceSans.ttf, SourceSansBold.ttf, SourceSansSemibold.ttf, SourceSerif.ttf, SourceSerifItalic.ttf, SourceSerifSemibold.ttf; licence in `OFL.txt`) |
-| Game-icons.net | Every icon in the interface: the screen tabs, the top bar's readings, resources, buildings, orders | Lorc, Delapouite and the other Game-icons.net contributors | https://game-icons.net (npm `@iconify-json/game-icons` 1.2.4) | CC BY 3.0 | `UI/icons/*.svg` (87 files) |
+| Game-icons.net | Every icon in the interface: the screen tabs, the top bar's readings, resources, buildings, orders | Lorc, Delapouite and the other Game-icons.net contributors | https://game-icons.net (npm `@iconify-json/game-icons` 1.2.4) | CC BY 3.0 | `UI/icons/*.svg` (89 files) |
 
 ## Generated props
 

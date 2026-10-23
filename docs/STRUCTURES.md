@@ -18,6 +18,10 @@ Buildings are data (`data/shore.json`, `settlement.buildings`), and each one's e
 | **Trading house** (new) | `trades: true` | The coast's peoples received under a roof. See below. |
 | **Salt pans** (new) | `salts: true`, `knowledge: know.salt` | Salt made, fish salted. See below. |
 | **Forge** (new) | `forges: true` | Tools made from bar iron. See below. |
+| **Lookout** (new) | `lookout: true` | A sail seen a day sooner (THE_SHIP.md). |
+| **Boat shed and slip** (new) | `slip: true` | The ship careened, +10% hull a turn (THE_SHIP.md). |
+| **Powder magazine** (new) | `magazine: true` | Powder kept dry: 0.1% lost a day, not 1–3% (THE_SHIP.md). |
+| **Gun platform** (new) | `battery: 2` | Two guns landed from the ship, fought from the shore (THE_SHIP.md). |
 | Garden | `beds` | Beds sown from the seed chest. |
 | Well | `water` | Water at the camp, where the site has it. |
 | Landing | `landing` | The boat lands half as much again each trip. |
@@ -90,10 +94,6 @@ A hearth, bellows, and an anvil on a stump:
 
 | Structure | What it would do | When |
 |---|---|---|
-| **Lookout** | Sees a sail sooner: the relief ship, the Brennish, privateers. | Step S |
-| **Boat shed and slip** | The boat kept out of the weather; the ship careened and her hull mended. | Step S |
-| **Powder magazine** | Powder kept dry and apart, away from fire. | Step S, with the guns |
-| **Gun platform** | A battery on the headland covering the anchorage. | Step S, if approved |
 | **Kitchen in each house** | Households cooking for themselves (§40, distribution by household). | With distribution |
 
 ## Saves

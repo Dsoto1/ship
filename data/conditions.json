@@ -10,5 +10,6 @@
   { "id": "condition.flux", "name": "The flux", "kind": "illness", "recoveryPerHour": 0.0167, "healthPerHour": 0.3, "contagion": 0.0012, "workRate": 0.75 },
   { "id": "condition.scurvy", "name": "Scurvy", "kind": "illness", "healthPerHour": 0.1, "curedByFresh": true, "workRate": 0.7 },
   { "id": "condition.lashed", "name": "Lash wounds", "kind": "injury", "healDays": 6, "workRate": 0.75 },
+  { "id": "condition.wounded", "name": "Wounded", "kind": "injury", "healDays": 10, "workRate": 0.6 },
   { "id": "condition.near_drowned", "name": "Half drowned", "kind": "injury", "healDays": 2, "workRate": 0.8 }
 ]

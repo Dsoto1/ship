@@ -2905,6 +2905,9 @@ public partial class Hud : CanvasLayer
     private VBoxContainer _campKnown = null!;
     private VBoxContainer _campPriorities = null!;
     private Label _campWorks = null!;
+    private Label _anchorReport = null!;
+    private HFlowContainer _shipCompany = null!;
+    private string _shipShown = "";
     private readonly List<CheckBox> _campChoiceBoxes = [];
     private Label _campSeason = null!;
     private VBoxContainer _campProjects = null!;
@@ -2940,6 +2943,22 @@ public partial class Hud : CanvasLayer
         where.AddChild(_campReport);
         _campWorks = Ui.Text("", Ui.TextMeta + 1, Ui.InkSoft, 340);
         where.AddChild(_campWorks);
+
+        // The ship after landfall (step S): her state, who keeps her, what she can be sent to do, her guns.
+        var ship = Ui.Card(_campBox, "The ship", "Who stays aboard keeps her; four can take her out.");
+        _anchorReport = Ui.Text("", Ui.TextMeta + 1, Ui.Ink, 340);
+        ship.AddChild(_anchorReport);
+        ship.AddChild(Ui.Text("Aboard her (click to send aboard or bring ashore):", Ui.TextMeta, Ui.InkSoft, 340));
+        _shipCompany = new HFlowContainer();
+        _shipCompany.AddThemeConstantOverride("h_separation", Ui.SpaceXs);
+        _shipCompany.AddThemeConstantOverride("v_separation", Ui.SpaceXs);
+        ship.AddChild(_shipCompany);
+        var errands = new HFlowContainer();
+        errands.AddThemeConstantOverride("h_separation", Ui.SpaceS);
+        ship.AddChild(errands);
+        errands.AddChild(Ui.Button(Ui.ButtonKind.Secondary, "Fish at sea", "A day off the coast with her company: fish for the stores", () => { if (_runner is { } r) { ShowResult(r.SendShip("fish"), "She stands out to fish."); _shipShown = ""; } }));
+        errands.AddChild(Ui.Button(Ui.ButtonKind.Secondary, "Along the coast", "Four days coasting: the shore seen from the sea", () => { if (_runner is { } r) { ShowResult(r.SendShip("coast"), "She stands out along the coast."); _shipShown = ""; } }));
+        errands.AddChild(Ui.Button(Ui.ButtonKind.Secondary, "Land guns", "Two guns swayed out and mounted on the gun platform", () => { if (_runner is { } r) { ShowResult(r.LandGuns()); _shipShown = ""; } }));
 
         // R7: the season, what is being built and what stands, the tools and the garden.
         var season = Ui.Card(_campBox, "The season");
@@ -3097,6 +3116,7 @@ public partial class Hud : CanvasLayer
         _campBox.MoveChild(_communityCards[2], 5);
         _campBox.MoveChild(world.GetParent(), 7);
         _campBox.MoveChild(charter.GetParent(), 8);
+        _campBox.MoveChild(ship.GetParent(), 5);
 
         var known = Ui.Card(_campBox, "What we know of the place", "Pale lines are not yet seen for certain.");
         _campKnown = new VBoxContainer();
@@ -3344,8 +3364,12 @@ public partial class Hud : CanvasLayer
         ("building.smokehouse", "Smokehouse", "fish", "Fresh fish smoked on racks over a slow fire: it keeps for months, not days"),
         ("building.forge", "Forge", "tools", "Bar iron hammered into the tools the camp is shortest of"),
         ("building.salt_pans", "Salt pans", "supplies", "Salt made as Kessat makes it, and fish salted to keep a year. Learned of Kessat first"),
-        ("building.chapel", "Chapel", "cross", "Sunday kept there: the company rests easier for it"),
+        ("building.chapel", "Chapel", "chapel", "Sunday kept there: the company rests easier for it"),
         ("building.trading_house", "Trading house", "trade", "The coast's peoples received under a roof: they come oftener, and a fair trade counts for more"),
+        ("building.lookout", "Lookout", "spyglass", "A sail seen a day sooner: time to hide the stores, or man the guns"),
+        ("building.boat_shed", "Boat shed and slip", "anchor", "Where the ship is hove down and careened: her hull cleaned and mended"),
+        ("building.magazine", "Powder magazine", "powder", "Powder kept dry, apart from every fire: in the open the damp spoils it"),
+        ("building.battery", "Gun platform", "cannon", "Two guns landed from the ship to cover the anchorage, fought from the shore"),
         ("building.garden", "Garden", "garden", "Cleared, dug and fenced; then sown from the seed chest. An experiment"),
         ("building.well", "Well", "well", "Water dug for at the camp, where the site has it: keep it away from the latrine"),
         ("building.landing", "Landing", "dock", "Stones and a staging at the water's edge: the boat lands half as much again"),
@@ -3583,6 +3607,7 @@ public partial class Hud : CanvasLayer
         }
 
         RefreshSettlement(runner, camp);
+        RefreshShip(runner, camp);
 
         // The priorities and the assessment are rebuilt only when they change.
         var assessment = runner.CampAssessment();
@@ -3625,6 +3650,54 @@ public partial class Hud : CanvasLayer
         foreach (var (topic, text, isKnown) in assessment)
         {
             _campKnown.AddChild(Ui.Text($"{topic}: {text}", Ui.TextMeta + 1, isKnown ? Ui.Ink : Ui.Uncertain, 340));
+        }
+    }
+
+    // The ship's card: what she is about, and a button for each of the company, pressed for those aboard.
+    private void RefreshShip(SimulationRunner runner, Expedition.Simulation.Shore.CampState camp)
+    {
+        _anchorReport.Text = string.Join("\n", runner.ShipReport());
+        var crew = runner.Campaign.Crew.Where(c => c.SurvivalState is SurvivalState.Alive && !SimulationRunner.IsChild(c)).ToList();
+        var key = $"{camp.ShipAtAnchor}|{camp.Errand}|{string.Join(",", camp.Keepers)}|{string.Join(",", crew.Select(c => c.Id))}";
+        if (key == _shipShown)
+        {
+            return;
+        }
+
+        _shipShown = key;
+        foreach (var child in _shipCompany.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        if (!camp.ShipAtAnchor)
+        {
+            return;
+        }
+
+        foreach (var person in crew)
+        {
+            var id = person.Id;
+            var aboard = camp.Keepers.Contains(id);
+            var button = Ui.Button(Ui.ButtonKind.Tab, person.Name, aboard ? "Aboard: click to bring them ashore" : "Ashore: click to send them aboard", () =>
+            {
+                if (_runner is not { } r || r.Campaign.Camp is not { } c)
+                {
+                    return;
+                }
+
+                var keepers = c.Keepers.ToList();
+                if (!keepers.Remove(id))
+                {
+                    keepers.Add(id);
+                }
+
+                ShowResult(r.SetKeepers(keepers));
+                _shipShown = "";
+            }, toggle: true);
+            button.SetPressedNoSignal(aboard);
+            button.AddThemeFontSizeOverride("font_size", Ui.TextMeta);
+            _shipCompany.AddChild(button);
         }
     }
 

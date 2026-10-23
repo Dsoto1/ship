@@ -63,6 +63,20 @@
       // A forge: a hearth, bellows, an anvil on a stump. Bar iron made into the tools the camp is shortest of.
       { "id": "building.forge", "width": 4, "depth": 4, "name": "Forge", "plot": "forge", "forges": true,
         "phases": [ { "task": "task.clear_ground", "times": 1 }, { "task": "task.set_posts", "times": 2 }, { "task": "task.raise_frame", "times": 1 }, { "task": "task.thatch_roof", "times": 2 } ] },
+      // Step S (docs/THE_SHIP.md): what the ship and her guns want ashore.
+      // A lookout on the high ground: a sail seen a day sooner.
+      { "id": "building.lookout", "width": 2, "depth": 2, "name": "Lookout", "plot": "lookout", "lookout": true,
+        "phases": [ { "task": "task.clear_ground", "times": 1 }, { "task": "task.set_posts", "times": 2 }, { "task": "task.raise_frame", "times": 1 } ] },
+      // A boat shed and slip: the boat kept out of the weather, and a hard where the ship is hove down and her
+      // hull cleaned and mended.
+      { "id": "building.boat_shed", "width": 5, "depth": 4, "name": "Boat shed and slip", "plot": "slip", "slip": true,
+        "phases": [ { "task": "task.clear_ground", "times": 1 }, { "task": "task.set_posts", "times": 2 }, { "task": "task.raise_frame", "times": 2 }, { "task": "task.thatch_roof", "times": 2 } ] },
+      // A powder magazine: dug in, roofed, apart from every fire. Powder keeps dry there.
+      { "id": "building.magazine", "width": 3, "depth": 3, "name": "Powder magazine", "plot": "magazine", "magazine": true,
+        "phases": [ { "task": "task.clear_ground", "times": 2 }, { "task": "task.set_posts", "times": 1 }, { "task": "task.thatch_roof", "times": 2 }, { "task": "task.fit_out", "times": 1 } ] },
+      // A gun platform: a timber bed and an earth bank for two guns landed from the ship, covering the anchorage.
+      { "id": "building.battery", "width": 4, "depth": 3, "name": "Gun platform", "plot": "battery", "battery": 2,
+        "phases": [ { "task": "task.clear_ground", "times": 2 }, { "task": "task.set_posts", "times": 2 }, { "task": "task.fit_out", "times": 1 } ] },
       // A well: only where the site has water to be dug for (a site's "well"). It brings the water to the camp,
       // but a latrine within six cells fouls it. Lined with wattle and poles against the sand falling in.
       { "id": "building.well", "width": 2, "depth": 2, "name": "Well", "plot": "well", "water": true,

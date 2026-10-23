@@ -356,6 +356,22 @@
    "looks": "seasoned oak, straight-grained."
   },
   {
+   "item": "item.powder",
+   "quantity": 10,
+   "price": 70,
+   "stock": 8,
+   "soldPerDay": 0,
+   "looks": "corned powder in a lined keg, dry as dust: keep it from the damp and the galley."
+  },
+  {
+   "item": "item.shot",
+   "quantity": 10,
+   "price": 40,
+   "stock": 8,
+   "soldPerDay": 0,
+   "looks": "iron round shot for a falconet, a pound and a half apiece."
+  },
+  {
    "item": "item.iron",
    "quantity": 5,
    "price": 40,

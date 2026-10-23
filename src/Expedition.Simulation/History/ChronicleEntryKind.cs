@@ -321,6 +321,15 @@ public enum ChronicleEntryKind
     /// <summary>A child was born at the camp (step P; characters: the child, then the mother).</summary>
     ChildBorn,
 
+    /// <summary>The ship taken out from the anchorage (step S; parameters: to = fish or coast).</summary>
+    ShipErrand,
+
+    /// <summary>The ship lost after landfall (step S; parameters: reason = storm or privateer).</summary>
+    ShipLost,
+
+    /// <summary>A privateer met (step S; parameters: outcome = fought off, beaten, paid or hid; level = guns fought).</summary>
+    PrivateerMet,
+
     /// <summary>A tool forged at the camp (parameters: to = the tool).</summary>
     ToolMade,
 

@@ -160,6 +160,18 @@ public sealed record BuildingDefinition
     /// <summary>A forge: tools made from bar iron.</summary>
     public bool Forges { get; init; }
 
+    /// <summary>A lookout: a sail seen a day sooner (step S).</summary>
+    public bool Lookout { get; init; }
+
+    /// <summary>A boat shed and slip: the ship careened there.</summary>
+    public bool Slip { get; init; }
+
+    /// <summary>A powder magazine: powder kept dry.</summary>
+    public bool Magazine { get; init; }
+
+    /// <summary>A gun platform: how many guns landed from the ship it mounts.</summary>
+    public int Battery { get; init; }
+
     /// <summary>What must be learned of the coast's people before it can be built (R8), or null.</summary>
     public string? Knowledge { get; init; }
 

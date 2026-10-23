@@ -152,6 +152,9 @@
     "settlerMen": ["Andrés Pardo", "Tomé Casal", "Rui Valença", "Lope Ibarra", "Marcos Seixo", "Bento Lagos", "Inácio Feo", "Diogo Ramalho"],
     "settlerWomen": ["Leonor Pardo", "Beatriz Casal", "Inês Valença", "Catalina Ibarra", "Joana Seixo", "Mencía Lagos", "Isabel Feo", "Teresa Ramalho"] },
   // An interloper's ship at the cove (SETTLEMENT §32).
+  // Privateers (step S, docs/THE_SHIP.md): a Brennish letter of marque, or none at all, working the coast
+  // for what a new post has. First seen about the first day given, then again every so often.
+  "privateer": { "ship": "the Gannet", "master": "Captain Rook Daley", "firstDay": 110, "everyDays": 150, "demand": 200 },
   "brennish": { "ship": "the Merle", "master": "Master Corran Hale", "arriveDay": 50, "stayDays": 12,
     "names": ["Wat Penner", "Hob Askew", "Dickon Marle", "Ned Tolley"],
     "sells": { "item.wine_hob": 18, "item.biscuit_hob": 14, "item.axe": 70, "item.iron": 30 }, "buysLog": 25 }

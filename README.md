@@ -84,6 +84,7 @@ assets so it imports them.
 - [`docs/SETTLEMENT_EXPERIENCE.md`](docs/SETTLEMENT_EXPERIENCE.md) — the landfall and settlement brief (D-024)
 - [`docs/UI_UX_DESIGN_SYSTEM.md`](docs/UI_UX_DESIGN_SYSTEM.md) — the interface authority for every phase (D-026)
 - [`docs/COMMUNITY.md`](docs/COMMUNITY.md) — the community's condition and why, rations, working day and reserves ashore, self-sufficiency milestones
+- [`docs/THE_SHIP.md`](docs/THE_SHIP.md) — the ship after landfall: who stays aboard, fishing and coasting, careening, her guns, powder, privateers
 - [`docs/STRUCTURES.md`](docs/STRUCTURES.md) — what the camp can build (houses, smokehouse, chapel, trading house, salt pans, forge among them), and what it still lacks
 - [`docs/PEOPLE.md`](docs/PEOPLE.md) — settlers and newcomers, households and their customs, children, the years past day 180
 - [`docs/WORKPLACES.md`](docs/WORKPLACES.md) — workplaces led by a person, project priorities, why work stops, buildings' history

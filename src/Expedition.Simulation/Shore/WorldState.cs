@@ -178,6 +178,15 @@ public sealed class WorldState
     /// <summary>True if the captain warned her off in the Company's name.</summary>
     public bool BrennishWarned { get; internal set; }
 
+    /// <summary>The privateer (step S): 0 none about; 1 her sail seen from the lookout; 2 at the anchorage.</summary>
+    public int Privateer { get; internal set; }
+
+    /// <summary>When the privateer is next about; 0 before the first is due.</summary>
+    public long PrivateerNext { get; internal set; }
+
+    /// <summary>How often a privateer has come.</summary>
+    public int PrivateerVisits { get; internal set; }
+
     /// <summary>Logs sold to the Brennish, against the charter.</summary>
     public int LogsSold { get; internal set; }
 

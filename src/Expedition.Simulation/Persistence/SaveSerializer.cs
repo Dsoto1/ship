@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 45;
+    public const int CurrentSchemaVersion = 46;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -194,6 +194,10 @@ public static class SaveSerializer
 
                 return root;
             },
+
+            // Format 46 added the ship after landfall (step S, docs/THE_SHIP.md): her company, her guns, her
+            // errands and the privateers. An older camp has no one aboard, and an anchored ship all six guns.
+            [45] = root => root,
 
             // Format 45 added houses and smokehouses (docs/STRUCTURES.md), and which household lives in a house:
             // an older camp has neither.
@@ -1639,6 +1643,7 @@ public static class SaveSerializer
             : null,
         NextJourney = world.NextJourney, PeaceBroken = world.PeaceBroken, PalisadeExplained = world.PalisadeExplained, PalisadeNoticed = world.PalisadeNoticed,
         LetterSent = world.LetterSent, Brennish = world.Brennish, BrennishWarned = world.BrennishWarned, LogsSold = world.LogsSold, Thefts = world.Thefts,
+        Privateer = world.Privateer, PrivateerNext = world.PrivateerNext, PrivateerVisits = world.PrivateerVisits,
         Survivor = world.Survivor, Charter = world.Charter,
     };
 
@@ -1647,6 +1652,7 @@ public static class SaveSerializer
         StoreId = camp.StoreId,
 
         Site = camp.Site, Landed = camp.Landed, ShipAtAnchor = camp.ShipAtAnchor, Boat = camp.Boat,
+        Keepers = camp.Keepers.Select(k => k.Value).ToList(), Guns = camp.Guns, GunsAshore = camp.GunsAshore, Errand = camp.Errand, ErrandBack = camp.ErrandBack,
         Works = new SortedDictionary<string, double>(camp.Works.ToDictionary(), StringComparer.Ordinal),
         Found = camp.Found.ToList(), Afloat = new SortedDictionary<string, int>(camp.Afloat.ToDictionary(), StringComparer.Ordinal),
         Priorities = camp.Priorities.ToList(), UseSailcloth = camp.Choices.UseSailcloth, RestTheExhausted = camp.Choices.RestTheExhausted,
@@ -1703,7 +1709,15 @@ public static class SaveSerializer
         var camp = new Shore.CampState
         {
             Site = savedCamp.Site, Landed = savedCamp.Landed, ShipAtAnchor = savedCamp.ShipAtAnchor, Boat = savedCamp.Boat, LandedCount = savedCamp.LandedCount,
+            Guns = savedCamp.Guns ?? (savedCamp.ShipAtAnchor ? World.SimulationRunner.GunsAboard : 0), GunsAshore = savedCamp.GunsAshore,
+            Errand = savedCamp.Errand, ErrandBack = savedCamp.ErrandBack,
         };
+        if (savedCamp.Keepers.Any(k => !campaign.Characters.ContainsKey(new CharacterId(k))))
+        {
+            throw new SaveLoadException("Someone aboard the ship is not in the company.");
+        }
+
+        camp.SetKeepers(savedCamp.Keepers.Select(k => new CharacterId(k)));
         foreach (var project in savedCamp.Projects)
         {
             var restored = new Shore.CampProject
@@ -1824,6 +1838,7 @@ public static class SaveSerializer
         {
             NextJourney = saved.NextJourney, PeaceBroken = saved.PeaceBroken, PalisadeExplained = saved.PalisadeExplained, PalisadeNoticed = saved.PalisadeNoticed,
             LetterSent = saved.LetterSent, Brennish = saved.Brennish, BrennishWarned = saved.BrennishWarned, LogsSold = saved.LogsSold, Thefts = saved.Thefts,
+            Privateer = saved.Privateer, PrivateerNext = saved.PrivateerNext, PrivateerVisits = saved.PrivateerVisits,
             Survivor = saved.Survivor, Charter = saved.Charter,
         };
         foreach (var place in saved.Places)

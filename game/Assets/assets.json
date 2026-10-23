@@ -507,6 +507,8 @@
    "info": "info",
    "tick": "check-mark",
    "cross": "cancel",
+   "chapel": "church",
+   "powder": "powder",
    "pause": "pause-button",
    "play": "play-button",
    "fast": "fast-forward-button",

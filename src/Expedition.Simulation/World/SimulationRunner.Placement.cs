@@ -85,6 +85,11 @@ public sealed partial class SimulationRunner
             tasks.Add("task.forge_tool");
         }
 
+        if (building.Slip)
+        {
+            tasks.Add("task.careen");
+        }
+
         return tasks;
     }
 
