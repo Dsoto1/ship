@@ -1065,6 +1065,13 @@ public partial class PortView : Node3D
     private void House(float left, float right, float back, float front, Color wall, Color plinth, int storeys, float storeyHeight, bool frame, float baseHeight, bool detail = true,
         bool ground = true, bool loft = false)
     {
+        // The trial (--kit): an ordinary house of the street built from the modular kit instead.
+        if (detail && ground && !loft && storeys > 1 && KitBuilding.Take())
+        {
+            AddChild(KitBuilding.House(left, right, back, front, storeys, storeyHeight, baseHeight, brick: !frame, seed: (int)(left * 7 + back * 3)));
+            return;
+        }
+
         var width = right - left;
         var depth = front - back;
         var height = storeys * storeyHeight;

@@ -2464,6 +2464,7 @@ public partial class Main : Node3D
                 case "give": _developerGive = value; break;
                 case "raise": _developerRaise = value; break;
                 case "menu": _developerMenu = value; break;
+                case "kit": KitBuilding.Enabled = true; KitBuilding.Alternate = value == "alternate"; break;
                 case "charter": _developerCharter = value.Replace('_', ' '); break;
                 case "astrolabe": _openView = "astrolabe"; break;
                 case "hull" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var hullLeft): _forceHull = hullLeft; break;

@@ -39,6 +39,7 @@ clothing made on them, textures divided into one shared sheet, clips reduced to 
 | Stylized Nature MegaKit (free edition) | The coast's broadleaf and twisted trees, bushes, ferns, broad-leaved plants, grasses, clover, flowers, fungi, rocks and pebbles ashore | Quaternius | https://quaternius.itch.io/stylized-nature-megakit | CC0 | `Nature/MegaKit/` (86 files; textures scaled to 512 px; foliage masks coloured green) |
 | IM FELL Great Primer (Roman, Italic, SC), Source Serif 4, Source Sans 3 | All the interface's type: titles and headings (Fell), reading text (Source Serif), labels and numbers (Source Sans) | Igino Marini (IM FELL); Adobe (Source Serif, Source Sans) | https://fonts.google.com | SIL OFL 1.1 | `Fonts/` (Fell.ttf, FellItalic.ttf, FellSC.ttf, SourceSans.ttf, SourceSansBold.ttf, SourceSansSemibold.ttf, SourceSerif.ttf, SourceSerifItalic.ttf, SourceSerifSemibold.ttf; licence in `OFL.txt`) |
 | Game-icons.net | Every icon in the interface: the screen tabs, the top bar's readings, resources, buildings, orders | Lorc, Delapouite and the other Game-icons.net contributors | https://game-icons.net (npm `@iconify-json/game-icons` 1.2.4) | CC BY 3.0 | `UI/icons/*.svg` (89 files) |
+| Medieval Village MegaKit [Standard] | Trial: modular walls, windows, doors, shutters, balconies and round-tile roofs for the port's houses | Quaternius | https://quaternius.itch.io/medieval-village-megakit | CC0 | `Buildings/MegaKit/` (35 pieces; textures scaled to 1024 px; wood and tiles toned to the port) |
 
 ## Generated props
 

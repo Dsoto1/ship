@@ -168,6 +168,48 @@ def itch_models(entry, credits):
     credits.append(f"| {entry['name']} | {entry['use']} | {entry['author']} | {entry['page']} | CC0 | `{entry['folder']}/` ({len(entry['keep'])} files; textures scaled to {entry['maxTexture']} px{"; foliage masks coloured green" if entry.get("colourise") else ""}) |")
 
 
+def itch_kit(entry, credits):
+    """A modular building kit from a free itch.io pack (the Medieval Village MegaKit): the listed glTF
+    pieces with their buffers, and the textures they use scaled to at most maxTexture pixels, kept in the
+    pack's own layout (glTF/ beside Textures/) so the models find them. The zip is cached in .cache/ and
+    its licence checked to be CC0."""
+    folder = ASSETS / entry["folder"]
+    cached = ROOT / ".cache" / "buildings" / entry["file"]
+    if not cached.exists():
+        cached.parent.mkdir(parents=True, exist_ok=True)
+        cached.write_bytes(itch_zip(entry["page"], entry["file"]))
+    from PIL import Image
+    with zipfile.ZipFile(cached) as archive:
+        root = entry["file"][:-len(".zip")]
+        licence = next((n for n in archive.namelist() if "license" in n.lower()), None)
+        if licence is None or "CC0" not in archive.read(licence).decode(errors="ignore"):
+            sys.exit(f"{entry['name']}: not CC0")
+        textures = set()
+        (folder / "glTF").mkdir(parents=True, exist_ok=True)
+        (folder / "Textures").mkdir(parents=True, exist_ok=True)
+        for piece in entry["keep"]:
+            gltf = json.loads(archive.read(f"{root}/glTF/{piece}.gltf"))
+            (folder / "glTF" / f"{piece}.gltf").write_bytes(archive.read(f"{root}/glTF/{piece}.gltf"))
+            for buffer in gltf["buffers"]:
+                (folder / "glTF" / buffer["uri"]).write_bytes(archive.read(f"{root}/glTF/{buffer['uri']}"))
+            textures.update(image["uri"] for image in gltf.get("images", []))
+        for uri in sorted(textures):
+            image = Image.open(io.BytesIO(archive.read(f"{root}/glTF/{uri}".replace("/glTF/../", "/"))))
+            if max(image.size) > entry["maxTexture"]:
+                image = image.resize((entry["maxTexture"], entry["maxTexture"]), Image.LANCZOS)
+            # Toned to the port's palette: the kit's storybook wood and tiles, less saturated and darker.
+            name = uri.split("/")[-1]
+            if name in entry.get("tone", {}):
+                from PIL import ImageEnhance
+                saturation, brightness = entry["tone"][name]
+                mode = image.mode
+                image = ImageEnhance.Brightness(ImageEnhance.Color(image.convert("RGB")).enhance(saturation)).enhance(brightness).convert(mode)
+            image.save(folder / "glTF" / uri, optimize=True)
+        print("fetched", len(entry["keep"]), "pieces,", len(textures), "textures into", folder.relative_to(ROOT))
+    credits.append(f"| {entry['name']} | {entry['use']} | {entry['author']} | {entry['page']} | CC0 | `{entry['folder']}/` "
+                   f"({len(entry['keep'])} pieces; textures scaled to {entry['maxTexture']} px{'; wood and tiles toned to the port' if entry.get('tone') else ''}) |")
+
+
 def itch(entry, credits):
     """A free pack from itch.io, into .cache/characters/ (the sources are large and stay out of the
     repository; tools/characters/build.py makes the game's files from them). itch has no public API
@@ -267,7 +309,7 @@ def main():
     for entry in manifest:
         if only and entry["source"] not in only:
             continue
-        {"polyhaven": polyhaven, "kenney": kenney, "freesound": freesound, "itch": itch, "itch-models": itch_models,
+        {"polyhaven": polyhaven, "kenney": kenney, "freesound": freesound, "itch": itch, "itch-models": itch_models, "itch-kit": itch_kit,
          "iconify": iconify, "fonts": fonts}[entry["source"]](entry, credits)
 
     if only:
