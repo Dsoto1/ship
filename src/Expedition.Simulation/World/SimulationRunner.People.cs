@@ -50,6 +50,10 @@ public sealed partial class SimulationRunner
     public Household? HouseholdOf(CharacterId id) =>
         Campaign.Households.FirstOrDefault(h => h.Adults.Contains(id) || h.Children.Contains(id));
 
+    /// <summary>The house a household lives in, or null.</summary>
+    public CampBuilding? HomeOf(Household household) =>
+        Campaign.Camp?.Buildings.FirstOrDefault(b => b.Household == household.Id);
+
     /// <summary>Someone's partner, or null.</summary>
     public Character? PartnerOf(CharacterId id) =>
         Campaign.Households.FirstOrDefault(h => h.Adults.Contains(id)) is { } home && home.Adults.FirstOrDefault(a => a != id) is { Value: > 0 } other
@@ -81,6 +85,7 @@ public sealed partial class SimulationRunner
             return;
         }
 
+        Homes(camp);
         var random = Campaign.Randomness.Characters;
         var here = Ashore().Where(c => c.SurvivalState is SurvivalState.Alive && !Away(c.Id)).ToList();
         var single = here.Where(c => c.Age >= AdultFrom && !Campaign.Households.Any(h => h.Adults.Contains(c.Id))).ToList();
@@ -150,6 +155,44 @@ public sealed partial class SimulationRunner
     }
 
     private static int Between(SimulationRandom random, int low, int highExclusive) => low + random.NextInt(highExclusive - low);
+
+    // Houses: one standing and empty goes to the household longest without one; a house whose household has
+    // no one left alive is empty again. A home of their own eases them; making do in the huts tells on them.
+    private void Homes(CampState camp)
+    {
+        bool Living(Household home) => home.Adults.Concat(home.Children).Any(id => Campaign.Characters[id].SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated);
+        foreach (var house in camp.Buildings.Where(b => b.Household is { } id && (Campaign.Households.FirstOrDefault(h => h.Id == id) is not { } home || !Living(home))))
+        {
+            house.Household = null;
+        }
+
+        foreach (var house in camp.Buildings.Where(b => b.Household is null && Settling?.Building(b.Building) is { Home: true } && b.Condition > StandsAbove).ToList())
+        {
+            if (Campaign.Households.Where(h => Living(h) && HomeOf(h) is null).OrderBy(h => h.Formed).ThenBy(h => h.Id).FirstOrDefault() is not { } home)
+            {
+                break;
+            }
+
+            house.Household = home.Id;
+            News($"{string.Join(" and ", home.Adults.Select(a => Campaign.Characters[a].Name))} have moved into a house of their own.");
+        }
+
+        foreach (var home in Campaign.Households.Where(Living))
+        {
+            var relief = HomeOf(home) is not null ? -HomeRelief : HomeWanted;
+            foreach (var adult in home.Adults.Select(a => Campaign.Characters[a]).Where(a => a.SurvivalState == SurvivalState.Alive))
+            {
+                adult.Needs.Stress = Needs.Clamp(adult.Needs.Stress + relief);
+            }
+        }
+    }
+
+    // A day's ease for a household in a house of its own, and strain for one without.
+    private const double HomeRelief = 1, HomeWanted = 0.5;
+
+    /// <summary>Households living and without a house of their own.</summary>
+    public int HouseholdsWithoutHomes => Campaign.Households.Count(h => HomeOf(h) is null
+        && h.Adults.Any(a => Campaign.Characters[a].SurvivalState is SurvivalState.Alive or SurvivalState.Incapacitated));
 
     private int Affection(CharacterId from, CharacterId to) =>
         Campaign.Relationships.TryGetValue((from, to), out var relationship) ? relationship.Affection : 0;

@@ -1053,6 +1053,9 @@ public sealed record CampBuildingData
     /// <summary>Who led its building, or null. Added in format 42.</summary>
     public int? BuiltUnder { get; init; }
 
+    /// <summary>A house's household's number, or null. Added in format 45.</summary>
+    public int? Household { get; init; }
+
     /// <summary>When it was ordered, or null for one built before buildings kept their history. Added in format 42.</summary>
     public long? Begun { get; init; }
 

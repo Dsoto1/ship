@@ -68,7 +68,7 @@ All 618 tests pass, the day-180 balance among them.
 
 - **Distribution by household:** households and kitchens sharing out food (§40). Everyone still eats from
   the one store.
-- **Dwellings by family:** a hut for each household, and possessions they share.
+- **Possessions households share.** (Houses for households are in STRUCTURES.md.)
 - **Castaways.**
 - **Grief and old age:** a death in a household does not yet weigh on the rest of it, and no one dies of
   old age.

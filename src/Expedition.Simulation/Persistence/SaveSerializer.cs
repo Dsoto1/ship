@@ -21,7 +21,7 @@ namespace Expedition.Simulation.Persistence;
 public static class SaveSerializer
 {
     /// <summary>Version written by this build. Increase it whenever <see cref="SaveData"/> changes, and add a migration.</summary>
-    public const int CurrentSchemaVersion = 44;
+    public const int CurrentSchemaVersion = 45;
 
     /// <summary>
     /// Upgrades from version N (the key) to N + 1. Each step edits the raw JSON so old files never need
@@ -194,6 +194,10 @@ public static class SaveSerializer
 
                 return root;
             },
+
+            // Format 45 added houses and smokehouses (docs/STRUCTURES.md), and which household lives in a house:
+            // an older camp has neither.
+            [44] = root => root,
 
             // Format 44 added households, and when and how each person came (step P): an older company has no
             // households, and everyone in it came with the ship.
@@ -1662,7 +1666,7 @@ public static class SaveSerializer
         Buildings = camp.Buildings.Select(b => new CampBuildingData
         {
             Building = b.Building, Plot = b.Plot, Quality = b.Quality, Condition = b.Condition, X = b.X, Y = b.Y, Turned = b.Turned,
-            Lead = b.Lead?.Value, BuiltUnder = b.BuiltUnder?.Value, Begun = b.Begun, Built = b.Built,
+            Lead = b.Lead?.Value, BuiltUnder = b.BuiltUnder?.Value, Household = b.Household, Begun = b.Begun, Built = b.Built,
             Builders = new SortedDictionary<int, int>(b.Builders.ToDictionary()), Used = new SortedDictionary<string, int>(b.Used.ToDictionary(), StringComparer.Ordinal),
             History = b.History.Select(h => new BuildingEventData { Tick = h.Tick, Kind = h.Kind, Amount = h.Amount }).ToList(),
         }).ToList(),
@@ -1735,6 +1739,7 @@ public static class SaveSerializer
                 Used = new SortedDictionary<string, int>(building.Used.ToDictionary(), StringComparer.Ordinal),
             };
             standing.Lead = building.Lead is { } leads ? new CharacterId(leads) : null;
+            standing.Household = building.Household;
             foreach (var happened in building.History)
             {
                 standing.Happened(new Shore.BuildingEvent(happened.Tick, happened.Kind, happened.Amount));

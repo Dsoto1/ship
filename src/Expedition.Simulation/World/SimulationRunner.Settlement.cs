@@ -232,6 +232,9 @@ public sealed partial class SimulationRunner
             "timber" => MaterialShort("item.plank") > 0 && StockLeft("camp_timber") > 0,
             "planks" => MaterialShort("item.plank") > 0 && StockLeft("camp_timber") <= 0
                         && !Campaign.ActiveTasks.Values.Any(t => t.DefinitionId == task.Id),
+            // Fish smoked once there is a rack-load of it, one batch at a time.
+            "smoke" => Campaign.SharedStore.Count("item.fish") >= task.Consumes.GetValueOrDefault("item.fish", 1)
+                       && !Campaign.ActiveTasks.Values.Any(t => t.DefinitionId == task.Id),
             "mend" => camp.Broken.Count > 0 && !Campaign.ActiveTasks.Values.Any(t => Content.Tasks[t.DefinitionId].MendsTool),
             "repair_dry" => !Raining && camp.Buildings.Any(b => b.Condition < RepairBelow)
                             && !Campaign.ActiveTasks.Values.Any(t => Content.Tasks[t.DefinitionId].RepairsBuilding),

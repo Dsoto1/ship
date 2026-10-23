@@ -245,6 +245,9 @@ public sealed class CampBuilding
     /// <summary>Who led its building, if anyone did.</summary>
     public CharacterId? BuiltUnder { get; init; }
 
+    /// <summary>A house's household: the number of the household that lives there, or null (step P).</summary>
+    public int? Household { get; internal set; }
+
     /// <summary>When it was ordered, and when finished; null for one from before buildings kept their history.</summary>
     public long? Begun { get; init; }
 

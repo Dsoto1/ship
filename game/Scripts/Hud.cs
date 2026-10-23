@@ -3336,10 +3336,12 @@ public partial class Hud : CanvasLayer
     private static readonly (string Id, string Label, string Icon, string Tip)[] BuildMenu =
     [
         ("building.hut", "Hut", "hut", "Dry berths for four, for good"),
+        ("building.house", "House", "house", "A household's own home, berths for four: a household without one wants one"),
         ("building.storehouse", "Storehouse", "storehouse", "Stores off the ground and dry: they keep far longer"),
         ("building.cookhouse", "Cookhouse", "cooking", "A roofed hearth: the fire never goes out"),
         ("building.infirmary", "Infirmary", "infirmary", "The sick laid apart and tended: they mend better and pass it on less"),
         ("building.workshop", "Workshop", "workshop", "Broken tools mended at a bench: most are saved"),
+        ("building.smokehouse", "Smokehouse", "fish", "Fresh fish smoked on racks over a slow fire: it keeps for months, not days"),
         ("building.garden", "Garden", "garden", "Cleared, dug and fenced; then sown from the seed chest. An experiment"),
         ("building.well", "Well", "well", "Water dug for at the camp, where the site has it: keep it away from the latrine"),
         ("building.landing", "Landing", "dock", "Stones and a staging at the water's edge: the boat lands half as much again"),

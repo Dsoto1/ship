@@ -268,6 +268,8 @@ public sealed partial class SimulationRunner
             if (people > 0 && berths < people) bad.Add($"{people - berths} with no cover at night");
             else if (people > 0 && HutBerths >= people) good.Add("dry huts for all");
             if (CookhouseStands) good.Add("hot food from the cookhouse");
+            if (HouseholdsWithoutHomes > 0) bad.Add(HouseholdsWithoutHomes == 1 ? "a household with no house of its own" : $"{HouseholdsWithoutHomes} households with no house of their own");
+            else if (Campaign.Households.Count > 0) good.Add("every household in a house of its own");
             foreach (var reached in camp.Milestones.Where(m => now - m.Value <= 7 * SimulationClock.TicksPerDay))
             {
                 good.Add($"{MilestoneList.First(m => m.Id == reached.Key).Title.ToLowerInvariant()}, lately");

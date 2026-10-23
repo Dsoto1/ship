@@ -247,7 +247,9 @@ public sealed partial class SimulationRunner
         var people = Ashore().Where(c => c.CanWork).OrderBy(c => c.Id.Value).ToList();
         for (var i = 0; i < people.Count; i++)
         {
-            var berth = berths.Count > 0 ? berths[i % berths.Count].Cell : hearth.Cell;
+            var berth = HouseholdOf(people[i].Id) is { } home && HomeOf(home) is { } house && SpotIn(CampLocation, $"plot.{house.Plot}.a") is { } door
+                ? door.Cell
+                : berths.Count > 0 ? berths[i % berths.Count].Cell : hearth.Cell;
             var ways = new List<(GridPosition From, GridPosition To)> { (berth, hearth.Cell) };
             ways.AddRange(places.Select(id => location.FindSpot(id)).OfType<WorkSpotDefinition>().Select(s => (hearth.Cell, s.Cell)));
             if (wellFront is not null)

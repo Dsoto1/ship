@@ -215,6 +215,19 @@
     "needsPerHour": { "fatigue": 5.0, "thirst": 1.0 }
   },
   {
+    "id": "task.smoke_fish",
+    "needsWorkSpot": true,
+    "name": "Smoke fish",
+    "durationMinutes": 180,
+    // Fish split and laid on the smokehouse's racks over a slow green-wood fire: fresh fish keeps a few days,
+    // smoked for months.
+    "skill": "skill.cooking",
+    "consumes": { "item.fish": 10 },
+    "makes": { "item.smoked_fish": 10 },
+    "dutyWhen": { "camp": "smoke" },
+    "needsPerHour": { "fatigue": 2.0, "thirst": 1.0 }
+  },
+  {
     "id": "task.mend_tools",
     "needsWorkSpot": true,
     "name": "Mend a broken tool",

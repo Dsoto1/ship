@@ -70,6 +70,11 @@ public sealed partial class SimulationRunner
             tasks.Add("task.fetch_water");
         }
 
+        if (building.Smokes)
+        {
+            tasks.Add("task.smoke_fish");
+        }
+
         return tasks;
     }
 

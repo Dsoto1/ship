@@ -142,6 +142,12 @@ public sealed record BuildingDefinition
     /// <summary>A landing at the water's edge: the boat lands more each trip; walked over, not round.</summary>
     public bool Landing { get; init; }
 
+    /// <summary>A household's own home: given to one household, which lives there.</summary>
+    public bool Home { get; init; }
+
+    /// <summary>A smokehouse: fresh fish smoked there, to keep.</summary>
+    public bool Smokes { get; init; }
+
     /// <summary>Thatched: worn by the weather and repaired.</summary>
     public bool Roofed => Phases.Any(p => p.Task == "task.thatch_roof");
 }

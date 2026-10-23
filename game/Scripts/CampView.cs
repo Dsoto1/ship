@@ -1476,6 +1476,8 @@ public partial class CampView : Node3D
             "building.garden" => (7.4f, 3.8f, 1.1f),
             "building.landing" => (3.8f, 2.8f, 1f),
             "building.well" => (1.6f, 1.6f, 1.5f),
+            "building.house" => (4.2f, 3.2f, 2.5f),
+            "building.smokehouse" => (2.4f, 2.4f, 1.8f),
             _ => (3.2f, 2.8f, 2.1f),
         };
         var phases = building.Phases.Select(p => p.Task).ToList();
