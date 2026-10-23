@@ -87,6 +87,9 @@ public partial class Main : Node3D
     private string? _developerMeeting;
     private string? _developerLearn;
     private string? _developerTrust;
+    private string? _developerGive;
+    private string? _developerRaise;
+    private string? _developerCharter;
     private string? _developerMapSelect;
     private Node3D _portFigures = null!;
     // Ashore (R6): the beach of the first camp, with its people, laid on the coast in front of the anchorage.
@@ -2328,6 +2331,9 @@ public partial class Main : Node3D
                 case "mapselect": _developerMapSelect = value; break;
                 case "learn": _developerLearn = value; break;
                 case "trust": _developerTrust = value; break;
+                case "give": _developerGive = value; break;
+                case "raise": _developerRaise = value; break;
+                case "charter": _developerCharter = value.Replace('_', ' '); break;
                 case "astrolabe": _openView = "astrolabe"; break;
                 case "hull" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var hullLeft): _forceHull = hullLeft; break;
                 case "rigging" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var riggingLeft): _forceRigging = riggingLeft; break;
@@ -2729,6 +2735,30 @@ public partial class Main : Node3D
         foreach (var topic in (_developerLearn ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
         {
             _runner.DeveloperLearn(topic);
+        }
+
+        // --give=item.powder:20,item.shot:20: put in the stores. --charter=kept (in_part, revoked): judged now,
+        // and the relief ship's settlers ashore. For testing what otherwise wants weeks of play.
+        foreach (var pair in (_developerGive ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (pair.Split(':') is [var item, var count] && int.TryParse(count, out var many) && !_runner.DeveloperGive(item, many).Succeeded)
+            {
+                GD.PushWarning($"--give: no such item {item}.");
+            }
+        }
+
+        // --raise=lookout,battery: buildings standing already, as if long since built.
+        foreach (var building in (_developerRaise ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (_runner.DeveloperRaise("building." + building) is { Succeeded: false } refused)
+            {
+                GD.PushWarning($"--raise {building}: {refused.Reason}");
+            }
+        }
+
+        if (_developerCharter is { } judged && !_runner.DeveloperCharter(judged).Succeeded)
+        {
+            GD.PushWarning($"--charter: {judged} could not be judged.");
         }
 
         // --meeting=none: no meeting waiting.

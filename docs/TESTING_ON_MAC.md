@@ -49,7 +49,8 @@ If this fails, stop and send me the output; the game won't work either.
    **The editor's 3D view stays empty. That's expected:** the deck, crew and panels are built by
    code when the game runs. In the editor you only see the empty `Main` node in the Scene panel.
 
-Then follow the manual test for the latest milestone in `docs/MILESTONES.md` (currently R2a).
+Then follow **`docs/PLAYTEST.md`**: a checklist for the settlement, its people, its buildings and the ship, with
+launch shortcuts that jump straight to each moment.
 
 ## Step 3: report back
 

@@ -1297,6 +1297,16 @@ public sealed partial class SimulationRunner
             return met.Meeting?.Kind == "survivor" ? CommandResult.Ok() : CommandResult.Rejected("He would not come.");
         }
 
+        // "privateer": her sail seen now (from the lookout, if there is one), her boat in tomorrow or at once.
+        if (communityId == "privateer" && Campaign.World is { } sighted && Campaign.Camp is { } here && Region?.Privateer is not null)
+        {
+            sighted.Meeting = null;
+            sighted.Privateer = 0;
+            sighted.PrivateerNext = Campaign.Clock.Tick;
+            StepPrivateerDay(sighted, here);
+            return sighted.Privateer > 0 ? CommandResult.Ok() : CommandResult.Rejected("She would not come.");
+        }
+
         if (Campaign.World is not { } world || Region?.Community(communityId) is null)
         {
             return CommandResult.Rejected("No such people.");
@@ -1306,6 +1316,23 @@ public sealed partial class SimulationRunner
         world.Meeting = null;
         StepPeoplesDay(world, Campaign.Camp!);
         return world.Meeting?.Community == communityId ? CommandResult.Ok() : CommandResult.Rejected("They would not come.");
+    }
+
+    /// <summary>Developer tool: items put in the camp's stores (or the ship's hold at sea).</summary>
+    public CommandResult DeveloperGive(string itemId, int count) =>
+        Content.Items.ContainsKey(itemId) ? Campaign.SharedStore.TryAdd(itemId, count, Content.Items) : CommandResult.Rejected($"No such item: {itemId}.");
+
+    /// <summary>Developer tool: the charter judged now as given (kept, in part, revoked), and the relief ship's settlers.</summary>
+    public CommandResult DeveloperCharter(string outcome)
+    {
+        if (Campaign.World is not { } world || Region is not { } region || outcome is not ("kept" or "in part" or "revoked"))
+        {
+            return CommandResult.Rejected("Not ashore, or no such judgement (kept, in part, revoked).");
+        }
+
+        world.Charter = outcome;
+        ReliefArrivals(world, region);
+        return CommandResult.Ok();
     }
 
     /// <summary>Developer tool: something learned from the people who know it, as if told.</summary>
