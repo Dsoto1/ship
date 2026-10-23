@@ -583,9 +583,18 @@ public partial class PortView : Node3D
     /// </summary>
     public void OpenRoom(string? roomId, float delta = 1f)
     {
+        // The shell lifts away quickly, in about a fifth of a second, and comes back as quickly.
         foreach (var (id, shell) in _shells)
         {
-            shell.Visible = id != roomId;
+            var target = id == roomId ? 1f : 0f;
+            var meshes = shell.GetChildren().OfType<GeometryInstance3D>().ToList();
+            foreach (var mesh in meshes)
+            {
+                mesh.Transparency = Mathf.MoveToward(mesh.Transparency, target, delta * 5f);
+                mesh.CastShadow = mesh.Transparency > 0.5f ? GeometryInstance3D.ShadowCastingSetting.Off : GeometryInstance3D.ShadowCastingSetting.On;
+            }
+
+            shell.Visible = meshes.Count == 0 ? id != roomId : meshes.Any(m => m.Transparency < 0.99f);
         }
 
         var faded = roomId is not null && _fading.TryGetValue(roomId, out var list) ? list : [];
@@ -716,33 +725,45 @@ public partial class PortView : Node3D
     // captain is inside, so the camera's corner of the room is always open to it.
     private void RoomFloorAndWalls(float left, float right, float roomBack, float front, float doorX, float baseHeight, float storey, Color floor, bool planks, Color inner)
     {
-        AddBox(Box(left + 1f, right - 1f, roomBack, front - 1f, baseHeight, baseHeight + 0.04f), floor);
+        // The walls stand at the outer edge of their cells, a little more than a foot thick (a stone house's
+        // sill wall), set a hair inside the shell's own faces so the two never share a plane and flicker; the
+        // floor runs to their inner faces.
+        const float Wall = 0.35f, Gap = 0.02f;
+        var (x0, x1, z1) = (left + Wall, right - Wall, front - Wall);
+        AddBox(Box(x0, x1, roomBack, z1, baseHeight, baseHeight + 0.04f), floor);
         if (planks)
         {
-            for (var z = roomBack + 0.5f; z < front - 1f; z += 0.5f)
+            for (var z = roomBack + 0.5f; z < z1; z += 0.5f)
             {
-                AddBox(new Vector3((left + right) / 2f, baseHeight + 0.045f, z), new Vector3(right - left - 2f, 0.01f, 0.03f), floor.Darkened(0.25f));
+                AddBox(new Vector3((x0 + x1) / 2f, baseHeight + 0.045f, z), new Vector3(x1 - x0, 0.01f, 0.03f), floor.Darkened(0.25f));
             }
         }
         else
         {
             // Flagstones: the joints a metre apart, staggered.
-            for (var z = roomBack + 1f; z < front - 1f; z += 1f)
+            for (var z = roomBack + 1f; z < z1; z += 1f)
             {
-                AddBox(new Vector3((left + right) / 2f, baseHeight + 0.045f, z), new Vector3(right - left - 2f, 0.01f, 0.04f), floor.Darkened(0.3f));
+                AddBox(new Vector3((x0 + x1) / 2f, baseHeight + 0.045f, z), new Vector3(x1 - x0, 0.01f, 0.04f), floor.Darkened(0.3f));
             }
 
-            for (var x = left + 1.5f; x < right - 1f; x += 1f)
+            for (var x = x0 + 0.5f; x < x1; x += 1f)
             {
-                AddBox(new Vector3(x, baseHeight + 0.045f, (roomBack + front - 1f) / 2f), new Vector3(0.04f, 0.01f, front - 1f - roomBack), floor.Darkened(0.3f));
+                AddBox(new Vector3(x, baseHeight + 0.045f, (roomBack + z1) / 2f), new Vector3(0.04f, 0.01f, z1 - roomBack), floor.Darkened(0.3f));
             }
         }
 
-        AddBox(Box(left, left + 1f, roomBack, front, baseHeight, baseHeight + storey), Stone);
-        AddBox(Box(right - 1f, right, roomBack, front, baseHeight, baseHeight + 0.9f), Stone);
-        AddBox(Box(left, doorX - 0.5f, front - 1f, front, baseHeight, baseHeight + 0.9f), Stone);
-        AddBox(Box(doorX + 0.5f, right, front - 1f, front, baseHeight, baseHeight + 0.9f), Stone);
-        AddBox(Box(left + 1f, right - 1f, roomBack - 0.05f, roomBack, baseHeight, baseHeight + storey), inner);
+        AddBox(Box(left + Gap, x0, roomBack, front - Gap, baseHeight, baseHeight + storey - Gap), Stone);
+        AddBox(Box(x1, right - Gap, roomBack, front - Gap, baseHeight, baseHeight + 0.9f), Stone);
+        // The front wall, sill high, with the doorway in it: a door's width, framed by jambs.
+        AddBox(Box(x0, doorX - 0.6f, z1, front - Gap, baseHeight, baseHeight + 0.9f), Stone);
+        AddBox(Box(doorX + 0.6f, x1, z1, front - Gap, baseHeight, baseHeight + 0.9f), Stone);
+        foreach (var jamb in new[] { doorX - 0.6f, doorX + 0.6f })
+        {
+            AddBox(Box(jamb - 0.06f, jamb + 0.06f, z1 - 0.02f, front - Gap + 0.01f, baseHeight, baseHeight + 1.0f), Wood.Darkened(0.1f));
+        }
+
+        // The back wall's inner face, just in front of the range behind, so the two do not fight.
+        AddBox(Box(x0, x1, roomBack + Gap, roomBack + Gap + 0.05f, baseHeight, baseHeight + storey - Gap), inner);
     }
 
     // Builds a room's shell (what <paramref name="draw"/> adds) into a node of its own, which OpenRoom hides.

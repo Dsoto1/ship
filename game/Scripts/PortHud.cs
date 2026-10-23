@@ -471,7 +471,12 @@ public partial class PortHud : CanvasLayer
         _roomBar.AnchorRight = 0.5f;
         _roomBar.OffsetLeft = -380;
         _roomBar.OffsetRight = 380;
-        _roomBar.OffsetTop = Ui.BelowTopBar;
+        // Low, just above the tab bar, so it never sits on the notices at the top.
+        _roomBar.AnchorTop = _roomBar.AnchorBottom = 1f;
+        // Clear of the person card at the bottom left, too.
+        _roomBar.OffsetTop = -Ui.AboveTabBar - 96 - 52;
+        _roomBar.OffsetBottom = -Ui.AboveTabBar - 96;
+        _roomBar.GrowVertical = Control.GrowDirection.Begin;
         _roomBar.Visible = false;
         _root.AddChild(_roomBar);
         var row = new HBoxContainer();

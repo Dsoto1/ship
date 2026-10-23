@@ -164,8 +164,16 @@ public partial class PersonModel : Node3D
         Play(_identity.Animation.Idle, 1f);
     }
 
-    /// <summary>Plays the clip for <paramref name="pose"/>, and shows the tools that work uses.</summary>
-    public void Show(Pose pose, bool moving, float rate)
+    /// <summary>Ground covered by the walk clips at speed 1, metres a second: a walk is played at the speed the
+    /// figure is really moving over the ground divided by this, so feet do not slide.</summary>
+    public const float StrideSpeed = 1.25f;
+
+    /// <summary>The walk clip's speed for moving over the ground at <paramref name="metresPerSecond"/>.</summary>
+    public static float WalkRate(float metresPerSecond) => metresPerSecond <= 0.01f ? 0f : Mathf.Clamp(metresPerSecond / StrideSpeed, 0.35f, 4f);
+
+    /// <summary>Plays the clip for <paramref name="pose"/>, and shows the tools that work uses. With
+    /// <paramref name="groundMatched"/>, a walk's <paramref name="rate"/> is already matched to the ground.</summary>
+    public void Show(Pose pose, bool moving, float rate, bool groundMatched = false)
     {
         var clip = pose switch
         {
@@ -197,7 +205,8 @@ public partial class PersonModel : Node3D
             clip = moving ? _identity.Animation.Walk : "idle";
         }
 
-        var speed = rate * (clip.StartsWith("walk") ? _walkSpeed : 1f) * (1f - Posture.Fatigue * 0.3f);
+        var walking = clip.StartsWith("walk");
+        var speed = walking && groundMatched && moving ? rate : rate * (walking ? _walkSpeed : 1f) * (1f - Posture.Fatigue * 0.3f);
         Play(clip, speed);
         foreach (var (mesh, when) in _equipment)
         {

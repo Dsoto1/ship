@@ -310,9 +310,11 @@ public partial class CrewFigure : Node3D
             Carry(carrying);
         }
 
-        // Turn towards the direction of travel.
+        // Turn towards the direction of travel; and how fast over the ground, for the walk's pace.
         var moved = Position - _lastPosition;
         _lastPosition = Position;
+        var overGround = delta > 0 && moved.Length() < 2f ? new Vector2(moved.X, moved.Z).Length() / delta : 0f;
+        _groundSpeed = Mathf.Lerp(_groundSpeed, overGround, Mathf.Clamp(delta * 8f, 0, 1));
         if (moved.LengthSquared() > 0.0001f && moved.Length() < 2f)
         {
             var target = Mathf.Atan2(moved.X, moved.Z);
@@ -415,6 +417,8 @@ public partial class CrewFigure : Node3D
     // simulation (CHARACTER_ART §48): tiredness from the fatigue need, an injured arm from a sprain,
     // bruising or rope burn, wet from standing out in the rain (it soaks in and dries out over a few
     // seconds of play, so a shower does not flicker).
+    private float _groundSpeed;
+
     private void ShowPerson(Character character, Pose pose, bool moving, float delta, float animationRate, bool inRain, bool dead)
     {
         var person = _person!;
@@ -427,7 +431,9 @@ public partial class CrewFigure : Node3D
         var rate = Mathf.Max(animationRate, 0.2f) * delta;
         _wet = Mathf.MoveToward(_wet, soaked, rate * (soaked > _wet ? 0.12f : 0.025f));
         person.Condition(_wet, 0.15f + tired * 0.25f, Mathf.SmoothStep(0.35f, 0.95f, tired), dead);
-        person.Show(pose, moving, animationRate);
+        // Walking, the legs keep pace with the ground they cover, whatever the game speed.
+        var walkRate = animationRate == 0 ? 0f : PersonModel.WalkRate(_groundSpeed);
+        person.Show(pose, moving, moving && walkRate > 0 ? walkRate : animationRate, groundMatched: moving && walkRate > 0);
         person.Detail(!FarView);
     }
 

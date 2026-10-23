@@ -70,8 +70,15 @@ Tell me which checklist steps worked. For anything wrong, send:
 | Game shows "The game content could not be loaded" | Make sure you opened `game/project.godot` inside the cloned repository (it reads `../data`). |
 | Godot added `.uid` files or changed `project.godot` | Normal on first open. Commit them: `git add -A && git commit -m "Godot import files" && git push`. |
 
-In the running game, save with **Cmd + S** and load with **Cmd + L**, or use the Save and Load
-buttons in the top bar (F5/F9 also work, but need **Fn** on a MacBook).
+The game opens on its title screen: **New voyage**, **Continue** (the latest save), **Load a voyage**,
+**Settings** and **Quit**. In play, **Esc** or the **Menu** tab opens the pause menu: Resume, Save (into a
+named slot, or over an old one), Load, Settings, Controls, Main menu, Quit. **Cmd + S** quick-saves and
+**Cmd + L** loads the quick save (F5/F9 too, with **Fn** on a MacBook).
+
+Moving about: in port, **click the ground** to walk the captain there, and **right-click** someone to go
+and talk with them. Move the view with **W A S D** or the arrow keys, a **two-finger drag** on the
+trackpad or a middle-button drag, and zoom with a **pinch** or the scroll wheel. **Q** and **E** turn it.
+Settings can also move the view when the mouse is at the edge of the screen.
 
 ## Where saves go
 

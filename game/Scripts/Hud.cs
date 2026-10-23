@@ -56,7 +56,8 @@ public partial class Hud : CanvasLayer
     private readonly Dictionary<string, Gauge> _needBars = [];
     private readonly Dictionary<PanelId, Button> _navButtons = [];
     private readonly Dictionary<PanelId, VBoxContainer> _panelBodies = [];
-    private readonly HashSet<AutoPause> _autoPause = [AutoPause.InjuryAndDeath, AutoPause.Weather, AutoPause.ShipDamage, AutoPause.Shortage, AutoPause.Events, AutoPause.Landfall, AutoPause.Called];
+    // What pauses the game: the player's settings (a decision always waits for the captain).
+    private static HashSet<AutoPause> _autoPause => GameSettings.AutoPause;
 
     private Control _root = null!;
     private Label _clock = null!;
@@ -202,7 +203,13 @@ public partial class Hud : CanvasLayer
     public bool PanelOpen => _open is not null;
 
     /// <summary>Whether this kind of event stops the clock (menu, §18).</summary>
-    public bool Pauses(AutoPause category) => _autoPause.Contains(category);
+    public bool Pauses(AutoPause category) => category == AutoPause.Events || _autoPause.Contains(category);
+
+    /// <summary>The Menu tab was pressed: the game's menu (Main opens it).</summary>
+    public event Action? MenuRequested;
+
+    /// <summary>Shows or hides the list of controls.</summary>
+    public void ToggleControls() => _help.Visible = !_help.Visible;
 
     /// <summary>The body of a management screen, for phase-specific content (the port adds its journal).</summary>
     public VBoxContainer PanelBody(PanelId panel) => _panelBodies[panel];
@@ -526,6 +533,7 @@ public partial class Hud : CanvasLayer
             _eventChoices.AddChild(button);
         }
 
+        TuckEvent(false);
         Ui.FadeIn(_event);
     }
 
@@ -837,16 +845,41 @@ public partial class Hud : CanvasLayer
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 3);
         _checklist.AddChild(column);
-        column.AddChild(Ui.Heading("Prepare the expedition"));
+        var head = new HBoxContainer();
+        head.AddThemeConstantOverride("separation", Ui.SpaceM);
+        column.AddChild(head);
+        var heading = Ui.Heading("Prepare the expedition");
+        heading.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        head.AddChild(heading);
+        // Folded, the card is its heading alone; open, the checks, and the readiness when asked for.
+        var fold = Ui.Button(Ui.ButtonKind.Tertiary, "−", "Fold this card away (click again to open it)", null);
+        head.AddChild(fold);
         _checks = new VBoxContainer();
         _checks.AddThemeConstantOverride("separation", 2);
         column.AddChild(_checks);
+        var more = Ui.Button(Ui.ButtonKind.Tertiary, "Readiness ▸", "How ready the ship and company are, for the passage and the landfall", null);
+        more.Alignment = HorizontalAlignment.Left;
+        column.AddChild(more);
 
         // Readiness, in words not a score (ECONOMY_LOOP §43): for the passage, and for the landfall after it.
-        column.AddChild(new HSeparator());
-        var columns = new HBoxContainer();
+        var columns = new HBoxContainer { Visible = false };
         columns.AddThemeConstantOverride("separation", Ui.SpaceL);
         column.AddChild(columns);
+        more.Pressed += () =>
+        {
+            columns.Visible = !columns.Visible;
+            more.Text = columns.Visible ? "Readiness ▾" : "Readiness ▸";
+            _checklist.ResetSize();
+        };
+        fold.Pressed += () =>
+        {
+            var open = !_checks.Visible;
+            _checks.Visible = open;
+            more.Visible = open;
+            columns.Visible = columns.Visible && open;
+            fold.Text = open ? "−" : "+";
+            _checklist.ResetSize();
+        };
         foreach (var (title, names) in new[] { ("Voyage", new[] { "Sailing", "Navigation", "Repair", "Medical", "Water", "Food" }), ("Landfall", new[] { "Building", "Food finding", "Farming", "Trade goods" }) })
         {
             var part = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(190, 0) };
@@ -997,12 +1030,12 @@ public partial class Hud : CanvasLayer
         _belowButton = Tab("Below", "See below decks: the hold, the forecastle space, the steerage and the cabin, and who is down there  (B)", "supplies");
         _belowButton.Pressed += () => BelowRequested?.Invoke();
         row.AddChild(_belowButton);
-        var menuButton = Tab("Menu", "Menu: new voyage, save, load, controls, interface size, auto-pause", "menu");
+        var menuButton = Tab("Menu", "The menu: save, load, settings, controls  (Esc)", "menu");
         menuButton.ToggleMode = false;
         row.AddChild(menuButton);
         _menu = new PopupMenu();
         _root.AddChild(_menu);
-        menuButton.Pressed += () => OpenMenu(menuButton, below: false);
+        menuButton.Pressed += () => MenuRequested?.Invoke();
         _menu.IdPressed += OnMenu;
     }
 
@@ -1684,6 +1717,7 @@ public partial class Hud : CanvasLayer
         top.AddChild(title);
         top.AddChild(CloseButton(() => _help.Visible = false));
         column.AddChild(Ui.Text(
+            "Click the ground in port: the captain walks there\n" +
             "Right-click: walk (in port the captain; at sea the selected crew member)\n" +
             "Left-click: look at someone · Esc: close · F: follow the captain\n" +
             "Space: pause or carry on · 1–6: speeds\n" +
@@ -2851,15 +2885,42 @@ public partial class Hud : CanvasLayer
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", Ui.SpaceL);
         _event.AddChild(column);
+        // The title, with a button to tuck the window away to a bar at the top and look at the scene.
+        var head = new HBoxContainer();
+        column.AddChild(head);
         _eventTitle = Ui.Text("", Ui.TextDisplay, Ui.Brass);
         _eventTitle.HorizontalAlignment = HorizontalAlignment.Center;
-        column.AddChild(_eventTitle);
+        _eventTitle.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        head.AddChild(_eventTitle);
+        _eventTuck = Ui.Button(Ui.ButtonKind.Tertiary, "Hide", "Tuck this away to look at the scene; it waits at the top", () => TuckEvent(!_eventTucked));
+        _eventTuck.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+        head.AddChild(_eventTuck);
+        _eventBody = new VBoxContainer();
+        _eventBody.AddThemeConstantOverride("separation", Ui.SpaceL);
+        column.AddChild(_eventBody);
         _eventText = Ui.Prose("", Ui.TextBody + 1, Ui.Ink, 540);
-        column.AddChild(_eventText);
-        column.AddChild(new HSeparator());
+        _eventBody.AddChild(_eventText);
+        _eventBody.AddChild(new HSeparator());
         _eventChoices = new VBoxContainer();
         _eventChoices.AddThemeConstantOverride("separation", Ui.SpaceS);
-        column.AddChild(_eventChoices);
+        _eventBody.AddChild(_eventChoices);
+    }
+
+    private VBoxContainer _eventBody = null!;
+    private Button _eventTuck = null!;
+    private bool _eventTucked;
+
+    // Tucked: just its title, at the top of the screen, with a button to bring it back.
+    private void TuckEvent(bool tucked)
+    {
+        _eventTucked = tucked;
+        _eventBody.Visible = !tucked;
+        _eventTuck.Text = tucked ? "Show" : "Hide";
+        _eventTitle.AddThemeFontSizeOverride("font_size", tucked ? Ui.TextHeading : Ui.TextDisplay);
+        _event.AnchorTop = _event.AnchorBottom = tucked ? 0f : 0.5f;
+        _event.OffsetTop = tucked ? Ui.BelowTopBar + Ui.SpaceS : -220;
+        _event.OffsetBottom = _event.OffsetTop;
+        _event.ResetSize();
     }
 
     private void BuildEnding()

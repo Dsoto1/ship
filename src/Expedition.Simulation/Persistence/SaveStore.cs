@@ -52,6 +52,58 @@ public sealed class SaveStore
         }
     }
 
+    /// <summary>What a slot holds, for a list of saves: when it was written, the campaign's phase and its tick,
+    /// read from the head of the file without loading the whole save. Phase and tick are null if unreadable.</summary>
+    public (DateTime Written, string? Phase, long? Tick) Describe(string slot)
+    {
+        var path = PathFor(slot);
+        var written = File.GetLastWriteTime(path);
+        try
+        {
+            var head = new byte[4096];
+            int read;
+            using (var file = File.OpenRead(path))
+            {
+                read = file.Read(head, 0, head.Length);
+            }
+
+            var reader = new System.Text.Json.Utf8JsonReader(head.AsSpan(0, read), isFinalBlock: false, state: default);
+            string? phase = null;
+            long? tick = null;
+            while (reader.Read() && (phase is null || tick is null))
+            {
+                if (reader.TokenType != System.Text.Json.JsonTokenType.PropertyName || reader.CurrentDepth != 1)
+                {
+                    continue;
+                }
+
+                var name = reader.GetString();
+                if (!reader.Read())
+                {
+                    break;
+                }
+
+                if (name == "phase" && reader.TokenType == System.Text.Json.JsonTokenType.String)
+                {
+                    phase = reader.GetString();
+                }
+                else if (name == "tick" && reader.TokenType == System.Text.Json.JsonTokenType.Number)
+                {
+                    tick = reader.GetInt64();
+                }
+            }
+
+            return (written, phase, tick);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
+        {
+            return (written, null, null);
+        }
+    }
+
+    /// <summary>Deletes <paramref name="slot"/>, if it exists.</summary>
+    public void Delete(string slot) => File.Delete(PathFor(slot));
+
     private string PathFor(string slot)
     {
         if (string.IsNullOrWhiteSpace(slot) || slot.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || slot.Contains(".."))

@@ -39,7 +39,7 @@ from Finder into the Terminal window: it fills in the path. Then add `/Contents/
 | `--trust=people.mahenu:60` | A people's trust set. |
 | `--panel=ship` | The Camp drawer open (People: `--panel=people`). |
 
-Save with **Cmd + S** and load with **Cmd + L** at any point.
+Save with **Cmd + S** and load with **Cmd + L** at any point, or from the menu (**Esc**). Launched with shortcuts, the game skips the title screen.
 
 ## 1. Workplaces (step W)
 

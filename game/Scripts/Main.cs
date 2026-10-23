@@ -48,7 +48,7 @@ public partial class Main : Node3D
 
     // Never simulate more than this many ticks in one frame, so a slow frame cannot snowball.
     private const int MaxTicksPerFrame = 600;
-    private const string QuickSaveSlot = "quicksave";
+    private const string QuickSaveSlot = GameMenu.QuickSaveSlot;
     // How far in from the anchorage the camp's water's edge lies, metres.
     private const float CampOffshore = 26f;
 
@@ -89,6 +89,7 @@ public partial class Main : Node3D
     private string? _developerTrust;
     private string? _developerGive;
     private string? _developerRaise;
+    private string? _developerMenu;
     private string? _developerCharter;
     private string? _developerMapSelect;
     private Node3D _portFigures = null!;
@@ -182,6 +183,8 @@ public partial class Main : Node3D
         }
 
         _saves = new SaveStore(ProjectSettings.GlobalizePath("user://saves"));
+        GameSettings.Load();
+        GameSettings.Apply(GetTree().Root);
         BuildWorld();
 
         _hud = new Hud();
@@ -189,6 +192,30 @@ public partial class Main : Node3D
         _hud.SpeedChosen += SetSpeed;
         _hud.SaveRequested += Save;
         _hud.LoadRequested += Load;
+        _hud.MenuRequested += OpenMenu;
+
+        // The game's menus: the title screen, the pause menu, saves and settings.
+        _gameMenu = new GameMenu { Name = "GameMenu" };
+        AddChild(_gameMenu);
+        _gameMenu.Attach(_saves);
+        _gameMenu.CanSave = () => _runner is not null && !_departure.Playing;
+        _gameMenu.NewVoyage += () =>
+        {
+            _hud.HideEnding();
+            StartCampaign(ExpeditionScenario.Create(_content, (ulong)System.Random.Shared.NextInt64()), "A new voyage. Click the ground to walk; click anyone to look at them, right-click them to talk.");
+            SetSpeed(1);
+        };
+        _gameMenu.LoadSlot += slot => { _gameMenu.Close(); if (Load(slot)) { _speedBeforeMenu = null; SetSpeed(1); } };
+        _gameMenu.SaveSlot += Save;
+        _gameMenu.Closed += () =>
+        {
+            if (_speedBeforeMenu is { } before)
+            {
+                SetSpeed(before);
+                _speedBeforeMenu = null;
+            }
+        };
+        _gameMenu.ControlsRequested += () => _hud.ToggleControls();
         _hud.CharacterChosen += id => _selected = id;
         _hud.TaskOrdered += OrderTask;
         _hud.StopOrdered += () => { if (_selected is { } id) _hud.ShowResult(_runner.CancelTask(id)); };
@@ -442,7 +469,7 @@ public partial class Main : Node3D
         // --load=PATH: a save written elsewhere (a long run played out by the tests' captain), for staging scenes.
         StartCampaign(_loadPath is { } path ? new SimulationRunner(SaveSerializer.Deserialize(System.IO.File.ReadAllText(path), _content), _content)
             : _testDeck ? WithWatches(TestDeckScenario.Create(_content, seed)) : ExpeditionScenario.Create(_content, seed),
-            _loadPath is not null ? "Loaded." : _testDeck ? "At sea. Left-click a crew member, right-click to send them." : "La Bocana. Right-click to walk; click anyone to look at them.");
+            _loadPath is not null ? "Loaded." : _testDeck ? "At sea. Left-click a crew member, right-click to send them." : "La Bocana. Click the ground to walk; click anyone to look at them, right-click them to talk.");
         if (_startZoom is { } size)
         {
             _camera.Size = size;
@@ -456,6 +483,22 @@ public partial class Main : Node3D
         DeveloperPort();
 
         DeveloperForceVoyage();
+
+        // Started as a player starts it (no developer options): the title screen, over the port, paused.
+        // --menu=title, pause or settings: that menu open, for screenshots.
+        if (OS.GetCmdlineUserArgs().Length == 0 || _developerMenu == "title")
+        {
+            SetSpeed(0);
+            _gameMenu.ShowTitle();
+        }
+        else if (_developerMenu is "pause" or "settings")
+        {
+            OpenMenu();
+            if (_developerMenu == "settings")
+            {
+                _gameMenu.DeveloperOpenSettings();
+            }
+        }
 
         if (!string.IsNullOrEmpty(_screenshotPath))
         {
@@ -629,12 +672,13 @@ public partial class Main : Node3D
                 FollowCaptain((float)delta);
             }
             _port.UpdateLook(_world.Darkness, t, _portWet);
-            _port.OpenRoom(_runner.CaptainRoom?.Id, (float)delta);
+            _port.OpenRoom(RoomToOpen(), (float)delta);
             FadeForeground((float)delta);
             ListenToThePort(hour, (float)delta);
             // Rain and fog thin the crowd; stall covers go on, the ships at anchor vanish into fog.
             _crowd.Density = 1f - 0.7f * _portWet - 0.3f * _portFog;
             SceneryMaterial.Wind = 0.15f + _portWind;
+            _crowd.MinutesPerSecond = (float)speed;
             _crowd.Update(hour, (float)(delta * speed), _portWet, speed == 0 ? 0f : Mathf.Max(0.8f, 1f + Mathf.Log((float)speed) * 0.25f));
             _harbour.Update(hour, (float)(delta * speed), (float)delta, _world.Darkness, _portFog);
             _port.Covered = raining >= 0.5f;
@@ -765,6 +809,15 @@ public partial class Main : Node3D
         DeclutterLabels();
         _hud.Refresh(_runner, _selected, _speedIndex);
         _portHud.Refresh(_runner, _selected);
+        if (_gameMenu.AtTitle)
+        {
+            _hud.Visible = false;
+            _portHud.Visible = false;
+        }
+        else if (!_hud.Visible && !_departure.Playing)
+        {
+            _hud.Visible = true;
+        }
         var pointer = GetViewport().GetMousePosition();
         // --hover=person.x: as if the pointer were over them, for screenshots.
         if (_developerHover is { } hoverId && _runner.CharacterFor(hoverId) is { } hoverOf && _figures.TryGetValue(hoverOf.Id, out var hoverFigure))
@@ -1057,7 +1110,15 @@ public partial class Main : Node3D
 
         if (@event is InputEventMouseButton { Pressed: true } click)
         {
-            if (click.ButtonIndex == MouseButton.Left)
+            if (click.ButtonIndex == MouseButton.Left && _runner.Campaign.Port is not null && FigureUnder(click.Position) is null
+                     && _runner.Campaign.CaptainId is { } walker && CellUnder(click.Position) is { } ground)
+            {
+                // In port, a click on the ground walks the captain there (right-click too, as before).
+                _pending = null;
+                _follow = true;
+                _hud.ShowResult(_runner.MoveCharacter(walker, ground));
+            }
+            else if (click.ButtonIndex == MouseButton.Left)
             {
                 _selected = FigureUnder(click.Position) ?? _selected;
             }
@@ -1088,6 +1149,17 @@ public partial class Main : Node3D
         }
         else if (@event is InputEventKey { Pressed: true, Echo: false } key)
         {
+            // With a menu open, only Esc counts: back a screen, or out.
+            if (_gameMenu.IsOpen)
+            {
+                if (key.Keycode == Key.Escape)
+                {
+                    _gameMenu.Back();
+                }
+
+                return;
+            }
+
             // Cmd+S / Cmd+L on macOS (Ctrl elsewhere), since F-keys need Fn on a MacBook.
             if (key.IsCommandOrControlPressed() && key.Keycode is Key.S or Key.L)
             {
@@ -1133,11 +1205,18 @@ public partial class Main : Node3D
                 case Key.M: _hud.TogglePanel(PanelId.Chart); break;
                 case Key.Escape:
                     _profiler.Close();
-                    // Back out one layer at a time: the open screen, then the card (§48).
+                    // Back out one layer at a time: the open screen, then the card (§48), then the menu.
                     if (!_hud.ClosePanel())
                     {
-                        _selected = _runner.Campaign.CaptainId;
-                        _pending = null;
+                        if (_selected != _runner.Campaign.CaptainId || _pending is not null)
+                        {
+                            _selected = _runner.Campaign.CaptainId;
+                            _pending = null;
+                        }
+                        else
+                        {
+                            OpenMenu();
+                        }
                     }
 
                     break;
@@ -1782,12 +1861,30 @@ public partial class Main : Node3D
         }
     }
 
-    private void Save()
+    private GameMenu _gameMenu = null!;
+    private int? _speedBeforeMenu;
+
+    // The pause menu, with the clock stopped while it is open.
+    private void OpenMenu()
+    {
+        if (_gameMenu.IsOpen)
+        {
+            return;
+        }
+
+        _speedBeforeMenu ??= _speedIndex;
+        SetSpeed(0);
+        _gameMenu.ShowPause();
+    }
+
+    private void Save() => Save(QuickSaveSlot);
+
+    private void Save(string slot)
     {
         try
         {
             // Reported only once the file is written (UI_UX §46).
-            _saves.Write(QuickSaveSlot, SaveSerializer.Serialize(_runner.Campaign));
+            _saves.Write(slot, SaveSerializer.Serialize(_runner.Campaign));
             var where = _runner.Campaign.Port is not null ? "in port at La Bocana" : _runner.Campaign.Voyage is { } ship ? $"at sea, bound for {ship.Destination}" : "";
             _hud.ShowResult(CommandResult.Ok(), $"Saved: {_runner.Campaign.Clock}, {where}.");
         }
@@ -1797,19 +1894,23 @@ public partial class Main : Node3D
         }
     }
 
-    private void Load()
+    private void Load() => Load(QuickSaveSlot);
+
+    private bool Load(string slot)
     {
         try
         {
-            var campaign = SaveSerializer.Deserialize(_saves.Read(QuickSaveSlot), _content);
+            var campaign = SaveSerializer.Deserialize(_saves.Read(slot), _content);
             var speed = _speedIndex;
-            StartCampaign(new SimulationRunner(campaign, _content), "Loaded the quick save.");
+            StartCampaign(new SimulationRunner(campaign, _content), slot == QuickSaveSlot ? "Loaded the quick save." : $"Loaded: {slot}.");
             SetSpeed(speed);
+            return true;
         }
         catch (SaveLoadException ex)
         {
             // The current campaign keeps running; a failed load never replaces it.
             _hud.ShowStatus(ex.Message);
+            return false;
         }
     }
 
@@ -2285,6 +2386,35 @@ public partial class Main : Node3D
         }
     }
 
+    // The room to show inside: the one the captain is in, or the one he is walking to, or whose door he is
+    // standing at (within two cells), so the roof lifts as he goes in, not once he is in.
+    private string? RoomToOpen()
+    {
+        if (_runner.CaptainRoom is { } inside)
+        {
+            return inside.Id;
+        }
+
+        if (_runner.Campaign.CaptainId is not { } captain || !_runner.Campaign.Placements.TryGetValue(captain, out var at))
+        {
+            return null;
+        }
+
+        var location = _runner.Location(at.LocationId);
+        var cell = at.CellAt(_runner.Campaign.Clock.Tick);
+        var goingTo = at.Movement is { Path.Count: > 0 } walk ? walk.Path[^1] : (GridPosition?)null;
+        foreach (var room in location.Rooms)
+        {
+            bool In(GridPosition c, int margin) => c.X >= room.X0 - margin && c.X <= room.X1 + margin && c.Y >= room.Y0 - margin && c.Y <= room.Y1 + margin;
+            if ((goingTo is { } end && In(end, 0) && In(cell, 6)) || In(cell, 2))
+            {
+                return room.Id;
+            }
+        }
+
+        return null;
+    }
+
     private void ReadDeveloperArguments(ref ulong seed)
     {
         foreach (var argument in OS.GetCmdlineUserArgs())
@@ -2333,6 +2463,7 @@ public partial class Main : Node3D
                 case "trust": _developerTrust = value; break;
                 case "give": _developerGive = value; break;
                 case "raise": _developerRaise = value; break;
+                case "menu": _developerMenu = value; break;
                 case "charter": _developerCharter = value.Replace('_', ' '); break;
                 case "astrolabe": _openView = "astrolabe"; break;
                 case "hull" when double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var hullLeft): _forceHull = hullLeft; break;

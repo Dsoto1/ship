@@ -675,7 +675,7 @@ public partial class PortCrowd : Node3D
             if (walker.Figure is { } figure)
             {
                 Place(figure, position, walker.Yaw, walker.Pose == CrowdMesh.Carrying ? Pose.Carrying : stopped ? Pose.Standing : Pose.Walking,
-                    !stopped, _rate * walker.Speed / (float)(_location.WalkCellsPerMinute ?? 2.5));
+                    !stopped, Paced(walker.Speed), groundMatched: true);
                 _shadows.Multimesh.SetInstanceTransform(index++, new Transform3D(Basis.Identity, position + new Vector3(0, 0.025f, 0)));
                 continue;
             }
@@ -724,7 +724,7 @@ public partial class PortCrowd : Node3D
             var (at, heading) = Along(path, way > 0 ? along : length - along);
             heading *= way;
             Place(figure, at, Mathf.Atan2(heading.X, heading.Z), figure == null ? Pose.Walking : _sacks[figure.GetMeta("sack").AsInt32()].Visible ? Pose.Carrying : Pose.Walking,
-                true, _rate * speed / (float)(_location.WalkCellsPerMinute ?? 2.5));
+                true, Paced(speed), groundMatched: true);
             _shadows.Multimesh.SetInstanceTransform(index++, new Transform3D(Basis.Identity, at + new Vector3(0, 0.025f, 0)));
         }
 
@@ -761,11 +761,17 @@ public partial class PortCrowd : Node3D
         _shadows.Multimesh.VisibleInstanceCount = index;
     }
 
-    private void Place(PersonModel figure, Vector3 at, float yaw, Pose pose, bool moving, float rate)
+    /// <summary>Game minutes a second of play (the game speed): how fast the crowd covers the ground.</summary>
+    public float MinutesPerSecond { get; set; }
+
+    // A walker's pace over the ground (cells, that is metres, a game minute) as the walk clip's speed.
+    private float Paced(float cellsPerMinute) => PersonModel.WalkRate(cellsPerMinute * MinutesPerSecond);
+
+    private void Place(PersonModel figure, Vector3 at, float yaw, Pose pose, bool moving, float rate, bool groundMatched = false)
     {
         figure.Position = at;
         figure.Rotation = new Vector3(0, yaw, 0);
-        figure.Show(pose, moving, rate);
+        figure.Show(pose, moving, rate, groundMatched);
         figure.Condition(_wetness, 0.25f, 0f);
     }
 }

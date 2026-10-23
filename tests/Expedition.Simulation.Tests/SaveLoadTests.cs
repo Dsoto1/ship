@@ -391,6 +391,14 @@ public class SaveLoadTests
             Assert.Equal(json, store.Read("autosave"));
             Assert.Empty(Directory.GetFiles(directory, "*.tmp"));
             Assert.Equal(json, SaveSerializer.Serialize(SaveSerializer.Deserialize(store.Read("autosave"), TestContent.Create())));
+
+            // The list of saves shows each one's phase and day without loading it; a save can be deleted.
+            var campaign = StormDamagedVoyage().Campaign;
+            var (written, phase, tick) = store.Describe("autosave");
+            Assert.Equal((campaign.Phase.ToString(), campaign.Clock.Tick), (phase, tick));
+            Assert.True(written > DateTime.Now.AddMinutes(-5));
+            store.Delete("before-storm");
+            Assert.Equal(["autosave"], store.ListSlots());
         }
         finally
         {
