@@ -10,3 +10,6 @@ obj/
 game/Assets/Characters/*/portrait.glb
 game/Assets/Characters/*/portrait.glb.import
 __pycache__/
+
+# Project Control Center: written by the agent at the end of a session, sent by the session hook.
+.control-center/session-summary.json
