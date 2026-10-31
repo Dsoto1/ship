@@ -51,6 +51,9 @@ Save with **Cmd + S** and load with **Cmd + L** at any point, or from the menu (
       slows, turns and walks back.
 - [ ] **Feet:** the planted foot stays put; no gliding. People walk at different paces.
 - [ ] **Pause:** paused mid-walk, he stays exactly where he is, and on resume carries on without a jump.
+- [ ] **Walks of their own** (Meshy, 2026-10-31): people walk differently. Women, the young, the old, officers and
+      anyone with a limp each have their own gait (`docs/WALKS.md`). To see one walk on the captain, add
+      `--walkclip=walk_proud` (or `walk_casual`, `walk_limp`, `walk_unsteady`, `walk_quick`…).
 
 ## Retest: the recruiting screens (reworked 2026-10-31)
 

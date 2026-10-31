@@ -2574,6 +2574,7 @@ public partial class Main : Node3D
                 case "tavern": _developerTavern = value; break;
                 case "hover": _developerHover = value; break;
                 case "walktest": _walkTest = value; break;
+                case "walkclip": PersonModel.ForcedWalk = value; break;
                 case "walklog": _walkLog = value; break;
                 case "captain" when value.Split(',') is [var cx, var cy] && int.TryParse(cx, out var x) && int.TryParse(cy, out var y): _developerCaptainAt = new GridPosition(x, y); break;
                 case "journal": _developerJournal = true; break;

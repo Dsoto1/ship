@@ -112,6 +112,30 @@ public partial class PersonModel : Node3D
                 clip.LoopMode = Looping.Contains(name) ? Animation.LoopModeEnum.Linear : Animation.LoopModeEnum.None;
             }
 
+            // Walks from Meshy's library, retargeted onto this rig (tools/characters/retarget_meshy.gd), with the
+            // stride each covers at speed 1 (walks.json), so that every walk is paced to the ground.
+            if (DirAccess.Open(WalksFolder) is { } walks)
+            {
+                foreach (var file in walks.GetFiles().Where(f => f.EndsWith(".res") || f.EndsWith(".res.remap")))
+                {
+                    var name = file.Replace(".remap", "")[..^4];
+                    if (ResourceLoader.Load($"{WalksFolder}/{name}.res") is Animation walk)
+                    {
+                        _clips.AddAnimation(name, walk);
+                    }
+                }
+
+                if (Godot.FileAccess.FileExists($"{WalksFolder}/walks.json")
+                    && Json.ParseString(Godot.FileAccess.GetFileAsString($"{WalksFolder}/walks.json")).AsGodotDictionary() is { } meta)
+                {
+                    foreach (var (name, entry) in meta)
+                    {
+                        // Measured as the clips above were (0.977 for walk), then given the same tuning (to 1.01).
+                        Strides[name.AsString()] = (float)entry.AsGodotDictionary()["stride"].AsDouble() * (StrideSpeed / 0.977f);
+                    }
+                }
+            }
+
             scene.Free();
             return _clips;
         }
@@ -162,6 +186,7 @@ public partial class PersonModel : Node3D
             Limp = _identity.Looks.Posture.Limp switch { "left" => -1, "right" => 1, _ => 0 },
         };
         _skeleton.AddChild(Posture);
+        _walk = ChooseWalk(personId);
         _footLock = new FootLock();
         _skeleton.AddChild(_footLock);
         Play(_identity.Animation.Idle, 1f);
@@ -174,6 +199,43 @@ public partial class PersonModel : Node3D
     public const float StrideSpeed = 1.01f;
 
     private const float CarryStride = 0.67f;
+    private const string WalksFolder = "res://Assets/Characters/Shared/walks";
+
+    // The ground each extra walk covers at speed 1, by clip.
+    private static readonly Dictionary<string, float> Strides = [];
+
+    /// <summary>For trying walks (--walkclip): every walking figure uses this clip, when set.</summary>
+    public static string? ForcedWalk { get; set; }
+
+    private string _walk = "walk";
+
+    // Each person's own walk, from their record: a limp if they have one; a woman's walk or an easy one for women;
+    // a proud strut or the formal walk for those who walk formally; an easy walk or the plain one for the old; and
+    // for the rest one of the quicker or plainer walks, the same one every time (picked by their id). The library's
+    // slow walks (elderly, plodding, sneaking, heavy loads) are not given out: port walks keep one pace for all.
+    private string ChooseWalk(string personId)
+    {
+        var own = _identity.Animation.Walk;
+        var seed = personId.Aggregate(17u, (h, c) => h * 31u + c);
+        string Pick(params string[] choices)
+        {
+            var have = choices.Where(c => _player.HasAnimation(c)).ToArray();
+            return have.Length == 0 ? own : have[seed % (uint)have.Length];
+        }
+
+        if (_identity.Looks.Posture.Limp is "left" or "right" && _player.HasAnimation("walk_limp"))
+        {
+            // The clip limps; the posture's own stiff knee would limp twice over.
+            Posture.Limp = 0;
+            return "walk_limp";
+        }
+
+        return _identity.Sex == "Female" ? Pick("walk_woman", "walk_casual")
+            : own == "walk_formal" ? Pick("walk_proud", "walk_formal")
+            : _identity.Age >= 55 ? Pick("walk_casual", "walk")
+            : _identity.Age is > 0 and < 30 ? Pick("walk_quick", "walk_meshy", "walk_plain", "walk")
+            : Pick("walk", "walk_casual", "walk_plain", "walk_meshy");
+    }
 
     /// <summary>How quick this person is on their feet, against the usual (from their identity).</summary>
     public float WalkSpeed => _walkSpeed;
@@ -194,7 +256,7 @@ public partial class PersonModel : Node3D
     {
         var clip = pose switch
         {
-            Pose.Walking => _identity.Animation.Walk,
+            Pose.Walking => _walk,
             Pose.Carrying or Pose.Rolling when moving => "walk_carry",
             Pose.Carrying => "walk_carry",
             Pose.Hammering or Pose.Working => _identity.Animation.Work,
@@ -213,18 +275,23 @@ public partial class PersonModel : Node3D
         };
         if (moving && pose is not (Pose.Carrying or Pose.Rolling))
         {
-            clip = _identity.Animation.Walk;
+            clip = _walk;
         }
 
         // A disabled arm cannot do two-handed work (§24): the injured keep to light work.
         if (Posture.InjuredArm != 0 && clip is "chop" or "push" or "pick_up" or "walk_carry" or "rail")
         {
-            clip = moving ? _identity.Animation.Walk : "idle";
+            clip = moving ? _walk : "idle";
         }
 
         var walking = clip.StartsWith("walk");
         // Ground-matched, the rate is for the base stride: a shorter person's stride is shorter, and carrying, shorter still.
-        var stride = (clip == "walk_carry" ? StrideSpeed / CarryStride : 1f) / _scale;
+        if (walking && ForcedWalk is { } forced && clip != "walk_carry" && _player.HasAnimation(forced))
+        {
+            clip = forced;
+        }
+
+        var stride = (clip == "walk_carry" ? StrideSpeed / CarryStride : Strides.TryGetValue(clip, out var own) && own > 0.1f ? StrideSpeed / own : 1f) / _scale;
         _footLock.Locking = walking && groundMatched && moving;
         var speed = walking && groundMatched && moving ? rate * stride : rate * (walking ? _walkSpeed : 1f) * (1f - Posture.Fatigue * 0.3f);
         Play(clip, speed);
@@ -300,6 +367,7 @@ public partial class PersonModel : Node3D
         public string Name { get; set; } = "";
         public string Sex { get; set; } = "Male";
         public int HeightCm { get; set; } = 170;
+        public int Age { get; set; }
         public LooksRecord Looks { get; set; } = new();
         public List<EquipmentRecord> Equipment { get; set; } = [];
         public AnimationRecord Animation { get; set; } = new();

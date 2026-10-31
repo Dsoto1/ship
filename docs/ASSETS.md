@@ -36,3 +36,19 @@ Reference photos used:
 - `stall`, `galley`, `table` and `bench` come from multi-view reference sheets the user sent on 2026-10-21. One view
   was cropped from each (the 3/4 view, or the firebox's front). The source and licence of those
   sheets are not recorded, so treat these props as **prototype-only** until the source is cleared.
+
+## Meshy credits (rigging and animation)
+
+Meshy has its own balance (5,171 credits on 2026-10-31), separate from Artlist's. The same rules apply: an exact
+price first, the user's go-ahead, and every spend logged here. The price page (docs.meshy.ai) is blocked from this
+environment. The charge is the `consumed_credits` on each finished task: rigging is 5 credits, and each
+animation from the library is 3, the library's "free" ones included.
+
+| Date | What | Credits | Balance after |
+|---|---|---|---|
+| 2026-10-31 | Rigging the Quaternius base male (Universal Base Characters, CC0), for retargeting (rig task `01a1944e-cded-7543-a9d2-525f14678a0e`; its basic walk came free) | 5 | 5,166 |
+| 2026-10-31 | 16 walks from the animation library on that rig: casual, unsteady, plodding, woman, limping, injured, proud strut, quick, thoughtful, looking around, sneaky, heavy load, water bucket, stumble, plain, elderly | 48 | 5,118 |
+
+Retargeted onto the shared rig by `tools/characters/retarget_meshy.gd` (see `docs/WALKS.md`)
+into `game/Assets/Characters/Shared/walks/`. More can be animated on the same rig task, at 3 credits each, while
+Meshy keeps it.

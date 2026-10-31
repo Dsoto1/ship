@@ -1,0 +1,87 @@
+{
+  "walk_bucket": {
+    "length": 9.3,
+    "source": "walk_bucket.glb",
+    "stride": 0.153
+  },
+  "walk_carry_heavy": {
+    "length": 6.533,
+    "source": "walk_carry_heavy.glb",
+    "stride": 0.366
+  },
+  "walk_casual": {
+    "length": 4.2,
+    "source": "walk_casual.glb",
+    "stride": 0.804
+  },
+  "walk_elderly": {
+    "length": 2.867,
+    "source": "walk_elderly.glb",
+    "stride": 0.224
+  },
+  "walk_injured": {
+    "length": 8.7,
+    "source": "walk_injured.glb",
+    "stride": 0.545
+  },
+  "walk_limp": {
+    "length": 3.533,
+    "source": "walk_limp.glb",
+    "stride": 0.763
+  },
+  "walk_looking": {
+    "length": 23.833,
+    "source": "walk_looking.glb",
+    "stride": 0.212
+  },
+  "walk_meshy": {
+    "length": 1.067,
+    "source": "walking.glb",
+    "stride": 1.613
+  },
+  "walk_plain": {
+    "length": 1.2,
+    "source": "walk_plain.glb",
+    "stride": 1.153
+  },
+  "walk_plod": {
+    "length": 5.533,
+    "source": "walk_plod.glb",
+    "stride": 0.476
+  },
+  "walk_proud": {
+    "length": 4.533,
+    "source": "walk_proud.glb",
+    "stride": 0.982
+  },
+  "walk_quick": {
+    "length": 3.033,
+    "source": "walk_quick.glb",
+    "stride": 1.609
+  },
+  "walk_sneaky": {
+    "length": 2.867,
+    "source": "walk_sneaky.glb",
+    "stride": 0.394
+  },
+  "walk_stumble": {
+    "length": 2.6,
+    "source": "walk_stumble.glb",
+    "stride": 1.292
+  },
+  "walk_thoughtful": {
+    "length": 4.733,
+    "source": "walk_thoughtful.glb",
+    "stride": 0.623
+  },
+  "walk_unsteady": {
+    "length": 3.0,
+    "source": "walk_unsteady.glb",
+    "stride": 0.85
+  },
+  "walk_woman": {
+    "length": 1.0,
+    "source": "walk_woman.glb",
+    "stride": 1.475
+  }
+}

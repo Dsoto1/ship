@@ -49,3 +49,9 @@ concept images (Nano Banana 2). The galley, stall, table and bench come from ref
 user supplied, whose source is not yet recorded, so they are prototype-only until it is cleared.
 All were turned into models with Hyper3D Rodin v2.5 Fast. Sources are in `tools/props/props.json`;
 check Artlist's licence terms before shipping them.
+
+## Generated with Meshy (paid credits)
+
+| Asset | What | Made with | Files |
+|---|---|---|---|
+| Walks | Sixteen walking styles from Meshy's animation library, applied to a Meshy rig of the Quaternius base male and retargeted onto the shared rig | Meshy (rigging and animation API), on the user's account, 2026-10-31; see `docs/ASSETS.md` | `Characters/Shared/walks/*.res` |
