@@ -418,7 +418,7 @@ public partial class PortHud : CanvasLayer
 
         _pending = Ui.Text("", Ui.TextMeta, Ui.Brass, 290);
         column.AddChild(_pending);
-        column.AddChild(Ui.Button("Talk", "Walk over and talk with them. What you can ask opens up as you learn about them and they come to trust you",
+        column.AddChild(Ui.Button(Ui.ButtonKind.Primary, "Talk", "Walk over and talk with them. What you can ask opens up as you learn about them and they come to trust you",
             () => { if (_shown is { } id) TalkRequested?.Invoke(id); }));
 
         // Asking about others and offering a berth are done in conversation (ConversationView).

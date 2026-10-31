@@ -21,7 +21,7 @@ public partial class ConversationView : Control
     private RichTextLabel _said = null!;
     private VBoxContainer _topics = null!;
     private OptionButton _askAbout = null!;
-    private HBoxContainer _offerRow = null!;
+    private PanelContainer _offerRow = null!;
     private SpinBox _offer = null!;
     private readonly List<CharacterId> _askChoices = [];
     private CharacterId? _with;
@@ -57,7 +57,7 @@ public partial class ConversationView : Control
         _panel.OffsetLeft = -620;
         _panel.OffsetRight = 220;
         _panel.OffsetBottom = -Ui.AboveTabBar;
-        _panel.OffsetTop = -Ui.AboveTabBar - 470;
+        _panel.OffsetTop = -Ui.AboveTabBar - 560;
         AddChild(_panel);
 
         var row = new HBoxContainer();
@@ -82,54 +82,92 @@ public partial class ConversationView : Control
         left.AddChild(_manner);
 
         var right = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        right.AddThemeConstantOverride("separation", Ui.SpaceS);
+        right.AddThemeConstantOverride("separation", Ui.SpaceM);
         row.AddChild(right);
+
+        // What is said: on parchment, in ink, so that words spoken never look like something to press.
+        var speech = Ui.ParchmentPanel(Ui.SpaceL, Ui.SpaceM);
+        speech.SizeFlagsVertical = SizeFlags.ExpandFill;
+        right.AddChild(speech);
         _said = new RichTextLabel
         {
             BbcodeEnabled = true,
             ScrollFollowing = true,
             FitContent = false,
             SizeFlagsVertical = SizeFlags.ExpandFill,
-            CustomMinimumSize = new Vector2(560, 210),
+            CustomMinimumSize = new Vector2(560, 150),
         };
-        _said.AddThemeFontSizeOverride("normal_font_size", Ui.TextBody + 1);
-        _said.AddThemeColorOverride("default_color", Ui.Ink);
-        right.AddChild(_said);
-        right.AddChild(new HSeparator());
+        _said.AddThemeFontOverride("normal_font", Ui.SerifFont);
+        _said.AddThemeFontOverride("italics_font", Ui.TitleItalic);
+        _said.AddThemeFontSizeOverride("normal_font_size", Ui.TextBody + 2);
+        _said.AddThemeFontSizeOverride("italics_font_size", Ui.TextBody + 2);
+        _said.AddThemeColorOverride("default_color", Ui.InkDark);
+        Ui.ContentOf(speech).AddChild(_said);
 
-        var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(0, 130), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
+        // What the captain can say: every line a button, marked as his to choose.
+        right.AddChild(Ui.SectionHeader("Ask them", "Choose a question"));
+        var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(0, 112), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         right.AddChild(scroll);
         _topics = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        _topics.AddThemeConstantOverride("separation", 2);
+        _topics.AddThemeConstantOverride("separation", Ui.SpaceS);
         scroll.AddChild(_topics);
 
         var ask = new HBoxContainer();
+        ask.AddThemeConstantOverride("separation", Ui.SpaceM);
         right.AddChild(ask);
-        ask.AddChild(Ui.Button("Ask about", "What do they know of someone else? Those who work with someone know them best", () =>
+        var askLabel = Ui.Text("What do they know of", Ui.TextBody, Ui.InkSoft);
+        askLabel.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        ask.AddChild(askLabel);
+        _askAbout = new OptionButton { SizeFlagsHorizontal = SizeFlags.ExpandFill, FocusMode = FocusModeEnum.None, ClipText = true };
+        ask.AddChild(_askAbout);
+        _askButton = Ui.Button("Ask", "What do they know of someone else? Those who work with someone know them best", () =>
         {
             if (_with is { } id && _askAbout.Selected >= 0 && _askAbout.Selected < _askChoices.Count)
             {
                 AskAboutChosen?.Invoke(id, _askChoices[_askAbout.Selected]);
             }
-        }));
-        _askAbout = new OptionButton { SizeFlagsHorizontal = SizeFlags.ExpandFill, FocusMode = FocusModeEnum.None, ClipText = true };
-        ask.AddChild(_askAbout);
+        });
+        ask.AddChild(_askButton);
 
-        var bottom = new HBoxContainer();
-        right.AddChild(bottom);
-        _offerRow = new HBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        bottom.AddChild(_offerRow);
-        _offerRow.AddChild(Ui.Button("Offer a berth", "Offer them a berth for this advance (a passenger's is what they pay)", () =>
+        // The terms, once heard: what they ask, what to offer, and the one thing to do, in gold.
+        _offerRow = new PanelContainer();
+        _offerRow.AddThemeStyleboxOverride("panel", Ui.InsetStyle(Ui.SpaceL, Ui.SpaceM));
+        right.AddChild(_offerRow);
+        var terms = new VBoxContainer();
+        terms.AddThemeConstantOverride("separation", Ui.SpaceS);
+        _offerRow.AddChild(terms);
+        terms.AddChild(Ui.SectionHeader("A berth aboard the Garza"));
+        _asks = Ui.Text("", Ui.TextBody, Ui.Ink, 560);
+        terms.AddChild(_asks);
+        var deal = new HBoxContainer();
+        deal.AddThemeConstantOverride("separation", Ui.SpaceM);
+        terms.AddChild(deal);
+        var advance = Ui.Text("Advance", Ui.TextBody, Ui.InkSoft);
+        advance.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        deal.AddChild(advance);
+        _offer = new SpinBox { MinValue = -2000, MaxValue = 5000, Step = 50, Suffix = "sueldos", SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        _offer.ValueChanged += _ => _offerButton.Text = OfferText();
+        deal.AddChild(_offer);
+        _offerButton = Ui.Button(Ui.ButtonKind.Primary, "Offer a berth", "Offer them a berth for this advance (a passenger's is what they pay). Too little insults", () =>
         {
             if (_with is { } id)
             {
                 OfferChosen?.Invoke(id, (int)_offer.Value);
             }
-        }));
-        _offer = new SpinBox { MinValue = -2000, MaxValue = 5000, Step = 50, Suffix = "sueldos", SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        _offerRow.AddChild(_offer);
-        bottom.AddChild(Ui.Button("Goodbye", "End the conversation  (Esc)", Close));
+        });
+        _offerButton.CustomMinimumSize = new Vector2(190, Ui.MinHit + 6);
+        deal.AddChild(_offerButton);
+
+        var bottom = new HBoxContainer();
+        right.AddChild(bottom);
+        bottom.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill });
+        bottom.AddChild(Ui.Button(Ui.ButtonKind.Tertiary, "Goodbye  (Esc)", "End the conversation", Close));
     }
+
+    private Label _asks = null!;
+    private Button _offerButton = null!, _askButton = null!;
+
+    private string OfferText() => _offer.Value < 0 ? $"Take them for {-(int)_offer.Value} sueldos" : $"Offer a berth · {(int)_offer.Value} sueldos";
 
     public override void _UnhandledInput(InputEvent @event)
     {
@@ -165,7 +203,7 @@ public partial class ConversationView : Control
     /// <summary>What the captain said, and what came back.</summary>
     public void Add(SimulationRunner runner, string asked, string said, bool ends = false)
     {
-        _said.AppendText($"\n\n[color=#{Ui.Brass.ToHtml(false)}]You: {Escape(asked)}[/color]\n{Escape(said)}");
+        _said.AppendText($"\n\n[color=#{CaptainInk.ToHtml(false)}][i]You: {Escape(asked)}[/i][/color]\n{Escape(said)}");
         _ended |= ends;
         Refresh(runner);
     }
@@ -190,17 +228,14 @@ public partial class ConversationView : Control
         }
         else
         {
-            foreach (var topic in runner.Topics(id))
+            // New questions first, as buttons; those already asked after them, quieter, to ask again.
+            foreach (var topic in runner.Topics(id).OrderBy(t => t.Discussed))
             {
-                var button = Ui.Button(topic.Discussed ? $"{topic.Ask}  (again)" : topic.Ask, "", () => TopicChosen?.Invoke(id, topic.Id, topic.Ask));
+                var button = Ui.Button(topic.Discussed ? Ui.ButtonKind.Tertiary : Ui.ButtonKind.Secondary,
+                    topic.Discussed ? $"{Ui.IconLead}  {topic.Ask}   (asked)" : $"{Ui.IconLead}  {topic.Ask}", "", () => TopicChosen?.Invoke(id, topic.Id, topic.Ask));
                 button.Alignment = HorizontalAlignment.Left;
-                button.Flat = true;
                 button.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-                if (topic.Discussed)
-                {
-                    button.AddThemeColorOverride("font_color", Ui.InkSoft);
-                }
-
+                button.ClipText = true;
                 _topics.AddChild(button);
             }
         }
@@ -208,7 +243,17 @@ public partial class ConversationView : Control
         var port = runner.Campaign.Port;
         var seeking = runner.PersonOf(id)?.Seeking is not null && port is not null && !port.Hired.Contains(id) && !port.Gone.Contains(id);
         _offerRow.Visible = seeking && runner.TermsHeard(id);
+        if (_offerRow.Visible && runner.PersonOf(id)?.Seeking is { } wants)
+        {
+            _asks.Text = wants.Asks < 0 ? $"They want passage, and offer to pay {-wants.Asks} sueldos." : $"They ask an advance of {wants.Asks} sueldos on their wages.";
+        }
+
+        _offerButton.Text = OfferText();
+        _askButton.Disabled = _askChoices.Count == 0;
     }
+
+    // The captain's own words in the record: a dark red-brown, set apart from theirs.
+    private static readonly Color CaptainInk = new("#7A2E1E");
 
     private void FillAskAbout(SimulationRunner runner, CharacterId id)
     {

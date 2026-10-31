@@ -104,6 +104,20 @@ ECONOMY_LOOP §43:
 Each row is a bar and a word (poor, weak, fair, good, strong), never one score. They come from the best
 skills aboard and what is in the hold, and each tooltip says why. The person card is framed.
 
+**Recruiting** (the owner's playtest, 2026-10-23: "all the text blends, I wouldn't know what is a button";
+reworked 2026-10-31). The rule is that **what is said reads as words and what can be done reads as a button**:
+- *What people say* is set on parchment in dark ink (serif). The captain's own lines are in red-brown italic.
+- *What he can ask* sits under an "Ask them" heading. Every question is a full-width button marked ➤: new ones
+  are secondary navy-and-gold, and those already asked are quieter slate ones, listed after them.
+- *The terms* are an inset card, "A berth aboard the Garza", saying what they ask. It has the advance and one
+  gold primary button, "Offer a berth · N sueldos". "Goodbye" is a quiet tertiary button. On the person card,
+  "Talk" is the gold primary.
+- *Signing on* gets a moment of its own (`SignedOnView`):
+  - a parchment card over the darkened port, headed "Signed on for the Garza";
+  - their portrait, with SIGNED stamped across it as the ship's bell rings, then coins are heard;
+  - what was agreed, and what the captain knows they bring (claims marked "their word");
+  - how many more hands she wants, and a gold "Welcome aboard" button (Enter or Esc closes it).
+
 **At sea.** The chart screen follows the owner's chart reference. It sits between the bars, in three
 columns:
 - **Left:** its sections (Navigation, Observations, Course & Waypoints, Known Lands, Chart Notes), then

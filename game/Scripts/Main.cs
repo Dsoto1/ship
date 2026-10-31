@@ -158,6 +158,20 @@ public partial class Main : Node3D
     private CharacterId? _selected;
     private int _speedIndex = 1;
     private ConversationView _conversation = null!;
+    private SignedOnView _signedOn = null!;
+    private int? _speedBeforeSigning;
+
+    // Shows the signing on, pausing the port if the conversation has not already.
+    private void SignedOn(CharacterId id, int advance)
+    {
+        if (_conversation.With is null && _speedIndex != 0)
+        {
+            _speedBeforeSigning = _speedIndex;
+            SetSpeed(0);
+        }
+
+        _signedOn.Open(_runner, id, advance);
+    }
     private ChartView _chart = null!;
     private AstrolabeView _astrolabe = null!;
     private int? _speedBeforeChart;
@@ -269,6 +283,17 @@ public partial class Main : Node3D
         var talkLayer = new CanvasLayer { Name = "ConversationLayer", Layer = 6 };
         AddChild(talkLayer);
         talkLayer.AddChild(_conversation);
+        // Someone signed on: a moment of its own, over everything, with the port standing still.
+        _signedOn = new SignedOnView { Name = "SignedOn" };
+        talkLayer.AddChild(_signedOn);
+        _signedOn.Closed += () =>
+        {
+            if (_speedBeforeSigning is { } before)
+            {
+                SetSpeed(before);
+                _speedBeforeSigning = null;
+            }
+        };
         // The chart and the noon sight: time stands still while the captain is at the chart.
         _chart = new ChartView { Name = "Chart" };
         talkLayer.AddChild(_chart);
@@ -331,6 +356,10 @@ public partial class Main : Node3D
             var result = _runner.Offer(id, advance);
             _conversation.Add(_runner, advance < 0 ? $"Passage for {-advance} sueldos." : $"A berth, for {advance} sueldos in advance.",
                 result.Succeeded ? $"{name} spits in a palm and shakes on it, and goes to stow a sea chest aboard the Garza." : result.Reason, result.Succeeded);
+            if (result.Succeeded)
+            {
+                SignedOn(id, advance);
+            }
         };
         _conversation.Closed += () =>
         {
@@ -352,6 +381,10 @@ public partial class Main : Node3D
             var name = _runner.Campaign.Characters[id].Name;
             var result = _runner.Offer(id, advance);
             _portHud.Say(result.Succeeded ? $"{name} spits in a palm and shakes on it, and goes to stow a sea chest aboard the Garza." : result.Reason);
+            if (result.Succeeded)
+            {
+                SignedOn(id, advance);
+            }
         });
         _portHud.DiceRequested += stake =>
         {
@@ -2356,6 +2389,11 @@ public partial class Main : Node3D
                 {
                     var offered = _runner.Offer(character.Id, advance);
                     _portHud.Say(offered.Succeeded ? $"{character.Name} signs on." : offered.Reason);
+                    if (offered.Succeeded)
+                    {
+                        SignedOn(character.Id, advance);
+                    }
+
                     _runner.Advance(5);
                 }
             }

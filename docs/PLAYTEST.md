@@ -52,6 +52,18 @@ Save with **Cmd + S** and load with **Cmd + L** at any point, or from the menu (
 - [ ] **Feet:** the planted foot stays put; no gliding. People walk at different paces.
 - [ ] **Pause:** paused mid-walk, he stays exactly where he is, and on resume carries on without a jump.
 
+## Retest: the recruiting screens (reworked 2026-10-31)
+
+```
+-- --menu=none
+```
+
+- [ ] **Talking:** right-click someone and Talk (gold). What they say is on parchment; the questions are clearly
+      buttons; questions already asked are quieter and listed last.
+- [ ] **Terms:** once you ask what they want, the "A berth aboard the Garza" box appears with a gold offer button.
+- [ ] **Signing on:** make an offer they take. A card comes up with SIGNED stamped on their portrait, a bell and
+      coins, and how many hands she still wants. "Welcome aboard" closes it.
+
 ## 0a. Menus and saving
 
 Launch with nothing after the `--` (or Godot's Run button).

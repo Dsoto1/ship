@@ -107,7 +107,9 @@ checklist item, holding `status` (works / broken / skipped) and `note`. Re-read 
 may have added more. The page's list is in `docs/PLAYTEST.md`. These notes are the backlog, in rough
 priority order:
 
-1. **Movement feel** (`u-walk`, `u-gait`). **Fixed 2026-10-31, waiting for the owner to retest.** Figures are now drawn
+1. **Movement feel** (`u-walk`, `u-gait`). **Fixed 2026-10-31, waiting for the owner to retest.** A foot lock
+   (`FootLock` in `PersonModel.cs`, a two-bone leg reach) keeps planted feet still: the ankle doesn't move in 81% of
+   its frames on the ground. Figures are now drawn
    along a smoothed route by `CrewFigure.Walked`. They speed up, slow down and turn back naturally, carry on from where they
    are drawn when re-clicked, and walk at their own pace (`walkSpeed`). The stride is tuned, so the planted foot slips about
    5% of the pace, down from 23%. The simulation is unchanged. Check with `--walktest=1:-7,1;3:+8,0;5:pause;6:resume
@@ -129,7 +131,9 @@ priority order:
    drawn at the last whole tick. The original note: pausing moves the character back a spot, and on resume
    they jump to where they were. This is probably the view interpolating against the paused
    simulation position.
-3. **UI/UX, recruiting** (`u-event`):
+3. **UI/UX, recruiting** (`u-event`). **Reworked 2026-10-31, waiting for the owner to retest** (see `docs/UI_STYLE.md`,
+   Recruiting): the conversation, terms box and signed-on card (`SignedOnView`). Done without the reference images; check
+   it against them when the owner re-shares them. The original notes:
    - **What's wrong:** in the dock recruiting screens, all the text blends together and buttons can't be
      told from text.
    - **What the owner wants:** follow the owner's UI/UX reference images closely, with a clear
