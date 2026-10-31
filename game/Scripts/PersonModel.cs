@@ -162,6 +162,8 @@ public partial class PersonModel : Node3D
             Limp = _identity.Looks.Posture.Limp switch { "left" => -1, "right" => 1, _ => 0 },
         };
         _skeleton.AddChild(Posture);
+        _footLock = new FootLock();
+        _skeleton.AddChild(_footLock);
         Play(_identity.Animation.Idle, 1f);
     }
 
@@ -177,9 +179,10 @@ public partial class PersonModel : Node3D
     public float WalkSpeed => _walkSpeed;
 
     private float _scale = 1f;
+    private FootLock _footLock = null!;
 
     /// <summary>Where the feet are in the world (for checking that a planted foot stays put).</summary>
-    public (Vector3 Left, Vector3 Right) Feet => (_skeleton.GlobalTransform * _skeleton.GetBoneGlobalPose(_skeleton.FindBone("foot_l")).Origin,
+    public (Vector3 Left, Vector3 Right) Feet => _footLock.Placed != default ? _footLock.Placed : (_skeleton.GlobalTransform * _skeleton.GetBoneGlobalPose(_skeleton.FindBone("foot_l")).Origin,
         _skeleton.GlobalTransform * _skeleton.GetBoneGlobalPose(_skeleton.FindBone("foot_r")).Origin);
 
     /// <summary>The walk clip's speed for moving over the ground at <paramref name="metresPerSecond"/>.</summary>
@@ -222,6 +225,7 @@ public partial class PersonModel : Node3D
         var walking = clip.StartsWith("walk");
         // Ground-matched, the rate is for the base stride: a shorter person's stride is shorter, and carrying, shorter still.
         var stride = (clip == "walk_carry" ? StrideSpeed / CarryStride : 1f) / _scale;
+        _footLock.Locking = walking && groundMatched && moving;
         var speed = walking && groundMatched && moving ? rate * stride : rate * (walking ? _walkSpeed : 1f) * (1f - Posture.Fatigue * 0.3f);
         Play(clip, speed);
         foreach (var (mesh, when) in _equipment)
@@ -460,6 +464,139 @@ public partial class Posture : SkeletonModifier3D
         var parent = skeleton.GetBoneParent(bone);
         var parentRotation = parent < 0 ? Quaternion.Identity : skeleton.GetBoneGlobalPose(parent).Basis.GetRotationQuaternion();
         skeleton.SetBonePoseRotation(bone, (parentRotation.Inverse() * turn * global).Normalized());
+    }
+}
+
+/// <summary>
+/// Keeps a planted foot where it was put down. Walking, the clip's stride never quite matches the ground
+/// covered (it is played to the figure's pace, which rises, falls and turns), so a foot on the ground drifts.
+/// When a foot comes down this pins it to that spot in the world, bending the leg (thigh and calf, a two-bone
+/// reach) to keep it there until the clip lifts it, then lets it go over a few frames. It runs after the
+/// clip and the posture, only while walking, and lets go of a foot that would have to stretch too far.
+/// </summary>
+public partial class FootLock : SkeletonModifier3D
+{
+    /// <summary>Whether to lock feet (while walking, at a pace matched to the ground).</summary>
+    public bool Locking { get; set; }
+
+    private sealed class Leg
+    {
+        public int Thigh, Calf, Foot;
+        public bool Planted;
+        public Vector3 At;          // where the planted foot is held, in the world
+        public float Hold;          // 0..1: how firmly (eases in and out)
+        public float Lowest = float.MaxValue;
+    }
+
+    private Leg[]? _legs;
+
+    /// <summary>Where the feet were left this frame, in the world (after the lock), for checking.</summary>
+    public (Vector3 Left, Vector3 Right) Placed { get; private set; }
+
+    public override void _ProcessModificationWithDelta(double delta)
+    {
+        var skeleton = GetSkeleton();
+        if (skeleton is null)
+        {
+            return;
+        }
+
+        _legs ??= [Find(skeleton, "l"), Find(skeleton, "r")];
+        var toWorld = skeleton.GlobalTransform;
+        var toSkeleton = toWorld.AffineInverse();
+        var scale = toWorld.Basis.Scale.Y;
+        foreach (var leg in _legs)
+        {
+            if (leg.Thigh < 0 || leg.Calf < 0 || leg.Foot < 0)
+            {
+                continue;
+            }
+
+            var foot = skeleton.GetBoneGlobalPose(leg.Foot);
+            var world = toWorld * foot.Origin;
+            if (!Locking)
+            {
+                leg.Planted = false;
+                leg.Hold = 0;
+                leg.Lowest = float.MaxValue;
+                continue;
+            }
+
+            // Down when the clip has the ankle at the bottom of its swing.
+            leg.Lowest = Mathf.Min(leg.Lowest, foot.Origin.Y);
+            var down = foot.Origin.Y < leg.Lowest + 0.025f;
+            if (down && !leg.Planted)
+            {
+                // Held at once (it is held where it is), let go of over a few frames.
+                leg.Planted = true;
+                leg.At = world;
+                leg.Hold = 1f;
+            }
+            else if (!down)
+            {
+                leg.Planted = false;
+            }
+
+            // Too far from where the clip has it (a sharp turn, a jolt): let go and plant afresh.
+            if (leg.Planted && (leg.At - world).Length() > 0.18f * scale)
+            {
+                leg.At = world;
+            }
+
+            leg.Hold = Mathf.MoveToward(leg.Hold, leg.Planted ? 1f : 0f, (float)delta * 8f);
+            if (leg.Hold <= 0.001f)
+            {
+                continue;
+            }
+
+            var target = (toSkeleton * leg.At).Lerp(foot.Origin, 1f - leg.Hold);
+            Reach(skeleton, leg, target, foot.Basis.GetRotationQuaternion());
+        }
+
+        Placed = (toWorld * skeleton.GetBoneGlobalPose(_legs[0].Foot).Origin, toWorld * skeleton.GetBoneGlobalPose(_legs[1].Foot).Origin);
+    }
+
+    private static Leg Find(Skeleton3D skeleton, string side) => new()
+    {
+        Thigh = skeleton.FindBone($"thigh_{side}"), Calf = skeleton.FindBone($"calf_{side}"), Foot = skeleton.FindBone($"foot_{side}"),
+    };
+
+    // Two-bone reach, in the skeleton's frame: bend the knee to the length wanted, swing the thigh to point
+    // the leg at the target, and leave the foot as the clip turned it (so the sole stays flat).
+    private static void Reach(Skeleton3D skeleton, Leg leg, Vector3 target, Quaternion footTurn)
+    {
+        var a = skeleton.GetBoneGlobalPose(leg.Thigh).Origin;
+        var b = skeleton.GetBoneGlobalPose(leg.Calf).Origin;
+        var c = skeleton.GetBoneGlobalPose(leg.Foot).Origin;
+        var upper = (b - a).Length();
+        var lower = (c - b).Length();
+        var reach = Mathf.Clamp((target - a).Length(), Mathf.Abs(upper - lower) + 0.001f, upper + lower - 0.001f);
+        var knee = (a - b).AngleTo(c - b);
+        var wanted = Mathf.Acos(Mathf.Clamp((upper * upper + lower * lower - reach * reach) / (2f * upper * lower), -1f, 1f));
+        var axis = (b - a).Cross(c - b);
+        if (axis.LengthSquared() < 1e-8f)
+        {
+            axis = skeleton.GetBoneGlobalPose(leg.Thigh).Basis.X;
+        }
+
+        Turn(skeleton, leg.Calf, new Quaternion(axis.Normalized(), knee - wanted));
+        c = skeleton.GetBoneGlobalPose(leg.Foot).Origin;
+        if ((c - a).LengthSquared() > 1e-8f && (target - a).LengthSquared() > 1e-8f)
+        {
+            Turn(skeleton, leg.Thigh, new Quaternion((c - a).Normalized(), (target - a).Normalized()));
+        }
+
+        var parent = skeleton.GetBoneGlobalPose(leg.Calf).Basis.GetRotationQuaternion();
+        skeleton.SetBonePoseRotation(leg.Foot, (parent.Inverse() * footTurn).Normalized());
+    }
+
+    // Turns a bone (and everything below it) by a rotation given in the skeleton's frame.
+    private static void Turn(Skeleton3D skeleton, int bone, Quaternion turn)
+    {
+        var parent = skeleton.GetBoneParent(bone);
+        var parentRotation = parent < 0 ? Quaternion.Identity : skeleton.GetBoneGlobalPose(parent).Basis.GetRotationQuaternion();
+        var global = skeleton.GetBoneGlobalPose(bone).Basis.GetRotationQuaternion();
+        skeleton.SetBonePoseRotation(bone, (parentRotation.Inverse() * turn.Normalized() * global).Normalized());
     }
 }
 
