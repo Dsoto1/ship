@@ -123,7 +123,8 @@ public partial class PersonModel : Node3D
         Height = _identity.HeightCm / 100f;
         var scene = GD.Load<PackedScene>($"{Folder}/{personId}/{file}").Instantiate<Node3D>();
         // Height by scale: every model is built on its base skeleton, 1.81 m for men and 1.77 m for women.
-        scene.Scale = Vector3.One * (Height / (_identity.Sex == "Female" ? 1.767f : 1.81f));
+        _scale = Height / (_identity.Sex == "Female" ? 1.767f : 1.81f);
+        scene.Scale = Vector3.One * _scale;
         AddChild(scene);
         _skeleton = (Skeleton3D)scene.FindChild("Skeleton3D", true, false);
         foreach (var mesh in _skeleton.GetChildren().OfType<MeshInstance3D>())
@@ -164,12 +165,25 @@ public partial class PersonModel : Node3D
         Play(_identity.Animation.Idle, 1f);
     }
 
-    /// <summary>Ground covered by the walk clips at speed 1, metres a second: a walk is played at the speed the
-    /// figure is really moving over the ground divided by this, so feet do not slide.</summary>
-    public const float StrideSpeed = 1.25f;
+    /// <summary>Ground covered by the walk clips at speed 1, metres a second, for the base skeleton (1.81 m): a walk
+    /// is played at the speed the figure is really moving over the ground divided by this, so feet do not slide.
+    /// Measured from the clips (the planted ankle moves back at 0.98 m/s in walk and walk_formal, 0.65 in walk_carry), then
+    /// tuned in the game, where 1.01 leaves the planted foot slipping least (about 5% of the pace; 1.25, as it was, 23%).</summary>
+    public const float StrideSpeed = 1.01f;
+
+    private const float CarryStride = 0.67f;
+
+    /// <summary>How quick this person is on their feet, against the usual (from their identity).</summary>
+    public float WalkSpeed => _walkSpeed;
+
+    private float _scale = 1f;
+
+    /// <summary>Where the feet are in the world (for checking that a planted foot stays put).</summary>
+    public (Vector3 Left, Vector3 Right) Feet => (_skeleton.GlobalTransform * _skeleton.GetBoneGlobalPose(_skeleton.FindBone("foot_l")).Origin,
+        _skeleton.GlobalTransform * _skeleton.GetBoneGlobalPose(_skeleton.FindBone("foot_r")).Origin);
 
     /// <summary>The walk clip's speed for moving over the ground at <paramref name="metresPerSecond"/>.</summary>
-    public static float WalkRate(float metresPerSecond) => metresPerSecond <= 0.01f ? 0f : Mathf.Clamp(metresPerSecond / StrideSpeed, 0.35f, 4f);
+    public static float WalkRate(float metresPerSecond) => metresPerSecond <= 0.01f ? 0f : Mathf.Clamp(metresPerSecond / StrideSpeed, 0.1f, 6f);
 
     /// <summary>Plays the clip for <paramref name="pose"/>, and shows the tools that work uses. With
     /// <paramref name="groundMatched"/>, a walk's <paramref name="rate"/> is already matched to the ground.</summary>
@@ -206,7 +220,9 @@ public partial class PersonModel : Node3D
         }
 
         var walking = clip.StartsWith("walk");
-        var speed = walking && groundMatched && moving ? rate : rate * (walking ? _walkSpeed : 1f) * (1f - Posture.Fatigue * 0.3f);
+        // Ground-matched, the rate is for the base stride: a shorter person's stride is shorter, and carrying, shorter still.
+        var stride = (clip == "walk_carry" ? StrideSpeed / CarryStride : 1f) / _scale;
+        var speed = walking && groundMatched && moving ? rate * stride : rate * (walking ? _walkSpeed : 1f) * (1f - Posture.Fatigue * 0.3f);
         Play(clip, speed);
         foreach (var (mesh, when) in _equipment)
         {

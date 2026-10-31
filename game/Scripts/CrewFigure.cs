@@ -282,10 +282,23 @@ public partial class CrewFigure : Node3D
     public void Refresh(Character character, CharacterPlacement placement, double drawTick, bool selected, string activity,
         bool isCaptain, Pose pose, float delta, float animationRate, Func<float, float, float>? ground = null, string? carrying = null,
         bool showLabel = true, string? shownName = null, Vector2? facing = null, bool inRain = false, Vector3? standAt = null,
-        Func<float, float, Vector3>? place = null)
+        Func<float, float, Vector3>? place = null, float pace = 0, double ticksPerSecond = 0)
     {
         var (x, y) = placement.Movement?.PositionAt(drawTick) ?? (placement.Cell.X, placement.Cell.Y);
         Position = new Vector3((float)x, ground?.Invoke((float)x, (float)y) ?? 0, (float)y);
+        if (place is null && standAt is null && pace > 0 && ticksPerSecond is > 0 and <= SmoothedUpTo)
+        {
+            Position = Walked(placement, drawTick, Position, delta, pace, ticksPerSecond, ground);
+        }
+        else if (place is null && standAt is null && pace > 0 && ticksPerSecond == 0 && _walked)
+        {
+            // Paused: everyone holds where they were drawn.
+            Position = _shown;
+        }
+        else
+        {
+            _walked = false;
+        }
         if (place is not null)
         {
             // A place of several levels (the ship below decks): each cell in its true place, and a walk between
@@ -315,10 +328,16 @@ public partial class CrewFigure : Node3D
         _lastPosition = Position;
         var overGround = delta > 0 && moved.Length() < 2f ? new Vector2(moved.X, moved.Z).Length() / delta : 0f;
         _groundSpeed = Mathf.Lerp(_groundSpeed, overGround, Mathf.Clamp(delta * 8f, 0, 1));
-        if (moved.LengthSquared() > 0.0001f && moved.Length() < 2f)
+        var ahead = _walked && _along < _length ? DirectionAt(_along) : Vector3.Zero;
+        if (ahead != Vector3.Zero)
+        {
+            // Walking: turn to the way ahead (turning first, when it lies behind them).
+            _heading = Mathf.LerpAngle(_heading, Mathf.Atan2(ahead.X, ahead.Z), Mathf.Clamp(delta * 7f, 0, 1));
+        }
+        else if (moved.LengthSquared() > 0.0001f && moved.Length() < 2f)
         {
             var target = Mathf.Atan2(moved.X, moved.Z);
-            _heading = Mathf.LerpAngle(_heading, target, Mathf.Clamp(delta * 10f, 0, 1));
+            _heading = Mathf.LerpAngle(_heading, target, Mathf.Clamp(delta * 7f, 0, 1));
         }
         else if (facing is { } face && face != Vector2.Zero && !placement.IsMoving)
         {
@@ -335,9 +354,17 @@ public partial class CrewFigure : Node3D
         }
 
         var dead = character.SurvivalState == SurvivalState.Dead;
+        var stepping = placement.IsMoving;
+        if (_walked && stepping && _groundSpeed < 0.05f && _speed < 0.05f)
+        {
+            // There before the simulation has them arrive: they stand, rather than walk on the spot.
+            stepping = false;
+            pose = pose == Pose.Walking ? Pose.Standing : pose;
+        }
+
         if (_person is not null)
         {
-            ShowPerson(character, pose, placement.IsMoving, delta, animationRate, inRain, dead);
+            ShowPerson(character, pose, stepping, delta, animationRate, inRain, dead);
         }
         else
         {
@@ -435,6 +462,237 @@ public partial class CrewFigure : Node3D
         var walkRate = animationRate == 0 ? 0f : PersonModel.WalkRate(_groundSpeed);
         person.Show(pose, moving, moving && walkRate > 0 ? walkRate : animationRate, groundMatched: moving && walkRate > 0);
         person.Detail(!FarView);
+    }
+
+    // Walking as it is seen (at the slower game speeds): the simulation's walk is from cell to cell, a minute
+    // at a time, so drawn as it is the walk zigzags, starts and stops dead, keeps an uneven pace and, given a
+    // new walk, steps back to the cell it started from. Drawn here instead, the figure follows the cells with
+    // their corners rounded, from wherever it stands; it gathers pace and slows at the end, slows to turn when
+    // sent back the way it came, and walks at its own pace (quicker when the simulation wants it there
+    // sooner), arriving when the simulation has it arrive or a little before.
+    private const double SmoothedUpTo = 10;
+    private bool _walked;
+    private Movement? _walk;
+    private string? _walkLocation;
+    private Vector3 _shown;
+    private float _along, _length, _speed, _turnAt = -1f;
+    private readonly List<Vector3> _route = [];
+    private readonly List<float> _distances = [];
+
+    /// <summary>Where the feet are, for the walk test; null for a figure without a model.</summary>
+    public (Vector3 Left, Vector3 Right)? Feet => _person?.Feet;
+
+    /// <summary>How quick this person is on their feet, against the usual (their walk in their identity).</summary>
+    private float OwnPace => Mathf.Clamp(_person?.WalkSpeed ?? 1f, 0.8f, 1.2f);
+
+    private Vector3 Walked(CharacterPlacement placement, double drawTick, Vector3 simulated, float delta, float pace, double ticksPerSecond,
+        Func<float, float, float>? ground)
+    {
+        Vector3 Grounded(Vector3 at) => at with { Y = ground?.Invoke(at.X, at.Z) ?? 0 };
+        if (!_walked || placement.LocationId != _walkLocation)
+        {
+            // First drawn, or somewhere new: where the simulation has them.
+            _walked = true;
+            _walkLocation = placement.LocationId;
+            _walk = placement.Movement;
+            _shown = simulated;
+            _speed = 0;
+            Route(_walk?.Path ?? [], simulated, skipFirst: false);
+            _along = _walk is null ? _length : Nearest(simulated);
+            return simulated;
+        }
+
+        if (placement.Movement != _walk)
+        {
+            _walk = placement.Movement;
+            if (_walk is { } walk)
+            {
+                var start = new Vector3(walk.Path[0].X, 0, walk.Path[0].Y);
+                if (Flat(start - _shown).Length() > 4f)
+                {
+                    _shown = Grounded(start);
+                    _speed = 0;
+                }
+
+                // From where they are drawn, on to the cells after the one the walk starts from. Sent back the way they
+                // were going, they go on the step or so it takes to stop, and turn there.
+                var heading = _along < _length ? DirectionAt(_along) : Vector3.Zero;
+                Vector3? stopping = null;
+                if (heading != Vector3.Zero && _speed > 0.1f && walk.Path.Count > 1)
+                {
+                    var next = new Vector3(walk.Path[1].X, 0, walk.Path[1].Y) - Flat(_shown);
+                    if (next.LengthSquared() > 0.01f && next.Normalized().Dot(heading) < 0.3f)
+                    {
+                        var brake = pace * OwnPace * 3f;
+                        stopping = Flat(_shown) + heading * Mathf.Min(_speed * _speed / (2f * brake), 0.5f);
+                    }
+                }
+
+                Route(walk.Path, _shown, skipFirst: true, via: stopping);
+                _along = 0;
+                _turnAt = stopping is null ? -1f : _distances[1];
+            }
+            else if (_route.Count == 0 || Flat(_route[^1] - simulated).Length() > 0.3f)
+            {
+                // Stopped short of the walk's end, or put somewhere: on to where they stand.
+                if (Flat(simulated - _shown).Length() > 4f)
+                {
+                    _shown = simulated;
+                    _route.Clear();
+                    _length = _along = _speed = 0;
+                    return simulated;
+                }
+
+                Route([], _shown, skipFirst: false, end: simulated);
+                _along = 0;
+                _turnAt = -1f;
+            }
+        }
+
+        var remaining = _length - _along;
+        if (remaining <= 0.001f)
+        {
+            _speed = 0;
+            _shown = Grounded(_route.Count > 0 ? _route[^1] : simulated);
+            return _shown;
+        }
+
+        var natural = pace * OwnPace;
+        var needed = 0f;
+        if (_walk is { } going)
+        {
+            var secondsLeft = (float)((going.ArriveTick - drawTick) / ticksPerSecond);
+            needed = secondsLeft > 0.05f ? remaining / secondsLeft : 0f;
+        }
+
+        var wanted = Mathf.Max(natural, needed);
+        // Turning, slower: sent back the way they came, they all but stop and turn before setting off.
+        var ahead = DirectionAt(_along);
+        if (ahead != Vector3.Zero)
+        {
+            var off = Mathf.Abs(Mathf.AngleDifference(_heading, Mathf.Atan2(ahead.X, ahead.Z)));
+            wanted *= Mathf.Clamp(Mathf.Cos(off), 0.08f, 1f);
+        }
+
+        // Gathering pace over a few steps, and slowing for the last.
+        var accel = natural * 3f;
+        // (Even when late: they slow for the last step, and the simulation has them there a moment before.)
+        wanted = Mathf.Min(wanted, Mathf.Sqrt(2f * accel * remaining) + 0.05f);
+        if (_turnAt > _along)
+        {
+            // Coming to a stop where they turn back.
+            wanted = Mathf.Min(wanted, Mathf.Sqrt(2f * accel * (_turnAt - _along)) + 0.05f);
+        }
+
+        _speed = Mathf.MoveToward(_speed, wanted, accel * (wanted < _speed ? 2f : 1f) * delta);
+        _along = Mathf.Min(_length, _along + _speed * delta);
+        _shown = Grounded(PointAt(_along));
+        return _shown;
+    }
+
+    private static Vector3 Flat(Vector3 v) => v with { Y = 0 };
+
+    // The way to walk: from where they are, through the cells (the first left out when it is the one being left),
+    // its corners cut three times over (Chaikin) so that it runs smooth.
+    private void Route(IReadOnlyList<GridPosition> path, Vector3 from, bool skipFirst, Vector3? end = null, Vector3? via = null)
+    {
+        var points = new List<Vector3> { Flat(from) };
+        if (via is { } turn)
+        {
+            points.Add(turn);
+        }
+
+        for (var i = skipFirst ? 1 : 0; i < path.Count; i++)
+        {
+            points.Add(new Vector3(path[i].X, 0, path[i].Y));
+        }
+
+        if (end is { } last)
+        {
+            points.Add(Flat(last));
+        }
+
+        for (var pass = 0; pass < 3 && points.Count > 2; pass++)
+        {
+            var cut = new List<Vector3> { points[0] };
+            for (var i = 0; i < points.Count - 1; i++)
+            {
+                var (a, b) = (points[i], points[i + 1]);
+                if (i > 0)
+                {
+                    cut.Add(a.Lerp(b, 0.25f));
+                }
+
+                if (i < points.Count - 2)
+                {
+                    cut.Add(a.Lerp(b, 0.75f));
+                }
+            }
+
+            cut.Add(points[^1]);
+            points = cut;
+        }
+
+        _route.Clear();
+        _distances.Clear();
+        _length = 0;
+        for (var i = 0; i < points.Count; i++)
+        {
+            if (i > 0)
+            {
+                _length += (points[i] - points[i - 1]).Length();
+            }
+
+            _route.Add(points[i]);
+            _distances.Add(_length);
+        }
+    }
+
+    private Vector3 PointAt(float distance)
+    {
+        if (_route.Count == 0)
+        {
+            return _shown;
+        }
+
+        for (var i = 1; i < _route.Count; i++)
+        {
+            if (_distances[i] >= distance)
+            {
+                var span = _distances[i] - _distances[i - 1];
+                return span <= 0 ? _route[i] : _route[i - 1].Lerp(_route[i], (distance - _distances[i - 1]) / span);
+            }
+        }
+
+        return _route[^1];
+    }
+
+    private Vector3 DirectionAt(float distance)
+    {
+        for (var i = 1; i < _route.Count; i++)
+        {
+            if (_distances[i] > distance + 0.05f)
+            {
+                return (_route[i] - _route[i - 1]).Normalized();
+            }
+        }
+
+        return Vector3.Zero;
+    }
+
+    // How far along the route a point lies: the distance to the route's nearest corner.
+    private float Nearest(Vector3 at)
+    {
+        var best = 0;
+        for (var i = 1; i < _route.Count; i++)
+        {
+            if ((_route[i] - Flat(at)).LengthSquared() < (_route[best] - Flat(at)).LengthSquared())
+            {
+                best = i;
+            }
+        }
+
+        return _route.Count == 0 ? 0 : _distances[best];
     }
 
     private void Animate(Pose pose)

@@ -514,6 +514,7 @@ public partial class Main : Node3D
         }
 
         _elapsed += delta;
+        WalkTest();
         var speed = TicksPerSecond[_speedIndex];
         if (speed > 0)
         {
@@ -624,7 +625,7 @@ public partial class Main : Node3D
         }
 
         var clock = _runner.Campaign.Clock;
-        var hour = (float)((clock.Tick + (speed > 0 ? _tickFraction : 0)) % SimulationClock.TicksPerDay / SimulationClock.TicksPerHour);
+        var hour = (float)((clock.Tick + _tickFraction) % SimulationClock.TicksPerDay / SimulationClock.TicksPerHour);
         // The ship's bell strikes the half hours at sea, while time goes slowly enough to hear it.
         if (inPort || _runner.Campaign.Camp is not null)
         {
@@ -739,7 +740,7 @@ public partial class Main : Node3D
             bird.Centre = inPort ? _port.Berth + new Vector3(0, 4f, -4f) : _shipCentre + new Vector3(0, 0, -2f);
         }
 
-        var drawTick = _runner.Campaign.Clock.Tick + (speed > 0 ? _tickFraction : 0);
+        var drawTick = _runner.Campaign.Clock.Tick + _tickFraction;
         var animationRate = speed == 0 ? 0f : Mathf.Max(0.8f, 1f + Mathf.Log((float)speed) * 0.25f);
         CrewFigure.FarView = _camera.Size > 26f;
         var captainRoom = _runner.CaptainRoom;
@@ -799,7 +800,9 @@ public partial class Main : Node3D
                     showLabel: !_departure.Playing && (!inPort || isCaptain || id == _hovered), shownName: inPort ? PortHud.KnownName(_runner, id) : null,
                     facing: spot is null ? null : FacingAt(location, spot),
                     inRain: (onPort && _runner.RainingInPort && definition?.Id != "task.shelter") || (onShore && _runner.Raining), standAt: standAt,
-                    place: onPort || onShore ? null : _deck.Place);
+                    place: onPort || onShore ? null : _deck.Place,
+                    pace: (float)((location.WalkCellsPerMinute ?? _runner.Content.Rules.WalkCellsPerMinute) / SimulationClock.MinutesPerTick * Math.Max(speed, 0.5)),
+                    ticksPerSecond: speed);
                 // Below decks with the cutaway off, people are drawn faintly through the deck, so no one vanishes.
                 figure.ShowThroughDeck(!onPort && !onShore && !_deck.Cutaway && _deck.IsBelow(placement.CellAt(_runner.Campaign.Clock.Tick)));
                 figure.Outline(inPort && !_departure.Playing ? RecruitRim(id) : Colors.Transparent);
@@ -2194,6 +2197,61 @@ public partial class Main : Node3D
     private bool _developerTalk;
     private string? _developerTopics;
     private GridPosition? _developerCaptainAt;
+
+    // --walktest=1:30,20;3:pause;4:resume;5:+2,0 (at so many seconds, walk the captain to a cell, or by so many
+    // cells from where he stands, or pause or resume) and --walklog=PATH (where he is drawn, every frame): for
+    // checking how people walk.
+    private string? _walkTest, _walkLog;
+    private System.IO.StreamWriter? _walkWriter;
+
+    private void WalkTest()
+    {
+        if (_runner?.Campaign.CaptainId is not { } captain || !_figures.TryGetValue(captain, out var figure))
+        {
+            return;
+        }
+
+        if (_walkLog is not null)
+        {
+            _walkWriter ??= new System.IO.StreamWriter(_walkLog) { AutoFlush = true };
+            var p = figure.Position;
+            var (l, r) = figure.Feet ?? (Vector3.Zero, Vector3.Zero);
+            _walkWriter.WriteLine(FormattableString.Invariant($"{_elapsed:F4},{p.X:F4},{p.Z:F4},{_runner.Campaign.Clock.Tick + _tickFraction:F4},{_speedIndex},{l.X:F4},{l.Y:F4},{l.Z:F4},{r.X:F4},{r.Y:F4},{r.Z:F4}"));
+        }
+
+        if (string.IsNullOrEmpty(_walkTest))
+        {
+            return;
+        }
+
+        var steps = _walkTest.Split(';');
+        var (when, what) = (steps[0].Split(':')[0], steps[0].Split(':')[1]);
+        if (_elapsed < double.Parse(when, System.Globalization.CultureInfo.InvariantCulture))
+        {
+            return;
+        }
+
+        _walkTest = string.Join(';', steps.Skip(1));
+        var here = _runner.Campaign.Placements[captain].CellAt(_runner.Campaign.Clock.Tick);
+        switch (what)
+        {
+            case "pause":
+                _walkSpeedBefore = _speedIndex;
+                SetSpeed(0);
+                break;
+            case "resume":
+                SetSpeed(_walkSpeedBefore);
+                break;
+            default:
+                var xy = what.Split(',');
+                var relative = xy[0].StartsWith('+') || xy[0].StartsWith('-');
+                var cell = new GridPosition(int.Parse(xy[0]) + (relative ? here.X : 0), int.Parse(xy[1]) + (relative ? here.Y : 0));
+                GD.Print($"walktest: {here} -> {cell}: {_runner.MoveCharacter(captain, cell).Reason}");
+                break;
+        }
+    }
+
+    private int _walkSpeedBefore = 1;
     private string? _developerTavern;
     private string? _developerHover;
     private bool _developerJournal;
@@ -2477,6 +2535,8 @@ public partial class Main : Node3D
                 case "topics": _developerTopics = value; break;
                 case "tavern": _developerTavern = value; break;
                 case "hover": _developerHover = value; break;
+                case "walktest": _walkTest = value; break;
+                case "walklog": _walkLog = value; break;
                 case "captain" when value.Split(',') is [var cx, var cy] && int.TryParse(cx, out var x) && int.TryParse(cy, out var y): _developerCaptainAt = new GridPosition(x, y); break;
                 case "journal": _developerJournal = true; break;
                 case "perf": _developerPerf = true; break;

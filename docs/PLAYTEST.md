@@ -41,6 +41,17 @@ from Finder into the Terminal window: it fills in the path. Then add `/Contents/
 
 Save with **Cmd + S** and load with **Cmd + L** at any point, or from the menu (**Esc**). Launched with shortcuts, the game skips the title screen.
 
+## Retest: walking and pausing (fixed 2026-10-31)
+
+```
+-- --menu=none
+```
+
+- [ ] **Clicking around:** no stutter steps. Click again ahead of the captain and he carries on; click behind him and he
+      slows, turns and walks back.
+- [ ] **Feet:** the planted foot stays put; no gliding. People walk at different paces.
+- [ ] **Pause:** paused mid-walk, he stays exactly where he is, and on resume carries on without a jump.
+
 ## 0a. Menus and saving
 
 Launch with nothing after the `--` (or Godot's Run button).

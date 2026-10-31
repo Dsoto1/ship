@@ -107,7 +107,13 @@ checklist item, holding `status` (works / broken / skipped) and `note`. Re-read 
 may have added more. The page's list is in `docs/PLAYTEST.md`. These notes are the backlog, in rough
 priority order:
 
-1. **Movement feel** (`u-walk`, `u-gait`):
+1. **Movement feel** (`u-walk`, `u-gait`). **Fixed 2026-10-31, waiting for the owner to retest.** Figures are now drawn
+   along a smoothed route by `CrewFigure.Walked`. They speed up, slow down and turn back naturally, carry on from where they
+   are drawn when re-clicked, and walk at their own pace (`walkSpeed`). The stride is tuned, so the planted foot slips about
+   5% of the pace, down from 23%. The simulation is unchanged. Check with `--walktest=1:-7,1;3:+8,0;5:pause;6:resume
+   --walklog=PATH` (it logs where the captain and his feet are drawn, every frame). Still open: different walking styles,
+   rather than just paces.
+   The original notes:
    - **Stutter steps:** the captain stutter-steps when clicked around.
    - **Re-clicking:** a click near the current goal should carry on the same way, not restart the walk.
    - **Turning around:** they should slow, turn naturally and walk off, not snap round.
@@ -119,7 +125,8 @@ priority order:
 
    The code is in `PersonModel.cs` (WalkRate, StrideSpeed), `CrewFigure.cs`, `PortCrowd.cs` and the
    captain's walk in `Main.cs`.
-2. **Pause moves the captain** (`m-pause`): pausing moves the character back a spot, and on resume
+2. **Pause moves the captain** (`m-pause`). **Fixed 2026-10-31, waiting for the owner to retest.** Paused, figures were
+   drawn at the last whole tick. The original note: pausing moves the character back a spot, and on resume
    they jump to where they were. This is probably the view interpolating against the paused
    simulation position.
 3. **UI/UX, recruiting** (`u-event`):
