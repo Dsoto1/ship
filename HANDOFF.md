@@ -150,8 +150,10 @@ priority order:
    - Think about a cabin or passengers: extra settlers who bring their own food and water.
 
    These are design decisions; propose them to the owner before building.
-5. **Hats** (`p-roster`): they don't sit right. Look at the back of the captain's head while he wears one.
-6. **The port chapel** (`u-fronts`): it needs a full facelift. Things float on its front and roof. It is
+5. **Hats** (`p-roster`). **Fixed 2026-11-01, waiting for the owner to retest:** crown and brim fitted to each skull and kept
+   whole (`build.py`, `hat_fit`); check with the lineup's `--view=head --yaw=N`. The original note: they don't sit right. Look at the back of the captain's head while he wears one.
+6. **The port chapel** (`u-fronts`). **Rebuilt 2026-11-01, waiting for the owner to retest** (`PortView.Chapel`). The
+   original note: it needs a full facelift. Things float on its front and roof. It is
    `case "chapel"` in `PortView.cs`.
 7. **Shadows** (`u-camera`): they flicker, with jagged edges, under the shutters. Check the shadow
    bias, the split distances, or the shutters' thickness.

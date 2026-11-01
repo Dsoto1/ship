@@ -69,6 +69,13 @@ Save with **Cmd + S** and load with **Cmd + L** at any point, or from the menu (
 - [ ] **Signing on:** make an offer they take. A card comes up with SIGNED stamped on their portrait, a bell and
       coins, and how many hands she still wants. "Welcome aboard" closes it.
 
+## Retest: hats and the chapel (fixed 2026-11-01)
+
+- [ ] **Hats:** look at the captain (and Hob, Paco, Pons, Simón) from behind. The hat covers the head, with no scalp
+      showing between the brim and the crown.
+- [ ] **The chapel:** walk to it (north of the market). The gable faces the street with a bell-cote and bell on the
+      peak, a round window in the gable, and a stone doorway with oak doors. Nothing floats.
+
 ## 0a. Menus and saving
 
 Launch with nothing after the `--` (or Godot's Run button).

@@ -427,14 +427,7 @@ public partial class PortView : Node3D
                 Tavern(left, right, back, front, baseHeight);
                 break;
             case "chapel":
-                House(left, right, back, front, Lime, Lime, 1, 7f, frame: false, baseHeight);
-                AddBox(new Vector3(middleX, baseHeight + 10.2f, front - 0.3f), new Vector3(2.4f, 3.2f, 0.6f), Lime);
-                AddBox(new Vector3(middleX, baseHeight + 10.1f, front + 0.02f), new Vector3(0.9f, 1.4f, 0.05f), Shadow);
-                AddCylinder(new Vector3(middleX, baseHeight + 10f, front - 0.2f), 0.32f, 0.5f, new Color(0.45f, 0.35f, 0.2f));
-                Arch(new Vector3(middleX, baseHeight, front + 0.02f), 1.6f, 3.2f);
-                AddCylinder(new Vector3(middleX, baseHeight + 5.2f, front + 0.04f), 0.65f, 0.08f, Shadow, rotateX: true);
-                AddBox(new Vector3(middleX, baseHeight + 0.1f, front + 0.6f), new Vector3(5f, 0.2f, 1.0f), Stone);
-                Lantern(new Vector3(middleX - 1.6f, baseHeight + 2.6f, front + 0.3f));
+                Chapel(left, right, back, front, baseHeight);
                 break;
             case "warehouse":
                 Chandlery(left, right, back, front, baseHeight);
@@ -1355,6 +1348,173 @@ public partial class PortView : Node3D
     {
         AddBox(foot + new Vector3(0, (height - width / 2f) / 2f, 0), new Vector3(width, height - width / 2f, 0.06f), Shadow);
         AddCylinder(foot + new Vector3(0, height - width / 2f, 0), width / 2f, 0.06f, Shadow, rotateX: true);
+    }
+
+    // The chapel (the owner's playtest: "that entire building needs a facelift; floating objects on face and roof"):
+    // a whitewashed nave on a stone plinth, its gable to the street under a roof that runs front to back; a deep
+    // stone doorway with an arch of voussoirs over oak doors and two steps; a round window set in the gable in a
+    // stone ring; a bell-cote on the gable's peak with its bell in the opening and a cross; buttresses and tall
+    // narrow windows down the sides; quoins at the corners; the lantern on an iron bracket by the door. Every piece
+    // is set into or onto the wall it belongs to.
+    private void Chapel(float left, float right, float back, float front, float baseHeight)
+    {
+        var middle = (left + right) / 2f;
+        var plinth = baseHeight + 0.5f;
+        var eave = baseHeight + 6f;
+        var ridge = eave + (right - left) * 0.42f;
+        var iron = new Color(0.16f, 0.15f, 0.14f);
+        var oak = Timber.Lightened(0.12f);
+
+        // Plinth, walls and corner stones.
+        AddBox(Box(left - 0.08f, right + 0.08f, back - 0.08f, front + 0.08f, baseHeight - 0.3f, plinth), Stone.Darkened(0.05f));
+        AddBox(Box(left, right, back, front, plinth, eave), Lime);
+        AddBox(Box(left - 0.04f, right + 0.04f, back - 0.04f, front + 0.04f, eave - 0.25f, eave), Stone);
+        foreach (var (x, z) in new[] { (left, front), (right, front), (left, back), (right, back) })
+        {
+            for (var (y, i) = (plinth, 0); y < eave - 0.5f; y += 0.55f, i++)
+            {
+                var wide = i % 2 == 0;
+                var sx = x < middle ? x + (wide ? 0.28f : 0.18f) : x - (wide ? 0.28f : 0.18f);
+                var sz = z > back + 0.1f ? z - (wide ? 0.18f : 0.28f) : z + (wide ? 0.18f : 0.28f);
+                AddBox(new Vector3(sx, y + 0.24f, sz), new Vector3(wide ? 0.6f : 0.4f, 0.46f, wide ? 0.4f : 0.6f) + new Vector3(0.05f, 0, 0.05f), Stone);
+            }
+        }
+
+        // The roof, front to back, gables front and back, with stone coping along the gable edges.
+        var overhang = 0.35f;
+        var (fz, bz) = (front + 0.3f, back - 0.3f);
+        foreach (var (x0, x1) in new[] { (left - overhang, middle), (right + overhang, middle) })
+        {
+            var a = new Vector3(x0, eave - 0.1f, bz);
+            var b = new Vector3(x0, eave - 0.1f, fz);
+            var c = new Vector3(x1, ridge, fz);
+            var d = new Vector3(x1, ridge, bz);
+            var slope = (c - b).Length();
+            var length = fz - bz;
+            Vector2[] uv = [new(0, slope), new(length, slope), new(length, 0), new(0, slope), new(length, 0), new(0, 0)];
+            _batch.AddTriangles(_roof, [a, b, c, a, c, d], uv);
+            _batch.AddTriangles(_roof, [a, c, b, a, d, c], [uv[0], uv[2], uv[1], uv[3], uv[5], uv[4]]);
+        }
+
+        AddBox(new Vector3(middle, ridge + 0.04f, (fz + bz) / 2f), new Vector3(0.22f, 0.14f, fz - bz), new Color(0.42f, 0.22f, 0.14f));
+        var pitch = Mathf.RadToDeg(Mathf.Atan2(ridge - eave, middle - left));
+        var rake = Mathf.Sqrt(Mathf.Pow(middle - left, 2) + Mathf.Pow(ridge - eave, 2));
+        foreach (var z in new[] { front, back })
+        {
+            var sign = z == front ? 1 : -1;
+            foreach (var (x, y) in new[] { (left, eave), (right, eave) })
+            {
+                _batch.AddTriangles(_batch.Coloured, [new Vector3(x, y, z), new Vector3(middle, ridge, z), new Vector3(middle, y, z)], colour: Lime);
+                _batch.AddTriangles(_batch.Coloured, [new Vector3(x, y, z), new Vector3(middle, y, z), new Vector3(middle, ridge, z)], colour: Lime);
+            }
+
+            foreach (var side in new[] { -1, 1 })
+            {
+                AddBox(new Vector3(middle + side * (middle - left) / 2f, (eave + ridge) / 2f + 0.12f, z + sign * 0.05f),
+                    new Vector3(rake + 0.2f, 0.2f, 0.46f), Stone, rotation: new Vector3(0, 0, side * -pitch));
+            }
+        }
+
+        // The doorway: jambs and an arch of voussoirs standing proud of the wall, oak doors with iron straps, a
+        // carved tympanum above them, two steps.
+        var doorWidth = 1.7f;
+        var spring = plinth + 2.1f;
+        var radius = doorWidth / 2f;
+        foreach (var side in new[] { -1, 1 })
+        {
+            AddBox(new Vector3(middle + side * (radius + 0.2f), (plinth + spring) / 2f, front + 0.14f), new Vector3(0.4f, spring - plinth, 0.36f), Stone);
+        }
+
+        for (var i = 0; i <= 8; i++)
+        {
+            var angle = Mathf.Pi * i / 8f;
+            var at = new Vector3(middle + Mathf.Cos(angle) * (radius + 0.2f), spring + Mathf.Sin(angle) * (radius + 0.2f), front + 0.14f);
+            AddBox(at, new Vector3(0.42f, 0.24f, 0.36f), i == 4 ? Stone.Lightened(0.08f) : Stone, rotation: new Vector3(0, 0, Mathf.RadToDeg(angle) - 90));
+        }
+
+        AddCylinder(new Vector3(middle, spring, front + 0.04f), radius, 0.06f, DarkStone, rotateX: true);
+        AddBox(new Vector3(middle, spring + 0.25f, front + 0.08f), new Vector3(0.12f, 0.5f, 0.04f), Stone);
+        AddBox(new Vector3(middle, spring + 0.32f, front + 0.08f), new Vector3(0.36f, 0.1f, 0.04f), Stone);
+        foreach (var side in new[] { -1, 1 })
+        {
+            var leaf = new Vector3(middle + side * radius / 2f, (plinth + spring) / 2f, front + 0.06f);
+            AddBox(leaf, new Vector3(radius - 0.04f, spring - plinth, 0.08f), oak);
+            foreach (var y in new[] { plinth + 0.5f, spring - 0.5f })
+            {
+                AddBox(new Vector3(leaf.X, y, front + 0.11f), new Vector3(radius - 0.12f, 0.06f, 0.02f), iron);
+            }
+
+            AddCylinder(new Vector3(middle + side * 0.12f, plinth + 1.05f, front + 0.13f), 0.05f, 0.03f, iron, rotateX: true);
+        }
+
+        AddBox(Box(middle - 1.6f, middle + 1.6f, front, front + 0.75f, baseHeight - 0.05f, plinth - 0.25f), Stone);
+        AddBox(Box(middle - 1.3f, middle + 1.3f, front, front + 0.4f, plinth - 0.25f, plinth), Stone.Lightened(0.05f));
+
+        // The round window in the gable: a stone ring, dark glass behind its tracery.
+        var rose = new Vector3(middle, eave + 0.9f, front);
+        AddCylinder(rose + new Vector3(0, 0, 0.09f), 0.78f, 0.18f, Stone, rotateX: true);
+        AddCylinder(rose + new Vector3(0, 0, 0.19f), 0.58f, 0.04f, new Color(0.16f, 0.2f, 0.26f), rotateX: true);
+        for (var i = 0; i < 4; i++)
+        {
+            AddBox(rose + new Vector3(0, 0, 0.23f), new Vector3(1.16f, 0.07f, 0.04f), Stone, rotation: new Vector3(0, 0, i * 45));
+        }
+
+        // The bell-cote on the peak: a stone pier set down into the roof, an arched opening with the bell hung in
+        // it, a little gabled cap and an iron cross.
+        var cote = new Vector3(middle, ridge, front - 0.25f);
+        AddBox(cote + new Vector3(0, 0.55f, 0), new Vector3(1.5f, 2.3f, 0.6f), Lime.Darkened(0.04f));
+        AddBox(cote + new Vector3(0, 1.75f, 0), new Vector3(1.7f, 0.14f, 0.7f), Stone);
+        AddBox(cote + new Vector3(0, 0.6f, 0.31f), new Vector3(0.72f, 0.9f, 0.04f), Shadow);
+        AddCylinder(cote + new Vector3(0, 1.05f, 0.31f), 0.36f, 0.04f, Shadow, rotateX: true);
+        AddBox(cote + new Vector3(0, 1.18f, 0.3f), new Vector3(0.6f, 0.05f, 0.05f), Timber);
+        AddShape(new CylinderMesh { TopRadius = 0.1f, BottomRadius = 0.24f, Height = 0.42f, RadialSegments = 10 }, cote + new Vector3(0, 0.92f, 0.33f), new Color(0.55f, 0.42f, 0.2f));
+        foreach (var side in new[] { -1, 1 })
+        {
+            AddBox(cote + new Vector3(side * 0.42f, 2.05f, 0), new Vector3(1.0f, 0.12f, 0.76f), new Color(0.42f, 0.22f, 0.14f), rotation: new Vector3(0, 0, side * -30));
+        }
+
+        AddBox(cote + new Vector3(0, 2.6f, 0), new Vector3(0.06f, 0.6f, 0.06f), iron);
+        AddBox(cote + new Vector3(0, 2.72f, 0), new Vector3(0.32f, 0.06f, 0.06f), iron);
+
+        // Down each side: buttresses, and between them tall narrow windows with an arched head, set in stone.
+        var bays = 3;
+        var bay = (front - back) / bays;
+        foreach (var (x, sign) in new[] { (left, -1), (right, 1) })
+        {
+            for (var i = 0; i <= bays; i++)
+            {
+                var z = back + i * bay;
+                if (i == 0 || i == bays)
+                {
+                    continue;
+                }
+
+                AddBox(new Vector3(x + sign * 0.3f, (plinth + eave - 1.2f) / 2f, z), new Vector3(0.6f, eave - 1.2f - plinth, 0.55f), Stone);
+                AddBox(new Vector3(x + sign * 0.2f, eave - 1.0f, z), new Vector3(0.42f, 0.5f, 0.55f), Stone, rotation: new Vector3(0, 0, sign * 35));
+            }
+
+            for (var i = 0; i < bays; i++)
+            {
+                var z = back + (i + 0.5f) * bay;
+                var sill = plinth + 1.8f;
+                var head = sill + 1.9f;
+                AddBox(new Vector3(x + sign * 0.03f, (sill + head) / 2f, z), new Vector3(0.05f, head - sill, 0.62f), new Color(0.16f, 0.2f, 0.26f));
+                AddCylinder(new Vector3(x + sign * 0.03f, head, z), 0.31f, 0.05f, new Color(0.16f, 0.2f, 0.26f), rotation: new Vector3(0, 0, 90));
+                AddBox(new Vector3(x + sign * 0.08f, sill - 0.05f, z), new Vector3(0.18f, 0.1f, 0.9f), Stone);
+                foreach (var edge in new[] { -1, 1 })
+                {
+                    AddBox(new Vector3(x + sign * 0.06f, (sill + head) / 2f, z + edge * 0.37f), new Vector3(0.12f, head - sill, 0.12f), Stone);
+                }
+
+                AddCylinder(new Vector3(x + sign * 0.05f, head, z), 0.43f, 0.08f, Stone, rotation: new Vector3(0, 0, 90));
+            }
+        }
+
+        // The lantern, on an iron bracket off the wall beside the door.
+        var bracket = new Vector3(middle - radius - 0.9f, plinth + 2.4f, front);
+        AddBox(bracket + new Vector3(0, 0, 0.2f), new Vector3(0.05f, 0.05f, 0.4f), iron);
+        AddBox(bracket + new Vector3(0, 0.12f, 0.03f), new Vector3(0.12f, 0.3f, 0.04f), iron);
+        Lantern(bracket + new Vector3(0, -0.2f, 0.4f));
     }
 
     private void Pier(float left, float right, float back, float front)
