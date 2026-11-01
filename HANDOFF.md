@@ -143,7 +143,8 @@ priority order:
      someone signs on.
    - **Where the references are:** they're described in `docs/UI_STYLE.md` but were uploads, not
      repo files. Ask the owner to re-share them if you need them.
-4. **Crew management and capacity** (`p-roster`):
+4. **Crew management and capacity** (`p-roster`). **Proposed 2026-11-01 in `docs/CREW_PROPOSAL.md`; waiting for the
+   owner's answers to its questions.** The original notes:
    - Let the player dismiss crew while recruiting, at some cost (respect or the like). The case: the
      ship is full, but the checklist still wants a navigator.
    - Think about more berths at a resource cost.
