@@ -162,6 +162,9 @@ public enum ChronicleEntryKind
     /// <summary>Someone stopped waiting for a berth and left (parameter: reason; character: who).</summary>
     LeftPort,
 
+    /// <summary>The captain paid someone off before sailing (character: who).</summary>
+    CrewPaidOff,
+
     /// <summary>The convoy sails soon (parameter: level = hours left).</summary>
     ConvoyWarning,
 

@@ -386,6 +386,12 @@ public partial class Main : Node3D
                 SignedOn(id, advance);
             }
         });
+        _portHud.PayOffRequested += id =>
+        {
+            var name = _runner.Campaign.Characters[id].Name;
+            var result = _runner.PayOff(id);
+            _portHud.Say(result.Succeeded ? $"{name} is paid off, and carries a sea chest back down the gangway. The crew watch it go." : result.Reason);
+        };
         _portHud.DiceRequested += stake =>
         {
             var (result, said) = _runner.PlayDice(stake);

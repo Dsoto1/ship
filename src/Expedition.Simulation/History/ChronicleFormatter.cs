@@ -58,6 +58,7 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
             ChronicleEntryKind.AllHandsLost => $"No one is left alive aboard {Ship()}.",
             ChronicleEntryKind.Noticed => $"You noticed something about {who}: {Secret(entry.Get(ChronicleParameters.To))}",
             ChronicleEntryKind.LeftPort => $"{who} {entry.Get(ChronicleParameters.Reason)}.",
+            ChronicleEntryKind.CrewPaidOff => $"{who} was paid off, took a sea chest down the gangway, and will not sail with you now.",
             ChronicleEntryKind.ConvoyWarning => $"The Chamber's notice: the convoy sails at dawn, in {entry.Get(ChronicleParameters.Level)} hours.",
             ChronicleEntryKind.LeadHeard => Lead(entry.Get(ChronicleParameters.To)) is { } lead
                 ? $"Heard of someone worth finding: \"{lead.Text}\" ({lead.Where})"

@@ -74,6 +74,12 @@ public partial class PortHud : CanvasLayer
     /// <summary>Offer someone a berth for an advance.</summary>
     public event Action<CharacterId, int>? OfferRequested;
 
+    /// <summary>Pay off someone signed on (CREW_PROPOSAL §1).</summary>
+    public event Action<CharacterId>? PayOffRequested;
+
+    private Button _payOff = null!, _talk = null!;
+    private CharacterId? _payOffArmed;
+
     /// <summary>Buy a lot from the chandler.</summary>
     public event Action<int>? BuyRequested;
 
@@ -231,7 +237,9 @@ public partial class PortHud : CanvasLayer
     private void RefreshCard(SimulationRunner runner, CharacterId? shown)
     {
         var campaign = runner.Campaign;
-        if (shown is not { } id || !campaign.Characters.TryGetValue(id, out var character) || character.Membership != Membership.Local)
+        // Townsfolk, and those signed on while the Garza is still in port (to be paid off if need be).
+        if (shown is not { } id || !campaign.Characters.TryGetValue(id, out var character)
+            || !(character.Membership == Membership.Local || (campaign.Port?.Hired.Contains(id) == true && id != campaign.CaptainId)))
         {
             _card.Visible = false;
             _shown = null;
@@ -258,7 +266,8 @@ public partial class PortHud : CanvasLayer
 
         var port = campaign.Port!;
         var talked = port.TalkedTo.Contains(id);
-        _cardSeeking.Text = port.Gone.Contains(id) ? "Gone from the port."
+        _cardSeeking.Text = runner.PaidOff(id) ? "Paid off. Will not sail with you now."
+            : port.Gone.Contains(id) ? "Gone from the port."
             : port.Hired.Contains(id) ? "Signed on."
             : person?.Seeking is not null && talked && !runner.TermsHeard(id) ? "Looking for a berth. Ask what they would want."
             : person?.Seeking is { } seeking && talked
@@ -316,6 +325,16 @@ public partial class PortHud : CanvasLayer
         _offer.Editable = seekingNow;
         var claim = runner.OpenClaims().FirstOrDefault(c => c.Creditor == id);
         _claimRow.Visible = claim.Claim is not null && runner.Campaign.Port?.Approached.Contains(id) == true;
+        // Paying off is quiet, and asks twice: the first press says what it will cost.
+        var aboard = port.Hired.Contains(id);
+        _payOff.Visible = aboard && id != campaign.CaptainId;
+        _talk.Visible = !aboard;
+        _demonstrateButton.GetParent<Control>().Visible = !aboard;
+        if (_payOffArmed != id)
+        {
+            _payOffArmed = null;
+            _payOff.Text = "Pay off…";
+        }
         _claimText.Visible = _claimRow.Visible;
         _claimText.Text = claim.Claim is { Debtor.Length: 0 } account ? $"The Garza owes him {account.Amount} sueldos for stores."
             : claim.Claim is { } open && runner.CharacterFor(open.Debtor) is { } debtor
@@ -418,8 +437,9 @@ public partial class PortHud : CanvasLayer
 
         _pending = Ui.Text("", Ui.TextMeta, Ui.Brass, 290);
         column.AddChild(_pending);
-        column.AddChild(Ui.Button(Ui.ButtonKind.Primary, "Talk", "Walk over and talk with them. What you can ask opens up as you learn about them and they come to trust you",
-            () => { if (_shown is { } id) TalkRequested?.Invoke(id); }));
+        _talk = Ui.Button(Ui.ButtonKind.Primary, "Talk", "Walk over and talk with them. What you can ask opens up as you learn about them and they come to trust you",
+            () => { if (_shown is { } id) TalkRequested?.Invoke(id); });
+        column.AddChild(_talk);
 
         // Asking about others and offering a berth are done in conversation (ConversationView).
         var ask = new HBoxContainer { Visible = false };
@@ -453,6 +473,29 @@ public partial class PortHud : CanvasLayer
         offer.AddChild(_offerButton);
         _offer = new SpinBox { MinValue = -2000, MaxValue = 5000, Step = 50, Suffix = "sueldos", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         offer.AddChild(_offer);
+
+        // Paying off someone signed on: the berth back, at a price in the crew's respect (CREW_PROPOSAL §1).
+        _payOff = Ui.Button(Ui.ButtonKind.Tertiary, "Pay off…",
+            "Turn them off before she sails. They keep the advance and will not sign again; the crew will think less of you, their friends a good deal less, and for a day the port will ask more.",
+            () =>
+            {
+                if (_shown is not { } id)
+                {
+                    return;
+                }
+
+                if (_payOffArmed != id)
+                {
+                    _payOffArmed = id;
+                    _payOff.Text = "Pay off: are you sure? They keep the advance";
+                    return;
+                }
+
+                _payOffArmed = null;
+                _payOff.Text = "Pay off…";
+                PayOffRequested?.Invoke(id);
+            });
+        column.AddChild(_payOff);
 
         // A creditor's claim against someone signed on (R2e): pay it from the purse, or refuse.
         _claimText = Ui.Text("", Ui.TextMeta + 1, Ui.Brass, 290);

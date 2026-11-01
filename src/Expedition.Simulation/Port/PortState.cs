@@ -106,6 +106,8 @@ public sealed class PortState
 
     internal void MarkHired(CharacterId id) => _hired.Add(id);
 
+    internal void Unhire(CharacterId id) => _hired.Remove(id);
+
     internal void MarkGone(CharacterId id) => _gone.Add(id);
 
     internal void AddPurchase(int lot, long tick) => _purchases.Add(new Purchase(lot, tick));

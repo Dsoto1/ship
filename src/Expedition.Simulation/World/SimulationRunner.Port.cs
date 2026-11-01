@@ -617,8 +617,20 @@ public sealed partial class SimulationRunner
 
         // Someone who has come to trust the captain will settle for less (a tenth, at most).
         var lowest = TrustOf(id) >= 15 ? (int)Math.Round(seeking.Lowest * (seeking.Lowest > 0 ? 0.9 : 1.1) / 50.0) * 50 : seeking.Lowest;
+        // For a day after the captain turned a man off, the port talks, and a hand asks a tenth more to risk it.
+        var talk = TalkedOfForPayingOff && seeking.Lowest > 0;
+        if (talk)
+        {
+            lowest = (int)Math.Ceiling(lowest * PaidOffPremium / 50.0) * 50;
+        }
+
         if (advance < lowest)
         {
+            if (talk && advance >= seeking.Lowest)
+            {
+                return CommandResult.Rejected($"{character.Name}: \"They say you turn men off, Captain. For {lowest} I'll take the chance.\"");
+            }
+
             var insulting = seeking.Lowest > 0 && advance < lowest * 0.75;
             if (insulting && Campaign.CaptainId is { } offended)
             {

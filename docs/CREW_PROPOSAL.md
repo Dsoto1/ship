@@ -6,7 +6,10 @@ filled my ship). Can we add more to the ship capacity? maybe it allows us to pot
 resources and everything else. Is there a cabin we can bring extra settlers? maybe they have to bring their own
 food/water supplies to help?"
 
-**Status:** a proposal, 2026-11-01. Nothing is built until the owner chooses (questions at the end).
+**Status:** the owner chose 1a, 2a, 3a, 4b, 5a (2026-11-01).
+- **Paying off (§1):** built. The command is `SimulationRunner.PayOff`, the button is on the hand's card in port, and
+  the tests are `PayOffTests`.
+- **Still to come:** hammocks and crowding (§2), then passengers (§3). The hold limit (§4) comes later.
 
 ## Where things stand
 

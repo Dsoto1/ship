@@ -78,6 +78,18 @@ Save with **Cmd + S** and load with **Cmd + L** at any point, or from the menu (
 - [ ] **The chapel:** walk to it (north of the market). The gable faces the street with a bell-cote and bell on the
       peak, a round window in the gable, and a stone doorway with oak doors. Nothing floats.
 
+## Retest: paying a hand off (new 2026-11-01)
+
+```
+-- --menu=none --hire=7
+```
+
+- [ ] **Pay off:** click a signed-on hand. Their card has a quiet "Pay off…" button; the first press asks if you are
+      sure, and the second turns them off. They walk down the gangway, the berth is free, and the purse is unchanged.
+- [ ] **They won't come back:** their card says "Paid off. Will not sail with you now", and an offer is refused.
+- [ ] **The crew notice:** the chronicle records it; the others' respect for you drops (more for their friends).
+- [ ] **The port talks:** for a day, someone seeking a berth asks a tenth more ("They say you turn men off…").
+
 ## 0a. Menus and saving
 
 Launch with nothing after the `--` (or Godot's Run button).
