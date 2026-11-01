@@ -153,6 +153,12 @@ class Landmarks:
         self.mouth = np.array([0.0, (self.nose[1] + self.chin[1]) / 2 + 0.005, self.nose[2] - 0.012])
         self.cheek = np.array([self.width * 0.62, self.nose[1] - 0.008, self.nose[2] - 0.045])
         self.ear = np.array([self.width * 0.98, self.nose[1] + 0.005, self.centre[2] + 0.01])
+        # The skull above the brow, where a hat sits: its middle and half its width and depth (the back of the
+        # head reaches further behind the face's centre than the front does ahead of it).
+        skull = p[p[:, 1] > self.brow[1] + 0.03]
+        lo, hi = skull.min(0), skull.max(0)
+        self.skull_centre = np.array([0.0, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2])
+        self.skull_half = np.array([(hi[0] - lo[0]) / 2, (hi[1] - lo[1]) / 2, (hi[2] - lo[2]) / 2])
         self.jaw = np.array([self.width * 0.7, self.chin[1] + 0.03, self.centre[2] + 0.035])
 
 

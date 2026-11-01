@@ -50,6 +50,7 @@ public partial class CharacterLineup : Node3D
             {
                 case "people": people = [.. value.Split(',')]; break;
                 case "view": _view = value; break;
+                case "yaw": _yaw = float.Parse(value, System.Globalization.CultureInfo.InvariantCulture); break;
                 case "screenshot": _screenshot = value; break;
                 case "paint": _paint = value != "0"; break;
                 case "state": _portraitState = int.Parse(value); break;
@@ -211,6 +212,19 @@ public partial class CharacterLineup : Node3D
                 });
             }
 
+            return;
+        }
+
+        if (_view == "head")
+        {
+            // The first model's head from any side (--yaw), a little above: for hats and hair.
+            _camera.Projection = Camera3D.ProjectionType.Perspective;
+            _camera.Fov = 14;
+            var model = _models.FirstOrDefault().Model;
+            var head = (model?.GlobalPosition ?? Vector3.Zero) + new Vector3(0, (model?.Height ?? 1.7f) * 0.9f, 0);
+            var around = new Vector3(Mathf.Sin(Mathf.DegToRad(_yaw)), 0.45f, Mathf.Cos(Mathf.DegToRad(_yaw))).Normalized();
+            _camera.Position = head + around * 2.4f;
+            _camera.LookAt(head);
             return;
         }
 

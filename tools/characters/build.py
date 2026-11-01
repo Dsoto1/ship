@@ -224,6 +224,8 @@ def build_person(identity, palette, coarse=None):
         part = accessory(extra, skeleton, base, marks, palette)
         if part is not None:
             part.kind = np.asarray(part.kind, dtype=np.float64) + SLOTS.get(extra.get("slot"), 0.0)
+            # A hat stays whole: reduced, its oval crown collapses into a few flat faces that the skull shows through.
+            part.keep = extra["shape"] in ("brim", "crown")
             parts.append(part)
 
     # Equipment, held in the hand only when the work calls for it; separate meshes.
@@ -342,23 +344,35 @@ def hair_piece(piece, skeleton, marks, face, colour, palette, coarse=None, cover
     return None
 
 
+def hat_fit(marks):
+    """The half width and half depth a hat's crown needs: the skull's, and room for hair and felt."""
+    return marks.skull_half[0] + 0.016, marks.skull_half[2] + 0.016
+
+
 def accessory(extra, skeleton, base, marks, palette):
     colour = np.array([*colour_of(extra.get("colour"), palette), float(extra.get("wear", 0.3))])
     kind = g.KINDS[extra.get("material", "wool")]
     shape = extra["shape"]
     if shape == "brim":
-        # A hat's brim round the head at brow height.
-        centre = [0, marks.brow[1] + 0.045 + extra.get("raise", 0.0), marks.centre[2] + 0.01]
-        p, f = g.disc(centre, extra.get("radius", 0.17), extra.get("radius", 0.17) * 0.95, 0.008,
-                      segments=22, droop=extra.get("droop", 0.01), inner=0.45)
+        # A hat's brim round the head at brow height, centred on the skull (not the face), so it reaches as far
+        # behind the head as before it; never narrower than the crown it carries.
+        sx, sz = hat_fit(marks)
+        rx = max(extra.get("radius", 0.17), sx + 0.045)
+        rz = max(extra.get("radius", 0.17) * 0.95, sz + 0.045)
+        centre = [0, marks.brow[1] + 0.045 + extra.get("raise", 0.0), marks.skull_centre[2]]
+        p, f = g.disc(centre, rx, rz, 0.008, segments=22, droop=extra.get("droop", 0.01), inner=min(sx / rx, sz / rz) * 0.9)
         return g.rigid(skeleton, "Head", p, f, colour, kind, extra["id"])
     if shape == "crown":
-        # A hat's crown: a short tapered drum.
+        # A hat's crown: a short tapered drum over the whole skull, oval to its width and depth with room for the
+        # hair, so the back of the head never shows above the brim (the owner's playtest, 2026-10-23).
         top = marks.top + extra.get("height", 0.06)
         bottom = marks.brow[1] + 0.04
-        centre = marks.centre + [0, 0, 0.01]
-        p, f = g.cylinder([centre[0], bottom, centre[2]], [centre[0], top, centre[2]], extra.get("radius", 0.105),
-                          segments=16, end_radius=extra.get("topRadius", 0.095))
+        sx, sz = hat_fit(marks)
+        grow = max(1.0, extra.get("radius", 0.105) / 0.105)
+        taper = extra.get("topRadius", 0.095) / extra.get("radius", 0.105)
+        centre = marks.skull_centre
+        p, f = g.cylinder([0, bottom, 0], [0, top, 0], 1.0, segments=18, end_radius=taper)
+        p = np.asarray(p, float) * [sx * grow, 1.0, sz * grow] + [centre[0], 0, centre[2]]
         return g.rigid(skeleton, "Head", p, f, colour, kind, extra["id"])
     if shape == "pouch":
         side = 1 if extra.get("side", "left") == "left" else -1
