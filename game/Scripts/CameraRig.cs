@@ -84,6 +84,7 @@ public partial class CameraRig : Camera3D
         if (@event is InputEventMagnifyGesture pinch && pinch.Factor > 0)
         {
             Size = Mathf.Clamp(Size / pinch.Factor, MinSize, MaxSize);
+            Apply();
             return;
         }
 
@@ -138,5 +139,14 @@ public partial class CameraRig : Camera3D
 
         RotationDegrees = new Vector3(IsometricPitch, _yaw, 0);
         Position = Target + Basis.Z * Distance;
+        // The near plane just short of the tallest masts at this zoom: the sun's shadow cascades start at the
+        // near plane, so none of the shadow map is spent on the empty air between the camera and the scene.
+        Near = Mathf.Max(0.05f, NearestScene);
     }
+
+    /// <summary>How far along the view the nearest thing in sight can be (a masthead), at this zoom.</summary>
+    public float NearestScene => Distance - Size * 0.9f - 22f;
+
+    /// <summary>How far along the view the farthest ground in sight lies, at this zoom.</summary>
+    public float FarthestGround => Distance + Size * 0.9f + 8f;
 }

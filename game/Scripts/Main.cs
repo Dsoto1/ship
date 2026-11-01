@@ -742,6 +742,7 @@ public partial class Main : Node3D
             }
         }
         var making = voyage is { Outcome: Expedition.Simulation.Voyage.VoyageOutcome.UnderWay } ? 0.3f + (float)voyage.SpeedLeaguesPerHour * 1.3f : 0f;
+        _world.FitShadows(_camera.FarthestGround);
         _world.UpdateWorld(hour, _seaState, making, (float)delta, _camera.Target, hull, _gloom, inPort ? _portFog : _seaFog, inPort ? 0f : Mathf.DegToRad(_ship.RotationDegrees.Y), inPort ? null : _runner.Raining);
         // Ashore the camp has its own sounds: the surf, the wind in the trees, the rain, the work (R7).
         var ashore = _runner.Campaign.Camp is not null;

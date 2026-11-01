@@ -155,7 +155,10 @@ priority order:
 6. **The port chapel** (`u-fronts`). **Rebuilt 2026-11-01, waiting for the owner to retest** (`PortView.Chapel`). The
    original note: it needs a full facelift. Things float on its front and roof. It is
    `case "chapel"` in `PortView.cs`.
-7. **Shadows** (`u-camera`): they flicker, with jagged edges, under the shutters. Check the shadow
+7. **Shadows** (`u-camera`). **Fixed 2026-11-01, waiting for the owner to retest:** the camera's near plane now sits
+   just short of the scene (`CameraRig.NearestScene`), so the sun's shadow cascades no longer start in the empty air
+   by the lens. The sun turns in quarter-degree steps rather than every frame (`SeaAndSky`). `--shadow=ortho|pssm2`
+   tries other shadow modes. The original note: they flicker, with jagged edges, under the shutters. Check the shadow
    bias, the split distances, or the shutters' thickness.
 8. **Building kit** (`k-look`, `k-fit` marked not right, no notes; `k-all`, `k-pref` marked works):
    - The owner would **keep the kit**.

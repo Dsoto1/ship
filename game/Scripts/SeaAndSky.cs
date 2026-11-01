@@ -15,6 +15,27 @@ public partial class SeaAndSky : Node3D
     private ShaderMaterial _ocean = null!;
     private MeshInstance3D _oceanMesh = null!;
     private DirectionalLight3D _sun = null!;
+
+    /// <summary>For trying shadow set-ups (--shadow=…).</summary>
+    public static string? ShadowTrial { get; set; }
+
+    private const float SunStep = 0.25f;
+
+    /// <summary>
+    /// Fits the sun's shadow to what the camera sees, out to <paramref name="far"/> (the farthest ground in view, along
+    /// the view; never less than 80 m). The cascades start at the camera's near plane, which the camera keeps just
+    /// short of the scene (CameraRig.NearestScene): its camera is orthographic and stands well back, and with the
+    /// near plane at the lens most of the shadow map went on empty air, leaving the street's shadows coarse and
+    /// jagged.
+    /// </summary>
+    public void FitShadows(float far)
+    {
+        if (ShadowTrial is null)
+        {
+            _sun.DirectionalShadowMaxDistance = Mathf.Max(80f, far);
+        }
+    }
+
     private DirectionalLight3D _moon = null!;
     private Godot.Environment _environment = null!;
     private Vector2 _flow;
@@ -61,6 +82,12 @@ public partial class SeaAndSky : Node3D
         AddChild(new WorldEnvironment { Environment = _environment });
 
         _sun = new DirectionalLight3D { ShadowEnabled = true, DirectionalShadowMaxDistance = 80f };
+        ShadowTrial ??= OS.GetCmdlineUserArgs().FirstOrDefault(a => a.StartsWith("--shadow="))?["--shadow=".Length..];
+        switch (ShadowTrial)
+        {
+            case "ortho": _sun.DirectionalShadowMode = DirectionalLight3D.ShadowMode.Orthogonal; break;
+            case "pssm2": _sun.DirectionalShadowMode = DirectionalLight3D.ShadowMode.Parallel2Splits; break;
+        }
         AddChild(_sun);
         _moon = new DirectionalLight3D { LightColor = new Color(0.55f, 0.65f, 0.95f), RotationDegrees = new Vector3(-60, 140, 0) };
         AddChild(_moon);
@@ -125,7 +152,15 @@ public partial class SeaAndSky : Node3D
 
         // The light of the hour from the table of presets, then overcast for the weather (ART_BIBLE §9).
         var light = Lighting.At(hourOfDay);
-        _sun.RotationDegrees = new Vector3(-Mathf.Max(elevation, 0.06f) * 62f - 10f, -90f + (hourOfDay - 5.5f) / 14f * 180f, 0);
+        // The sun moves in steps of a quarter degree, not a little every frame: a shadow whose light turns every frame
+        // crawls across the shadow map's texels, and its edges shimmer (the owner's playtest, under the shutters).
+        var sun = new Vector3(-Mathf.Max(elevation, 0.06f) * 62f - 10f, -90f + (hourOfDay - 5.5f) / 14f * 180f, 0);
+        sun = new Vector3(Mathf.Snapped(sun.X, SunStep), Mathf.Snapped(sun.Y, SunStep), 0);
+        if (sun != _sun.RotationDegrees)
+        {
+            _sun.RotationDegrees = sun;
+        }
+
         _sun.LightColor = light.Sun.Lerp(new Color(0.85f, 0.88f, 0.92f), gloom * 0.7f);
         _sun.LightEnergy = light.SunEnergy * Mathf.SmoothStep(-0.1f, 0.1f, elevation) * (1f - 0.75f * gloom);
         _sun.Visible = _sun.LightEnergy > 0.01f;
