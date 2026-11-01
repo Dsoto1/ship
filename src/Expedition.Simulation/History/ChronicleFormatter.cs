@@ -58,6 +58,7 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
             ChronicleEntryKind.AllHandsLost => $"No one is left alive aboard {Ship()}.",
             ChronicleEntryKind.Noticed => $"You noticed something about {who}: {Secret(entry.Get(ChronicleParameters.To))}",
             ChronicleEntryKind.LeftPort => $"{who} {entry.Get(ChronicleParameters.Reason)}.",
+            ChronicleEntryKind.HammockSlung => $"A hammock slung in the hold, and the carpentry for it: berths for {entry.Get(ChronicleParameters.Level)} hands now.",
             ChronicleEntryKind.CrewPaidOff => $"{who} was paid off, took a sea chest down the gangway, and will not sail with you now.",
             ChronicleEntryKind.ConvoyWarning => $"The Chamber's notice: the convoy sails at dawn, in {entry.Get(ChronicleParameters.Level)} hours.",
             ChronicleEntryKind.LeadHeard => Lead(entry.Get(ChronicleParameters.To)) is { } lead
@@ -441,6 +442,7 @@ public sealed partial class ChronicleFormatter(CampaignState campaign, GameConte
             "wet" => "wet through below with the hatches open",
             "foul" => "in a foul ship",
             "nofresh" => "weeks without anything fresh",
+            "crowded" => "crowded below decks",
             "untended" => "no one tending the sick",
             "sea" => "in a heavy sea",
             "unlashed" => "the cargo not lashed",

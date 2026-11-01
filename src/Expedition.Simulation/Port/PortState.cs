@@ -22,6 +22,9 @@ public sealed class PortState
     /// <summary>Sueldos left.</summary>
     public int Funds { get; internal set; }
 
+    /// <summary>Hammocks slung in the hold: berths beyond the Garza's own.</summary>
+    public int Hammocks { get; internal set; }
+
     /// <summary>Lots left at the chandler, by index into the goods list.</summary>
     public IReadOnlyDictionary<int, int> Stock => _stock;
 

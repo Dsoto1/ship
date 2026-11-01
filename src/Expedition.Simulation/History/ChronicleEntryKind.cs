@@ -165,6 +165,9 @@ public enum ChronicleEntryKind
     /// <summary>The captain paid someone off before sailing (character: who).</summary>
     CrewPaidOff,
 
+    /// <summary>A hammock slung in the hold for one more hand (parameter: level = berths now).</summary>
+    HammockSlung,
+
     /// <summary>The convoy sails soon (parameter: level = hours left).</summary>
     ConvoyWarning,
 

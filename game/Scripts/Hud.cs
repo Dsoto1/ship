@@ -919,7 +919,8 @@ public partial class Hud : CanvasLayer
         }
 
         var hands = runner.Campaign.Port!.Hired.Count;
-        Set("Sailing", hands / (double)rules.Berths + 0.1 * Knowing("skill.seamanship"), $"{hands} hands signed of {rules.Berths} berths; {Knowing("skill.seamanship")} know the sea.");
+        Set("Sailing", hands / (double)rules.Berths + 0.1 * Knowing("skill.seamanship"), $"{hands} hands signed of {runner.BerthsAboard} berths; {Knowing("skill.seamanship")} know the sea."
+            + (runner.Crowded > 0 ? $" Crowded: {hands} in a hold built for {rules.Berths}." : ""));
         Set("Navigation", Best("skill.navigation"), "The best navigator aboard: who can take the sun, keep the reckoning and know the coast.");
         Set("Repair", 0.7 * Best("skill.ship_repair", "skill.carpentry") + 0.3 * Math.Min(1, (store.Count("item.oakum") + store.Count("item.plank")) / 10.0),
             $"Who can mend her, and the oakum and planks to do it ({store.Count("item.oakum")} oakum, {store.Count("item.plank")} planks).");
@@ -1211,7 +1212,9 @@ public partial class Hud : CanvasLayer
             var signed = port.Hired.Count;
             chips.Add(signed < rules.MinimumCrew
                 ? (Ui.IconPeople, $"Crew {signed}/{rules.MinimumCrew}", Severity.Attention, $"The Garza needs at least {rules.MinimumCrew} hands to sail. Find people through the journal (X).", PanelId.Expedition)
-                : (Ui.IconPeople, $"Crew {signed}/{rules.Berths}", Severity.Positive, $"Enough hands to sail; {rules.Berths - signed} berths still free.", PanelId.People));
+                : runner.Crowded > 0
+                    ? (Ui.IconPeople, $"Crew {signed}/{runner.BerthsAboard}", Severity.Attention, $"Crowded: {signed} in a hold built for {rules.Berths}. Fever and flux come easier at sea, and tempers fray in a storm.", PanelId.People)
+                    : (Ui.IconPeople, $"Crew {signed}/{runner.BerthsAboard}", Severity.Positive, $"Enough hands to sail; {runner.BerthsAboard - signed} berths still free.", PanelId.People));
             chips.Add((Ui.IconPurse, $"{port.Funds}", port.Funds < 500 ? Severity.Attention : Severity.Information, "Sueldos left in the purse, for advances and stores", PanelId.Cargo));
             if (runner.PortWeather is { } weather)
             {

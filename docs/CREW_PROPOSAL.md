@@ -9,7 +9,14 @@ food/water supplies to help?"
 **Status:** the owner chose 1a, 2a, 3a, 4b, 5a (2026-11-01).
 - **Paying off (§1):** built. The command is `SimulationRunner.PayOff`, the button is on the hand's card in port, and
   the tests are `PayOffTests`.
-- **Still to come:** hammocks and crowding (§2), then passengers (§3). The hold limit (§4) comes later.
+- **Hammocks (§2):** built.
+  - **Buying them:** `SimulationRunner.SlingHammock` and `BerthsAboard`; the button is in the Cargo drawer, under
+    "Room in the hold".
+  - **Crowding:** `Crowded` makes fever and flux 10% likelier per extra hand at sea, and grievances grow 10% faster
+    per extra hand in a storm.
+  - **Shown:** the crew chip in the top bar turns amber when crowded, and readiness says so.
+  - **Saved:** the count is kept in the save (old saves load with none). Tests: `HammockTests`.
+- **Still to come:** passengers (§3). The hold limit (§4) comes later.
 
 ## Where things stand
 

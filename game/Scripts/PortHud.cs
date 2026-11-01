@@ -684,7 +684,7 @@ public partial class PortHud : CanvasLayer
         var hours = (rules.Departure.Tick - runner.Campaign.Clock.Tick) / (double)SimulationClock.TicksPerHour;
         var (food, water) = runner.SupplyForecast();
         _objectives.Text =
-            $"Now: {(port.Hired.Count < rules.MinimumCrew ? $"sign on {rules.MinimumCrew - port.Hired.Count} more hands ({port.Hired.Count} of {rules.Berths} berths taken)" : "stores and any last hands, then sail")}\n" +
+            $"Now: {(port.Hired.Count < rules.MinimumCrew ? $"sign on {rules.MinimumCrew - port.Hired.Count} more hands ({port.Hired.Count} of {runner.BerthsAboard} berths taken)" : "stores and any last hands, then sail")}\n" +
             $"Expedition: sail with the convoy at dawn on day {rules.Departure.Day} — {(hours > 0 ? $"in {Math.Floor(hours):0} hours" : $"it has sailed; {rules.LateFeePerHalfDay} sueldos for every half day late")}\n" +
             "Charter: reach Punta Ceniza, learn what became of the factory, re-establish it and hold it\n\n" +
             $"Purse: {port.Funds} sueldos\nStores for {port.Hired.Count + 1}: water ~{Math.Floor(water * 0.9):0}–{Math.Ceiling(water * 1.1):0} days, food ~{Math.Floor(food * 0.9):0}–{Math.Ceiling(food * 1.1):0} days";
@@ -761,7 +761,7 @@ public partial class PortHud : CanvasLayer
         var port = runner.Campaign.Port!;
         // Feed the crew the Garza will sail with: everyone signed on, or every berth if more are coming.
         var aboard = runner.Campaign.Crew.Count();
-        var sailing = Math.Max(aboard, rules.Berths + 1);
+        var sailing = Math.Max(aboard, runner.BerthsAboard + 1);
         var (food, water) = runner.SupplyForecast(sailing);
         var (low, high) = Expedition.Simulation.Scenarios.ExpeditionScenario.PassageDays;
         var least = Math.Min(food, water);
@@ -815,6 +815,14 @@ public partial class PortHud : CanvasLayer
             look.TooltipText = judged ? "You have looked at everything they sell." : why ?? "Turn the goods over, taste, smell, tap the casks. A sharp eye sees more (perception).";
         }
 
+        var slung = port.Hammocks;
+        _hammockLine.Text = slung == 0
+            ? $"The Garza has berths for {rules.Berths}. Hammocks in the hold make room for more, but a crowded ship breeds fever and flux, and short tempers in a storm."
+            : $"{slung} of {rules.MostHammocks} hammocks slung: berths for {runner.BerthsAboard}. More than {rules.Berths} aboard is crowded: fever and flux come easier, and tempers fray in a storm.";
+        _hammock.Text = slung >= rules.MostHammocks ? "The hold will take no more hammocks" : $"Sling a hammock in the hold — {rules.HammockPrice} sueldos, one more berth";
+        _hammock.Disabled = slung >= rules.MostHammocks || port.Funds < rules.HammockPrice;
+        _hammock.TooltipText = port.Funds < rules.HammockPrice ? $"Only {port.Funds} sueldos left in the purse." : "Hammock, hooks and battens, and a carpenter's morning.";
+
         for (var lot = 0; lot < rules.Goods.Count; lot++)
         {
             var goods = rules.Goods[lot];
@@ -856,6 +864,15 @@ public partial class PortHud : CanvasLayer
         _lookButtons.Clear();
         _accounts.Clear();
         var buttons = new Button[rules.Goods.Count];
+
+        // Room for more hands (CREW_PROPOSAL §2): the chandler slings hammocks in the hold.
+        _lots.AddChild(Ui.Text("Room in the hold", Ui.TextBody, Ui.Brass, 0));
+        _hammockLine = Ui.Text("", Ui.TextMeta, Ui.InkSoft, 370);
+        _lots.AddChild(_hammockLine);
+        _hammock = Ui.Button("", "", () => HammockRequested?.Invoke());
+        _hammock.Alignment = HorizontalAlignment.Left;
+        _lots.AddChild(_hammock);
+        _lots.AddChild(new HSeparator());
         foreach (var seller in rules.Sellers)
         {
             var header = new HBoxContainer();
@@ -892,7 +909,14 @@ public partial class PortHud : CanvasLayer
         }
 
         _lotButtons.AddRange(buttons);
+
     }
+
+    private Label _hammockLine = null!;
+    private Button _hammock = null!;
+
+    /// <summary>Have a hammock slung in the hold, for one more hand.</summary>
+    public event Action? HammockRequested;
 
     /// <summary>Resets for a newly started or loaded campaign.</summary>
     public void Bind(SimulationRunner runner)

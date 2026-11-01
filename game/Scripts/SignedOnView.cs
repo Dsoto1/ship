@@ -147,7 +147,7 @@ public partial class SignedOnView : Control
         var rules = runner.Content.Port!;
         var hands = port.Hired.Count;
         _crew.Text = hands >= rules.MinimumCrew
-            ? $"Hands signed on: {hands} of {rules.Berths} berths. Enough to sail."
+            ? $"Hands signed on: {hands} of {runner.BerthsAboard} berths. Enough to sail."
             : $"Hands signed on: {hands}. The Garza wants {rules.MinimumCrew - hands} more before she sails.";
         _crew.AddThemeColorOverride("font_color", hands >= rules.MinimumCrew ? new Color("#2E6B3A") : Ui.InkDark);
         _next.Text = hands >= rules.MinimumCrew ? "Stores next, then the convoy." : "The journal (X) says who else to find.";

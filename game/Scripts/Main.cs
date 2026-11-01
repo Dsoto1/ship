@@ -386,6 +386,11 @@ public partial class Main : Node3D
                 SignedOn(id, advance);
             }
         });
+        _portHud.HammockRequested += () =>
+        {
+            var result = _runner.SlingHammock();
+            _portHud.Say(result.Succeeded ? $"The chandler's man slings a hammock in the hold and battens it. Berths for {_runner.BerthsAboard} now." : result.Reason);
+        };
         _portHud.PayOffRequested += id =>
         {
             var name = _runner.Campaign.Characters[id].Name;
@@ -2322,6 +2327,12 @@ public partial class Main : Node3D
     // the one selected); --yaw=degrees turns it.
     private void DeveloperPort()
     {
+        // --panel=cargo (people, expedition, ...): that screen open, in port too.
+        if (_developerPanel is { } panel)
+        {
+            Callable.From(() => _hud.OpenPanel(panel)).CallDeferred();
+        }
+
         // For the preparation stages (R2c): --hire=N signs on the first N who want a berth, --buy=0,0,4
         // buys those lots, --after=MINUTES then lets time pass.
         if (_developerHire > 0 && _content.Port is { } rules)

@@ -90,6 +90,20 @@ Save with **Cmd + S** and load with **Cmd + L** at any point, or from the menu (
 - [ ] **The crew notice:** the chronicle records it; the others' respect for you drops (more for their friends).
 - [ ] **The port talks:** for a day, someone seeking a berth asks a tenth more ("They say you turn men off…").
 
+## Retest: hammocks in the hold (new 2026-11-01)
+
+```
+-- --menu=none --hire=7 --panel=cargo
+```
+
+- [ ] **Room in the hold:** the Cargo drawer has it at the top. "Sling a hammock" costs 150 sueldos and gives one more
+      berth, up to three (10 in all).
+- [ ] **More hands:** with every berth full, an offer is refused with "the chandler can sling hammocks". With a hammock
+      slung, it is taken.
+- [ ] **Crowded:** with more than 7 hands, the crew chip in the top bar turns amber ("Crowded: 8 in a hold built for 7"),
+      and the stores line feeds the extra mouths.
+- [ ] **At sea:** a crowded ship has more fever and flux, and the chronicle gives "crowded below decks" as a reason.
+
 ## 0a. Menus and saving
 
 Launch with nothing after the `--` (or Godot's Run button).

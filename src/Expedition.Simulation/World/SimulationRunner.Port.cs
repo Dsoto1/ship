@@ -581,9 +581,11 @@ public sealed partial class SimulationRunner
         }
 
         var rules = Content.Port!;
-        if (port.Hired.Count >= rules.Berths)
+        if (port.Hired.Count >= BerthsAboard)
         {
-            return CommandResult.Rejected($"Every berth is taken ({rules.Berths}).");
+            return CommandResult.Rejected(port.Hammocks < rules.MostHammocks
+                ? $"Every berth is taken ({BerthsAboard}). The chandler can sling hammocks in the hold for more."
+                : $"Every berth is taken ({BerthsAboard}), and the hold will take no more hammocks.");
         }
 
         if (advance > port.Funds)

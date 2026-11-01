@@ -764,6 +764,9 @@ public sealed record PortData
     /// <summary>The evening a song was last called for, or -1. Added in format 24.</summary>
     public long LastSong { get; init; } = -1;
 
+    /// <summary>Hammocks slung in the hold (0 in saves made before them).</summary>
+    public int Hammocks { get; init; }
+
     /// <summary>Character ID numbers who have sung in the tavern. Added in format 24.</summary>
     public IReadOnlyList<int> Sung { get; init; } = [];
 

@@ -200,7 +200,7 @@ public sealed partial class SimulationRunner
     }
 
     // For one person this hour: each illness that might come to them, how likely, and why.
-    private IEnumerable<(string Illness, double Chance, List<string> Reasons, CharacterId? From)> OnsetChances(Character person, List<Character> sick, bool wet)
+    internal IEnumerable<(string Illness, double Chance, List<string> Reasons, CharacterId? From)> OnsetChances(Character person, List<Character> sick, bool wet)
     {
         var life = Campaign.Life;
         foreach (var illness in new[] { "condition.fever", "condition.flux", "condition.scurvy" })
@@ -252,6 +252,13 @@ public sealed partial class SimulationRunner
 
                     chance += caught;
                 }
+            }
+
+            // Crowded below decks (hammocks in the hold, CREW_PROPOSAL §2): fever and flux come and spread more easily.
+            if (illness != "condition.scurvy" && chance > 0 && Crowded > 0 && Campaign.Voyage is { Outcome: VoyageOutcome.UnderWay })
+            {
+                chance *= 1 + CrowdedIllness * Crowded;
+                reasons.Add("crowded");
             }
 
             yield return (illness, chance, reasons, from);

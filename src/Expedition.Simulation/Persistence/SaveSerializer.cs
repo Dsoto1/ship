@@ -704,6 +704,7 @@ public static class SaveSerializer
                     LateFeesCharged = port.LateFeesCharged,
                     LastRound = port.LastRound,
                     LastSong = port.LastSong,
+                    Hammocks = port.Hammocks,
                     Sung = port.Sung.Select(id => id.Value).Order().ToList(),
                     Warned = port.Warned,
                     Leads = port.Leads.Select(l => new HeardLeadData { Lead = l.LeadId, Tick = l.Tick }).ToList(),
@@ -1052,7 +1053,7 @@ public static class SaveSerializer
                 throw new SaveLoadException("The port preparations have invalid stock, fees or inquiries, or the content has no port.");
             }
 
-            var port = new Port.PortState { Funds = savedPort.Funds, LateFeesCharged = savedPort.LateFeesCharged, Warned = savedPort.Warned, LastRound = savedPort.LastRound, LastSong = savedPort.LastSong };
+            var port = new Port.PortState { Funds = savedPort.Funds, LateFeesCharged = savedPort.LateFeesCharged, Warned = savedPort.Warned, LastRound = savedPort.LastRound, LastSong = savedPort.LastSong, Hammocks = savedPort.Hammocks };
             if (savedPort.Weather is { } weather && portRules.Weather?.Find(weather) is null)
             {
                 throw new SaveLoadException($"The save's port weather '{weather}' is not in this game.");

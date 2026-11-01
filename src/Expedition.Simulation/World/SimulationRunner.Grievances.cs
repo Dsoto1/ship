@@ -94,11 +94,14 @@ public sealed partial class SimulationRunner
         var life = Campaign.Life;
         var hands = Campaign.Crew.Where(c => c.Id != Campaign.CaptainId && c.SurvivalState == SurvivalState.Alive).OrderBy(c => c.Id.Value).ToList();
         var tended = Tender() is not null;
+        // Crowded, a storm wears tempers more (CREW_PROPOSAL §2).
+        var heavy = rules.Weather(ship.WeatherId).SeaState >= rules.Storms.HeavySeaState;
         foreach (var person in hands)
         {
             var untended = tended ? 0 : Campaign.Crew.Count(c => c.Id != person.Id && Illnesses(c).Any());
             var grievance = life.Hold(person.Id);
             var mood = (person.Needs.Stress >= 70 ? 1.5 : 1)
+                       * (heavy ? 1 + CrowdedStormTemper * Crowded : 1)
                        * (person.Traits.Contains("trait.loyal") ? 0.6 : 1)
                        * (grievance.Stage >= GrievanceStage.Faction ? 1.3 : 1);
             foreach (var cause in GrievanceCauses.All)

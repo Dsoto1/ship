@@ -23,6 +23,12 @@ public sealed record PortRules
     /// <summary>Most people who can be hired.</summary>
     public required int Berths { get; init; }
 
+    /// <summary>Sueldos for a hammock slung in the hold, and the carpentry: one more berth (CREW_PROPOSAL §2).</summary>
+    public int HammockPrice { get; init; } = 150;
+
+    /// <summary>Most hammocks the hold will take.</summary>
+    public int MostHammocks { get; init; } = 3;
+
     /// <summary>Fewest hired hands to sail with.</summary>
     public required int MinimumCrew { get; init; }
 
