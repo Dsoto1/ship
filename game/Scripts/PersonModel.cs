@@ -209,10 +209,22 @@ public partial class PersonModel : Node3D
 
     private string _walk = "walk";
 
+    /// <summary>How they walk now (from the simulation): Usual uses their own walk.</summary>
+    public Expedition.Simulation.World.Gait Gait { get; set; }
+
+    private static string? GaitClip(Expedition.Simulation.World.Gait gait) => gait switch
+    {
+        Expedition.Simulation.World.Gait.Elderly => "walk_elderly",
+        Expedition.Simulation.World.Gait.Old => "walk_thoughtful",
+        Expedition.Simulation.World.Gait.Injured => "walk_injured",
+        Expedition.Simulation.World.Gait.Ill => "walk_unsteady",
+        _ => null,
+    };
+
     // Each person's own walk, from their record: a limp if they have one; a woman's walk or an easy one for women;
     // a proud strut or the formal walk for those who walk formally; an easy walk or the plain one for the old; and
-    // for the rest one of the quicker or plainer walks, the same one every time (picked by their id). The library's
-    // slow walks (elderly, plodding, sneaking, heavy loads) are not given out: port walks keep one pace for all.
+    // for the rest one of the quicker or plainer walks, the same one every time (picked by their id). The slower walks
+    // (elderly, old, injured, ill) come from their state now, by Gait, at the pace the simulation walks them.
     private string ChooseWalk(string personId)
     {
         var own = _identity.Animation.Walk;
@@ -286,6 +298,12 @@ public partial class PersonModel : Node3D
 
         var walking = clip.StartsWith("walk");
         // Ground-matched, the rate is for the base stride: a shorter person's stride is shorter, and carrying, shorter still.
+        // How they walk now, from the simulation (age, injury, illness): the library's slower walks.
+        if (walking && clip != "walk_carry" && GaitClip(Gait) is { } slow && _player.HasAnimation(slow))
+        {
+            clip = slow;
+        }
+
         if (walking && ForcedWalk is { } forced && clip != "walk_carry" && _player.HasAnimation(forced))
         {
             clip = forced;

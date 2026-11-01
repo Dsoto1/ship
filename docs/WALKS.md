@@ -38,14 +38,27 @@ speeds for different characters?" Then (2026-10-31): fix the feet, look at walki
 | `walk_woman` | 1.48 | women |
 | `walk_proud` | 0.98 | those whose record says they walk formally (officers, merchants, clerks) |
 | `walk_limp` | 0.76 | anyone whose record gives them a limp |
-| `walk_unsteady`, `walk_stumble`, `walk_injured`, `walk_thoughtful` | 0.55–1.29 | not yet: for drink, injury and states to come |
-| `walk_elderly`, `walk_plod`, `walk_sneaky`, `walk_carry_heavy`, `walk_bucket`, `walk_looking` | 0.15–0.48 | not yet: see below |
+| `walk_elderly` | 0.22 | anyone 65 or older (`Gait.Elderly`), at 0.4 of the pace |
+| `walk_thoughtful` | 0.62 | anyone 60 to 64 (`Gait.Old`), at 0.7 |
+| `walk_injured` | 0.55 | anyone with a sprain or a wound (`Gait.Injured`), at 0.6 more |
+| `walk_unsteady` | 0.85 | anyone with fever, flux, scurvy or half drowned (`Gait.Ill`), at 0.8 more |
+| `walk_stumble`, `walk_plod`, `walk_sneaky`, `walk_carry_heavy`, `walk_bucket`, `walk_looking` | 0.15–1.29 | not yet: for drink, thieves and errands to come |
 
-- **How a walk is chosen:** each person keeps the same walk, chosen from their record by their id
-  (`PersonModel.ChooseWalk`).
-- **The slow walks:** these need slower walkers. In port the simulation walks everyone at one pace, so these
-  clips would play several times too fast. Using them needs a pace per person in the simulation: age, injury,
-  load.
+- **How a walk is chosen:** each person's own walk is chosen from their record by their id
+  (`PersonModel.ChooseWalk`) and kept. Their state now (`SimulationRunner.GaitOf`) can replace it with one of the
+  slower walks above. Someone carrying keeps the carrying walk.
+
+## Each at their own pace (`SimulationRunner.Pace`)
+- **How a walk is timed:** a walk's time in the simulation is the cells over the location's pace, times
+  `WalkPace`. That is 1 for most people, down to 0.35:
+  - age: 0.85 from 55, 0.7 from 60, 0.4 from 65;
+  - a sprain or a wound: 0.6;
+  - fever, flux, scurvy or near drowning: 0.8;
+  - a heavy load (planks, crates, casks, or more than 15 kg in hand ashore): 0.75.
+- **Combining:** the reasons multiply together.
+- **In the view:** figures are drawn at that pace, so the slow walks play near their own speed. Simón the
+  sailmaker (66) walks at about 0.6 m/s, half the usual.
+- **Saves:** walks already under way keep their timing, and nothing new is saved.
 
 **Checking a walk:** add `--walkclip=walk_proud` to any launch, and the captain (and everyone walking) uses that
 clip. With `--walktest=1:-7,1 --walklog=PATH`, the captain's drawn position and feet are logged every frame.

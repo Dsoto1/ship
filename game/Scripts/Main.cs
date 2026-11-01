@@ -834,8 +834,8 @@ public partial class Main : Node3D
                     facing: spot is null ? null : FacingAt(location, spot),
                     inRain: (onPort && _runner.RainingInPort && definition?.Id != "task.shelter") || (onShore && _runner.Raining), standAt: standAt,
                     place: onPort || onShore ? null : _deck.Place,
-                    pace: (float)((location.WalkCellsPerMinute ?? _runner.Content.Rules.WalkCellsPerMinute) / SimulationClock.MinutesPerTick * Math.Max(speed, 0.5)),
-                    ticksPerSecond: speed);
+                    pace: (float)((location.WalkCellsPerMinute ?? _runner.Content.Rules.WalkCellsPerMinute) / SimulationClock.MinutesPerTick * Math.Max(speed, 0.5) * _runner.WalkPace(id)),
+                    ticksPerSecond: speed, gait: _runner.GaitOf(id));
                 // Below decks with the cutaway off, people are drawn faintly through the deck, so no one vanishes.
                 figure.ShowThroughDeck(!onPort && !onShore && !_deck.Cutaway && _deck.IsBelow(placement.CellAt(_runner.Campaign.Clock.Tick)));
                 figure.Outline(inPort && !_departure.Playing ? RecruitRim(id) : Colors.Transparent);
@@ -2234,12 +2234,19 @@ public partial class Main : Node3D
     // --walktest=1:30,20;3:pause;4:resume;5:+2,0 (at so many seconds, walk the captain to a cell, or by so many
     // cells from where he stands, or pause or resume) and --walklog=PATH (where he is drawn, every frame): for
     // checking how people walk.
-    private string? _walkTest, _walkLog;
+    private string? _walkTest, _walkLog, _walker;
     private System.IO.StreamWriter? _walkWriter;
 
     private void WalkTest()
     {
-        if (_runner?.Campaign.CaptainId is not { } captain || !_figures.TryGetValue(captain, out var figure))
+        if (_runner is null)
+        {
+            return;
+        }
+
+        // --walker=person.simon drives someone else instead of the captain.
+        var walker = _walker is { } chosen && _runner.CharacterFor(chosen) is { } person ? person.Id : _runner.Campaign.CaptainId;
+        if (walker is not { } captain || !_figures.TryGetValue(captain, out var figure))
         {
             return;
         }
@@ -2575,6 +2582,7 @@ public partial class Main : Node3D
                 case "hover": _developerHover = value; break;
                 case "walktest": _walkTest = value; break;
                 case "walkclip": PersonModel.ForcedWalk = value; break;
+                case "walker": _walker = value; break;
                 case "walklog": _walkLog = value; break;
                 case "captain" when value.Split(',') is [var cx, var cy] && int.TryParse(cx, out var x) && int.TryParse(cy, out var y): _developerCaptainAt = new GridPosition(x, y); break;
                 case "journal": _developerJournal = true; break;

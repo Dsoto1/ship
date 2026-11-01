@@ -54,6 +54,8 @@ Save with **Cmd + S** and load with **Cmd + L** at any point, or from the menu (
 - [ ] **Walks of their own** (Meshy, 2026-10-31): people walk differently. Women, the young, the old, officers and
       anyone with a limp each have their own gait (`docs/WALKS.md`). To see one walk on the captain, add
       `--walkclip=walk_proud` (or `walk_casual`, `walk_limp`, `walk_unsteady`, `walk_quick`…).
+- [ ] **Each at their own pace** (2026-11-01): the old walk slower, with the old walk. Simón the sailmaker (66) shuffles,
+      and Bartolo (61) walks carefully. The sick and the hurt slow down too, and so do people carrying planks or crates.
 
 ## Retest: the recruiting screens (reworked 2026-10-31)
 

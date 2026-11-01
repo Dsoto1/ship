@@ -110,7 +110,8 @@ priority order:
 1. **Movement feel** (`u-walk`, `u-gait`). **Fixed 2026-10-31, waiting for the owner to retest.** A foot lock
    (`FootLock` in `PersonModel.cs`, a two-bone leg reach) keeps planted feet still: the ankle doesn't move in 81% of
    its frames on the ground. Walk variations (2026-10-31): 16 Meshy walks retargeted onto our rig; see
-   `docs/WALKS.md`. The slow ones (elderly, plodding, heavy loads) wait for a pace per person in the simulation. Figures are now drawn
+   `docs/WALKS.md`. Each person now walks at their own pace in the simulation (`SimulationRunner.Pace`: age, injury,
+   illness, load), and the elderly, old, injured and ill get the slower walks to match. Figures are now drawn
    along a smoothed route by `CrewFigure.Walked`. They speed up, slow down and turn back naturally, carry on from where they
    are drawn when re-clicked, and walk at their own pace (`walkSpeed`). The stride is tuned, so the planted foot slips about
    5% of the pace, down from 23%. The simulation is unchanged. Check with `--walktest=1:-7,1;3:+8,0;5:pause;6:resume

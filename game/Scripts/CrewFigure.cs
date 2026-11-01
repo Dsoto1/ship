@@ -282,8 +282,13 @@ public partial class CrewFigure : Node3D
     public void Refresh(Character character, CharacterPlacement placement, double drawTick, bool selected, string activity,
         bool isCaptain, Pose pose, float delta, float animationRate, Func<float, float, float>? ground = null, string? carrying = null,
         bool showLabel = true, string? shownName = null, Vector2? facing = null, bool inRain = false, Vector3? standAt = null,
-        Func<float, float, Vector3>? place = null, float pace = 0, double ticksPerSecond = 0)
+        Func<float, float, Vector3>? place = null, float pace = 0, double ticksPerSecond = 0, Gait gait = Gait.Usual)
     {
+        if (_person is not null)
+        {
+            _person.Gait = gait;
+        }
+
         var (x, y) = placement.Movement?.PositionAt(drawTick) ?? (placement.Cell.X, placement.Cell.Y);
         Position = new Vector3((float)x, ground?.Invoke((float)x, (float)y) ?? 0, (float)y);
         if (place is null && standAt is null && pace > 0 && ticksPerSecond is > 0 and <= SmoothedUpTo)

@@ -1532,7 +1532,8 @@ public sealed partial class SimulationRunner(CampaignState campaign, GameContent
             Tread(path);
         }
 
-        var speed = Location(placement.LocationId).WalkCellsPerMinute ?? Content.Rules.WalkCellsPerMinute;
+        // Each at their own pace: the old, the hurt, the sick and the laden walk slower (SimulationRunner.Pace).
+        var speed = (Location(placement.LocationId).WalkCellsPerMinute ?? Content.Rules.WalkCellsPerMinute) * WalkPace(characterId);
         var minutes = Math.Max(1, (long)Math.Ceiling((path.Count - 1) / speed));
         placement.Movement = new Movement(path, now, now + minutes / SimulationClock.MinutesPerTick);
     }
